@@ -3,3 +3,11 @@ build.ninja
 attic/jotblk/env
 __pycache__
 examples/sdl2_pianoroll.sf2
+examples/bench_sieve
+examples/bench_lines
+examples/*.rom
+examples/*.rom.sym
+gba/*.gba
+gba/*.elf
+gba/*.o
+gba/*.sav
