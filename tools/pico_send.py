@@ -70,6 +70,15 @@ def progress(sent, total):
   sys.stderr.flush()
 
 
+def sync(port):
+  """Gets a fresh prompt: Return, then Ctrl-C (some programs stop on it)."""
+  for attempt in (b'\r', b'\x03\r', b' \r', b'\r'):
+    port.write(attempt)
+    if PROMPT in wait_prompt(port, 3.0, False):
+      return True
+  return False
+
+
 def terminal(port):
   """Relays the keyboard to the board and the board to the screen."""
   if not sys.stdin.isatty():
@@ -115,8 +124,11 @@ def main():
   show = args.verbose
   total = sum(len(l.encode('utf-8')) + 1 for l in lines)
   sent = 0
-  port.write(b'\r')                       # get a fresh prompt
-  wait_prompt(port, 2.0, False)
+  sys.stderr.write('%s: waiting for the prompt...\n' % args.port)
+  if not sync(port):
+    sys.exit('No prompt from the board. It may still be running a program '
+             'that waits for keys: press reset (or unplug and replug it), '
+             'then try again. Use -v to see what it sends.')
   for n, line in enumerate(lines, 1):
     if not line.strip():
       sent += len(line.encode('utf-8')) + 1
