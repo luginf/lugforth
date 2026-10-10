@@ -44,7 +44,8 @@ old-termios termios@
              0 VTIME new-termios .c_cc[] c!
              0 VMIN new-termios .c_cc[] c!
              new-termios termios! ;
-: normal-mode   stdin isatty 0= if exit then
+: normal-mode   delay-mode   ( O_NONBLOCK belongs to the terminal, the shell too )
+                stdin isatty 0= if exit then
                 old-termios termios! ;
 
 ( Screen Size )
