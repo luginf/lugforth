@@ -7,7 +7,7 @@ examples/bench_sieve
 examples/bench_lines
 examples/*.rom
 examples/*.rom.sym
-gba/*.gba
-gba/*.elf
-gba/*.o
-gba/*.sav
+ports/gba/*.gba
+ports/gba/*.elf
+ports/gba/*.o
+ports/gba/*.sav

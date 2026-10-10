@@ -16,11 +16,11 @@
 # Applies the ueforth -> lugforth renaming to the text files of the tree.
 # Use it after taking files from upstream (git checkout upstream/main -- file)
 # or after a merge. Upstream URLs and credits are left alone.
-# Renamed paths (org/lugforth, infix_lugforth.fs, windows/lugforth.rc) are not
+# Renamed paths (org/lugforth, infix_lugforth.fs, ports/windows/lugforth.rc) are not
 # handled here.
 import re,subprocess,os
 files=subprocess.check_output(['git','ls-files']).decode().split('\n')
-skip_prefix=('attic/','site/')
+skip_prefix=('attic/','docs/site/')
 skip_files={'NOTICE','LICENSE','README.md'}
 prot=[r'github\.com/flagxor/ueforth', r'/src/ueforth\b', r'upstream uEforth', r'uEforth by', r'uEforth \(https', r'of uEforth', r'Fork of uEforth',r'ueforth\.git']
 changed=0

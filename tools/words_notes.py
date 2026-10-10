@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Hand written notes for words that site/*.html does not document.
+"""Hand written notes for words that docs/site/*.html does not document.
 
 Used by tools/words_reference.py. Each entry is  name: (stack effect, description).
 The names of standard (ANS Forth) words are in ANS, so they need no note.
@@ -105,7 +105,7 @@ NOTES = {
   'ansi': ('( -- )', 'Vocabulary of terminal escape sequences: colors, cursor, screen.'),
   'editor': ('( -- )', 'Vocabulary of the block editor.'),
   'graphics': ('( -- )', 'Lazy loaded generic graphics interface (a window and a back buffer, on X11 or the web). See `common/graphics.fs`.'),
-  'httpd': ('( -- )', 'Lazy loaded HTTP server. See `site/posix_common.html`.'),
+  'httpd': ('( -- )', 'Lazy loaded HTTP server. See `docs/site/posix_common.html`.'),
   'internals': ('( -- )', 'Vocabulary of the inner workings of the system.'),
   'posix': ('( -- )', 'Vocabulary of the system calls and constants of Linux and macOS.'),
   'recognizers': ('( -- )', 'Vocabulary of the recognizers, which decide what to do with a word that is not found.'),
@@ -118,11 +118,11 @@ NOTES = {
   'visual': ('( -- )', 'Lazy loaded visual (full screen) editor.'),
   'web-interface': ('( -- )', 'Lazy loaded web UI server.'),
   'x11': ('( -- )', 'Lazy loaded X11 bindings.'),
-  'sdl2': ('( -- )', 'Lazy loaded SDL2 short words for games. See `posix/SDL2.md`.'),
-  'sdl2-image': ('( -- )', 'Lazy loaded SDL2_image sprites. See `posix/SDL2.md`.'),
-  'sdl2-ttf': ('( -- )', 'Lazy loaded SDL2_ttf text. See `posix/SDL2.md`.'),
-  'sdl2-mixer': ('( -- )', 'Lazy loaded SDL2_mixer sound, music and soundfont. See `posix/SDL2.md`.'),
-  'sdl2-abc': ('( -- )', 'Lazy loaded reader and player of tunes in ABC notation. See `posix/SDL2.md`.'),
+  'sdl2': ('( -- )', 'Lazy loaded SDL2 short words for games. See `ports/posix/SDL2.md`.'),
+  'sdl2-image': ('( -- )', 'Lazy loaded SDL2_image sprites. See `ports/posix/SDL2.md`.'),
+  'sdl2-ttf': ('( -- )', 'Lazy loaded SDL2_ttf text. See `ports/posix/SDL2.md`.'),
+  'sdl2-mixer': ('( -- )', 'Lazy loaded SDL2_mixer sound, music and soundfont. See `ports/posix/SDL2.md`.'),
+  'sdl2-abc': ('( -- )', 'Lazy loaded reader and player of tunes in ABC notation. See `ports/posix/SDL2.md`.'),
 
   # words that only have a stack comment or a C/JS binding, filled by hand
   'asm': ('( -- )', 'Vocabulary of the inline assembler for the native CPU. See `common/assembler.fs`.'),

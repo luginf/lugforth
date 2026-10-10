@@ -15,8 +15,8 @@
 ( Reader for tunes in ABC notation, shared by the POSIX and Web builds )
 \
 \ Not loaded by itself: abc-parser gives the source of the reader as a string,
-\ and the loaders sdl2-abc of posix/sdl2_abc.fs and web/sdl2_abc.fs evaluate it,
-\ then add what plays the tune. See posix/SDL2.md for the words it defines.
+\ and the loaders sdl2-abc of ports/posix/sdl2_abc.fs and ports/web/sdl2_abc.fs evaluate it,
+\ then add what plays the tune. See ports/posix/SDL2.md for the words it defines.
 \
 \ What is understood of ABC (https://abcnotation.com): the fields K: (key and
 \ mode) L: M: Q: and the line %%MIDI program n; notes A to G and a to g with

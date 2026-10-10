@@ -16,10 +16,10 @@ SetVersions(
     version='7.0.8.1',
     stable='7.0.8.0')
 
-Include('posix')
-Include('windows')
-Include('web')
-Include('pico-ice')
-Include('pico')
-Include('esp32')
-Include('site')
+Include('ports/posix')
+Include('ports/windows')
+Include('ports/web')
+Include('ports/pico-ice')
+Include('ports/pico')
+Include('ports/esp32')
+Include('docs/site')

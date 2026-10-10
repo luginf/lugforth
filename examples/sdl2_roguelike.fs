@@ -19,7 +19,7 @@
 \ per move. The 8x8 tiles come from examples/sdl2_tiles.png (a row of 8 tiles:
 \ wall, floor, stairs, potion, player, monster, skull, heart), drawn with
 \ sdl2-image; run it from the lugforth directory or from examples/. It also
-\ runs in the browser (web/sdl2_roguelike.html). examples/make_sdl2_tiles.fs
+\ runs in the browser (ports/web/sdl2_roguelike.html). examples/make_sdl2_tiles.fs
 \ draws the sheet (make_sdl2_tiles.py is the same in Python), edit it to
 \ change the tiles.
 \   arrows or w a s d    move; walk into a monster to hit it

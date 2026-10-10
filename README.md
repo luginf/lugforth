@@ -8,7 +8,20 @@ This EForth inspired implementation of Forth is bootstraped from a minimalist C 
 
 Compiled site documentation at [https://eforth.appspot.com](https://eforth.appspot.com/)
 
-[WORDS.md](WORDS.md) is a reference of the words of this build, generated from the interpreters themselves (`tools/words_reference.py`).
+[WORDS.md](docs/WORDS.md) is a reference of the words of this build, generated from the interpreters themselves (`tools/words_reference.py`).
+
+## Layout
+
+```
+common/      shared core (Forth sources and C headers)
+ports/       one directory per platform: posix, web, windows, esp32, pico,
+             pico-ice, gba, android
+examples/    example programs and benchmarks
+tools/       build and conversion scripts
+docs/        site/ (documentation website), SKILLS.md, WORDS.md, images/
+lib/         shared Forth libraries (hashing)
+attic/       old experiments
+```
 
 ## Building from Source
 
