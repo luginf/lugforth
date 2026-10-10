@@ -520,7 +520,79 @@ e: check-asm
   out: asm 
 ;e
 
+e: check-ansi-compat
+  out: random 
+  out: rand-seed 
+  out: environment? 
+  out: anew 
+  out: marker 
+  out: compile, 
+  out: [compile] 
+  out: [undefined] 
+  out: [defined] 
+  out: >number 
+  out: .( 
+  out: word 
+  out: source 
+  out: skip 
+  out: scan 
+  out: search 
+  out: compare 
+  out: place 
+  out: /string 
+  out: count 
+  out: move 
+  out: u.r 
+  out: .r 
+  out: d. 
+  out: ud. 
+  out: fm/mod 
+  out: sm/rem 
+  out: um/mod 
+  out: m* 
+  out: um* 
+  out: 2literal 
+  out: 2variable 
+  out: 2constant 
+  out: m+ 
+  out: d> 
+  out: d< 
+  out: du< 
+  out: d= 
+  out: d0< 
+  out: d0= 
+  out: d2/ 
+  out: d2* 
+  out: dabs 
+  out: d- 
+  out: dnegate 
+  out: d+ 
+  out: d>s 
+  out: s>d 
+  out: 2r@ 
+  out: 2r> 
+  out: 2>r 
+  out: roll 
+  out: pick 
+  out: 2over 
+  out: 2swap 
+  out: tuck 
+  out: char+ 
+  out: chars 
+  out: cell- 
+  out: 2- 
+  out: 2+ 
+  out: within 
+  out: u> 
+  out: 0> 
+  out: noop 
+  out: not 
+  out: false 
+  out: true 
+;e
+
 e: check-phase2
+  check-ansi-compat
   check-case
   check-locals
   check-asm

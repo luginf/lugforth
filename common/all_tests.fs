@@ -20,6 +20,7 @@ needs throw_values_tests.fs
 needs vocabulary_tests.fs
 needs locals_tests.fs
 needs case_tests.fs
+needs ansi_compat_tests.fs
 needs doloop_tests.fs
 needs conditionals_tests.fs
 needs float_tests.fs
