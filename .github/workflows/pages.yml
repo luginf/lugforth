@@ -29,7 +29,10 @@ jobs:
           # configure.py looks for /usr/bin/nodejs
           [ -e /usr/bin/nodejs ] || sudo ln -s "$(command -v node)" /usr/bin/nodejs
           ./configure.py
-          ninja out/posix/lugforth out/web/lugforth.js
+          ninja out/posix/lugforth out/web/lugforth.js out/web/terminal.html \
+            out/web/sdl2_breakout.html out/web/sdl2_breakout.fs out/web/sdl2_drums.html \
+            out/web/sdl2_drums.fs out/web/sdl2_roguelike.html out/web/sdl2_roguelike.fs \
+            out/web/sdl2_tiles.png
       - name: Build the site
         run: python3 tools/make_pages.py
       - uses: actions/upload-pages-artifact@v3
