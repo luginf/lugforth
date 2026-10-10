@@ -81,3 +81,17 @@ trust the checksum.
   signedness, only the branches do.
 * uxn's default palette is all black; `bench_lines.tal` sets one explicitly
   (`System/r`, `/g`, `/b`) or the lines would be correct but invisible.
+
+## txt2tags.fs
+
+A small converter from the basic txt2tags syntax to HTML, written in Forth
+(no macros, regular expressions or pre/post processing):
+
+```
+lugforth examples/txt2tags.fs examples/txt2tags_demo.t2t > demo.html
+```
+
+or `include examples/txt2tags.fs` then `s" doc.t2t" t2t-file`. The header
+comment of the file lists what is supported (titles, paragraphs, bold,
+italic, underline, strike, mono, nested lists, definitions, verbatim blocks,
+quotes, rules, tables, links and images).

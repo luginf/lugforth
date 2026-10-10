@@ -1,0 +1,38 @@
+Mon document
+Luginfo10
+2026-10-10
+
+% un commentaire
+= Titre un =
+Un paragraphe avec **gras**, //italique//, __souligné__, --barré-- et ``code <b>``.
+Suite du paragraphe avec un lien [Lugforth http://github.com/luginf/lugforth] et http://example.org/a.
+
+== Listes ==[etiquette]
+- un
+- deux
+  - deux un
+  - deux deux
+- trois
+
++ premier
++ second
+
+: terme
+  la définition
+
+=== Tableau ===
+|| A | B |
+| 1 | 2 |
+| **x** | y & z |
+
+Une image [pic.png] ici.
+
+--------------------
+
+```
+verbatim <tag> **pas gras**
+```
+
+	Citation indentée
+
+Fin.
