@@ -24,6 +24,16 @@ To install:
       screen /dev/ttyACM0 115200           (quit with Ctrl-A, K, then y)
     You should see the Lugforth banner and the --> prompt.
 
+Sending a program from the PC:
+  Do not use `cat file.fs > /dev/ttyACM0`: the board echoes everything back,
+  nobody reads it, and the transfer hangs. Use the helper script instead
+  (needs `pip install pyserial`):
+    tools/pico_send.py file.fs
+    tools/pico_send.py -p /dev/ttyACM1 file.fs
+  It reads the answers while it writes, sends one line at a time, waits for
+  the prompt and stops at the first error. Lines must stay under 200
+  characters. Nothing is kept after a power cycle: the dictionary lives in RAM.
+
 Troubleshooting:
   * "Permission denied" on /dev/ttyACM0: add yourself to the dialout group
     (sudo usermod -aG dialout $USER, then log in again), or use sudo.
