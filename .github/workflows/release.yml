@@ -59,6 +59,7 @@ jobs:
           objdump -T dist/lugforth | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1
 
       - name: Test
+        timeout-minutes: 3
         run: |
           cd /tmp
           "$GITHUB_WORKSPACE/dist/lugforth" "$GITHUB_WORKSPACE/common/all_tests.fs" < /dev/null | tail -5
@@ -115,6 +116,7 @@ jobs:
 
       - name: Test
         continue-on-error: true
+        timeout-minutes: 3
         run: |
           cd /tmp
           "$GITHUB_WORKSPACE/dist/lugforth" "$GITHUB_WORKSPACE/common/all_tests.fs" < /dev/null | tail -5
@@ -175,6 +177,7 @@ jobs:
 
       - name: Test
         continue-on-error: true
+        timeout-minutes: 3
         shell: cmd
         run: |
           dist\lugforth.exe common\all_tests.fs < NUL
