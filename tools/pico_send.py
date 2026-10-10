@@ -23,7 +23,8 @@ nobody reads it. This script reads the answers while it writes, sends one line
 at a time and waits for the prompt before the next one, and stops at the
 first error. When the last line starts something that waits for keys (a game
 that never shows the prompt again), the script becomes a small terminal so you
-can play: keys go to the board, Ctrl-] quits. Needs pyserial (pip install pyserial).
+can play: keys go to the board, Ctrl-A then Ctrl-X quits (as in picocom;
+Ctrl-A Ctrl-A sends a real Ctrl-A, Ctrl-] also quits). Needs pyserial (pip install pyserial).
 """
 
 import argparse
@@ -83,9 +84,10 @@ def terminal(port):
   """Relays the keyboard to the board and the board to the screen."""
   if not sys.stdin.isatty():
     return
-  print('\n[terminal mode, Ctrl-] to quit]')
+  print('\n[terminal mode: Ctrl-A then Ctrl-X to quit]')
   old = termios.tcgetattr(sys.stdin)
   tty.setraw(sys.stdin.fileno())
+  prefix = False
   try:
     while True:
       ready, _, _ = select.select([sys.stdin, port], [], [], 0.1)
@@ -94,10 +96,19 @@ def terminal(port):
         if data:
           os.write(sys.stdout.fileno(), data)
       if sys.stdin in ready:
-        key = os.read(sys.stdin.fileno(), 32)
-        if b'\x1d' in key:
-          break
-        port.write(key)
+        for ch in os.read(sys.stdin.fileno(), 32):
+          if prefix:                      # the key after Ctrl-A
+            prefix = False
+            if ch in (0x18, ord('x'), ord('X'), 0x11, ord('q')):
+              return                      # Ctrl-X, x, Ctrl-Q, q
+            if ch == 0x01:
+              port.write(b'\x01')         # Ctrl-A Ctrl-A: a real Ctrl-A
+          elif ch == 0x01:
+            prefix = True
+          elif ch == 0x1d:                # Ctrl-]
+            return
+          else:
+            port.write(bytes([ch]))
   finally:
     termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old)
     print()

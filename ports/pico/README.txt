@@ -34,7 +34,7 @@ Sending a program from the PC:
   the prompt (with a progress bar: bytes sent and left; -v shows the board's
   answers instead) and stops at the first error. Lines must stay under 200
   characters. If the last line starts a program that waits for keys (a game),
-  the script turns into a small terminal so you can use it (Ctrl-] quits).
+  the script turns into a small terminal so you can use it (Ctrl-A then Ctrl-X quits).
   Nothing is kept after a power cycle: the dictionary lives in RAM.
 
 Troubleshooting:
