@@ -60,6 +60,16 @@ def wait_prompt(port, timeout, show):
   return got
 
 
+def progress(sent, total):
+  """One line, rewritten in place: bar, bytes sent and bytes left."""
+  width = 30
+  filled = width * sent // total if total else width
+  sys.stderr.write('\r[%s%s] %d%%  %d / %d bytes, %d left   ' % (
+      '#' * filled, '-' * (width - filled), 100 * sent // max(total, 1),
+      sent, total, total - sent))
+  sys.stderr.flush()
+
+
 def terminal(port):
   """Relays the keyboard to the board and the board to the screen."""
   if not sys.stdin.isatty():
@@ -91,8 +101,8 @@ def main():
   ap.add_argument('-b', '--baud', type=int, default=115200)
   ap.add_argument('-t', '--timeout', type=float, default=10.0,
                   help='seconds to wait for the prompt after a line')
-  ap.add_argument('-q', '--quiet', action='store_true',
-                  help="do not show the board's answers")
+  ap.add_argument('-v', '--verbose', action='store_true',
+                  help="show the board's answers instead of the progress bar")
   args = ap.parse_args()
 
   lines = open(args.file, encoding='utf-8', errors='replace').read().splitlines()
@@ -102,14 +112,20 @@ def main():
                'truncate it' % (args.file, n, MAX_LINE))
 
   port = serial.Serial(args.port, args.baud, timeout=0.05)
-  show = not args.quiet
+  show = args.verbose
+  total = sum(len(l.encode('utf-8')) + 1 for l in lines)
+  sent = 0
   port.write(b'\r')                       # get a fresh prompt
   wait_prompt(port, 2.0, False)
   for n, line in enumerate(lines, 1):
     if not line.strip():
+      sent += len(line.encode('utf-8')) + 1
       continue
     port.write(line.encode('utf-8') + b'\r')
+    sent += len(line.encode('utf-8')) + 1
     got = wait_prompt(port, args.timeout, show)
+    if not show:
+      progress(sent, total)
     if PROMPT not in got and n == len(lines):
       terminal(port)                      # the last line wants keys
       return
@@ -121,7 +137,9 @@ def main():
     for err in ERRORS:
       if err in answer:
         sys.exit('\n%s:%d: %s: %s' % (args.file, n, err.decode(), line))
-  print('\nsent %d lines' % len(lines))
+  if not show:
+    progress(total, total)
+  print('\nsent %d lines, %d bytes' % (len(lines), total))
 
 
 if __name__ == '__main__':
