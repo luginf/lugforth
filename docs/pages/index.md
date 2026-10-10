@@ -14,7 +14,9 @@ Linux (tarball, AppImage) and Windows builds are on the
 The <a href="demo/terminal.html">web version</a> runs in your browser, with
 <a href="demo/sdl2_breakout.html">Breakout</a>,
 <a href="demo/sdl2_drums.html">drums</a> and a
-<a href="demo/sdl2_roguelike.html">roguelike</a>.</div>
+<a href="demo/sdl2_roguelike.html">roguelike</a>.
+Any of these files also runs from the terminal page:
+<code>terminal.html?run=sdl2_roguelike.fs</code>.</div>
 <div class="card"><h3>Words</h3>
 The <a href="words.html">full word list</a>, the
 <a href="new-words.html">words added by Lugforth</a> and the

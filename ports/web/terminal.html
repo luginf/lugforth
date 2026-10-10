@@ -15,4 +15,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
+<script>
+  // terminal.html?run=sdl2_roguelike.fs runs a Forth file served next to
+  // this page (the games of the demo) before the prompt.
+  (function() {
+    var m = /[?&]run=([A-Za-z0-9_.-]+\.fs)/.exec(location.search);
+    if (m) {
+      document.write('<script type="text/forth" src="' + m[1] + '"><\/script>');
+    }
+  })();
+</script>
 <script src="lugforth.js"></script>
