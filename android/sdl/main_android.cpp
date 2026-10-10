@@ -1,6 +1,6 @@
-// ueforth for Android as a shared library loaded by SDLActivity (route C).
+// lugforth for Android as a shared library loaded by SDLActivity (route C).
 // Same as posix/main.c except that: the entry point is SDL_main, stdout and
-// stderr go to logcat (tag "ueforth"), and dlopen of "libFoo-2.0.so.0" falls
+// stderr go to logcat (tag "lugforth"), and dlopen of "libFoo-2.0.so.0" falls
 // back to "libFoo.so", the name under which SDL2 libraries ship in an APK.
 
 #include <android/log.h>
@@ -63,7 +63,7 @@ static void *log_pump(void *arg) {
   while (read(fd, &c, 1) == 1) {
     if (c == '\n' || n == sizeof(line) - 1) {
       line[n] = 0;
-      __android_log_write(ANDROID_LOG_INFO, "ueforth", line);
+      __android_log_write(ANDROID_LOG_INFO, "lugforth", line);
       n = 0;
     } else if (c != '\r') {
       line[n++] = c;
@@ -86,7 +86,7 @@ static void redirect_output(void) {
 
 extern "C" __attribute__((visibility("default")))
 int SDL_main(int argc, char *argv[]) {
-  __android_log_print(ANDROID_LOG_INFO, "ueforth", "SDL_main argc=%d argv1=%s", argc, argc > 1 ? argv[1] : "-");
+  __android_log_print(ANDROID_LOG_INFO, "lugforth", "SDL_main argc=%d argv1=%s", argc, argc > 1 ? argv[1] : "-");
   redirect_output();
   if (argc > 1) {  // run from the directory of the Forth file, for relative includes
     char dir[512];
@@ -99,12 +99,12 @@ int SDL_main(int argc, char *argv[]) {
       (void *) 0x8000000, HEAP_SIZE,
       PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   if (heap == MAP_FAILED) {
-    __android_log_print(ANDROID_LOG_ERROR, "ueforth", "mmap heap failed: %d", errno);
+    __android_log_print(ANDROID_LOG_ERROR, "lugforth", "mmap heap failed: %d", errno);
     return 1;
   }
-  __android_log_print(ANDROID_LOG_INFO, "ueforth", "heap at %p", heap);
+  __android_log_print(ANDROID_LOG_INFO, "lugforth", "heap at %p", heap);
   forth_init(argc, argv, heap, HEAP_SIZE, boot, sizeof(boot));
-  __android_log_print(ANDROID_LOG_INFO, "ueforth", "forth_init done");
+  __android_log_print(ANDROID_LOG_INFO, "lugforth", "forth_init done");
   for (;;) { g_sys->rp = forth_run(g_sys->rp); }
   return 1;
 }

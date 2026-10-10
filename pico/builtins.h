@@ -20,7 +20,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifndef UEFORTH_SIM
+#ifndef LUGFORTH_SIM
 # include "pico/stdlib.h"
 # include "pico/time.h"
 # include "hardware/adc.h"
@@ -45,7 +45,7 @@
   YV(internals, SYSFREE, free(a0); DROP) \
   YV(internals, REALLOC, SET realloc(a1, n0); NIP)
 
-#ifndef UEFORTH_SIM
+#ifndef LUGFORTH_SIM
 # define REQUIRED_SYSTEM_SUPPORT \
   X("MS-TICKS", MS_TICKS, PUSH us_to_ms(get_absolute_time())) \
   XV(internals, "RAW-YIELD", RAW_YIELD, tight_loop_contents()) \
@@ -91,7 +91,7 @@
   X("NON-BLOCK", NON_BLOCK, n0 = fcntl(n0, F_SETFL, O_NONBLOCK); \
     n0 = n0 < 0 ? errno : 0)
 
-#ifdef UEFORTH_SIM
+#ifdef LUGFORTH_SIM
 # define OPTIONAL_TIME_SUPPORT
 #else
 # define OPTIONAL_TIME_SUPPORT \
@@ -100,14 +100,14 @@
    YV(pico, time_us_32, PUSH time_us_32())
 #endif
 
-#if defined(UEFORTH_SIM) || !defined(PICO_DEFAULT_LED_PIN)
+#if defined(LUGFORTH_SIM) || !defined(PICO_DEFAULT_LED_PIN)
 # define OPTIONAL_LED_PIN_SUPPORT
 #else
 # define OPTIONAL_LED_PIN_SUPPORT \
    XV(pico, "PICO_DEFAULT_LED_PIN", PICO_LED_PIN, PUSH PICO_DEFAULT_LED_PIN)
 #endif
 
-#ifdef UEFORTH_SIM
+#ifdef LUGFORTH_SIM
 # define OPTIONAL_GPIO_SUPPORT
 #else
 # define OPTIONAL_GPIO_SUPPORT \
@@ -145,7 +145,7 @@
    YV(pico, gpio_set_pulls, gpio_set_pulls(n2, n1, n0); DROPn(3))
 #endif
 
-#ifdef UEFORTH_SIM
+#ifdef LUGFORTH_SIM
 # define OPTIONAL_ADC_SUPPORT
 #else
 # define OPTIONAL_ADC_SUPPORT \

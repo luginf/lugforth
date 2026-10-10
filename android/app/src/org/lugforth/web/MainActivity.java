@@ -1,4 +1,4 @@
-package org.ueforth.web;
+package org.lugforth.web;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -11,7 +11,7 @@ import android.webkit.WebViewClient;
 import java.io.IOException;
 import java.io.InputStream;
 
-// Shows the web build of ueforth (assets/) in a WebView. The pages are served
+// Shows the web build of lugforth (assets/) in a WebView. The pages are served
 // from a fake https origin so that XMLHttpRequest on the .fs files works.
 public class MainActivity extends Activity {
   static final String ORIGIN = "https://appassets.androidplatform.net/";

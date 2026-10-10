@@ -13,28 +13,28 @@
 # limitations under the License.
 
 Importation('$dst/gen/posix_boot.h', '$src/posix/posix_boot.fs', name='boot')
-Compile('$dst/posix/ueforth', '$src/posix/main.c',
+Compile('$dst/posix/lugforth', '$src/posix/main.c',
         implicit=['$dst/gen/posix_boot.h'])
 
 Alias('posix', ' '.join([
   ForthTest('$dst/tests/posix_all_tests.out',
-            '$dst/posix/ueforth', '$src/common/all_tests.fs'),
+            '$dst/posix/lugforth', '$src/common/all_tests.fs'),
   TestCommand('$dst/tests/posix_see_all_test.out',
-              '$dst/posix/ueforth',
-              'echo internals see-all bye | $dst/posix/ueforth '
+              '$dst/posix/lugforth',
+              'echo internals see-all bye | $dst/posix/lugforth '
               '>$dst/tests/posix_see_all_test.out 2>&1'),
   TestCommand(' '.join(['$dst/tests/posix_save_restore_test.out',
                         '$dst/tests/posix_save_restore.bin']),
-              '$dst/posix/ueforth',
+              '$dst/posix/lugforth',
               'echo ": foosquare dup * ; save $dst/tests/posix_save_restore.bin bye" | '
-              '$dst/posix/ueforth > $dst/tests/posix_save_restore_test.out && '
+              '$dst/posix/lugforth > $dst/tests/posix_save_restore_test.out && '
               'echo "restore $dst/tests/posix_save_restore.bin 4 foosquare 16 <> posix sysexit" | '
-              '$dst/posix/ueforth >> $dst/tests/posix_save_restore_test.out'),
+              '$dst/posix/lugforth >> $dst/tests/posix_save_restore_test.out'),
 ]))
 
 OneShot('install',
-        '$dst/posix/ueforth',
-        'sudo cp $dst/posix/ueforth /usr/bin/ueforth',
+        '$dst/posix/lugforth',
+        'sudo cp $dst/posix/lugforth /usr/bin/lugforth',
         pool='console')
 
 Default('posix')

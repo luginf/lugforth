@@ -27,7 +27,7 @@ ninja pico-ice
 ninja win32
 ninja win64
 ninja web
-ninja install         # install posix build to /usr/bin/ueforth
+ninja install         # install posix build to /usr/bin/lugforth
 ```
 
 ESP32 flash targets: `ninja esp32-flash`, `ninja esp32s2-flash`, `ninja esp32s3-flash`, `ninja esp32c3-flash`, `ninja esp32cam-flash`. Set `PORT=com3` etc. to select board.
@@ -40,8 +40,8 @@ Tests run as part of the platform build (e.g., `ninja posix` compiles and runs a
 
 To run tests manually after building:
 ```sh
-out/posix/ueforth common/all_tests.fs   # run all common tests
-out/posix/ueforth common/base_tests.fs  # run a single test file
+out/posix/lugforth common/all_tests.fs   # run all common tests
+out/posix/lugforth common/base_tests.fs  # run a single test file
 ```
 
 Each test file in `common/*_tests.fs` defines words prefixed `test-`. The testing framework (`common/testing.fs`) discovers and runs all `test-*` words in the current vocabulary using `run-tests`. Key assertion words: `=assert`, `assert`, `<assert`, `>assert`.
@@ -100,14 +100,14 @@ Boot sequence (platform e.g. posix):
 
 ## SDL2 multimedia (branch `sdl2`)
 
-Short game-oriented words on top of libSDL2, for the POSIX build and (same source, same words) the web build. Full docs: `posix/SDL2.md`, `posix/SDL2-words.md` (every word), `web/SDL2.md`. Examples: `examples/sdl2_demo.fs`, `examples/sdl2_breakout.fs` and `examples/sdl2_drums.fs` (a 16 step drum machine); these two also run unchanged in the browser through `web/sdl2_breakout.html` and `web/sdl2_drums.html`. `examples/sdl2_roguelike.fs` uses the tile sheet `examples/sdl2_tiles.png` (drawn by `examples/make_sdl2_tiles.fs`, a ueforth program that writes the PNG by hand with CRC-32, Adler-32 and a stored zlib block: no outside assets; `examples/make_sdl2_tiles.py` is the same program in Python, kept to compare the two, same pixels) through `sdl2-image` (`draw-part`, `image-tint`); `web/sdl2.fs` has the same image words on canvas and `web/sdl2_roguelike.html` runs the same file. `load-image` retries a missing name without its directories on both platforms. `examples/sdl2_pianoroll.fs` is a piano-roll sequencer (4 tracks, chainable 16-step patterns, MIDI+soundfont playback, `.mid` and ABC export); POSIX only, not ported to the web build.
+Short game-oriented words on top of libSDL2, for the POSIX build and (same source, same words) the web build. Full docs: `posix/SDL2.md`, `posix/SDL2-words.md` (every word), `web/SDL2.md`. Examples: `examples/sdl2_demo.fs`, `examples/sdl2_breakout.fs` and `examples/sdl2_drums.fs` (a 16 step drum machine); these two also run unchanged in the browser through `web/sdl2_breakout.html` and `web/sdl2_drums.html`. `examples/sdl2_roguelike.fs` uses the tile sheet `examples/sdl2_tiles.png` (drawn by `examples/make_sdl2_tiles.fs`, a lugforth program that writes the PNG by hand with CRC-32, Adler-32 and a stored zlib block: no outside assets; `examples/make_sdl2_tiles.py` is the same program in Python, kept to compare the two, same pixels) through `sdl2-image` (`draw-part`, `image-tint`); `web/sdl2.fs` has the same image words on canvas and `web/sdl2_roguelike.html` runs the same file. `load-image` retries a missing name without its directories on both platforms. `examples/sdl2_pianoroll.fs` is a piano-roll sequencer (4 tracks, chainable 16-step patterns, MIDI+soundfont playback, `.mid` and ABC export); POSIX only, not ported to the web build.
 
 ### Files
 
 - `posix/sdl2.fs` - core, lazy loaded: typing `sdl2` compiles the vocabulary. Extras loaded the same way: `sdl2-image` (`posix/sdl2_image.fs`), `sdl2-ttf`, `sdl2-mixer`. All are pulled in by `posix/posix_boot.fs`.
 - `web/sdl2.fs` - same vocabulary name and same words on a canvas (JS state in `context.sdl`, `JSWORD:` primitives). Only the short words exist there: no raw `SDL_` words, no image/ttf/mixer, no `wait sdl-error window-handle renderer pen sample-rate`. Pulled in by `web/web_boot.fs`; `web/BUILD` copies the example pages and files to `out/web`.
 - Tests are NOT in the ninja build. Run by hand:
-  `SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy out/posix/ueforth posix/sdl2_tests.fs` (22 tests) `posix/sdl2_media_tests.fs` (7 tests) and `posix/sdl2_abc_tests.fs` (18 tests). `common/forth_namespace_tests.fs` lists the new vocabularies.
+  `SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy out/posix/lugforth posix/sdl2_tests.fs` (22 tests) `posix/sdl2_media_tests.fs` (7 tests) and `posix/sdl2_abc_tests.fs` (18 tests). `common/forth_namespace_tests.fs` lists the new vocabularies.
 
 ### Music: soundfont and ABC tunes
 
@@ -120,7 +120,7 @@ Short game-oriented words on top of libSDL2, for the POSIX build and (same sourc
 
 ### Gotchas (all hit while writing it)
 
-- ueforth ignores case. `SDL_Quit` (function) and `SDL_QUIT` (event constant) are the same name, so the function is bound as `sdl-shutdown`. Check new bindings for such collisions.
+- lugforth ignores case. `SDL_Quit` (function) and `SDL_QUIT` (event constant) are the same name, so the function is bound as `sdl-shutdown`. Check new bindings for such collisions.
 - FFI (`shared-library` + `sofunc`) passes cells only: no float or struct by value, no C to Forth callbacks (audio uses `SDL_QueueAudio`, not a callback).
 - `beep` queues a whole tone, so beeps never overlap. `hit` (percussive, 8 voices, `pitch-drop`) is mixed in Forth by `pump`, which `hit`, `flip` and `delay` call through `audio-hook` and which keeps about 50 ms queued: a loop that never calls `flip` or `delay` gets no sound from hits. Web `hit` is just a WebAudio node started at once.
 - A `|` anywhere in an `r|` block (even in a stack comment like `( -- img | 0 )`, or a JS `||`) ends the string early and hangs the boot or the page ("ERROR: | NOT FOUND!").

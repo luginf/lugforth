@@ -1,4 +1,4 @@
-#! /usr/bin/env ueforth
+#! /usr/bin/env lugforth
 
 needs parsing.fs
 also internals

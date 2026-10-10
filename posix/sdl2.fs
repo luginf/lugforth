@@ -143,7 +143,7 @@ create ev 64 allot
   screen-open? if close-screen then
   to height to width
   SDL_INIT_VIDEO SDL_INIT_EVENTS or SDL_Init ?sdl
-  z" uEforth" SDL_WINDOWPOS_CENTERED SDL_WINDOWPOS_CENTERED
+  z" Lugforth" SDL_WINDOWPOS_CENTERED SDL_WINDOWPOS_CENTERED
     width zoom * height zoom * SDL_WINDOW_SHOWN SDL_WINDOW_RESIZABLE or
     SDL_CreateWindow dup 0= if sdl-error type cr -1 throw then
   to window-handle

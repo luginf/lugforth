@@ -1,7 +1,7 @@
-# Benchmarks: ueforth vs plain C vs uxn
+# Benchmarks: lugforth vs plain C vs uxn
 
 Two small, self-contained benchmarks compare this fork's interactive Forth
-(`out/posix/ueforth`, a native-threaded interpreter with direct FFI into
+(`out/posix/lugforth`, a native-threaded interpreter with direct FFI into
 shared libraries such as SDL2) against a compiled C reference and against
 [uxn](https://100r.co/site/uxn.html), the small stack-based virtual machine
 whose portability (it also runs on GBA, NDS, and other tiny targets) prompted
@@ -9,7 +9,7 @@ the comparison. Each benchmark exists in three files doing the exact same
 work — same algorithm, same constants, same data — so the numbers below are
 directly comparable:
 
-| benchmark | ueforth | C | uxntal |
+| benchmark | lugforth | C | uxntal |
 |---|---|---|---|
 | pure computation | `bench_sieve.fs` | `bench_sieve.c` | `bench_sieve.tal` |
 | drawing throughput | `bench_lines.fs` | `bench_lines.c` | `bench_lines.tal` |
@@ -30,9 +30,9 @@ overhead from everything else. All three agree on the answer: 3512 primes.
 |---|---:|---:|
 | C (`cc -O2`) | 0.078 ms | 1.0× |
 | uxn (`uxncli`) | 7.1 ms | ~91× |
-| ueforth | 7.8 ms | ~100× |
+| lugforth | 7.8 ms | ~100× |
 
-ueforth and uxn land in the same ballpark — both are simple, non-JIT
+lugforth and uxn land in the same ballpark — both are simple, non-JIT
 interpreters — and both are roughly two orders of magnitude slower than
 compiled C for tight, branch-heavy integer loops. Nothing surprising here:
 this is close to interpreter-dispatch overhead in its purest form.
@@ -43,7 +43,7 @@ this is close to interpreter-dispatch overhead in its purest form.
 *exactly* the same pixels), rasterized with a hand-written Bresenham line
 algorithm (no built-in "line" primitive is used, to keep the comparison at
 the pixel level) and redrawn 50 times through the real display path of each
-platform: `SDL_RenderDrawPoint`/`SDL_RenderPresent` for C and ueforth,
+platform: `SDL_RenderDrawPoint`/`SDL_RenderPresent` for C and lugforth,
 uxn's Screen device (`.Screen/pixel` DEO) for uxntal. A checksum of every
 plotted pixel, reset each frame, confirms the geometry is identical
 everywhere: `6942` (hex).
@@ -51,18 +51,18 @@ everywhere: `6942` (hex).
 | | time per frame | vs C |
 |---|---:|---:|
 | C+SDL2 (`SDL_VIDEODRIVER=dummy`) | 0.43 ms | 1.0× |
-| ueforth+SDL2 (`SDL_VIDEODRIVER=dummy`) | 3.0 ms | ~7.0× |
+| lugforth+SDL2 (`SDL_VIDEODRIVER=dummy`) | 3.0 ms | ~7.0× |
 | uxn (`uxncli`, headless) | 3.7 ms | ~8.7× |
 
 The gap to C narrows sharply compared to bench_sieve (~100×  down to
 ~7-9×): once real work happens on the other side of a device/library call —
 the SDL2 renderer, or uxn's Screen device — the cost of *that* call
 dominates, and the overhead of the interpreter or VM that issued it matters
-much less. This is the case that actually matters for "ueforth as an
+much less. This is the case that actually matters for "lugforth as an
 interactive SDL2 frontend, uxn-style": drawing lots of small things every
 frame is not where an interpreted language pays the most.
 
-`make view-lines` (ueforth), `make view-lines-c` (C) and `make view-lines-uxn`
+`make view-lines` (lugforth), `make view-lines-c` (C) and `make view-lines-uxn`
 (uxn, via `uxnemu`) each open a real window with the 100 lines drawn, left on
 screen after the timed part, to check the rendering by eye rather than just
 trust the checksum.

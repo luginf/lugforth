@@ -123,22 +123,22 @@ for board_base in BOARDS:
       options = options.replace('PartitionScheme=no_ota', 'PartitionScheme=huge_app')
     options += ',DebugLevel=$${DEBUG_LEVEL:-none}'
     board = board_base + optional
-    clobber = f'rm -rf {WINTMP}/ueforth_esp32/{board}_dir/ && '
-    setup = (f'mkdir -p {WINTMP}/ueforth_esp32/{board}_dir/build && '
-             f'mkdir -p {WINTMP}/ueforth_esp32/{board}_dir/cache && '
-             f'cp -r $dst/esp32/' + optional_dir + f'ESP32forth/ {WINTMP}/ueforth_esp32/{board}_dir/ && '
+    clobber = f'rm -rf {WINTMP}/lugforth_esp32/{board}_dir/ && '
+    setup = (f'mkdir -p {WINTMP}/lugforth_esp32/{board}_dir/build && '
+             f'mkdir -p {WINTMP}/lugforth_esp32/{board}_dir/cache && '
+             f'cp -r $dst/esp32/' + optional_dir + f'ESP32forth/ {WINTMP}/lugforth_esp32/{board}_dir/ && '
              f'cd {WINTMP} && ')
     cmd = f' {ARDUINO_CLI} compile '
     upload = '--port $${PORT:-com3} --upload '
     args = (f'{options} '
-            f'--build-path ueforth_esp32/{board}_dir/build '
-            f'--build-cache-path ueforth_esp32/{board}_dir/cache '
-            f'ueforth_esp32/{board}_dir/ESP32forth/ESP32forth.ino ')
-    pipe = f' > ueforth_esp32/{board}_dir/build/build.out 2>&1 && '
+            f'--build-path lugforth_esp32/{board}_dir/build '
+            f'--build-cache-path lugforth_esp32/{board}_dir/cache '
+            f'lugforth_esp32/{board}_dir/ESP32forth/ESP32forth.ino ')
+    pipe = f' > lugforth_esp32/{board}_dir/build/build.out 2>&1 && '
     copyout = (f'cd - && '
-               f'cp {WINTMP}/ueforth_esp32/{board}_dir/build/*.bin '
+               f'cp {WINTMP}/lugforth_esp32/{board}_dir/build/*.bin '
                f'$dst/esp32/{board}_build/ && '
-               f'cp {WINTMP}/ueforth_esp32/{board}_dir/build/build.out '
+               f'cp {WINTMP}/lugforth_esp32/{board}_dir/build/build.out '
                f'$dst/esp32/{board}_build/build.out')
     Shortcut(f'{board}-flash',
              ' '.join(deps),
@@ -157,6 +157,6 @@ Alias('vet', ' '.join([
   'esp32opt-build',
 ]))
 
-Shortcut('clobber-esp32', '', f'rm -rf {WINTMP}/ueforth_esp32/')
+Shortcut('clobber-esp32', '', f'rm -rf {WINTMP}/lugforth_esp32/')
 
 Shortcut('putty', '', '$${HOME}/Desktop/putty.exe -serial $${PORT:-com3} -sercfg 115200')

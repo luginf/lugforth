@@ -1,4 +1,4 @@
-#! /usr/bin/ueforth
+#! /usr/bin/lugforth
 \ Copyright 2021 Bradley D. Nelson
 \
 \ Licensed under the Apache License, Version 2.0 (the "License");

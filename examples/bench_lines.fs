@@ -1,4 +1,4 @@
-#! /usr/bin/env ueforth
+#! /usr/bin/env lugforth
 
 \ Copyright 2026 Luginfo10
 \
@@ -25,7 +25,7 @@
 \ open on the last frame so the drawing can be checked by eye too (esc or
 \ close it to quit); set BENCH_HEADLESS to skip straight to bye instead (used
 \ for timing runs, see the Makefile).
-\   out/posix/ueforth examples/bench_lines.fs
+\   out/posix/lugforth examples/bench_lines.fs
 \   cc -O2 -o bench_lines examples/bench_lines.c $(pkg-config --cflags --libs sdl2)
 \   uxnasm examples/bench_lines.tal bench_lines.rom && uxncli bench_lines.rom
 

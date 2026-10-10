@@ -75,7 +75,7 @@ JSWORD: jseval { a n }
 ~
 
 r~
-globalObj.ueforth = context;
+globalObj.lugforth = context;
 context.inbuffer = [];
 context.Update = function() {};
 if (!globalObj.write) {
@@ -91,7 +91,7 @@ if (!globalObj.write) {
   AddMeta('viewport', 'width=device-width, initial-scale=1.0, ' +
                       'maximum-scale=1.0, user-scalable=no, minimal-ui');
 
-  context.screen = document.getElementById('ueforth');
+  context.screen = document.getElementById('lugforth');
   if (context.screen === null) {
     context.screen = document.createElement('div');
     context.screen.style.width = '100%';

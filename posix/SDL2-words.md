@@ -1,6 +1,6 @@
 # SDL2 word reference
 
-Every word of the `sdl2` vocabulary, for the POSIX build (`out/posix/ueforth`).
+Every word of the `sdl2` vocabulary, for the POSIX build (`out/posix/lugforth`).
 For a tour with examples read [SDL2.md](SDL2.md) first. This page is the
 complete list.
 
@@ -145,7 +145,7 @@ Word lists: [alphabetical index](#alphabetical-index).
 
 ### Raw C bindings (core)
 
-`sdl-shutdown` is the C function `SDL_Quit`: ueforth ignores case, so it could not share its name with the `SDL_QUIT` event constant.
+`sdl-shutdown` is the C function `SDL_Quit`: lugforth ignores case, so it could not share its name with the `SDL_QUIT` event constant.
 
 | Word | Stack | Args |
 |------|-------|------|

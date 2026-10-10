@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.ueforth.sdl" android:versionCode="1" android:versionName="1.0">
+    package="org.lugforth.sdl" android:versionCode="1" android:versionName="1.0">
   <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="35" />
   <uses-feature android:glEsVersion="0x00020000" />
   <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
   <uses-permission android:name="android.permission.VIBRATE" />
-  <application android:enableOnBackInvokedCallback="false" android:label="ueforth SDL" android:allowBackup="false"
+  <application android:enableOnBackInvokedCallback="false" android:label="lugforth SDL" android:allowBackup="false"
       android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
       android:hardwareAccelerated="true" android:extractNativeLibs="true">
     <activity android:name=".ForthActivity" android:exported="true"

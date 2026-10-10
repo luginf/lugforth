@@ -1,4 +1,4 @@
-# µEforth / ESP32forth
+# Lugforth
 
 > Unofficial fork of [uEforth](https://github.com/flagxor/ueforth) by Bradley D. Nelson,
 > maintained by Luginfo10. It is not affiliated with the original author and is not
@@ -16,8 +16,8 @@ To build from source:
 
 ```
 sudo apt install ninja-build gcc-arm-none-eabi
-git clone https://github.com/flagxor/ueforth
-cd ueforth
+git clone git@github.com:luginf/ueforth.git lugforth
+cd lugforth
 ./configure.py
 ninja
 ```

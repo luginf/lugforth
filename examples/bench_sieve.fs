@@ -1,4 +1,4 @@
-#! /usr/bin/env ueforth
+#! /usr/bin/env lugforth
 
 \ Copyright 2026 Luginfo10
 \
@@ -23,7 +23,7 @@
 \ same work, three very different execution engines (a native-threaded Forth
 \ interpreter calling straight into libc, a compiled C loop, and a small
 \ software stack machine). Expected result: 3512 primes below 32768.
-\   out/posix/ueforth examples/bench_sieve.fs
+\   out/posix/lugforth examples/bench_sieve.fs
 \   cc -O2 -o bench_sieve examples/bench_sieve.c && ./bench_sieve
 \   uxnasm examples/bench_sieve.tal bench_sieve.rom && uxncli bench_sieve.rom
 

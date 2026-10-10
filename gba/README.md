@@ -1,4 +1,4 @@
-# ueforth for the Game Boy Advance (prototype)
+# lugforth for the Game Boy Advance (prototype)
 
 Modeled on `pico-ice/`: the same kernel (`common/*.h`), the same "platform
 opcode list" pattern for the small amount of C glue a platform needs
@@ -10,15 +10,15 @@ heap already proven working on `pico-ice/`'s RP2040.
 
 ## What works, what doesn't
 
-**The simulator (`UEFORTH_SIM`, an ordinary POSIX program) is fully working
-and was tested extensively**: boots, reaches the normal `uEforth` banner and
+**The simulator (`LUGFORTH_SIM`, an ordinary POSIX program) is fully working
+and was tested extensively**: boots, reaches the normal `Lugforth` banner and
 ` ok` prompt, and the demo `autoboot.fs` gradient runs to completion without
 error. Build and run it:
 
 ```sh
 python3 ../tools/importation.py -i gba_boot.fs -o /tmp/gba/gen/gba_boot.h \
   -I .. -I /tmp/gba --name boot --header cpp
-g++ -DUEFORTH_SIM=1 -O2 -I .. -I /tmp/gba -std=c++11 main.c -o /tmp/gba/sim
+g++ -DLUGFORTH_SIM=1 -O2 -I .. -I /tmp/gba -std=c++11 main.c -o /tmp/gba/sim
 /tmp/gba/sim
 ```
 
@@ -125,7 +125,7 @@ for `sdl2_roguelike.fs`" below.
 ```sh
 python3 ../tools/importation.py -i gba_roguelike_boot.fs -o /tmp/gba/gen/gba_boot.h \
   -I .. -I /tmp/gba --name boot --header cpp
-g++ -DUEFORTH_SIM=1 -O2 -I .. -I /tmp/gba -std=c++11 main.c -o /tmp/gba/sim_rogue   # simulator
+g++ -DLUGFORTH_SIM=1 -O2 -I .. -I /tmp/gba -std=c++11 main.c -o /tmp/gba/sim_rogue   # simulator
 # or, for a real ROM: same crt0.s/gba.ld/objcopy/fix_header.py steps as above,
 # writing to roguelike.gba instead of gba.gba
 ```
@@ -218,7 +218,7 @@ directly (pixel counts, camera-relative coordinates) rather than by eye,
 plus the same 2000-move soak test, both still clean after these two
 fixes.
 
-**Testing note: no real key input exists in the `UEFORTH_SIM` build**
+**Testing note: no real key input exists in the `LUGFORTH_SIM` build**
 (`gba_reg_keyinput` just points at a static variable that always reads
 "nothing pressed", see `main.c`), so this was never played by hand in the
 sandbox. It was instead soak-tested with a throwaway boot file that called
@@ -268,7 +268,7 @@ This caught two real bugs, both worth remembering (also in `SKILLS.md`):
   hardware (`gba_malloc` & co. in `main.c`): avoids wiring up newlib's
   heap/`_sbrk` for a first prototype. `FREE` is a no-op and `RESIZE` always
   grows a fresh block — fine for a prototype that does not call any of the
-  three yet, wrong for one that frees a lot. `UEFORTH_SIM` still uses real
+  three yet, wrong for one that frees a lot. `LUGFORTH_SIM` still uses real
   `malloc`/`free`/`realloc`, already proven by every other simulator build
   in this repo.
 * **`--specs=nosys.specs` and a `PROVIDE(end = .)`** in `gba.ld` satisfy

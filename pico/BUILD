@@ -25,21 +25,21 @@ PICO_ZIP_FILES = []
 
 # Main files.
 PICO_ZIP_FILES += [
-  Importation('$dst/pico/ueforth-pico/README.txt',
+  Importation('$dst/pico/lugforth-pico/README.txt',
               '$src/pico/README.txt'),
-  Copy('$dst/pico/ueforth-pico/ueforth-pico.uf2',
-       '$dst/pico/ueforth_pico.uf2'),
-  Copy('$dst/pico/ueforth-pico/LICENSE', '$src/LICENSE'),
-  Copy('$dst/pico/ueforth-pico/pico-sdk-LICENSE.TXT',
+  Copy('$dst/pico/lugforth-pico/lugforth-pico.uf2',
+       '$dst/pico/lugforth_pico.uf2'),
+  Copy('$dst/pico/lugforth-pico/LICENSE', '$src/LICENSE'),
+  Copy('$dst/pico/lugforth-pico/pico-sdk-LICENSE.TXT',
        '$src/pico-ice/pico-sdk/LICENSE.TXT'),
 ]
 
 # Build the uf2.
-Command(' '.join(['$dst/pico/ueforth_pico.uf2',
-                  '$dst/pico/ueforth_pico.err']),
+Command(' '.join(['$dst/pico/lugforth_pico.uf2',
+                  '$dst/pico/lugforth_pico.err']),
         ' '.join(['$dst/pico/build.ninja',
                   '$dst/gen/pico_boot.h']),
-        'ninja -C $dst/pico ueforth_pico >$dst/pico/ueforth_pico.err 2>&1')
+        'ninja -C $dst/pico lugforth_pico >$dst/pico/lugforth_pico.err 2>&1')
 Command(' '.join(['$dst/pico/build.ninja',
                   '$dst/pico/cmake.err']),
         ' '.join(['$src/pico-ice/pico-sdk/README.md',
@@ -48,13 +48,13 @@ Command(' '.join(['$dst/pico/build.ninja',
 
 # Zip it.
 PICO_FILES += [
-  Zip('$dst/pico/ueforth-pico.zip', PICO_ZIP_FILES,
-      base='$dst/pico/ueforth-pico'),
+  Zip('$dst/pico/lugforth-pico.zip', PICO_ZIP_FILES,
+      base='$dst/pico/lugforth-pico'),
 ]
 
 # Simulator.
 PICO_FILES += [
-  CompileSim('$dst/pico-sim/ueforth_pico_sim', '$src/pico/main.c',
+  CompileSim('$dst/pico-sim/lugforth_pico_sim', '$src/pico/main.c',
              implicit=['$dst/gen/pico_boot.h'])
 ]
 Importation('$dst/gen/pico_boot.h', '$src/pico/pico_boot.fs', name='boot')

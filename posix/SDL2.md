@@ -1,7 +1,7 @@
 # SDL2 for the POSIX build
 
 Windows, drawing, keyboard, mouse, images, text and sound for games,
-through the shared libraries of SDL2. Nothing is linked into `ueforth`:
+through the shared libraries of SDL2. Nothing is linked into `lugforth`:
 the libraries are opened at run time (`dlopen`) the first time you use them.
 
 ```forth
@@ -22,7 +22,7 @@ soundfont for playback, export to `.mid` and to ABC notation; POSIX only,
 since it needs the soundfont and writes files) and
 `examples/sdl2_roguelike.fs` for a minimal roguelike drawn from a tile sheet
 (`examples/sdl2_tiles.png`, 8 tiles of 8x8, loaded with `sdl2-image` and
-drawn with `draw-part`; `examples/make_sdl2_tiles.fs`, itself a ueforth program, draws that sheet, and
+drawn with `draw-part`; `examples/make_sdl2_tiles.fs`, itself a lugforth program, draws that sheet, and
 `examples/make_sdl2_tiles.py` does the same in Python to compare the two).
 Breakout, drums and roguelike also run in the browser.
 
@@ -171,7 +171,7 @@ the key `m` to switch the music off.
 * `pressed?` reads the held state once per `events`. A key or button pressed
   and released within one frame (about 16 ms) is not seen; a human click is
   far longer.
-* ueforth ignores case, so `SDL_Quit` (function) and `SDL_QUIT` (event type)
+* lugforth ignores case, so `SDL_Quit` (function) and `SDL_QUIT` (event type)
   are the same name. The function is bound as `sdl-shutdown`; `SDL_QUIT` is the
   event constant.
 
@@ -180,9 +180,9 @@ the key `m` to switch the music off.
 They need the libraries, so they are not part of `ninja posix`:
 
 ```sh
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy out/posix/ueforth posix/sdl2_tests.fs
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy out/posix/ueforth posix/sdl2_media_tests.fs
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy out/posix/ueforth posix/sdl2_abc_tests.fs
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy out/posix/lugforth posix/sdl2_tests.fs
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy out/posix/lugforth posix/sdl2_media_tests.fs
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy out/posix/lugforth posix/sdl2_abc_tests.fs
 ```
 
 The `dummy` drivers run without a screen or a sound card; pixels are read

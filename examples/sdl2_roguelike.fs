@@ -1,4 +1,4 @@
-#! /usr/bin/env ueforth
+#! /usr/bin/env lugforth
 
 \ Copyright 2026 Luginfo10
 \
@@ -18,7 +18,7 @@
 \ line of sight, monsters that chase you, potions and stairs down. One turn
 \ per move. The 8x8 tiles come from examples/sdl2_tiles.png (a row of 8 tiles:
 \ wall, floor, stairs, potion, player, monster, skull, heart), drawn with
-\ sdl2-image; run it from the ueforth directory or from examples/. It also
+\ sdl2-image; run it from the lugforth directory or from examples/. It also
 \ runs in the browser (web/sdl2_roguelike.html). examples/make_sdl2_tiles.fs
 \ draws the sheet (make_sdl2_tiles.py is the same in Python), edit it to
 \ change the tiles.

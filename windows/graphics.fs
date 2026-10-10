@@ -18,7 +18,7 @@ graphics internals definitions
 also windows also structures
 
 z" GrfClass" constant GrfClassName
-z" uEforth" constant GrfWindowTitle
+z" Lugforth" constant GrfWindowTitle
 
 0 value hinstance
 0 value GrfClass

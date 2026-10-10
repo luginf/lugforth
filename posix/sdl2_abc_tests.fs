@@ -15,7 +15,7 @@
 ( Tests of the ABC reader, the MIDI file and the soundfont words )
 \
 \ Needs libSDL2_mixer, so this is not part of the default build. Run with:
-\   SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ueforth posix/sdl2_abc_tests.fs
+\   SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy lugforth posix/sdl2_abc_tests.fs
 
 needs ../common/testing.fs
 
@@ -154,17 +154,17 @@ K:C
   s" CDEF" abc  tune-notes 4 =assert ;
 
 : test-file-lookup
-  s" x" s" ueforth_abc_test_here.sf2" dump-file
-  s" no/such/dir/ueforth_abc_test_here.sf2" find-file assert 2drop
-  s" no/such/dir/ueforth_abc_missing.sf2" find-file 0= assert 2drop
-  s" no/such/dir/ueforth_abc_missing.sf2" soundfont? 0= assert
-  s" ueforth_abc_test_here.sf2" delete-file drop ;
+  s" x" s" lugforth_abc_test_here.sf2" dump-file
+  s" no/such/dir/lugforth_abc_test_here.sf2" find-file assert 2drop
+  s" no/such/dir/lugforth_abc_missing.sf2" find-file 0= assert 2drop
+  s" no/such/dir/lugforth_abc_missing.sf2" soundfont? 0= assert
+  s" lugforth_abc_test_here.sf2" delete-file drop ;
 
 : test-save-midi
   tune-plain abc
-  s" ueforth_abc_test_here.mid" tune-save
-  s" ueforth_abc_test_here.mid" file-exists? assert
-  s" ueforth_abc_test_here.mid" delete-file drop ;
+  s" lugforth_abc_test_here.mid" tune-save
+  s" lugforth_abc_test_here.mid" file-exists? assert
+  s" lugforth_abc_test_here.mid" delete-file drop ;
 
 : test-plays
   64 48 screen

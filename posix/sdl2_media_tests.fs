@@ -15,7 +15,7 @@
 ( Tests of sdl2_image.fs, sdl2_ttf.fs and sdl2_mixer.fs )
 \
 \ Needs libSDL2_image, libSDL2_ttf and libSDL2_mixer. Run headless with:
-\   SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ueforth posix/sdl2_media_tests.fs
+\   SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy lugforth posix/sdl2_media_tests.fs
 
 needs ../common/testing.fs
 
@@ -25,8 +25,8 @@ sdl2-mixer
 sdl2 definitions
 
 ( Sound and image files are generated into /tmp by the tests )
-: bmp-name s" /tmp/ueforth_sdl2_test.bmp" ;
-: wav-name s" /tmp/ueforth_sdl2_test.wav" ;
+: bmp-name s" /tmp/lugforth_sdl2_test.bmp" ;
+: wav-name s" /tmp/lugforth_sdl2_test.wav" ;
 : font-name s" /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf" ;
 
 ( 2x2 pixel 24 bit BMP: red green on top, blue white below )
@@ -98,12 +98,12 @@ create region 64 24 * 4 * allot
 
 : test-image-beside   ( a name with missing directories is tried again without them )
   bmp-build
-  bmp 70 s" ueforth_sdl2_test_here.bmp" dump-file
+  bmp 70 s" lugforth_sdl2_test_here.bmp" dump-file
   64 48 screen
-  s" no-such-dir/ueforth_sdl2_test_here.bmp" load-image { img }
+  s" no-such-dir/lugforth_sdl2_test_here.bmp" load-image { img }
   img image-size 2 =assert 2 =assert
   img free-image
-  s" ueforth_sdl2_test_here.bmp" delete-file drop
+  s" lugforth_sdl2_test_here.bmp" delete-file drop
   close-screen
 ;
 

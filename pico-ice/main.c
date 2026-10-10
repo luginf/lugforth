@@ -14,7 +14,7 @@
 
 #include <stdio.h>
 
-#ifndef UEFORTH_SIM
+#ifndef LUGFORTH_SIM
 # include "pico/stdlib.h"
 # include "boards/pico_ice.h"
 # include "tusb.h"
@@ -28,7 +28,7 @@
 #include "common/floats.h"
 #include "common/calls.h"
 
-#ifndef UEFORTH_SIM
+#ifndef LUGFORTH_SIM
 # define HEAP_SIZE (150 * 1024)
 #else
 # define HEAP_SIZE (300 * 1024)
@@ -49,7 +49,7 @@ static void forth_faults_setup(void) {
 #include "gen/pico_ice_boot.h"
 
 int main(int argc, char *argv[]) {
-#ifndef UEFORTH_SIM
+#ifndef LUGFORTH_SIM
   tusb_init();
   stdio_init_all();
   tud_task();

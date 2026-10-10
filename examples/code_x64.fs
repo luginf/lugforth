@@ -1,4 +1,4 @@
-#! /usr/bin/env ueforth
+#! /usr/bin/env lugforth
 
 \ Copyright 2022 Bradley D. Nelson
 \

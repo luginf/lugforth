@@ -19,7 +19,7 @@ The names of standard (ANS Forth) words are in ANS, so they need no note.
 """
 
 NOTES = {
-  '#!': ('( -- )', 'Skips the rest of the line, so a script can start with `#! /usr/bin/env ueforth`. Immediate.'),
+  '#!': ('( -- )', 'Skips the rest of the line, so a script can start with `#! /usr/bin/env lugforth`. Immediate.'),
   '#fs': ('( r -- )', 'Pictured numeric output for a float: adds its digits (and a minus sign) to the number being built. Used by `f.`.'),
   '+to': ('( n "name" -- )', 'Adds n to a `value` or a local: `1 +to count`.'),
   '-rot': ('( a b c -- c a b )', 'The reverse of `rot`.'),

@@ -1,4 +1,4 @@
-package org.ueforth.sdl;
+package org.lugforth.sdl;
 
 import android.os.Bundle;
 import java.io.File;
@@ -7,9 +7,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import org.libsdl.app.SDLActivity;
 
-// SDLActivity that runs ueforth (libmain.so) on a Forth file. The files under
+// SDLActivity that runs lugforth (libmain.so) on a Forth file. The files under
 // assets/forth are copied to the app files directory, and the one named in
-// assets/forth/autostart.txt (default main.fs) is given to ueforth as argv[1].
+// assets/forth/autostart.txt (default main.fs) is given to lugforth as argv[1].
 public class ForthActivity extends SDLActivity {
   private String startFile = "main.fs";
 
@@ -27,7 +27,7 @@ public class ForthActivity extends SDLActivity {
         if (!s.isEmpty()) startFile = s;
       }
     } catch (IOException e) {
-      android.util.Log.e("ueforth", "asset copy failed", e);
+      android.util.Log.e("lugforth", "asset copy failed", e);
     }
     super.onCreate(state);
   }

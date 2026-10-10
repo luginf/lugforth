@@ -17,7 +17,7 @@
 """Draws examples/sdl2_tiles.png, the tile sheet of sdl2_roguelike.fs.
 
 This is the Python version of examples/make_sdl2_tiles.fs, which does the
-same in ueforth; both write the same pixels. Here zlib compresses the image
+same in lugforth; both write the same pixels. Here zlib compresses the image
 (352 bytes), the Forth version writes the PNG by hand and does not compress it.
 
 The tiles are drawn here as text, 8 characters by 8 lines each, and the

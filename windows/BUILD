@@ -36,7 +36,7 @@ CompileW32('$dst/windows/uEf32.obj', '$src/windows/main.c',
                      '$dst/gen/windows_boot_extra.h'])
 LinkW32('$dst/windows/uEf32.exe',
         ' '.join(['$dst/windows/uEf32.obj',
-                  '$dst/resources/ueforth_res32.res']))
+                  '$dst/resources/lugforth_res32.res']))
 
 # Compile Win64.
 Alias('win64', ' '.join([
@@ -49,13 +49,13 @@ CompileW64('$dst/windows/uEf64.obj', '$src/windows/main.c',
                      '$dst/gen/windows_boot_extra.h'])
 LinkW64('$dst/windows/uEf64.exe',
         ' '.join(['$dst/windows/uEf64.obj',
-                  '$dst/resources/ueforth_res64.res']))
+                  '$dst/resources/lugforth_res64.res']))
 
 # Create icon.
 Copy('$dst/resources/eforth.ico', 'images/eforth.ico')
-CompileResource32('$dst/resources/ueforth_res32.res', '$src/windows/ueforth.rc',
+CompileResource32('$dst/resources/lugforth_res32.res', '$src/windows/lugforth.rc',
                   implicit=['$dst/resources/eforth.ico'])
-CompileResource64('$dst/resources/ueforth_res64.res', '$src/windows/ueforth.rc',
+CompileResource64('$dst/resources/lugforth_res64.res', '$src/windows/lugforth.rc',
                   implicit=['$dst/resources/eforth.ico'])
 
 OneShot('win-install',

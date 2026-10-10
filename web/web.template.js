@@ -662,8 +662,8 @@ function Start() {
 if (globalObj.write) {
   Start();
 } else {
-  if (globalObj.ueforth === null) {
-    globalObj.ueforth = context;
+  if (globalObj.lugforth === null) {
+    globalObj.lugforth = context;
     context.Start = Start;
   } else {
     window.addEventListener('load', function() {

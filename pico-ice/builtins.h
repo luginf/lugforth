@@ -19,7 +19,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifndef UEFORTH_SIM
+#ifndef LUGFORTH_SIM
 # include "pico/time.h"
 # include "ice_cram.h"
 # include "ice_flash.h"
@@ -52,7 +52,7 @@
   YV(internals, SYSFREE, free(a0); DROP) \
   YV(internals, REALLOC, SET realloc(a1, n0); NIP)
 
-#ifndef UEFORTH_SIM
+#ifndef LUGFORTH_SIM
 # define REQUIRED_SYSTEM_SUPPORT \
   X("MS-TICKS", MS_TICKS, PUSH us_to_ms(get_absolute_time())) \
   XV(internals, "RAW-YIELD", RAW_YIELD, tud_task()) \
@@ -98,7 +98,7 @@
   X("NON-BLOCK", NON_BLOCK, n0 = fcntl(n0, F_SETFL, O_NONBLOCK); \
     n0 = n0 < 0 ? errno : 0)
 
-#ifdef UEFORTH_SIM
+#ifdef LUGFORTH_SIM
 # define OPTIONAL_CRAM_SUPPORT
 #else
 # define OPTIONAL_CRAM_SUPPORT \
@@ -107,7 +107,7 @@
    YV(ice, ice_cram_close, ice_cram_close())
 #endif
 
-#ifdef UEFORTH_SIM
+#ifdef LUGFORTH_SIM
 # define OPTIONAL_FLASH_SUPPORT
 #else
 # define OPTIONAL_FLASH_SUPPORT \
@@ -121,7 +121,7 @@
    YV(ice, ice_flash_sleep, ice_flash_sleep())
 #endif
 
-#ifdef UEFORTH_SIM
+#ifdef LUGFORTH_SIM
 # define OPTIONAL_FPGA_SUPPORT
 #else
 # define OPTIONAL_FPGA_SUPPORT \
@@ -130,7 +130,7 @@
    YV(ice, ice_fpga_start, PUSH (ice_fpga_start() ? -1 :0))
 #endif
 
-#ifdef UEFORTH_SIM
+#ifdef LUGFORTH_SIM
 # define OPTIONAL_LED_SUPPORT
 #else
 # define OPTIONAL_LED_SUPPORT \
@@ -140,7 +140,7 @@
    YV(ice, ice_led_blue, ice_led_blue(n0); DROP)
 #endif
 
-#ifdef UEFORTH_SIM
+#ifdef LUGFORTH_SIM
 # define OPTIONAL_SPI_SUPPORT
 #else
 # define OPTIONAL_SPI_SUPPORT \
@@ -152,7 +152,7 @@
    YV(ice, ice_spi_write_blocking, ice_spi_write_blocking(b1, n0); DROPn(2))
 #endif
 
-#ifdef UEFORTH_SIM
+#ifdef LUGFORTH_SIM
 # define OPTIONAL_SRAM_SUPPORT
 #else
 # define OPTIONAL_SRAM_SUPPORT \
@@ -162,7 +162,7 @@
    YV(ice, ice_sram_write_blocking, ice_sram_write_blocking(n2, b1, n0); DROPn(3))
 #endif
 
-#ifdef UEFORTH_SIM
+#ifdef LUGFORTH_SIM
 # define OPTIONAL_ADC_SUPPORT
 #else
 # define OPTIONAL_ADC_SUPPORT \

@@ -12,7 +12,7 @@ static int g_forth_signal;
 static void forth_signal_handler(int sig, siginfo_t *si, void *ctx) {
   static int logged = 0;
   if (logged++ < 20) {
-    __android_log_print(ANDROID_LOG_ERROR, "ueforth", "signal %d addr %p pc-SDL_main %lx", sig,
+    __android_log_print(ANDROID_LOG_ERROR, "lugforth", "signal %d addr %p pc-SDL_main %lx", sig,
         si->si_addr, (long) (((ucontext_t *) ctx)->uc_mcontext.pc - (unsigned long) SDL_main));
   }
   switch (sig) {

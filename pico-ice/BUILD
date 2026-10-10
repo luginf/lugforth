@@ -20,23 +20,23 @@ PICO_ICE_ZIP_FILES = []
 
 # Main files.
 PICO_ICE_ZIP_FILES += [
-  Importation('$dst/pico-ice/ueforth-pico-ice/README.txt',
+  Importation('$dst/pico-ice/lugforth-pico-ice/README.txt',
               '$src/pico-ice/README.txt'),
-  Copy('$dst/pico-ice/ueforth-pico-ice/ueforth-pico-ice.uf2',
-       '$dst/pico-ice/ueforth_pico_ice.uf2'),
-  Copy('$dst/pico-ice/ueforth-pico-ice/LICENSE', '$src/LICENSE'),
-  Copy('$dst/pico-ice/ueforth-pico-ice/pico-ice-sdk-LICENSE.md',
+  Copy('$dst/pico-ice/lugforth-pico-ice/lugforth-pico-ice.uf2',
+       '$dst/pico-ice/lugforth_pico_ice.uf2'),
+  Copy('$dst/pico-ice/lugforth-pico-ice/LICENSE', '$src/LICENSE'),
+  Copy('$dst/pico-ice/lugforth-pico-ice/pico-ice-sdk-LICENSE.md',
        '$src/pico-ice/pico-ice-sdk/LICENSE.md'),
-  Copy('$dst/pico-ice/ueforth-pico-ice/pico-sdk-LICENSE.TXT',
+  Copy('$dst/pico-ice/lugforth-pico-ice/pico-sdk-LICENSE.TXT',
        '$src/pico-ice/pico-sdk/LICENSE.TXT'),
 ]
 
 # Build the uf2.
-Command(' '.join(['$dst/pico-ice/ueforth_pico_ice.uf2',
-                  '$dst/pico-ice/ueforth_pico_ice.err']),
+Command(' '.join(['$dst/pico-ice/lugforth_pico_ice.uf2',
+                  '$dst/pico-ice/lugforth_pico_ice.err']),
         ' '.join(['$dst/pico-ice/build.ninja',
                   '$dst/gen/pico_ice_boot.h']),
-        'ninja -C $dst/pico-ice ueforth_pico_ice >$dst/pico-ice/ueforth_pico_ice.err 2>&1')
+        'ninja -C $dst/pico-ice lugforth_pico_ice >$dst/pico-ice/lugforth_pico_ice.err 2>&1')
 Command(' '.join(['$dst/pico-ice/build.ninja',
                   '$dst/pico-ice/cmake.err']),
         ' '.join(['$src/pico-ice/pico-sdk/README.md',
@@ -61,13 +61,13 @@ Command(' '.join([
 
 # Zip it.
 PICO_ICE_FILES += [
-  Zip('$dst/pico-ice/ueforth-pico-ice.zip', PICO_ICE_ZIP_FILES,
-      base='$dst/pico-ice/ueforth-pico-ice'),
+  Zip('$dst/pico-ice/lugforth-pico-ice.zip', PICO_ICE_ZIP_FILES,
+      base='$dst/pico-ice/lugforth-pico-ice'),
 ]
 
 # Simulator.
 PICO_ICE_FILES += [
-  CompileSim('$dst/pico-ice-sim/ueforth_pico_ice_sim', '$src/pico-ice/main.c',
+  CompileSim('$dst/pico-ice-sim/lugforth_pico_ice_sim', '$src/pico-ice/main.c',
              implicit=['$dst/gen/pico_ice_boot.h'])
 ]
 Importation('$dst/gen/pico_ice_boot.h', '$src/pico-ice/pico_ice_boot.fs', name='boot')

@@ -1,4 +1,4 @@
-#! /usr/bin/env ueforth
+#! /usr/bin/env lugforth
 
 \ Copyright 2026 Luginfo10
 \
@@ -282,7 +282,7 @@ create abc-letter  0 , 0 , 1 , 1 , 2 , 3 , 3 , 4 , 4 , 5 , 5 , 6 ,
 : build-abc ( -- )
   0 to abc-n
   s" X:1" as, al,
-  s" T:ueforth piano roll" as, al,
+  s" T:lugforth piano roll" as, al,
   s" M:4/4" as, al,
   s" L:1/16" as, al,
   s" Q:1/4=" as,  bpm an,  al,
@@ -300,7 +300,7 @@ z" close" 1 sysfunc c-close ( n -- n )
 create tmpl 64 allot
 0 value song-music   0 value song-code
 : song-path ( -- a n )   ( a new empty file in /tmp, unique to this run )
-  z" /tmp/ueforth-pianoroll-XXXXXX.mid" { z }
+  z" /tmp/lugforth-pianoroll-XXXXXX.mid" { z }
   z z>s nip 1+ { n }
   z tmpl n cmove
   tmpl 4 c-mkstemps sign-extend dup 0 < if

@@ -143,7 +143,7 @@ static LRESULT WindowProcShim(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
   return tos;
 }
 
-#ifdef UEFORTH_MINIMAL
+#ifdef LUGFORTH_MINIMAL
 int WINAPI WinMainCRTStartup(void) {
 #else
 int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show) {

@@ -15,7 +15,7 @@
 ( Tests of sdl2.fs )
 \
 \ Needs libSDL2, so this is not part of the default build. Run headless with:
-\   SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ueforth posix/sdl2_tests.fs
+\   SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy lugforth posix/sdl2_tests.fs
 
 needs ../common/testing.fs
 

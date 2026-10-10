@@ -25,7 +25,7 @@ set(PICO_SDK_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../pico-ice/pico-sdk/)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../pico-ice/pico_sdk_import.cmake)
 
 # configure the pico-sdk project
-project(ueforth_pico C CXX ASM)
+project(lugforth_pico C CXX ASM)
 pico_sdk_init()
 
 add_executable(${CMAKE_PROJECT_NAME} main.c)

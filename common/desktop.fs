@@ -19,7 +19,7 @@ forth definitions internals
 
 internals definitions also ansi
 
-: boot-set-title   s" uEforth" set-title ;
+: boot-set-title   s" Lugforth" set-title ;
 ' boot-set-title boot-prompt !
 
 only forth definitions

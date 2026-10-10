@@ -90,7 +90,7 @@ z" close" 1 sysfunc c-close ( n -- n )
 create tmpl 64 allot
 0 value tune-code
 : tune-path ( -- a n )   ( a new empty file in /tmp )
-  z" /tmp/ueforth-tune-XXXXXX.mid" tmpl 29 cmove
+  z" /tmp/lugforth-tune-XXXXXX.mid" tmpl 29 cmove
   tmpl 4 c-mkstemps sign-extend dup 0 < if
     drop ." cannot make a temporary file in /tmp" cr -1 throw
   then

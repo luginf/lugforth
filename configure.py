@@ -40,7 +40,7 @@ CFLAGS_COMMON = [
 
 CFLAGS_MINIMIZE = [
   '-s',
-  '-DUEFORTH_MINIMAL',
+  '-DLUGFORTH_MINIMAL',
   '-fno-exceptions',
   '-fno-stack-protector',
   '-fomit-frame-pointer',
@@ -284,7 +284,7 @@ rule compile_sim
   description = CXX_SIM $in
   depfile = $out.d
   deps = gcc
-  command = $CXX -DUEFORTH_SIM=1 $CFLAGS $in -o $out $LIBS -MD -MF $depfile && strip $STRIP_ARGS $out
+  command = $CXX -DLUGFORTH_SIM=1 $CFLAGS $in -o $out $LIBS -MD -MF $depfile && strip $STRIP_ARGS $out
 
 rule compile_win32
   description = WIN_CL32 $in

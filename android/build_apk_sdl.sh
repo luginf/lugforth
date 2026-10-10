@@ -1,9 +1,9 @@
 #!/bin/bash
-# Build an APK that runs ueforth natively inside SDLActivity (route C): SDL2 built
-# from source with ndk-build, ueforth compiled as libmain.so, no gradle.
+# Build an APK that runs lugforth natively inside SDLActivity (route C): SDL2 built
+# from source with ndk-build, lugforth compiled as libmain.so, no gradle.
 # Needs out/gen/posix_boot.h (run ninja first) and an SDL2 source tree.
 # Usage: SDL_SRC=/path/to/SDL2-2.x android/build_apk_sdl.sh [abi]   (default arm64-v8a)
-# Result: out/android-c/ueforth-sdl.apk
+# Result: out/android-c/lugforth-sdl.apk
 set -e
 cd "$(dirname "$0")/.."
 ABI=${1:-arm64-v8a}
@@ -29,10 +29,10 @@ $NDK/ndk-build -j"$(nproc)" NDK_PROJECT_PATH=$PWD/$O/ndk APP_BUILD_SCRIPT=$SDL_S
   APP_PLATFORM=android-$API APP_ABI=$ABI NDK_OUT=$PWD/$O/ndk/obj NDK_LIBS_OUT=$PWD/$O/ndk/libs >$O/ndk.log 2>&1 \
   || { tail -20 $O/ndk.log; exit 1; }
 
-# 2. ueforth as libmain.so
+# 2. lugforth as libmain.so
 mkdir -p $O/lib/$ABI
 $NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/$TRIPLE$API-clang++ -shared -fPIC -x c++ -std=c++11 -O2 -w \
-  -DUEFORTH_MINIMAL -D__thread= -fno-exceptions -fno-stack-protector -I. -Iout \
+  -DLUGFORTH_MINIMAL -D__thread= -fno-exceptions -fno-stack-protector -I. -Iout \
   android/sdl/main_android.cpp -o $O/lib/$ABI/libmain.so -static-libstdc++ -ldl -llog
 
 # 3. Java, dex, resources
@@ -52,6 +52,6 @@ cp $O/ndk/libs/$ABI/libSDL2.so $O/lib/$ABI/libmain.so $W/pack/lib/$ABI/
 $BT/zipalign -f -p 4 $W/base.apk $W/aligned.apk
 KS=out/android/debug.keystore; mkdir -p out/android
 [ -f $KS ] || keytool -genkeypair -keystore $KS -storepass android -keypass android \
-  -alias debug -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=ueforth debug" >/dev/null 2>&1
-$BT/apksigner sign --ks $KS --ks-pass pass:android --out $O/ueforth-sdl.apk $W/aligned.apk
-ls -l $O/ueforth-sdl.apk
+  -alias debug -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=lugforth debug" >/dev/null 2>&1
+$BT/apksigner sign --ks $KS --ks-pass pass:android --out $O/lugforth-sdl.apk $W/aligned.apk
+ls -l $O/lugforth-sdl.apk

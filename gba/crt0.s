@@ -42,7 +42,7 @@
 _start:
 	b	_boot                   @ ROM entry point: skip over the header
 	.fill 156, 1, 0                @ Nintendo logo (real hardware needs the real bytes)
-	.ascii "UEFORTHGBA  "          @ game title, 12 bytes
+	.ascii "LUGFORTHGBA  "          @ game title, 12 bytes
 	.ascii "AUEE"                  @ game code, 4 bytes
 	.byte 0, 0                     @ maker code
 	.byte 0x96                     @ fixed value

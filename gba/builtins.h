@@ -22,17 +22,17 @@
 
 #include <stdio.h>
 
-#ifndef UEFORTH_SIM
+#ifndef LUGFORTH_SIM
 # include <string.h>
 #endif
 
-// Real libc malloc/free/realloc under UEFORTH_SIM (an ordinary POSIX
+// Real libc malloc/free/realloc under LUGFORTH_SIM (an ordinary POSIX
 // process); a small bump allocator on real hardware (gba_malloc & co in
 // main.c), since that needs no newlib heap/_sbrk wiring. This is a
 // separate, small heap from the main Forth dictionary heap the kernel
 // itself manages (HEAP_SIZE in main.c); ALLOCATE/FREE/RESIZE (see
 // allocation.fs) are the only things that use it.
-#ifdef UEFORTH_SIM
+#ifdef LUGFORTH_SIM
 # define REQUIRED_MEMORY_SUPPORT \
   YV(internals, MALLOC, SET malloc(n0)) \
   YV(internals, SYSFREE, free(a0); DROP) \
@@ -45,7 +45,7 @@
 #endif
 
 // Real hardware addresses on real hardware, ordinary heap memory under
-// UEFORTH_SIM (see gba_reg_*/gba_vram in main.c) -- platform.fs builds its
+// LUGFORTH_SIM (see gba_reg_*/gba_vram in main.c) -- platform.fs builds its
 // register/VRAM constants from these instead of hardcoding literals, so the
 // same Forth graphics code can be developed against the simulator.
 #define GBA_ADDRESS_SUPPORT \
@@ -74,7 +74,7 @@
 // (phase1/phase2/fini) calls OPEN-FILE et al, only the test suite does,
 // which this platform does not run.
 
-#ifndef UEFORTH_SIM
+#ifndef LUGFORTH_SIM
 // REG_VCOUNT (the current scanline, 0..227, wrapping ~59.7 times/second) is
 // the only free-running counter available without setting up a hardware
 // timer register; good enough for a first MS-TICKS. RAW-YIELD waits for the

@@ -1,4 +1,4 @@
-#! /usr/bin/env ueforth
+#! /usr/bin/env lugforth
 
 \ Copyright 2026 Luginfo10
 \
@@ -69,6 +69,6 @@ w 2 / value cx   h 2 / value cy       ( the ring )
 
 3 to zoom
 w h screen
-s" uEforth SDL2 demo" title
+s" Lugforth SDL2 demo" title
 run
 bye

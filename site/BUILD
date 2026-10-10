@@ -16,14 +16,14 @@ if not WEB_ENABLED:
   Return()
 
 OPTIONS = '-I $src/site'
-UE_OPTIONS = OPTIONS + ' -DFORTH=uEForth'
+UE_OPTIONS = OPTIONS + ' -DFORTH=Lugforth'
 ESP_OPTIONS = OPTIONS + ' -DFORTH=ESP32forth'
 
 DEPLOY_ITEMS = []
 
 DEPLOY_ITEMS += [
   Copy('$dst/deploy/.gcloudignore', '$src/site/.gcloudignore'),
-  Copy('$dst/deploy/ueforth.js', '$dst/web/ueforth.js'),
+  Copy('$dst/deploy/lugforth.js', '$dst/web/lugforth.js'),
   Copy('$dst/deploy/serial.html', '$dst/web/serial.html'),
   Importation('$dst/deploy/index.html', '$src/site/index.html', options=ESP_OPTIONS),
   Importation('$dst/deploy/linux.html', '$src/site/linux.html', options=UE_OPTIONS),
@@ -81,11 +81,11 @@ PUBLISH_PARTS += [
   ])),
   Alias('publish-web', ' '.join([
     Publish('publish-web-rev',
-             '$dst/web/ueforth.js',
-             'ueforth-{{VERSION}}-{{REVSHORT}}.js'),
+             '$dst/web/lugforth.js',
+             'lugforth-{{VERSION}}-{{REVSHORT}}.js'),
     Publish('publish-web-ver',
-             '$dst/web/ueforth.js',
-             'ueforth-{{VERSION}}.js'),
+             '$dst/web/lugforth.js',
+             'lugforth-{{VERSION}}.js'),
   ])),
 ]
 
@@ -93,11 +93,11 @@ if PICO_ICE_ENABLED:
   PUBLISH_PARTS += [
     Alias('publish-pico-ice', ' '.join([
       Publish('publish-pico-ice-rev',
-               '$dst/pico-ice/ueforth-pico-ice.zip',
-               'ueforth-pico-ice-{{VERSION}}-{{REVSHORT}}.zip'),
+               '$dst/pico-ice/lugforth-pico-ice.zip',
+               'lugforth-pico-ice-{{VERSION}}-{{REVSHORT}}.zip'),
       Publish('publish-pico-ice-ver',
-               '$dst/pico-ice/ueforth-pico-ice.zip',
-               'ueforth-pico-ice-{{VERSION}}.zip'),
+               '$dst/pico-ice/lugforth-pico-ice.zip',
+               'lugforth-pico-ice-{{VERSION}}.zip'),
     ])),
   ]
 

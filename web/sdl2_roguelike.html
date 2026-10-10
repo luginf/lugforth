@@ -17,7 +17,7 @@ limitations under the License.
 <!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>uEforth Roguelike</title>
+<title>Lugforth Roguelike</title>
 <!--
   Roguelike written once with the sdl2 short words and a tile sheet: the very
   same file, examples/sdl2_roguelike.fs, also runs on Linux with SDL2.
@@ -44,7 +44,7 @@ limitations under the License.
   (function() {
     var was = false;
     setInterval(function() {
-      var s = window.ueforth && window.ueforth.sdl;
+      var s = window.lugforth && window.lugforth.sdl;
       var open = !!(s && s.open);
       if (was && !open) { document.getElementById('again').style.display = 'flex'; }
       was = open;
@@ -52,4 +52,4 @@ limitations under the License.
   })();
 </script>
 <script type="text/forth" src="sdl2_roguelike.fs"></script>
-<script src="ueforth.js"></script>
+<script src="lugforth.js"></script>

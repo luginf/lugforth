@@ -50,7 +50,7 @@ forth
 \ last act, and raw-ok ends by calling `quit`, the real interactive loop --
 \ this is what was missing before, the silent-crash symptom one more time
 \ (`' ok` found nothing, `type` was fine by then, but still no message).
-internals : ok   ." uEforth" raw-ok ; forth
+internals : ok   ." Lugforth" raw-ok ; forth
 
 \ ---- the GBA itself: fixed memory-mapped addresses, no opcodes needed.
 \ See GBATEK for the full register map; these are just enough to get a dot

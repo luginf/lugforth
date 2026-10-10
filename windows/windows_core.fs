@@ -67,4 +67,4 @@ forth definitions
 only forth
 
 ( Setup entry )
-internals : ok   ." uEforth" raw-ok ; forth
+internals : ok   ." Lugforth" raw-ok ; forth

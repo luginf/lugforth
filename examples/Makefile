@@ -1,16 +1,16 @@
 # Build and test the examples: the two benchmarks (bench_sieve, bench_lines
-# -- ueforth vs plain C vs uxn) and a headless load-test of the SDL2 demos.
+# -- lugforth vs plain C vs uxn) and a headless load-test of the SDL2 demos.
 #
 #   make bench            build + run both benchmarks, all three languages
-#   make view-lines        watch bench_lines draw, in a real window (ueforth)
+#   make view-lines        watch bench_lines draw, in a real window (lugforth)
 #   make smoke             headless load-test of every SDL2 example
 #   make help              list all targets
 #
 # Needs, depending on the target: a C compiler + SDL2 dev headers (pkg-config
 # sdl2), uxnasm/uxncli/uxnemu (https://100r.co/site/uxn.html), and
-# ../out/posix/ueforth built (ninja posix at the repo root).
+# ../out/posix/lugforth built (ninja posix at the repo root).
 
-UEFORTH   ?= ../out/posix/ueforth
+LUGFORTH   ?= ../out/posix/lugforth
 CC        ?= cc
 CFLAGS    ?= -O2
 SDL2_FLAGS := $(shell pkg-config --cflags --libs sdl2 2>/dev/null)
@@ -31,7 +31,7 @@ help:
 	@echo "make bench             build + run both benchmarks, all three languages"
 	@echo "make bench-sieve        just the pure-computation benchmark (sieve of Eratosthenes)"
 	@echo "make bench-lines        just the drawing-throughput benchmark (headless, for timing)"
-	@echo "make view-lines         bench_lines.fs in a real SDL2 window (ueforth)"
+	@echo "make view-lines         bench_lines.fs in a real SDL2 window (lugforth)"
 	@echo "make view-lines-c       bench_lines.c in a real SDL2 window (C)"
 	@echo "make view-lines-uxn     bench_lines.tal in uxnemu (real window)"
 	@echo "make view              all three of the above, one after another"
@@ -50,8 +50,8 @@ bench-sieve-c: bench_sieve
 	@./bench_sieve
 
 bench-sieve-fs:
-	@echo "--- ueforth ---"
-	@$(UEFORTH) bench_sieve.fs
+	@echo "--- lugforth ---"
+	@$(LUGFORTH) bench_sieve.fs
 
 bench_sieve.rom: bench_sieve.tal
 	$(UXNASM) $< $@
@@ -72,8 +72,8 @@ bench-lines-c: bench_lines
 	@SDL_VIDEODRIVER=dummy ./bench_lines
 
 bench-lines-fs:
-	@echo "--- ueforth+SDL2 (headless) ---"
-	@BENCH_HEADLESS=1 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy $(UEFORTH) bench_lines.fs
+	@echo "--- lugforth+SDL2 (headless) ---"
+	@BENCH_HEADLESS=1 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy $(LUGFORTH) bench_lines.fs
 
 bench_lines.rom: bench_lines.tal
 	$(UXNASM) $< $@
@@ -87,7 +87,7 @@ bench: bench-sieve bench-lines
 # ---- visual: the same bench_lines, but with a real window left open ----
 
 view-lines:
-	$(UEFORTH) bench_lines.fs
+	$(LUGFORTH) bench_lines.fs
 
 view-lines-c: bench_lines
 	./bench_lines
@@ -106,7 +106,7 @@ smoke:
 	@for f in $(SDL2_EXAMPLES); do \
 	  printf "%-22s " "$$f"; \
 	  log=$$(mktemp); \
-	  SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy timeout $(SMOKE_TIMEOUT) $(UEFORTH) $$f >"$$log" 2>&1; \
+	  SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy timeout $(SMOKE_TIMEOUT) $(LUGFORTH) $$f >"$$log" 2>&1; \
 	  code=$$?; \
 	  if [ $$code = 124 ]; then echo "ok (reached the main loop)"; \
 	  elif [ $$code = 0 ]; then echo "ok (exited cleanly)"; \

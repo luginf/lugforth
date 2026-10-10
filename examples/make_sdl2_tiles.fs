@@ -1,4 +1,4 @@
-#! /usr/bin/env ueforth
+#! /usr/bin/env lugforth
 
 \ Copyright 2026 Luginfo10
 \
@@ -18,8 +18,8 @@
 \
 \ The tiles are written below as text, 8 letters by 8 lines each, and each
 \ letter is looked up in the palette ('.' is transparent). Edit them and run
-\     out/posix/ueforth examples/make_sdl2_tiles.fs
-\ from the ueforth directory to write the sheet again: a 64x8 PNG holding the
+\     out/posix/lugforth examples/make_sdl2_tiles.fs
+\ from the lugforth directory to write the sheet again: a 64x8 PNG holding the
 \ 8 tiles side by side, in the order they are listed. No SDL is needed: the
 \ PNG is written by hand (CRC-32, Adler-32, and a "stored" zlib block, so the
 \ file is not compressed, which is fine for 2 KB).
@@ -138,7 +138,7 @@ create png 4096 allot   0 value png-n
   chunk-close
   0 s" IEND" drop chunk-open chunk-close ;
 
-: out-name ( -- a n )   ( written in examples/ when run from the ueforth directory )
+: out-name ( -- a n )   ( written in examples/ when run from the lugforth directory )
   s" examples/make_sdl2_tiles.fs" file-exists?
   if s" examples/sdl2_tiles.png" else s" sdl2_tiles.png" then ;
 

@@ -21,7 +21,7 @@ forth definitions internals
 : colors    256 0 do i fg i . loop normal cr ;
 
 ( Bring a forth to the top of the vocabulary. )
-: ok   ." uEforth" raw-ok ;
+: ok   ." Lugforth" raw-ok ;
 transfer forth
 forth
 

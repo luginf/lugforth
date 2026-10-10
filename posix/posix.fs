@@ -215,4 +215,4 @@ O_RDWR constant R/W
 forth
 
 ( Setup entry )
-internals : ok   ." uEforth" raw-ok ; forth
+internals : ok   ." Lugforth" raw-ok ; forth

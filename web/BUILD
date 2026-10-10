@@ -22,7 +22,7 @@ GenRun('$dst/gen/web_dict.js', '$dst/gen/dump_web_opcodes', 'dict', [])
 GenRun('$dst/gen/web_sys.js', '$dst/gen/dump_web_opcodes', 'sys', [])
 
 WEB_ITEMS = [
-  GenRun('$dst/web/ueforth.js', '$src/web/fuse_web.js', '', [
+  GenRun('$dst/web/lugforth.js', '$src/web/fuse_web.js', '', [
       '$src/web/web.template.js',
       '$dst/gen/web_boot.js',
       '$dst/gen/web_dict.js',
@@ -48,10 +48,10 @@ if D8_AVAILABLE:
   WEB_ITEMS += [
     TestCommand('$dst/tests/web_sanity_test.out',
                 ' '.join([
-                    '$dst/web/ueforth.js',
+                    '$dst/web/lugforth.js',
                     '$src/tools/check_web_sanity.py',
                 ]),
-                'echo "120 3 + . cr bye" | ' + D8 + ' $dst/web/ueforth.js | '
+                'echo "120 3 + . cr bye" | ' + D8 + ' $dst/web/lugforth.js | '
                 '$src/tools/check_web_sanity.py ' +
                 '$dst/tests/web_sanity_test.out'),
   ]
@@ -61,6 +61,6 @@ Default('web')
 
 if D8_AVAILABLE:
   OneShot('d8',
-          '$dst/web/ueforth.js',
-          D8 + ' $dst/web/ueforth.js $in',
+          '$dst/web/lugforth.js',
+          D8 + ' $dst/web/lugforth.js $in',
           pool='console')

@@ -1,21 +1,21 @@
 +-------------------------------------+
-|  uEforth for the Raspberry Pi Pico  |
+|  Lugforth for the Raspberry Pi Pico  |
 +-------------------------------------+
 
 Note: this port was adapted by Luginfo10 from the pico-ice port of uEforth by
 Bradley D. Nelson. It is not part of upstream uEforth and is not endorsed
 by its author.
 
-This is uEforth v{{VERSION}} (Revision {{REVISION}}) for the Raspberry Pi Pico
+This is Lugforth v{{VERSION}} (Revision {{REVISION}}) for the Raspberry Pi Pico
 (RP2040).
 
-uEforth is an indirect threaded Forth.
+Lugforth is an indirect threaded Forth.
 It uses a small C "kernel" that boots via inline Forth code.
 
 To install:
   * Hold down the BOOTSEL button on the Pico.
   * Connect the Pico to USB (then release BOOTSEL).
-  * Copy ueforth-pico.uf2 to the mounted RPI-RP2 drive.
+  * Copy lugforth-pico.uf2 to the mounted RPI-RP2 drive.
   * Open the USB serial port with a terminal (115200 8N1, any speed works).
 
 Example (blink the on-board LED):
