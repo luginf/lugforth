@@ -18,6 +18,7 @@ needs allocation.fs
 needs ../../common/phase2.fs
 needs ../../common/tasks.fs
 needs ../../common/streams.fs
+needs ../../common/ansi.fs
 needs platform.fs
 needs autoboot.fs
 needs ../../common/fini.fs
