@@ -28,27 +28,27 @@ Importation('$dst/gen/windows_boot_extra.h', '$src/ports/windows/windows_boot_ex
 # Compile Win32.
 Alias('win32', ' '.join([
   ForthTest('$dst/tests/win32_all_tests.out',
-            '$dst/windows/uEf32.exe', '$src/common/all_tests.fs',
+            '$dst/windows/lugforth32.exe', '$src/common/all_tests.fs',
             interp='wine'),
 ]))
-CompileW32('$dst/windows/uEf32.obj', '$src/ports/windows/main.c',
+CompileW32('$dst/windows/lugforth32.obj', '$src/ports/windows/main.c',
            implicit=['$dst/gen/windows_boot.h',
                      '$dst/gen/windows_boot_extra.h'])
-LinkW32('$dst/windows/uEf32.exe',
-        ' '.join(['$dst/windows/uEf32.obj',
+LinkW32('$dst/windows/lugforth32.exe',
+        ' '.join(['$dst/windows/lugforth32.obj',
                   '$dst/resources/lugforth_res32.res']))
 
 # Compile Win64.
 Alias('win64', ' '.join([
   ForthTest('$dst/tests/win64_all_tests.out',
-            '$dst/windows/uEf64.exe', '$src/common/all_tests.fs',
+            '$dst/windows/lugforth64.exe', '$src/common/all_tests.fs',
             interp='wine'),
 ]))
-CompileW64('$dst/windows/uEf64.obj', '$src/ports/windows/main.c',
+CompileW64('$dst/windows/lugforth64.obj', '$src/ports/windows/main.c',
            implicit=['$dst/gen/windows_boot.h',
                      '$dst/gen/windows_boot_extra.h'])
-LinkW64('$dst/windows/uEf64.exe',
-        ' '.join(['$dst/windows/uEf64.obj',
+LinkW64('$dst/windows/lugforth64.exe',
+        ' '.join(['$dst/windows/lugforth64.obj',
                   '$dst/resources/lugforth_res64.res']))
 
 # Create icon.
@@ -60,7 +60,7 @@ CompileResource64('$dst/resources/lugforth_res64.res', '$src/ports/windows/lugfo
 
 OneShot('win-install',
         ' '.join([
-          '$dst/windows/uEf64.exe',
+          '$dst/windows/lugforth64.exe',
         ]),
-        'sudo cp $dst/windows/uEf64.exe ~/Desktop',
+        'sudo cp $dst/windows/lugforth64.exe ~/Desktop',
         pool='console')

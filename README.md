@@ -23,6 +23,15 @@ lib/         shared Forth libraries (hashing)
 attic/       old experiments
 ```
 
+## Binaries
+
+Release binaries (Linux tarball and AppImage, macOS universal, Windows x64) are
+built by `.github/workflows/release.yml`: run it from the Actions tab, or push a
+tag such as `v7.0.8.1` to publish them in a GitHub release. The Linux ones are
+built on Debian 10 (glibc 2.28) so that they run on older distributions. They are
+not fully static: Lugforth reaches libc, SDL2 and X11 through `dlopen`/`dlsym`,
+which a static executable cannot do. The AppImage carries the SDL2 libraries.
+
 ## Building from Source
 
 To build from source:
