@@ -48,4 +48,14 @@ public class ForthActivity extends SDLActivity {
   @Override protected String[] getArguments() {
     return new String[] { new File(getFilesDir(), startFile).getPath() };
   }
+
+  // The back button quits the running program (SDL_QUIT), as closing a window.
+  // SDL would otherwise turn it into a key event, so it is caught before.
+  @Override public boolean dispatchKeyEvent(android.view.KeyEvent e) {
+    if (e.getKeyCode() == android.view.KeyEvent.KEYCODE_BACK) {
+      if (e.getAction() == android.view.KeyEvent.ACTION_UP) nativeSendQuit();
+      return true;
+    }
+    return super.dispatchKeyEvent(e);
+  }
 }

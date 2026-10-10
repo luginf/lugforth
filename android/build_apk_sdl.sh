@@ -41,7 +41,7 @@ SDLJ=$SDL_SRC/android-project/app/src/main/java
 javac -nowarn -source 8 -target 8 -cp $JAR -d $W/classes \
   $(find $SDLJ android/sdl/src -name '*.java') 2>&1 | grep -v "^warning\|^Note" || true
 $BT/d8 --min-api $API --lib $JAR --output $W $(find $W/classes -name '*.class')
-cp examples/sdl2_breakout.fs examples/sdl2_drums.fs $W/assets/forth/
+cp examples/sdl2_breakout.fs examples/sdl2_drums.fs posix/sdl2_console.fs $W/assets/forth/
 cp android/sdl/assets/* $W/assets/forth/ 2>/dev/null || true
 [ -f $W/assets/forth/main.fs ] || echo 'include sdl2_breakout.fs' > $W/assets/forth/main.fs
 $BT/aapt2 link -o $W/base.apk -I $JAR --manifest android/sdl/AndroidManifest.xml \
