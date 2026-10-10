@@ -25,12 +25,20 @@ attic/       old experiments
 
 ## Binaries
 
-Release binaries (Linux tarball and AppImage, macOS universal, Windows x64) are
-built by `.github/workflows/release.yml`: run it from the Actions tab, or push a
-tag such as `v7.0.8.1` to publish them in a GitHub release. The Linux ones are
-built on Debian 10 (glibc 2.28) so that they run on older distributions. They are
-not fully static: Lugforth reaches libc, SDL2 and X11 through `dlopen`/`dlsym`,
-which a static executable cannot do. The AppImage carries the SDL2 libraries.
+`.github/workflows/release.yml` builds the release binaries. Run it from the
+Actions tab (or `gh workflow run release.yml -R luginf/lugforth`) to get them as
+build artifacts, or push a tag such as `v7.0.8.1` to publish them in a GitHub
+release.
+
+* Linux (tarball and AppImage): built on Debian 10, needs glibc 2.27 or newer.
+  The AppImage also carries the SDL2 libraries. Tested in CI.
+* Windows x64: built with MSVC, starts are not tested in CI yet.
+* macOS universal: builds but does not start properly yet, so it is not
+  published (see the workflow). `LUGFORTH_FAULTS=1` makes the posix build report
+  faults on stderr, useful to debug a new platform.
+
+Static binaries are not possible: Lugforth reaches libc, SDL2 and X11 through
+`dlopen`/`dlsym`, which a static executable cannot do.
 
 ## Building from Source
 
