@@ -1,0 +1,63 @@
+# Copyright 2024 Bradley D. Nelson
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Plain Raspberry Pi Pico (RP2040) port.
+# Shares the pico-sdk submodule (and its checkout rules) with pico-ice.
+
+if not PICO_ICE_ENABLED:
+  Return()
+
+PICO_FILES = []
+PICO_ZIP_FILES = []
+
+# Main files.
+PICO_ZIP_FILES += [
+  Importation('$dst/pico/ueforth-pico/README.txt',
+              '$src/pico/README.txt'),
+  Copy('$dst/pico/ueforth-pico/ueforth-pico.uf2',
+       '$dst/pico/ueforth_pico.uf2'),
+  Copy('$dst/pico/ueforth-pico/LICENSE', '$src/LICENSE'),
+  Copy('$dst/pico/ueforth-pico/pico-sdk-LICENSE.TXT',
+       '$src/pico-ice/pico-sdk/LICENSE.TXT'),
+]
+
+# Build the uf2.
+Command(' '.join(['$dst/pico/ueforth_pico.uf2',
+                  '$dst/pico/ueforth_pico.err']),
+        ' '.join(['$dst/pico/build.ninja',
+                  '$dst/gen/pico_boot.h']),
+        'ninja -C $dst/pico ueforth_pico >$dst/pico/ueforth_pico.err 2>&1')
+Command(' '.join(['$dst/pico/build.ninja',
+                  '$dst/pico/cmake.err']),
+        ' '.join(['$src/pico-ice/pico-sdk/README.md',
+                  '$src/pico-ice/pico-sdk/lib/tinyusb/README.rst']),
+        'cmake $dst/pico -G Ninja -S pico -B $dst/pico >$dst/pico/cmake.err 2>&1')
+
+# Zip it.
+PICO_FILES += [
+  Zip('$dst/pico/ueforth-pico.zip', PICO_ZIP_FILES,
+      base='$dst/pico/ueforth-pico'),
+]
+
+# Simulator.
+PICO_FILES += [
+  CompileSim('$dst/pico-sim/ueforth_pico_sim', '$src/pico/main.c',
+             implicit=['$dst/gen/pico_boot.h'])
+]
+Importation('$dst/gen/pico_boot.h', '$src/pico/pico_boot.fs', name='boot')
+
+# Main Alias.
+Alias('rpi-pico', ' '.join(PICO_FILES))
+if not FAST:
+  Default('rpi-pico')
