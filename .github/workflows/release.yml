@@ -184,12 +184,15 @@ jobs:
         shell: bash
         run: |
           mkdir -p out/gen out/resources dist
+          # the version comes from the root BUILD file (SetVersions)
+          VERSION=$(sed -n "s/.*version='\([0-9.]*\)'.*/\1/p" BUILD | head -1)
+          STABLE=$(sed -n "s/.*stable='\([0-9.]*\)'.*/\1/p" BUILD | head -1)
           python tools/revstamp.py "$PWD" out/gen/REVISION out/gen/REVSHORT
           for pair in windows_boot:boot windows_boot_extra:boot_extra; do
             f=${pair%%:*}; n=${pair##*:}
             python tools/importation.py -i ports/windows/$f.fs -o out/gen/$f.h \
               -I out -I . --name $n --header win \
-              -DVERSION=7.0.8.1 -DSTABLE_VERSION=7.0.8.0 \
+              -DVERSION=$VERSION -DSTABLE_VERSION=$STABLE \
               -FREVISION=out/gen/REVISION -FREVSHORT=out/gen/REVSHORT
           done
           cp docs/images/eforth.ico out/resources/eforth.ico
