@@ -25,7 +25,9 @@ jobs:
       - name: Build the interpreters (word lists, web demo)
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build pandoc
+          sudo apt-get install -y ninja-build pandoc nodejs
+          # configure.py looks for /usr/bin/nodejs
+          [ -e /usr/bin/nodejs ] || sudo ln -s "$(command -v node)" /usr/bin/nodejs
           ./configure.py
           ninja out/posix/lugforth out/web/lugforth.js
       - name: Build the site
