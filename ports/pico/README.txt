@@ -52,8 +52,7 @@ Example (blink the on-board LED):
   : blink  10 0 do led 1 gpio_put 250 ms led 0 gpio_put 250 ms loop ;
   blink
 
-Documentation and the latest version of uEforth are available at:
-https://eforth.appspot.com/
-
-Full unexpanded source code and an issue tracker are available at:
-https://github.com/flagxor/ueforth
+Documentation, source code and issue tracker of Lugforth:
+https://luginf.github.io/lugforth/
+https://github.com/luginf/lugforth
+The original uEforth is at https://github.com/flagxor/ueforth

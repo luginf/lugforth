@@ -6,7 +6,7 @@
 
 This EForth inspired implementation of Forth is bootstraped from a minimalist C kernel.
 
-Compiled site documentation at [https://eforth.appspot.com](https://eforth.appspot.com/)
+Documentation site: [luginf.github.io/lugforth](https://luginf.github.io/lugforth/)
 
 [WORDS.md](docs/WORDS.md) is a reference of the words of this build, generated from the interpreters themselves (`tools/words_reference.py`).
 
@@ -54,7 +54,8 @@ ninja
 
 The resulting output will have this structure:
 
-* out/deploy - A copy of the eforth.appspot.com / esp32forth.appspot.com ready to deploy.
+* out/deploy - A copy of the old uEforth documentation site (kept from upstream).
+* out/pages - The GitHub Pages site (`tools/make_pages.py`).
 * out/esp32 - A source build for ESP32.
 * out/esp32-sim - A POSIX build approximating ESP32 for testing.
 * out/pico-ice - A build for pico-ice.

@@ -1,0 +1,45 @@
+name: GitHub Pages
+
+# Builds the site (tools/make_pages.py) and publishes it. In the repository
+# settings, Pages > Source must be "GitHub Actions".
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'docs/**', 'tools/make_pages.py', 'tools/words_added.py', 'ports/posix/SDL2*.md', 'examples/README.md', 'NOTICE', '.github/workflows/pages.yml' ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the interpreters (word lists, web demo)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build pandoc
+          ./configure.py
+          ninja out/posix/lugforth out/web/lugforth.js
+      - name: Build the site
+        run: python3 tools/make_pages.py
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out/pages
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

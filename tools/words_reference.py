@@ -263,9 +263,9 @@ The columns: **Word**, **Stack** effect, **What it does**, and where the word
 exists: **P** Linux (POSIX) build, **W** web build.
 ''')
     T.append('## Other places to read about the words\n')
-    T.append('''* [µEforth documentation](https://eforth.appspot.com/linux.html) and
-  [ESP32forth](https://eforth.appspot.com/ESP32forth.html): the pages of `docs/site/`,
-  published.
+    T.append('''* The [Lugforth site](https://luginf.github.io/lugforth/), and the original
+  [uEforth](https://github.com/flagxor/ueforth) it comes from (the reference pages of
+  `docs/site/` are the source of many descriptions here).
 * [ESP32forth glossary](https://esp32forth.forth2020.org/glossary), a spreadsheet
   kept by the community, and the
   [v7.5 list of words](https://esp32forth.wordpress.com/esp32forth-v-7-5-list-of-words/),

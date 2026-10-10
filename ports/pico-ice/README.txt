@@ -13,8 +13,7 @@ To install:
   * Press reset on the pico-ice.
   * Copy lugforth-pico-ice.uf2 to the mounted drive.
 
-Documentation and the latest version of ESP32forth are available at:
-https://eforth.appspot.com/pico-ice
-
-Full unexpanded source code and an issue tracker are available at:
-https://github.com/flagxor/ueforth
+Documentation, source code and issue tracker of Lugforth:
+https://luginf.github.io/lugforth/
+https://github.com/luginf/lugforth
+The original uEforth is at https://github.com/flagxor/ueforth
