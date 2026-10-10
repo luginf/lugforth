@@ -32,7 +32,9 @@ Sending a program from the PC:
     tools/pico_send.py -p /dev/ttyACM1 file.fs
   It reads the answers while it writes, sends one line at a time, waits for
   the prompt and stops at the first error. Lines must stay under 200
-  characters. Nothing is kept after a power cycle: the dictionary lives in RAM.
+  characters. If the last line starts a program that waits for keys (a game),
+  the script turns into a small terminal so you can use it (Ctrl-] quits).
+  Nothing is kept after a power cycle: the dictionary lives in RAM.
 
 Troubleshooting:
   * "Permission denied" on /dev/ttyACM0: add yourself to the dialout group

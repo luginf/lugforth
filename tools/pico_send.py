@@ -21,12 +21,18 @@
 A plain `cat file > /dev/ttyACM0` hangs: the board echoes everything back and
 nobody reads it. This script reads the answers while it writes, sends one line
 at a time and waits for the prompt before the next one, and stops at the
-first error. Needs pyserial (pip install pyserial).
+first error. When the last line starts something that waits for keys (a game
+that never shows the prompt again), the script becomes a small terminal so you
+can play: keys go to the board, Ctrl-] quits. Needs pyserial (pip install pyserial).
 """
 
 import argparse
+import os
+import select
 import sys
+import termios
 import time
+import tty
 
 try:
   import serial
@@ -52,6 +58,30 @@ def wait_prompt(port, timeout, show):
       if PROMPT in got:
         return got
   return got
+
+
+def terminal(port):
+  """Relays the keyboard to the board and the board to the screen."""
+  if not sys.stdin.isatty():
+    return
+  print('\n[terminal mode, Ctrl-] to quit]')
+  old = termios.tcgetattr(sys.stdin)
+  tty.setraw(sys.stdin.fileno())
+  try:
+    while True:
+      ready, _, _ = select.select([sys.stdin, port], [], [], 0.1)
+      if port in ready:
+        data = port.read(256)
+        if data:
+          os.write(sys.stdout.fileno(), data)
+      if sys.stdin in ready:
+        key = os.read(sys.stdin.fileno(), 32)
+        if b'\x1d' in key:
+          break
+        port.write(key)
+  finally:
+    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old)
+    print()
 
 
 def main():
@@ -80,6 +110,9 @@ def main():
       continue
     port.write(line.encode('utf-8') + b'\r')
     got = wait_prompt(port, args.timeout, show)
+    if PROMPT not in got and n == len(lines):
+      terminal(port)                      # the last line wants keys
+      return
     if PROMPT not in got:
       sys.exit('\n%s:%d: no prompt after %.0f s: %s' %
                (args.file, n, args.timeout, line))
