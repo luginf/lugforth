@@ -1,5 +1,9 @@
 # µEforth / ESP32forth
 
+> Unofficial fork of [uEforth](https://github.com/flagxor/ueforth) by Bradley D. Nelson,
+> maintained by Luginfo10. It is not affiliated with the original author and is not
+> endorsed by him. See [NOTICE](NOTICE) for what was added.
+
 This EForth inspired implementation of Forth is bootstraped from a minimalist C kernel.
 
 Compiled site documentation at [https://eforth.appspot.com](https://eforth.appspot.com/)

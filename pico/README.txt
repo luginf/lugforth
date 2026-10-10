@@ -2,6 +2,10 @@
 |  uEforth for the Raspberry Pi Pico  |
 +-------------------------------------+
 
+Note: this port was adapted by Luginfo10 from the pico-ice port of uEforth by
+Bradley D. Nelson. It is not part of upstream uEforth and is not endorsed
+by its author.
+
 This is uEforth v{{VERSION}} (Revision {{REVISION}}) for the Raspberry Pi Pico
 (RP2040).
 

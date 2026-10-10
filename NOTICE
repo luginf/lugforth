@@ -1,0 +1,17 @@
+This project is a fork of uEforth (https://github.com/flagxor/ueforth),
+Copyright 2021-2024 Bradley D. Nelson, licensed under the Apache License 2.0
+(see LICENSE). The original copyright notices are kept in every file that
+comes from it.
+
+It is not affiliated with the original author and is not endorsed by him.
+
+Additions and modifications, Copyright 2026 Luginfo10, under the same license:
+  - SDL2 bindings, ABC music, soundfont and examples (posix/sdl2*.fs, web/sdl2*.fs, examples/)
+  - ansi_compat.fs: standard ANS words missing from the core
+  - Game Boy Advance port (gba/)
+  - Raspberry Pi Pico (RP2040) port (pico/), adapted from the pico-ice port
+  - Android ports: command line, WebView and native SDL2 (android/), SDL console (posix/sdl2_console.fs)
+  - words reference tools (tools/words_*.py, WORDS.md)
+
+Files adapted from upstream carry both the original notice and a line
+"Modifications Copyright 2026 Luginfo10".

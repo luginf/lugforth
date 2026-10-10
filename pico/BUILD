@@ -1,4 +1,5 @@
 # Copyright 2024 Bradley D. Nelson
+# Modifications Copyright 2026 Luginfo10
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Plain Raspberry Pi Pico (RP2040) port.
+# Plain Raspberry Pi Pico (RP2040) port, adapted by Luginfo10 from pico-ice/BUILD.
+# This port is not part of upstream uEforth and is not endorsed by its author.
 # Shares the pico-sdk submodule (and its checkout rules) with pico-ice.
 
 if not PICO_ICE_ENABLED:
