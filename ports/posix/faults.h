@@ -27,7 +27,7 @@ static void forth_signal_handler(int sig) {
   if (g_faults_debug) {  // LUGFORTH_FAULTS=1: say that a fault happened
     char m[] = "lugforth: fault, signal 00\n";
     m[24] = '0' + (sig / 10) % 10; m[25] = '0' + sig % 10;
-    write(2, m, sizeof(m) - 1);
+    if (write(2, m, sizeof(m) - 1) < 0) { /* nothing to do */ }
   }
   switch (sig) {
     case SIGSEGV: g_forth_signal = -9; break;
