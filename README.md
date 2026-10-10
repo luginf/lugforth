@@ -16,7 +16,7 @@ To build from source:
 
 ```
 sudo apt install ninja-build gcc-arm-none-eabi
-git clone git@github.com:luginf/ueforth.git lugforth
+git clone git@github.com:luginf/lugforth.git
 cd lugforth
 ./configure.py
 ninja
