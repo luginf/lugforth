@@ -67,7 +67,7 @@ z" pipe" 1 sysfunc pipe
 z" chdir" 1 sysfunc chdir
 z" mkdir" 2 sysfunc mkdir
 z" rmdir" 1 sysfunc rmdir
-z" getwd" 1 sysfunc getwd
+z" getcwd" 2 sysfunc getcwd
 z" opendir" 1 sysfunc opendir
 z" closedir" 1 sysfunc closedir
 z" readdir" 1 sysfunc readdir
@@ -210,7 +210,7 @@ O_RDWR constant R/W
 : cd ( "path" -- ) bl parse s>z chdir throw ;
 : mkdir ( "path" -- ) bl parse s>z 0777 mkdir throw ;
 : rmdir ( "path" -- ) bl parse s>z rmdir throw ;
-: pwd   here getwd z>s type cr ;
+: pwd   here 1024 getcwd drop here z>s type cr ;
 
 forth
 

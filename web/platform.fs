@@ -372,55 +372,9 @@ if (!globalObj.write) {
     }
   };
 
-  context.keyboard = document.createElement('div');
-  context.KEY_HEIGHT = 45;
-  context.KEYBOARD_HEIGHT = context.KEY_HEIGHT * 4;
-  const TAB = ['&#11134;', 9, 45];
-  const PIPE = [String.fromCharCode(124), 124, 45];
-  const BACKSLASH = ['\\', 92, 45];
-  const ENTER = ['&#9166;', 13, 45];
-  const SHIFT = ['&#x21E7;', 1, 45, 0];
-  const SHIFT2 = ['&#x2B06;', 0, 45, 0];
-  const SHIFT3 = ['=\\<', 3, 45, 0];
-  const NUMS = ['?123', 2, 45, 0];
-  const ABC = ['ABC', 0, 45, 0];
-  const BACKSPACE = ['&#x232B;', 8, 45];
-  const BACKTICK = String.fromCharCode(96);
-  const TILDE = String.fromCharCode(126);
-  const PASTE = ['^V', 22, 30];
-  const G1 = ['Gap', 0, 15];
-  const KEY_COLOR = 'linear-gradient(to bottom right, #ccc, #999)';
-  var keymaps = [
-    AddKeymap([
-      'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 'Newline',
-      G1, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', G1, 'Newline',
-      SHIFT, 'z', 'x', 'c', 'v', 'b', 'n', 'm', BACKSPACE, 'Newline',
-      NUMS, '/', [' ', 32, 5 * 30], '.', ENTER,
-    ]),
-    AddKeymap([
-      'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', 'Newline',
-      G1, 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', G1, 'Newline',
-      SHIFT2, 'Z', 'X', 'C', 'V', 'B', 'N', 'M', BACKSPACE, 'Newline',
-      NUMS, '/', [' ', 32, 5 * 30], '.', ENTER,
-    ]),
-    AddKeymap([
-      '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'Newline',
-      PASTE, '@', '$', '_', '&', '-', '+', '(', ')', '/', 'Newline',
-      SHIFT3, '*', '"', '\'', ':', ';', '!', '?', BACKSPACE, 'Newline',
-      ABC, ',', [' ', 32, 5 * 30], '.', ENTER,
-    ]),
-    AddKeymap([
-      TILDE, BACKTICK, '3', '4', '5', '^', '7', '8', '9', '0', 'Newline',
-      '#', '@', '$', '_', '&', '-', '=', '{', '}', '\\', 'Newline',
-      NUMS, '%', '"', '\'', ':', ';', '[', ']', BACKSPACE, 'Newline',
-      ABC, '<', [' ', 32, 5 * 30], '>', ENTER,
-    ]),
-  ];
-  function SwitchKeymap(n) {
-    for (var i = 0; i < keymaps.length; ++i) {
-      keymaps[i].style.display = i == n ? '' : 'none';
-    }
-  }
+  // No on-screen keyboard: on mobile a hidden textarea takes the focus so
+  // the native keyboard of the device is used.
+  context.KEYBOARD_HEIGHT = 0;
   context.Inject = function(text) {
     var data = new TextEncoder().encode(text);
     for (var i = 0; i < data.length; ++i) {
@@ -432,69 +386,46 @@ if (!globalObj.write) {
       context.Inject(clipText);
     });
   };
-  function AddKey(keymap, item) {
-    if (item === 'Newline') {
-      var k = document.createElement('br');
-      keymap.appendChild(k);
-      return;
+  context.mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? -1 : 0;
+  if (context.mobile) {
+    const SENTINEL = '​';
+    var ta = document.createElement('textarea');
+    ta.setAttribute('autocomplete', 'off');
+    ta.setAttribute('autocorrect', 'off');
+    ta.setAttribute('autocapitalize', 'none');
+    ta.setAttribute('spellcheck', 'false');
+    ta.style.position = 'fixed';
+    ta.style.left = '0px';
+    ta.style.bottom = '0px';
+    ta.style.width = '1px';
+    ta.style.height = '1px';
+    ta.style.opacity = '0';
+    ta.style.border = 'none';
+    ta.style.padding = '0';
+    ta.style.fontSize = '16px';
+    var prev = SENTINEL;
+    function Reset() {
+      ta.value = SENTINEL;
+      prev = SENTINEL;
+      ta.setSelectionRange(1, 1);
     }
-    var k = document.createElement('button');
-    k.style.fontFamily = 'monospace';
-    k.style.verticalAlign = 'middle';
-    k.style.border = 'none';
-    k.style.margin = '0';
-    k.style.padding = '0';
-    k.style.backgroundImage = KEY_COLOR;
-    k.style.width = (100 / 10) + '%';
-    k.style.height = context.KEY_HEIGHT + 'px';
-    if (item.length > 2) {
-      k.style.width = (100 / 10 * item[2] / 30) + '%';
-    }
-    if (item[0] === 'Gap') {
-      k.style.backgroundColor = '#444';
-      k.style.backgroundImage = '';
-      keymap.appendChild(k);
-      return;
-    }
-    if (item.length > 1) {
-      var keycode = item[1];
-    } else {
-      var keycode = item[0].charCodeAt(0);
-    }
-    k.innerHTML = item instanceof Array ? item[0] : item;
-    k.onclick = function() {
-      if (item.length > 3) {  // SHIFT
-        SwitchKeymap(item[1]);
-      } else if (keycode === 22) {  // PASTE
-        context.Paste();
-      } else {
-        context.inbuffer.push(keycode);
-      }
-    };
-    keymap.appendChild(k);
-  }
-  function AddKeymap(keymap) {
-    var div = document.createElement('div');
-    for (var i = 0; i < keymap.length; ++i) {
-      var item = keymap[i];
-      AddKey(div, item);
-    }
-    context.keyboard.appendChild(div);
-    return div;
-  }
-  SwitchKeymap(0);
-  context.keyboard.style.position = 'fixed';
-  context.keyboard.style.width = '100%';
-  context.keyboard.style.bottom = '0px';
-  if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-    context.mobile = -1;
-    context.tailer = document.createElement('div');
-    context.tailer.style.width = '1px';
-    context.tailer.style.height = context.KEYBOARD_HEIGHT + 'px';
-    context.screen.appendChild(context.tailer);
-    document.body.appendChild(context.keyboard);
-  } else {
-    context.mobile = 0;
+    ta.addEventListener('input', function(e) {
+      var cur = ta.value;
+      var n = 0;
+      while (n < prev.length && n < cur.length && prev[n] === cur[n]) { ++n; }
+      for (var i = n; i < prev.length; ++i) { context.inbuffer.push(8); }
+      context.Inject(cur.substring(n).replace(/\n/g, ''));
+      context.cursor_time = new Date().getTime();
+      prev = cur;
+      if (!e.isComposing) { Reset(); }
+    });
+    ta.addEventListener('compositionend', Reset);
+    document.body.appendChild(ta);
+    Reset();
+    context.focusInput = function() { ta.focus(); };
+    document.addEventListener('click', context.focusInput);
+    document.addEventListener('touchend', context.focusInput);
+    ta.focus();
   }
 
   context.text_fraction = context.mobile ? 3000 : 1667;
@@ -547,6 +478,7 @@ if (!globalObj.write) {
     Resize();
   };
   function KeyPress(e) {
+    if (context.mobile) { e.preventDefault(); return false; }
     context.cursor_time = new Date().getTime();
     context.inbuffer.push(e.keyCode);
     e.preventDefault();
@@ -562,7 +494,13 @@ if (!globalObj.write) {
       'PageUp': [27, 91, 53, 92],
       'PageDown': [27, 91, 54, 92],
     };
-    if (e.ctrlKey) {
+    if (context.mobile && e.key == 'Enter') {
+      context.inbuffer.push(13);
+      e.preventDefault();
+      return false;
+    } else if (context.mobile && e.keyCode == 8) {
+      return;
+    } else if (e.ctrlKey) {
       if (e.keyCode == 50) {
         context.inbuffer.push(0);
       } else if (e.keyCode >= 65 && e.keyCode <= 90) {
