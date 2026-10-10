@@ -16,7 +16,21 @@ To install:
   * Hold down the BOOTSEL button on the Pico.
   * Connect the Pico to USB (then release BOOTSEL).
   * Copy lugforth-pico.uf2 to the mounted RPI-RP2 drive.
+    The board reboots by itself and the drive disappears.
   * Open the USB serial port with a terminal (115200 8N1, any speed works).
+    The console is the USB port itself (no UART pins to wire). On Linux the
+    port shows up as /dev/ttyACM0 (check with `ls /dev/ttyACM*` or `dmesg`):
+      picocom -b 115200 /dev/ttyACM0       (quit with Ctrl-A then Ctrl-X)
+      screen /dev/ttyACM0 115200           (quit with Ctrl-A, K, then y)
+    You should see the Lugforth banner and the --> prompt.
+
+Troubleshooting:
+  * "Permission denied" on /dev/ttyACM0: add yourself to the dialout group
+    (sudo usermod -aG dialout $USER, then log in again), or use sudo.
+  * Nothing on the serial port: check that the RPI-RP2 drive disappeared after
+    the copy, otherwise the firmware was not loaded.
+  * The board does not show up at all: try another USB cable, some are
+    charge-only.
 
 Example (blink the on-board LED):
   pico
