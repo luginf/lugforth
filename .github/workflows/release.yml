@@ -126,6 +126,18 @@ jobs:
             echo 'for(int i=0;n[i];i++) if(!dlsym(RTLD_DEFAULT,n[i])) printf("MISSING %s\n",n[i]); return 0;}'; } > /tmp/symtest.c
           clang /tmp/symtest.c -o /tmp/symtest && /tmp/symtest
 
+      - name: Where does the start hang?
+        continue-on-error: true
+        timeout-minutes: 3
+        run: |
+          cd /tmp
+          (LUGFORTH_FAULTS=1 "$GITHUB_WORKSPACE/dist/lugforth" < /dev/null > /tmp/out.txt 2>&1 &)
+          sleep 3
+          head -c 300 /tmp/out.txt || true
+          sample lugforth 1 -file /tmp/sample.txt || true
+          grep -A25 "Call graph" /tmp/sample.txt | head -40 || true
+          pkill -x lugforth || true
+
       - name: Test
         continue-on-error: true
         timeout-minutes: 3
