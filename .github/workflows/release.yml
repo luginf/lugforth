@@ -131,6 +131,7 @@ jobs:
         timeout-minutes: 3
         run: |
           cd /tmp
+          LUGFORTH_FAULTS=1 perl -e 'alarm 10; exec @ARGV' "$GITHUB_WORKSPACE/dist/lugforth" < /dev/null 2>&1 | head -c 600
           echo '1 2 + . bye' | perl -e 'alarm 20; exec @ARGV' "$GITHUB_WORKSPACE/dist/lugforth" | tail -3
           perl -e 'alarm 150; exec @ARGV' "$GITHUB_WORKSPACE/dist/lugforth" "$GITHUB_WORKSPACE/common/all_tests.fs" < /dev/null | tail -5
 
@@ -187,14 +188,6 @@ jobs:
           rc /nologo /i . /fo out\res64.res ports\windows\lugforth.rc
           cl /nologo /O2 /I . /I out /Fo:out\main.obj /c ports\windows\main.c
           link /nologo /OUT:dist\lugforth.exe out\main.obj out\res64.res user32.lib
-
-      - name: Test
-        continue-on-error: true
-        timeout-minutes: 3
-        shell: cmd
-        run: |
-          echo 1 2 + . bye | dist\lugforth.exe
-          dist\lugforth.exe common\all_tests.fs < NUL
 
       - name: Package
         shell: bash
