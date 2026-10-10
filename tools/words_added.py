@@ -36,7 +36,7 @@ VOCABS = ['forth', 'internals', 'posix', 'structures', 'streams', 'tasks',
 def words_of(binary):
   result = {}
   for vocab in VOCABS:
-    out = subprocess.run([binary], input='." @@" %s words ." @@" cr bye\n' % vocab,
+    out = subprocess.run([binary], input='." @@" %s words ." @@" cr\nbye\n' % vocab,
                          capture_output=True, text=True, timeout=60,
                          cwd='/tmp').stdout.replace('\r', '')
     parts = out.split('@@')

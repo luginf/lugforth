@@ -30,11 +30,6 @@ jobs:
           [ -e /usr/bin/nodejs ] || sudo ln -s "$(command -v node)" /usr/bin/nodejs
           ./configure.py
           ninja out/posix/lugforth out/web/lugforth.js
-      - name: Debug interpreter
-        run: |
-          sudo apt-get install -y strace
-          echo '1 2 + . cr bye' | LUGFORTH_FAULTS=1 timeout 10 strace -f -o /tmp/st ./out/posix/lugforth; echo rc=$?
-          head -c 3000 /tmp/st | tail -c 1500; tail -15 /tmp/st
       - name: Build the site
         run: python3 tools/make_pages.py
       - uses: actions/upload-pages-artifact@v3
