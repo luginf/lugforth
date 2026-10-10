@@ -14,6 +14,11 @@
 
 #include <dlfcn.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <termios.h>
+#include <unistd.h>
 #include <sys/mman.h>
 
 #include "common/tier0_opcodes.h"
@@ -43,7 +48,30 @@
 
 #include "gen/posix_boot.h"
 
+// Leave the terminal as found, however we exit (a library calling exit(), as
+// Xlib does when its window is closed, bypasses the Forth terminate hook).
+static struct termios g_saved_termios;
+static int g_have_termios;
+
+static void restore_terminal(void) {
+  if (!g_have_termios) return;
+  fcntl(0, F_SETFL, fcntl(0, F_GETFL) & ~O_NONBLOCK);
+  tcsetattr(0, TCSAFLUSH, &g_saved_termios);
+}
+
+static void restore_and_die(int sig) {
+  restore_terminal();
+  signal(sig, SIG_DFL);
+  raise(sig);
+}
+
 int main(int argc, char *argv[]) {
+  if (isatty(0) && tcgetattr(0, &g_saved_termios) == 0) {
+    g_have_termios = 1;
+    atexit(restore_terminal);
+    signal(SIGTERM, restore_and_die);
+    signal(SIGHUP, restore_and_die);
+  }
   void *heap = mmap(
       (void *) 0x8000000, HEAP_SIZE,
       PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
