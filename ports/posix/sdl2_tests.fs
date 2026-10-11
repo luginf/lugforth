@@ -273,7 +273,7 @@ create hit-buf 4096 2* allot
   64 48 screen  audio-open
   audio-open? if
     reset-hits
-    440 100 hit
+    440 100 drum-hit
     voices-active 1 =assert
     beeping? assert
     200 delay

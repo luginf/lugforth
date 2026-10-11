@@ -30,13 +30,19 @@ hand) builds and publishes them.
 
 * **Linux**: tarball and AppImage, built on Debian 10 (glibc 2.27 or newer). The
   AppImage carries the SDL2 libraries, the examples and a font. Run from a
-  console it gives the terminal interface; a click on the desktop opens a window
-  with a menu bar (examples, text size, help), a smooth TrueType console, mouse
-  selection and paste, and scrolling back (a terminal if the window cannot open).
+  console it gives the terminal interface; a click on the desktop opens the window
+  of `lugforth --gui` (a terminal if it cannot open).
   The examples are copied on first run to `~/.local/share/lugforth/examples`
   (`LUGFORTH_HOME` changes the directory) and never overwritten.
 * **Windows x64**: MSVC build, not started in CI yet.
 * **macOS**: builds but does not start yet, so it is not published.
+
+`lugforth --gui [file.fs]` (any Linux build with SDL2) opens a console window with a
+smooth TrueType font, mouse selection and paste, and scrolling back. The menu stays
+hidden until the button at the top right (or F10) is used: examples, text size,
+colors (with a color picker), system fonts, help; Alt+Enter is full screen. Size, colors and font are kept in
+`~/.local/share/lugforth/lugforth.ini` (`LUGFORTH_HOME` changes the directory), which
+can be edited: `size=`, `margin=`, `fg=` and `bg=` (hexadecimal RRGGBB), `font=` (a TrueType file), `fullscreen=` (the key, `Alt+Enter` by default).
 
 Static binaries are not possible: Lugforth reaches libc, SDL2 and X11 through
 `dlopen`/`dlsym`.

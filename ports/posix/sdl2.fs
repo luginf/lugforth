@@ -364,7 +364,7 @@ create voices #voices voice-size * allot
 \ A beep waits for the ones before it. A hit starts at once and plays over the
 \ others (8 at a time, the oldest is cut), fading out linearly, and its pitch can
 \ fall while it plays. The mix is queued a few milliseconds ahead by flip, delay
-\ and hit itself, so call flip or delay regularly.
+\ and drum-hit itself, so call flip or delay regularly.
 0 value pitch-drop   ( percent the pitch falls during a hit, 0 to 100 )
 2205 constant latency   ( samples kept queued, 50 ms )
 create mix 4096 cells allot
@@ -417,7 +417,7 @@ create mixed 4096 2* allot
   0 v !   freq v 1 cells + !   n v 2 cells + !   n v 3 cells + !
   wave v 4 cells + !   pitch-drop v 5 cells + !   beep-volume v 6 cells + !
 ;
-: hit ( freq ms -- )
+: drum-hit ( freq ms -- )
   audio-open
   audio-open? 0= if 2drop exit then
   start-voice pump

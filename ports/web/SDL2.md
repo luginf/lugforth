@@ -57,7 +57,7 @@ These words have the same names and stack effects as on Linux, see
 * Images (the words of `sdl2-image`, which is a no-op here):
   `load-image free-image image-size draw draw-size draw-part image-alpha
   image-tint`
-* Beeps and hits: `beep hit pitch-drop silence beeping? wave beep-volume
+* Beeps and hits: `beep drum-hit pitch-drop silence beeping? wave beep-volume
   audio-open audio-open?`
 
 ## What is different
@@ -88,7 +88,7 @@ These words have the same names and stack effects as on Linux, see
   in SDL, using a copy of the image kept for each color.
 * **Sound** starts after the first key press or click, because browsers
   refuse to play sound before. Beeps before that are dropped, and a queue
-  more than two seconds long is not extended. A `hit` plays at once over
+  more than two seconds long is not extended. A `drum-hit` plays at once over
   the other sounds, with at most 24 sounds alive.
 * **Tunes** (`sdl2-abc`, the reader of ABC notation, see `ports/posix/SDL2.md`) have
   the same words as on Linux: `abc abc-play abc-loop tune-play tune-loop

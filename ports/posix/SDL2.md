@@ -60,10 +60,10 @@ Beeps (no library beyond libSDL2): `beep ( freq ms -- )` queues a tone,
 so several `beep` in a row play as a melody. `wave` picks the shape
 (0 square, 1 triangle, 2 saw, 3 noise), `beep-volume`, `silence`, `beeping?`.
 
-Hits: `hit ( freq ms -- )` starts at once and plays over other sounds (8 at a
+Hits: `drum-hit ( freq ms -- )` starts at once and plays over other sounds (8 at a
 time), fading out; `pitch-drop` (percent) makes the pitch fall, enough for a
 kick drum. Call `flip` or `delay` regularly, as a game loop does. Use `beep` or
-`hit` in a program, not both.
+`drum-hit` in a program, not both.
 
 ## Images (`sdl2-image`)
 
@@ -128,19 +128,40 @@ build has the same words with a simple synthesizer.
 
 ## Console window (`sdl2_console.fs`)
 
-`include sdl2_console.fs` then `console` sends `type` and `key` to an SDL window with its
-own bitmap font (the Android app uses it). Add `desktop` before `console` for a menu bar
-(Examples, View, Help), a TrueType font when SDL_ttf and a font are found (`LUGFORTH_FONT`,
-or DejaVu Sans Mono of the system), mouse selection (copied), middle click or Ctrl+V to
-paste, wheel or PageUp/PageDown to scroll back, and Ctrl+wheel, Ctrl +/-, Ctrl 0 for the
-text size. The menu lists the `.fs` files of `LUGFORTH_EXAMPLES` (default: the current
-directory). ASCII only for now.
+`lugforth --gui [file.fs]` opens a console window (`type` and `key` go to an SDL window). The
+code is part of the binary: `gui-load` loads it, then `desktop console` starts it (Android
+uses `gui-load smooth-font console`). Without SDL2 or a display, `--gui` says so and keeps
+the terminal.
+
+The menu is hidden: the button at the top right, or F10, shows it (a right click on the menu or on the button toggles it too) (Examples, View, Colors,
+Font, Help). Examples lists the `.fs` files of `LUGFORTH_EXAMPLES` (default: the current
+directory). Colors has a color picker for the text and for the background (a square of saturation and brightness, a strip of hues, the hex value) and a few themes. Alt+Enter, or View, toggles full screen. Font lists the fixed width
+TrueType and OpenType fonts found in `/usr/share/fonts`, `~/.local/share/fonts` and `~/.fonts` (the wheel scrolls a long menu). View also has
+More margin and Less margin (`margin=` in the `.ini`, in pixels). Also: mouse selection (copied), middle click or Ctrl+V to paste, wheel
+or PageUp/PageDown to scroll back, Ctrl+wheel, Ctrl +/-, Ctrl 0 for the text size. ASCII only.
+
+Settings are kept in `lugforth.ini` in `~/.local/share/lugforth` (or `LUGFORTH_HOME`):
+
+```
+size=15
+fg=D2D2D2
+bg=000000
+font=/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf
+margin=12
+fullscreen=Alt+Enter
+```
+
+`fullscreen=` is the key of full screen: `Alt+Enter`, `F11`, `Ctrl+Shift+F`...
+
+`font=` wins over `LUGFORTH_FONT`, then DejaVu Sans Mono and other common fonts of the
+system. `ports/posix/sdl2_console_tests.fs` tests the settings (dummy drivers, like the
+other SDL tests).
 
 ## Limits
 
 * Calls pass integers and pointers only: no floats or structs by value
   (`SDL_RenderCopyEx`, rotation...).
-* No callbacks from C into Forth: audio uses queues (`beep`, `hit`) or the mixer.
+* No callbacks from C into Forth: audio uses queues (`beep`, `drum-hit`) or the mixer.
 * Mouse positions are in logical pixels, whatever the `zoom`.
 * `pressed?` reads the held state once per `events`; a press shorter than one
   frame is missed.

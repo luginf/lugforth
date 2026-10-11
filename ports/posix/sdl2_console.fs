@@ -14,9 +14,9 @@
 
 ( A text console drawn in an SDL window, with its own bitmap font )
 \
-\ Usage:
-\   include sdl2_console.fs
-\   console            \ type, key and key? now go to the SDL window
+\ Usage (the code is part of the lugforth binary, `lugforth --gui` does all this):
+\   gui-load           \ loads sdl2 and this console
+\   desktop console    \ type, key and key? now go to the SDL window (with sdl2 on top)
 \
 \ Needs only libSDL2. Keys come from SDL text input, so the native keyboard of
 \ Android shows up. When a program opens its own screen (screen), the console
@@ -31,6 +31,18 @@
 \ TrueType font when SDL_ttf and a font are found (LUGFORTH_FONT, or DejaVu Sans
 \ Mono of the system). Text size: Ctrl+wheel, Ctrl +, Ctrl -, Ctrl 0.
 
+( The code is a string, evaluated when asked: SDL2 is only loaded then. )
+( A copy is evaluated: the words compiled would overwrite the string while it is read. )
+: eval-copy ( a n -- )
+  { a n }
+  'tib @ #tib @ >in @ { t1 t2 t3 }
+  n allocate throw { buf }
+  a buf n cmove
+  buf n ['] evaluate catch { err }
+  t3 >in !  t2 #tib !  t1 'tib !   ( a throw skips the restore of evaluate )
+  buf free drop  err throw ;
+
+: gui-src r|
 sdl2
 sdl2 definitions also posix
 
@@ -47,7 +59,7 @@ $0303 constant SDL_TEXTINPUT
 
 ( ---- Font: 95 glyphs, from space to tilde, 16 rows of 8 bits each ---- )
 create font-data
-  $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c,   \  
+  $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c,   \ space
   $00 c, $00 c, $00 c, $18 c, $18 c, $18 c, $18 c, $18 c, $18 c, $00 c, $18 c, $18 c, $00 c, $00 c, $00 c, $00 c,   \ !
   $00 c, $00 c, $00 c, $2c c, $2c c, $2c c, $2c c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c,   \ "
   $00 c, $00 c, $12 c, $16 c, $16 c, $7f c, $24 c, $2c c, $fe c, $68 c, $48 c, $48 c, $00 c, $00 c, $00 c, $00 c,   \ #
@@ -139,7 +151,7 @@ create font-data
   $00 c, $00 c, $00 c, $00 c, $00 c, $42 c, $66 c, $66 c, $24 c, $3c c, $18 c, $18 c, $18 c, $10 c, $70 c, $00 c,   \ y
   $00 c, $00 c, $00 c, $00 c, $00 c, $7e c, $04 c, $0c c, $18 c, $30 c, $20 c, $7e c, $00 c, $00 c, $00 c, $00 c,   \ z
   $00 c, $0e c, $18 c, $18 c, $18 c, $18 c, $70 c, $18 c, $18 c, $18 c, $18 c, $18 c, $0e c, $00 c, $00 c, $00 c,   \ {
-  $00 c, $18 c, $18 c, $18 c, $18 c, $18 c, $18 c, $18 c, $18 c, $18 c, $18 c, $18 c, $18 c, $18 c, $00 c, $00 c,   \ |
+  $00 c, $18 c, $18 c, $18 c, $18 c, $18 c, $18 c, $18 c, $18 c, $18 c, $18 c, $18 c, $18 c, $18 c, $00 c, $00 c,   \ vbar
   $00 c, $70 c, $10 c, $18 c, $18 c, $18 c, $0e c, $18 c, $18 c, $18 c, $18 c, $10 c, $70 c, $00 c, $00 c, $00 c,   \ }
   $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $72 c, $0e c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c,   \ ~
 
@@ -151,7 +163,14 @@ create con-buf max-cols con-lines * allot
 0 value cx   0 value cy
 0 value dirty
 0 value menu-on     ( a desktop: menu bar, mouse, TrueType font )
+0 value bar-open    ( the menu bar shows when the button at the top right is clicked )
+$d2d2d2 value fg-col   $000000 value bg-col
+: rgb-split ( $rrggbb -- r g b ) dup 16 rshift 255 and swap dup 8 rshift 255 and swap 255 and ;
+defer save-ini      ( keeps the settings of a desktop in lugforth.ini )
+: no-save ( -- ) ;   ' no-save is save-ini
+defer pick-open ( n -- )   ( the color picker, further down )
 0 value top-px      ( height of the menu bar )
+0 value margin      ( blank pixels between the text and the edge of the window )
 0 value back        ( lines scrolled back )
 0 value sel-on
 
@@ -273,10 +292,10 @@ create osize 8 allot
   osize sl@ to ow   osize 4 + sl@ to oh
   user-size dup 0= if drop ow oh min hdiv / then hmin max hmax min to hsize
   hsize font-cell to con-ch to con-cw
-  menu-on if con-ch 3 * 2/ else 0 then to top-px
+  menu-on bar-open and if con-ch 3 * 2/ else 0 then to top-px
   hsize last-built <> if atlas-build hsize to last-built then
-  ow con-cw / max-cols min to cols
-  oh top-px - con-ch / 1 max to con-rows
+  ow margin 2* - con-cw / 1 max max-cols min to cols
+  oh top-px - margin 2* - con-ch / 1 max to con-rows
   cols to con-cols
   -1 to dirty ;
 : relayout ( -- )   renderer con-renderer = if con-layout then ;
@@ -284,8 +303,8 @@ create osize 8 allot
   2* to user-size relayout ;
 : font-step ( d -- )   ( one step bigger or smaller, as a pinch or the wheel does )
   hrel if dup hsize hrel * 100 / 1 max * else hstep * then
-  hsize + hmin max hmax min to user-size relayout ;
-: font-auto ( -- )   0 to user-size relayout ;
+  hsize + hmin max hmax min to user-size relayout save-ini ;
+: font-auto ( -- )   0 to user-size relayout save-ini ;
 
 ( ---- Selection, with the mouse ---- )
 0 value sel-a   0 value sel-b   0 value dragging
@@ -319,7 +338,7 @@ create selbuf 20000 allot
     2dup <= if
       rb - con-cols 1- min to bc2   rb - to bc1
       bc1 bc2 <= if
-        bc1 con-cw *  top-px i con-ch * +  bc2 bc1 - 1+ con-cw *  con-ch box
+        bc1 con-cw * margin +  top-px margin + i con-ch * +  bc2 bc1 - 1+ con-cw *  con-ch box
       then
     else 2drop then
   loop drop ;
@@ -346,13 +365,164 @@ create text-queue q-size allot
 : ctrl? ( -- f ) kmod $c0 and 0<> ;
 : shift? ( -- f ) kmod 3 and 0<> ;
 
+( ---- Settings, kept in lugforth.ini ---- )
+z" mkdir" 2 sysfunc c-mkdir
+create fpath 300 allot      ( the TrueType font file, empty for the bitmap font )
+create inipath 400 allot   0 value inin
+create ibuf 1200 allot   0 value ibn
+create obuf 1200 allot   0 value obn
+0 value ini-size
+0 value ka   0 value kn   0 value va   0 value vn   0 value lstart
+: ini+ ( a n -- ) dup >r inipath inin + swap cmove r> +to inin ;
+: ini-dir ( -- )   \ LUGFORTH_HOME, or ~/.local/share/lugforth
+  0 to inin
+  z" LUGFORTH_HOME" c-getenv ?dup if z>s ini+ exit then
+  z" HOME" c-getenv ?dup if z>s ini+ s" /.local/share/lugforth" ini+ exit then
+  s" ." ini+ ;
+: mkdirs ( -- )   \ the directory of inipath, and its parents
+  0 inipath inin + c!
+  inin 1 ?do
+    inipath i + c@ [char] / = if
+      0 inipath i + c!   inipath 493 c-mkdir drop   [char] / inipath i + c!
+    then
+  loop
+  inipath 493 c-mkdir drop ;
+: ini-file ( -- a n ) ini-dir s" /lugforth.ini" ini+ inipath inin ;
+: ini-read ( -- )
+  0 to ibn
+  ini-file r/o open-file if drop exit then
+  >r ibuf 1190 r@ read-file if drop 0 then to ibn
+  r> close-file drop ;
+: key= ( a n -- f ) ka kn 2swap compare 0= ;
+: num ( a n base -- u )
+  base @ >r base !  0 0 2swap >number 2drop drop  r> base ! ;
+: hexnum ( a n -- u ) 16 num ;
+: decnum ( a n -- u ) 10 num ;
+
+( Full screen: the key is a word of lugforth.ini, like Alt+Enter or F11 )
+1 value fs-mod   $0d value fs-sym   0 value fs-on   0 value ts   0 value kl
+create fsname 32 allot
+create kbuf 32 allot
+create lbuf 60 allot
+: lower ( c -- c ) dup 65 >= over 90 <= and if 32 + then ;
+: key-token ( a n -- )
+  2dup s" alt" compare 0= if 2drop fs-mod 1 or to fs-mod exit then
+  2dup s" ctrl" compare 0= if 2drop fs-mod 2 or to fs-mod exit then
+  2dup s" shift" compare 0= if 2drop fs-mod 4 or to fs-mod exit then
+  2dup s" enter" compare 0= if 2drop $0d to fs-sym exit then
+  2dup s" return" compare 0= if 2drop $0d to fs-sym exit then
+  2dup s" esc" compare 0= if 2drop 27 to fs-sym exit then
+  2dup s" space" compare 0= if 2drop 32 to fs-sym exit then
+  2dup s" tab" compare 0= if 2drop 9 to fs-sym exit then
+  dup 1 = if drop c@ to fs-sym exit then
+  over c@ 102 = over 1 > and if   ( f1 to f12 )
+    over 1+ over 1- decnum dup 1 13 within if $40000039 + to fs-sym 2drop exit then drop
+  then
+  2drop ;
+: parse-key ( a n -- )
+  0 to fs-mod   0 to fs-sym
+  31 min dup to kl   kbuf swap cmove
+  kl 0 ?do kbuf i + dup c@ lower swap c! loop
+  0 to ts
+  kl 0 ?do kbuf i + c@ [char] + = if kbuf ts + i ts - key-token  i 1+ to ts then loop
+  kbuf ts + kl ts - key-token ;
+: fs-set ( a n -- )
+  31 min { a n }
+  a fsname n cmove   0 fsname n + c!
+  fsname n parse-key ;
+: mods ( -- n )   kmod $300 and 0<> 1 and   kmod $c0 and 0<> 2 and or   kmod 3 and 0<> 4 and or ;
+: fs-key? ( sym -- f )   fs-sym = mods fs-mod = and ;
+: fs-toggle ( -- )   fs-on 0= to fs-on   fs-on fullscreen   relayout ;
+: fs-label ( -- a n )
+  s" Full screen   " lbuf swap cmove   fsname z>s 40 min lbuf 14 + swap cmove
+  lbuf  14 fsname z>s nip 40 min + ;
+s" Alt+Enter" fs-set
+: ini-kv ( -- )
+  s" size" key= if va vn decnum to ini-size exit then
+  s" margin" key= if va vn decnum 64 min to margin exit then
+  s" fg" key= if va vn hexnum to fg-col exit then
+  s" bg" key= if va vn hexnum to bg-col exit then
+  s" fullscreen" key= if va vn fs-set exit then
+  s" font" key= if
+    va fpath vn 299 min dup >r cmove   0 fpath r> + c!  exit then ;
+: eq-pos ( a n -- k )   0 ?do dup i + c@ [char] = = if drop i unloop exit then loop drop -1 ;
+: ini-line ( a n -- )
+  2dup eq-pos dup 0< if drop 2drop exit then
+  to kn   over to ka   kn - 1- to vn   kn + 1+ to va
+  ini-kv ;
+: ini-parse ( -- )
+  0 to lstart
+  ibn 0 ?do
+    ibuf i + c@ 10 = if ibuf lstart + i lstart - ini-line  i 1+ to lstart then
+  loop
+  ibn lstart > if ibuf lstart + ibn lstart - ini-line then ;
+: ini-load ( -- )   ini-read ini-parse ;
+: ob+ ( a n -- ) dup >r obuf obn + swap cmove r> +to obn ;
+: ob-nl ( -- ) 10 obuf obn + c!  1 +to obn ;
+: hex6 ( u -- a n )   base @ >r 16 base !  <# # # # # # # #> r> base ! ;
+: env-font? ( -- f )   \ the font comes from LUGFORTH_FONT (the AppImage), whose path changes at each run
+  z" LUGFORTH_FONT" c-getenv ?dup if z>s fpath z>s compare 0= else 0 then ;
+: ini-save ( -- )
+  menu-on 0= if exit then
+  0 to obn
+  s" # Lugforth window. Colors are hexadecimal RRGGBB, font is a TrueType file." ob+ ob-nl
+  hrel if user-size to ini-size then
+  s" size=" ob+  ini-size str ob+ ob-nl
+  s" fg=" ob+  fg-col hex6 ob+ ob-nl
+  s" bg=" ob+  bg-col hex6 ob+ ob-nl
+  s" margin=" ob+  margin str ob+ ob-nl
+  s" fullscreen=" ob+  fsname z>s ob+ ob-nl
+  fpath c@ env-font? 0= and if s" font=" ob+  fpath z>s ob+ ob-nl then
+  ini-dir mkdirs ini-file w/o create-file if drop exit then
+  >r obuf obn r@ write-file drop r> close-file drop ;
+' ini-save is save-ini
+
+( Colors )
+create theme-fg $d2d2d2 , $202020 , $33ff66 , $ffb000 , $93a1a1 , $e0e8ff ,
+create theme-bg $000000 , $f4f4f0 , $001a08 , $1a1000 , $002b36 , $10205a ,
+: theme-set ( i -- )
+  dup cells theme-fg + @ to fg-col   cells theme-bg + @ to bg-col   -1 to dirty save-ini ;
+
+( System fonts to choose from: their names are kept here, TrueType loads them )
+create fcand 20 cells allot
+: c+ ( a z -- a' ) over ! cell+ ;
+: cands ( -- )
+  fcand
+  z" /usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf" c+
+  z" /usr/share/fonts/dejavu/DejaVuSansMono.ttf" c+
+  z" /usr/share/fonts/TTF/DejaVuSansMono.ttf" c+
+  z" /usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf" c+
+  z" /usr/share/fonts/liberation-mono/LiberationMono-Regular.ttf" c+
+  z" /usr/share/fonts/liberation/LiberationMono-Regular.ttf" c+
+  z" /usr/share/fonts/truetype/ubuntu/UbuntuMono-R.ttf" c+
+  z" /usr/share/fonts/truetype/noto/NotoSansMono-Regular.ttf" c+
+  z" /usr/share/fonts/noto/NotoSansMono-Regular.ttf" c+
+  z" /usr/share/fonts/truetype/freefont/FreeMono.ttf" c+
+  z" /usr/share/fonts/truetype/hack/Hack-Regular.ttf" c+
+  z" /usr/share/fonts/TTF/Hack-Regular.ttf" c+
+  z" /usr/share/fonts/truetype/firacode/FiraCode-Regular.ttf" c+
+  z" /usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Regular.ttf" c+
+  z" /usr/share/fonts/truetype/source-code-pro/SourceCodePro-Regular.ttf" c+
+  z" /usr/share/fonts/truetype/cascadia-code/CascadiaMono-Regular.ttf" c+
+  0 swap ! ;
+cands
+( Fixed width fonts found on the system, by the Font menu )
+120 constant fl-max   24000 constant fpool-size
+create flist fl-max cells allot
+create fpool fpool-size allot
+create spath 520 allot
+0 value fcount   0 value fused   0 value fscanned   0 value splen   0 value sdepth
+
 ( ---- The menu bar of a desktop ---- )
--1 value menu-open   -1 value hover   0 value help-open   0 value hit
-3 constant menus
+-1 value menu-open   -1 value hover   0 value help-open   0 value menu-clicked
+0 value drop-off    ( first entry shown, the wheel scrolls a long menu )
+5 constant menus
 : bar-h ( -- n ) top-px ;
 : m-name ( i -- a n )
   dup 0= if drop s" Examples" exit then
-  1 = if s" View" exit then
+  dup 1 = if drop s" View" exit then
+  dup 2 = if drop s" Colors" exit then
+  3 = if s" Font" exit then
   s" Help" ;
 : m-w ( i -- px ) m-name nip 2 + con-cw * ;
 : m-x ( i -- px ) con-cw swap 0 ?do i m-w + loop ;
@@ -362,11 +532,11 @@ create text-queue q-size allot
     dup i m-x >= over i m-x i m-w + < and if nip i swap then
   loop drop ;
 
-64 constant ent-max
+128 constant ent-max
 create ent-a ent-max cells allot
 create ent-n ent-max cells allot
 create ent-id ent-max cells allot
-4096 constant pool-size
+8192 constant pool-size
 create ent-pool pool-size allot
 0 value ent-count   0 value ent-used
 0 value xa   0 value xn   0 value xid
@@ -403,32 +573,51 @@ create ent-pool pool-size allot
   ex-dir open-dir if drop exit then
   begin dup readdir dup while ex-ent repeat drop closedir drop ;
 
+: no-fonts ( -- ) s" (no system font found)" 0 ent-add ;
+defer font-fill ( -- )   ' no-fonts is font-fill
+defer font-pick ( k -- )   ' drop is font-pick
 : menu-fill ( i -- )
   0 to ent-count   0 to ent-used
   dup 0= if
     drop ex-list ent-sort
     ent-count 0= if s" (no example here)" 0 ent-add then
     exit then
-  1 = if
+  dup 1 = if
+    drop
     s" Bigger        Ctrl +" 1 ent-add
     s" Smaller       Ctrl -" 2 ent-add
     s" Default size  Ctrl 0" 3 ent-add
     s" Clear screen  Ctrl L" 6 ent-add
+    s" Hide menu     F10" 7 ent-add
+    fs-label 8 ent-add
+    s" More margin" 9 ent-add
+    s" Less margin" 10 ent-add
     exit then
+  dup 2 = if
+    drop
+    s" Foreground    " 40 ent-add   s" Background    " 41 ent-add
+    s" Dark" 20 ent-add   s" Light" 21 ent-add   s" Green" 22 ent-add
+    s" Amber" 23 ent-add   s" Solarized" 24 ent-add   s" Blue" 25 ent-add
+    exit then
+  3 = if font-fill exit then
   s" Keys and tips" 4 ent-add
   s" List the words" 5 ent-add ;
 
 : close-menu ( -- )  -1 to menu-open  -1 to hover  -1 to dirty ;
-: open-menu ( i -- ) dup to menu-open menu-fill  -1 to hover  -1 to dirty ;
+: margin-step ( n -- )   margin + 0 max 64 min to margin  relayout save-ini ;
+: bar-toggle ( -- )   bar-open 0= to bar-open  close-menu  relayout ;
+: open-menu ( i -- ) dup to menu-open menu-fill  0 to drop-off  -1 to hover  -1 to dirty ;
 : drop-x ( -- px ) menu-open m-x ;
 : drop-w ( -- px )
   0 ent-count 0 ?do i ent-str nip max loop 2 + con-cw * ;
 : drop-rows ( -- n ) ent-count con-rows 2 - min ;
+: drop-scroll ( n -- )   drop-off + ent-count drop-rows - min 0 max to drop-off  -1 to dirty ;
 : drop-hit ( x y -- k )   \ the entry under the pointer, or -1
   bar-h - dup 0< if 2drop -1 exit then   con-ch /
   dup drop-rows >= if 2drop -1 exit then
   swap drop-x - dup 0< if 2drop -1 exit then
-  drop-w >= if drop -1 exit then ;
+  drop-w >= if drop -1 exit then
+  drop-off + ;
 
 : run-entry ( k -- )
   dup cells ent-id + @
@@ -440,23 +629,47 @@ create ent-pool pool-size allot
   dup 4 = if drop -1 to help-open -1 to dirty exit then
   dup 5 = if drop s" words" q-str 13 q-push exit then
   dup 6 = if drop 12 q-push exit then
+  dup 7 = if drop bar-toggle exit then
+  dup 20 >= over 25 <= and if 20 - theme-set exit then
+  dup 40 = if drop 1 pick-open exit then
+  dup 41 = if drop 2 pick-open exit then
+  dup 8 = if drop fs-toggle exit then
+  dup 9 = if drop 4 margin-step exit then
+  dup 10 = if drop -4 margin-step exit then
+  dup 100 >= if 100 - font-pick exit then
   drop ;
 
 : help-line ( k -- a n )
   dup 0 = if drop s" Lugforth" exit then
   dup 1 = if drop s" " exit then
-  dup 2 = if drop s" Examples: run a file of your examples folder." exit then
-  dup 3 = if drop s" View: text size (Ctrl+wheel, Ctrl + and Ctrl - too)." exit then
-  dup 4 = if drop s" Mouse: drag to select and copy, middle click pastes." exit then
-  dup 5 = if drop s" Wheel, PageUp and PageDown scroll back." exit then
-  dup 6 = if drop s" Tab completes words and file names, Up and Down" exit then
-  dup 7 = if drop s" give back the history. Type  words  for the list" exit then
-  dup 8 = if drop s" of words and  bye  to quit." exit then
-  dup 9 = if drop s" " exit then
+  dup 2 = if drop s" Menu: the button at the top right, or F10; right click hides it." exit then
+  dup 3 = if drop s" Examples: run a file of your examples folder." exit then
+  dup 4 = if drop s" View: text size (Ctrl+wheel, Ctrl + and Ctrl - too)." exit then
+  dup 5 = if drop s" Colors (with a picker) and Font: kept with the size in" exit then
+  dup 6 = if drop s" ~/.local/share/lugforth/lugforth.ini" exit then
+  dup 7 = if drop s" Mouse: drag to select and copy, middle click pastes." exit then
+  dup 8 = if drop s" Wheel, PageUp and PageDown scroll back." exit then
+  dup 9 = if drop s" Tab completes words and file names, Up and Down" exit then
+  dup 10 = if drop s" give back the history. Type  words  for the list" exit then
+  dup 11 = if drop s" of words and  bye  to quit." exit then
+  dup 12 = if drop s" Full screen: Alt+Enter, or the View menu." exit then
+  dup 13 = if drop s" " exit then
   drop s" Click or press a key to close." ;
-11 constant help-lines
+15 constant help-lines
 
 : fbox ( x y w h r g b -- ) rgb box ;
+: hb-size ( -- n ) con-ch 3 * 2/ ;
+: hb-x ( -- n ) ow hb-size - ;
+: hb-hit ( x y -- f ) hb-size < swap hb-x >= and ;
+0 value ht
+: draw-hb ( -- )
+  bar-open if 60 64 67 rgb else 30 32 36 200 rgba then
+  hb-x 0 hb-size hb-size box
+  230 230 230 rgb
+  hb-size 12 / 2 max to ht
+  3 0 do
+    hb-x hb-size 4 / +   hb-size i 1+ * 4 / ht 2/ -   hb-size 2/ ht box
+  loop ;
 : draw-bar ( -- )
   0 0 ow bar-h 32 33 36 fbox
   230 230 230 glyph-tint
@@ -469,8 +682,12 @@ create ent-pool pool-size allot
   drop-x bar-h drop-w drop-rows con-ch * 45 46 50 fbox
   230 230 230 glyph-tint
   drop-rows 0 ?do
-    i hover = if drop-x bar-h i con-ch * +  drop-w con-ch  63 81 181 fbox then
-    i ent-str  drop-x con-cw +  bar-h i con-ch * +  draw-text
+    i drop-off + hover = if drop-x bar-h i con-ch * +  drop-w con-ch  63 81 181 fbox then
+    i drop-off + ent-str  drop-x con-cw +  bar-h i con-ch * +  draw-text
+    i drop-off + cells ent-id + @ dup 40 = swap 41 = or if
+      i drop-off + cells ent-id + @ 40 = if fg-col else bg-col then  color
+      drop-x drop-w + con-cw 3 * -  bar-h i con-ch * + 3 +  con-cw 2*  con-ch 6 -  box
+    then
   loop ;
 0 value hw   0 value hx   0 value hy
 : draw-help ( -- )
@@ -484,26 +701,115 @@ create ent-pool pool-size allot
     i help-line  hx con-cw +  hy i 1+ con-ch * +  draw-text
   loop ;
 
+: ev-x ( -- n ) ev 20 + sl@ ;
+: ev-y ( -- n ) ev 24 + sl@ ;
+( ---- Color picker: a square of saturation and brightness, a strip of hues ---- )
+0 value pick-on   0 value pick-drag   0 value ph   0 value ps   0 value pv
+0 value qx   0 value qy   0 value qs   0 value qc   0 value qg
+: hsv>rgb ( h s v -- r g b )
+  { h s v }
+  h 60 / { reg }
+  h 60 mod 255 * 60 / { f }
+  v 255 s - * 255 / { p }
+  v 255 s f * 255 / - * 255 / { q }
+  v 255 s 255 f - * 255 / - * 255 / { t }
+  reg 0 = if v t p exit then
+  reg 1 = if q v p exit then
+  reg 2 = if p v t exit then
+  reg 3 = if p q v exit then
+  reg 4 = if t p v exit then
+  v p q ;
+: rgb>hsv ( r g b -- h s v )
+  { r g b }
+  r g max b max { mx }
+  r g min b min { mn }
+  mx mn - { d }
+  0 { h }
+  d 0<> if
+    mx r = if g b - 60 * d / to h
+    else mx g = if b r - 60 * d / 120 + to h
+    else r g - 60 * d / 240 + to h then then
+    h 0< if h 360 + to h then
+  then
+  h   mx 0= if 0 else d 255 * mx / then   mx ;
+: rgb-pack ( r g b -- $rrggbb ) { r g b } r 16 lshift g 8 lshift or b or ;
+: pick-cur ( -- $rrggbb ) pick-on 1 = if fg-col else bg-col then ;
+: pick-apply ( -- )
+  ph ps pv hsv>rgb rgb-pack
+  pick-on 1 = if to fg-col else to bg-col then   -1 to dirty ;
+: pick-start ( n -- )   ( 1 text color, 2 background )
+  to pick-on   pick-cur rgb-split rgb>hsv to pv to ps to ph   -1 to dirty ;
+' pick-start is pick-open
+: pick-close ( -- )   0 to pick-on  0 to pick-drag  -1 to dirty  save-ini ;
+( geometry, in pixels: qs side of the square, qc size of one of its 24 cells )
+: pick-geom ( -- )
+  con-ch 9 * 24 / 2 max to qc   qc 24 * to qs   con-ch 2/ to qg
+  2 m-x  ow qs qg 2* + - min  0 max to qx   bar-h to qy ;
+: pick-w ( -- n ) qs qg 2* + ;
+: pick-h ( -- n ) qg 5 * con-ch 3 * + qs + ;
+: sq-x ( -- n ) qx qg + ;
+: sq-y ( -- n ) qy qg 2* + con-ch + ;
+: hue-y ( -- n ) sq-y qs + qg + ;
+: pick-inside ( x y -- f )   qy - swap qx - swap   pick-h u< swap pick-w u< and ;
+: pick-sv ( x y -- )
+  sq-y - 0 max qs 1- min   255 qs 1- */ 255 swap - to pv
+  sq-x - 0 max qs 1- min   255 qs 1- */ to ps   pick-apply ;
+: pick-hue ( x -- )   sq-x - 0 max qs 1- min   359 qs 1- */ to ph   pick-apply ;
+: pick-click ( -- )
+  pick-geom
+  ev-x ev-y pick-inside 0= if pick-close exit then
+  ev-x sq-x >= ev-x sq-x qs + < and ev-y sq-y >= and ev-y sq-y qs + < and if
+    1 to pick-drag ev-x ev-y pick-sv exit then
+  ev-x sq-x >= ev-x sq-x qs + < and ev-y hue-y >= and ev-y hue-y con-ch + < and if
+    2 to pick-drag ev-x pick-hue then ;
+: pick-move ( -- )
+  pick-geom
+  pick-drag 1 = if ev-x ev-y pick-sv exit then
+  ev-x pick-hue ;
+: draw-picker ( -- )
+  pick-on 0= if exit then
+  pick-geom
+  qx qy pick-w pick-h 40 42 46 fbox
+  230 230 230 glyph-tint
+  pick-on 1 = if s" Foreground" else s" Background" then  sq-x qy qg + draw-text
+  24 0 do
+    24 0 do
+      ph  i 255 * 23 /  255 j 255 * 23 / -  hsv>rgb rgb
+      sq-x i qc * +  sq-y j qc * +  qc qc box
+    loop
+  loop
+  48 0 do
+    i 359 * 47 /  255 255 hsv>rgb rgb
+    sq-x i qs * 48 / +  hue-y  qs 48 / 1+  con-ch box
+  loop
+  255 255 255 rgb   sq-x ps qs 1- * 255 / + 4 -   sq-y 255 pv - qs 1- * 255 / + 4 -   9 9 frame
+  0 0 0 rgb   sq-x ps qs 1- * 255 / + 3 -   sq-y 255 pv - qs 1- * 255 / + 3 -   7 7 frame
+  255 255 255 rgb   sq-x ph qs 1- * 359 / + 1-   hue-y 1-   3 con-ch 2 + box
+  pick-cur color   sq-x  hue-y con-ch + qg +  con-cw 3 *  con-ch box
+  230 230 230 glyph-tint
+  [char] # lbuf c!  pick-cur hex6 lbuf 1+ swap cmove   lbuf 7
+  sq-x con-cw 4 * +  hue-y con-ch + qg +  draw-text ;
+
 ( ---- Drawing ---- )
 0 value blink
 : con-draw ( -- )
-  0 0 0 rgb cls
-  210 210 210 glyph-tint
+  bg-col color cls
+  fg-col rgb-split glyph-tint
   vis view-top { v top }
   top v draw-sel
   v 0 ?do
     con-cols 0 ?do
       i j top + grid c@
       dup 32 > over 127 < and if
-        32 - i con-cw * j con-ch * top-px + glyph-at
+        32 - i con-cw * margin +  j con-ch * top-px + margin + glyph-at
       else drop then
     loop
   loop
   blink back 0= and if
-    210 210 210 150 rgba
-    cx con-cw *  cy top - con-ch * top-px + con-ch 3 / 2* +  con-cw  con-ch 3 /  box
+    fg-col rgb-split 150 rgba
+    cx con-cw * margin +  cy top - con-ch * top-px + margin + con-ch 3 / 2* +  con-cw  con-ch 3 /  box
   then
-  menu-on if draw-bar draw-drop draw-help then
+  menu-on if bar-open if draw-bar then draw-hb draw-drop draw-picker draw-help then
   renderer SDL_RenderPresent drop
   0 to dirty ;
 
@@ -517,8 +823,10 @@ create ent-pool pool-size allot
   dup [char] c = shift? and if drop sel-copy -1 exit then
   dup [char] a >= over [char] z <= and shift? 0= and if 96 - q-push -1 exit then
   drop 0 ;
-: key-event ( sym -- )
+: con-key-event ( sym -- )
   help-open if drop 0 to help-open -1 to dirty exit then
+  pick-on if drop pick-close exit then
+  dup fs-key? if drop fs-toggle exit then
   ctrl? if dup ctrl-key if drop exit then then
   dup $0d = over $40000058 = or if drop 13 q-push exit then
   dup 8 = over 9 = or over 27 = or if q-push exit then
@@ -531,22 +839,25 @@ create ent-pool pool-size allot
   dup $4000004d = if drop [char] F q-csi exit then
   dup $4000004b = if drop con-rows 1- scroll-by exit then   ( PageUp )
   dup $4000004e = if drop con-rows 1- negate scroll-by exit then   ( PageDown )
+  dup $40000043 = if drop menu-on if bar-toggle then exit then   ( F10 )
   dup $40000044 = if drop -1 font-step exit then   ( F11 )
   dup $40000045 = if drop 1 font-step exit then    ( F12 )
   drop ;
 
-: ev-x ( -- n ) ev 20 + sl@ ;
-: ev-y ( -- n ) ev 24 + sl@ ;
 : mouse>cell ( x y -- idx )
-  top-px - con-ch / 0 max view-top +
-  swap con-cw / 0 max con-cols 1- min
+  top-px - margin - con-ch / 0 max view-top +
+  swap margin - con-cw / 0 max con-cols 1- min
   swap max-cols * + ;
 : mouse-down ( -- )
   help-open if 0 to help-open -1 to dirty exit then
+  pick-on if pick-click exit then
+  ev 16 + c@ 3 = if   ( right click on the menu: hide it, or show it again )
+    ev-y bar-h <  ev-x ev-y hb-hit or if bar-toggle then exit then
+  ev-x ev-y hb-hit if bar-toggle exit then
   ev-y bar-h < if
-    ev-x m-at to hit
-    hit menu-open = if close-menu exit then
-    hit 0< 0= if hit open-menu else close-menu then exit
+    ev-x m-at to menu-clicked
+    menu-clicked menu-open = if close-menu exit then
+    menu-clicked 0< 0= if menu-clicked open-menu else close-menu then exit
   then
   menu-open 0< 0= if
     ev-x ev-y drop-hit dup 0< 0= if run-entry close-menu exit then drop
@@ -556,8 +867,10 @@ create ent-pool pool-size allot
   ev 16 + c@ 1 <> if exit then
   ev-x ev-y mouse>cell dup to sel-a to sel-b  0 to sel-on  -1 to dragging  -1 to dirty ;
 : mouse-up ( -- )
+  pick-drag if 0 to pick-drag save-ini exit then
   dragging if 0 to dragging  sel-on if sel-copy then  -1 to dirty then ;
 : mouse-move ( -- )
+  pick-drag if pick-move exit then
   menu-open 0< 0= if
     ev-x ev-y drop-hit to hover  -1 to dirty
     ev-y bar-h < if
@@ -567,6 +880,7 @@ create ent-pool pool-size allot
   dragging if ev-x ev-y mouse>cell to sel-b  sel-a sel-b <> to sel-on  -1 to dirty then ;
 : wheel-event ( -- )
   ev 20 + sl@ dup 0= if drop exit then
+  menu-open 0< 0= if negate 3 * drop-scroll exit then
   SDL_GetModState to kmod
   ctrl? if font-step exit then
   3 * scroll-by ;
@@ -581,19 +895,25 @@ create ent-pool pool-size allot
   dup SDL_QUIT = if drop bye exit then
   dup SDL_TEXTINPUT = if
     drop help-open if 0 to help-open -1 to dirty then
+    pick-on if pick-close exit then
     ev 12 + begin dup c@ dup while q-push 1+ repeat 2drop exit then
   dup SDL_KEYDOWN = if
-    drop ev 24 + sl@ to kmod  ev 20 + sl@ key-event exit then
+    drop ev 24 + sl@ to kmod  ev 20 + sl@ con-key-event exit then
   dup $400 >= over $403 <= and if
     menu-on if mouse-event exit then
     $401 = if SDL_StartTextInput drop -1 to dirty then exit then
   dup $200 = if   ( window resized or turned )
     drop ev 12 + c@ dup 5 = swap 6 = or if relayout then exit then
   drop ;
-: pump ( -- ) begin ev SDL_PollEvent sign-extend while con-event repeat ;
+: con-pump ( -- ) begin ev SDL_PollEvent sign-extend while con-event repeat ;
 
 : con-open ( -- )
+  menu-on if
+    z" DISPLAY" c-getenv 0=  z" WAYLAND_DISPLAY" c-getenv 0=  and  z" SDL_VIDEODRIVER" c-getenv 0=  and
+    if -1 throw then
+  then
   menu-on if 1024 640 else 960 540 then screen
+  renderer 0= if -1 throw then
   menu-on if s" Lugforth" title then
   renderer 0 0 SDL_RenderSetLogicalSize drop
   renderer osize osize 4 + SDL_GetRendererOutputSize drop
@@ -611,14 +931,14 @@ create ent-pool pool-size allot
 : con-key ( -- c )
   con-ensure
   begin
-    pump
+    con-pump
     q-any? if 0 to back q-pop exit then
     ticks 500 / 1 and blink <> if blink 1 xor to blink -1 to dirty then
     dirty if con-draw then
     10 SDL_Delay drop
   again ;
 : con-key? ( -- f )
-  renderer con-renderer = renderer 0<> and if pump q-any? else 0 then ;
+  renderer con-renderer = renderer 0<> and if con-pump q-any? else 0 then ;
 
 also internals
 : le-on ( -- )   -1 le-force ! ;   ( line editing even though stdin is no terminal )
@@ -632,68 +952,19 @@ previous
 : screen ( w h -- ) SDL_StopTextInput drop screen ;
 
 ( ---- The desktop: menu bar, and a TrueType font when there is one ---- )
-( The font code is a string, run at once: it needs SDL_ttf, which a machine may lack. )
-: ttf-code r|
-sdl2-ttf
-sdl2 definitions also posix
-0 value tfont   0 value font-file   0 value tex-gen
-create tex-t 100 cells allot
-create gz 4 allot
-: font-try ( z -- f )
-  dup 0= if drop 0 exit then
-  dup 12 TTF_OpenFont ?dup if TTF_CloseFont drop to font-file -1 else drop 0 then ;
-: font-find ( -- f )
-  z" LUGFORTH_FONT" c-getenv font-try if -1 exit then
-  z" /usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf" font-try if -1 exit then
-  z" /usr/share/fonts/dejavu/DejaVuSansMono.ttf" font-try if -1 exit then
-  z" /usr/share/fonts/TTF/DejaVuSansMono.ttf" font-try if -1 exit then
-  z" /usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf" font-try if -1 exit then
-  z" /usr/share/fonts/liberation-mono/LiberationMono-Regular.ttf" font-try if -1 exit then
-  0 ;
-: ttf-cell ( pt -- cw ch )
-  tfont ?dup if TTF_CloseFont drop then
-  font-file swap TTF_OpenFont to tfont
-  tfont z" M" tsize tsize 4 + TTF_SizeUTF8 drop
-  tsize sl@ tsize 4 + sl@ ;
-: ttf-free ( -- )
-  tex-gen con-gen = if
-    95 0 do tex-t i cells + @ ?dup if SDL_DestroyTexture drop then loop
-  then
-  tex-t 100 cells 0 fill ;
-: ttf-one ( i -- )
-  dup 32 + gz c!  0 gz 1+ c!
-  tfont gz $ffffffff TTF_RenderUTF8_Blended
-  dup 0= if drop drop exit then
-  dup renderer swap SDL_CreateTextureFromSurface
-  swap SDL_FreeSurface drop
-  swap cells tex-t + ! ;
-: ttf-build ( -- )
-  ttf-free
-  95 0 do i ttf-one loop
-  con-gen to tex-gen ;
-: ttf-glyph ( g x y -- )
-  { g x y }
-  g 0< g 94 > or if exit then
-  g cells tex-t + @ ?dup if
-    x y con-cw con-ch gdst rect-at!
-    renderer swap 0 gdst SDL_RenderCopy drop
-  then ;
-: ttf-tint ( r g b -- )
-  { r g b }
-  95 0 do tex-t i cells + @ ?dup if r g b SDL_SetTextureColorMod drop then loop ;
-: ttf-install ( -- )
-  TTF_Init drop
-  font-find if
-    ['] ttf-cell is font-cell   ['] ttf-build is atlas-build
-    ['] ttf-glyph is glyph-at   ['] ttf-tint is glyph-tint
-    8 to hmin   72 to hmax   2 to hstep   28 to hdiv   8 to hrel
-  then ;
-ttf-install
-previous
-| evaluate ;
+( The font code is loaded when asked: it needs SDL_ttf, which a machine may lack. )
+: ttf-code ( -- ) gui-ttf-src eval-copy ;
 
 : smooth-font ( -- )   ( TrueType if SDL_ttf and a font are there, else the bitmap stays )
   ['] ttf-code catch if sdl-error 2drop then ;
-: desktop ( -- )   -1 to menu-on  smooth-font ;
+: ini-apply ( -- )   hrel if ini-size to user-size then ;
+: desktop ( -- )   -1 to menu-on  0 to bar-open  ini-load  smooth-font  ini-apply ;
 
+previous
+| ;
+
+: gui-load ( -- )   sdl2 gui-src eval-copy ;
+
+also posix
+: gui-tty? ( -- f )   stdin isatty ;
 previous

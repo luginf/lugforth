@@ -81,12 +81,32 @@ public class SdlActivity extends SDLActivity implements MenuBar.Target {
     onNativeKeyUp(code);
   }
 
+  // The .fs files of the examples folder, sorted
+  @Override public String[] examples() {
+    String[] l = new File(home, "examples").list(new java.io.FilenameFilter() {
+      @Override public boolean accept(File d, String n) { return n.endsWith(".fs"); }
+    });
+    if (l == null) l = new String[0];
+    java.util.Arrays.sort(l);
+    return l;
+  }
+
+  // Types "include name" and Enter, through the key events of a keyboard
+  @Override public void run(String name) {
+    KeyEvent[] ev = android.view.KeyCharacterMap.load(
+        android.view.KeyCharacterMap.VIRTUAL_KEYBOARD).getEvents(("include " + name).toCharArray());
+    if (ev != null) for (KeyEvent e : ev) dispatchKeyEvent(e);
+    long t = android.os.SystemClock.uptimeMillis();
+    dispatchKeyEvent(new KeyEvent(t, t, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER, 0));
+    dispatchKeyEvent(new KeyEvent(t, t, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER, 0));
+  }
+
   @Override public void start() { finish(); }
 
   @Override public String help() {
     return "Pinch out or in: bigger or smaller text.\n\n"
-        + "Menu keys: arrows move in the line and through the history, "
-        + "Tab completes a word or a file name. A keyboard has F11 and F12 "
+        + "Menu keys: Tab completes a word or a file name, arrows move in the line and through the history, "
+        + "Ex lists the examples and includes the one you tap. A keyboard has F11 and F12 "
         + "for the text size.\n\n"
         + "Try:\n  1 2 + .\n  words\n  ls\n  include sdl2_breakout.fs\n\n"
         + "The examples are in\n" + new File(home, "examples").getPath() + "\n"

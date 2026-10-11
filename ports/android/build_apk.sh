@@ -70,7 +70,7 @@ done
 cp -R examples/. $W/assets/examples/
 (cd $W/assets/examples && rm -rf bench_* *.c *.tal *.rom* Makefile *.py *xtensa* espnow.fs \
    *.sf2 *.mid sdl2_pianoroll* sdl2_roguelike.fs sdl2_tiles*.png)
-cp ports/android/app/assets/forth/main.fs ports/posix/sdl2_console.fs $W/assets/forth/
+cp ports/android/app/assets/forth/main.fs $W/assets/forth/
 # the font of the console (DejaVu Sans Mono, free license); without it the bitmap font stays
 DEJAVU=/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf
 if [ -f $DEJAVU ]; then

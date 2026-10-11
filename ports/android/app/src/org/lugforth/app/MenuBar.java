@@ -24,6 +24,8 @@ final class MenuBar {
     void font(int delta);                 // +1 bigger, -1 smaller
     void start();                         // back to the start screen
     String help();
+    String[] examples();                  // file names for the Examples button, or null
+    void run(String name);                // include one of them
   }
 
   private static final int BAR = 0xFF202124, KEY = 0xFF3C4043, KEY_DOWN = 0xFF5F6368;
@@ -137,6 +139,18 @@ final class MenuBar {
         ViewGroup.LayoutParams.MATCH_PARENT, Math.min(height, px(460))));
   }
 
+  // The list of the example files; a tap includes one in the console
+  private void showExamples(final Target t) {
+    final String[] names = t.examples();
+    android.app.AlertDialog.Builder b = new android.app.AlertDialog.Builder(act);
+    b.setTitle("Examples");
+    if (names.length == 0) b.setMessage("No .fs file in the examples folder.");
+    else b.setItems(names, new android.content.DialogInterface.OnClickListener() {
+      @Override public void onClick(android.content.DialogInterface d, int i) { t.run(names[i]); }
+    });
+    b.show();
+  }
+
   private View build(View content, String title, final Target t) {
     final FrameLayout root = new FrameLayout(act);
     root.setBackgroundColor(0xFF000000);
@@ -169,11 +183,13 @@ final class MenuBar {
     panel.setOrientation(LinearLayout.HORIZONTAL);
     panel.setBackgroundColor(BAR);
     panel.setVisibility(View.GONE);
+    panel.addView(key("Tab", KeyEvent.KEYCODE_TAB, t));
     panel.addView(key("\u2190", KeyEvent.KEYCODE_DPAD_LEFT, t));
     panel.addView(key("\u2191", KeyEvent.KEYCODE_DPAD_UP, t));
     panel.addView(key("\u2193", KeyEvent.KEYCODE_DPAD_DOWN, t));
     panel.addView(key("\u2192", KeyEvent.KEYCODE_DPAD_RIGHT, t));
-    panel.addView(key("Tab", KeyEvent.KEYCODE_TAB, t));
+    if (t.examples() != null)
+      panel.addView(action("Ex", new Runnable() { public void run() { showExamples(t); } }));
     panel.addView(action("A-", new Runnable() { public void run() { t.font(-1); } }));
     panel.addView(action("A+", new Runnable() { public void run() { t.font(1); } }));
     panel.addView(action("?", new Runnable() { public void run() { showHelp(t.help()); } }));

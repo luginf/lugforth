@@ -122,7 +122,7 @@ Short game-oriented words on top of libSDL2, for the POSIX build and (same sourc
 
 - lugforth ignores case. `SDL_Quit` (function) and `SDL_QUIT` (event constant) are the same name, so the function is bound as `sdl-shutdown`. Check new bindings for such collisions.
 - FFI (`shared-library` + `sofunc`) passes cells only: no float or struct by value, no C to Forth callbacks (audio uses `SDL_QueueAudio`, not a callback).
-- `beep` queues a whole tone, so beeps never overlap. `hit` (percussive, 8 voices, `pitch-drop`) is mixed in Forth by `pump`, which `hit`, `flip` and `delay` call through `audio-hook` and which keeps about 50 ms queued: a loop that never calls `flip` or `delay` gets no sound from hits. Web `hit` is just a WebAudio node started at once.
+- `beep` queues a whole tone, so beeps never overlap. `drum-hit` (percussive, 8 voices, `pitch-drop`) is mixed in Forth by `pump`, which `drum-hit`, `flip` and `delay` call through `audio-hook` and which keeps about 50 ms queued: a loop that never calls `flip` or `delay` gets no sound from hits. Web `drum-hit` is just a WebAudio node started at once.
 - A `|` anywhere in an `r|` block (even in a stack comment like `( -- img | 0 )`, or a JS `||`) ends the string early and hangs the boot or the page ("ERROR: | NOT FOUND!").
 - Locals declared with `{ }` inside a loop body break (silent "Error including"): declare them at the top of the word. `SDL_Color` works because it fits in one register.
 - Every C call pushes a result, even `void` ones: `drop` it. `int` results need `sign-extend`.

@@ -28,6 +28,8 @@ needs sdl2_ttf.fs
 needs sdl2_mixer.fs
 needs ../../common/abc.fs
 needs sdl2_abc.fs
+needs sdl2_console_ttf.fs
+needs sdl2_console.fs
 needs sockets.fs
 needs telnetd.fs
 needs httpd.fs

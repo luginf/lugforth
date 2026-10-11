@@ -77,6 +77,10 @@ public class WebActivity extends Activity implements MenuBar.Target {
 
   @Override public void start() { finish(); }
 
+  @Override public String[] examples() { return null; }
+
+  @Override public void run(String name) {}
+
   @Override public String help() {
     return "Pinch out or in: bigger or smaller text.\n\n"
         + "Menu keys: arrows move in the line and through the history, "

@@ -13,8 +13,8 @@
 # limitations under the License.
 
 SetVersions(
-    version='7.0.8.1',
-    stable='7.0.8.0')
+    version='7.0.9.0',
+    stable='7.0.8.1')
 
 Include('ports/posix')
 Include('ports/windows')

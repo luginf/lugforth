@@ -466,7 +466,7 @@ JSWORD: js-hit { freq ms w vol fall }
   src.start(t); src.stop(t + d);
   S.hitEnd = Math.max(S.hitEnd, t + d);
 ~
-: hit ( freq ms -- ) wave beep-volume pitch-drop js-hit ;
+: drum-hit ( freq ms -- ) wave beep-volume pitch-drop js-hit ;
 JSWORD: silence { }
   context.sdl.silence();
 ~

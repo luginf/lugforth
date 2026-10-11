@@ -49,7 +49,7 @@ create track-colors red , orange , yellow , cyan ,
 
 ( ---- Drums: volume, wave, pitch fall in percent, frequency, milliseconds ---- )
 : drum { vol w fall freq ms }
-  vol to beep-volume   w to wave   fall to pitch-drop   freq ms hit ;
+  vol to beep-volume   w to wave   fall to pitch-drop   freq ms drum-hit ;
 : kick    9000 1 75 150 130 drum ;
 : snare   5000 3 0 200 110 drum   2500 1 30 220 70 drum ;
 : hat     2000 3 0 200 35 drum ;

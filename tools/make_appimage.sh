@@ -16,15 +16,15 @@
 # /dev/null) and no argument opens a terminal emulator and runs itself in it, in the NAME_HOME directory, so that
 # `include examples/foo.fs` works; started from a console it runs as usual in the current directory.
 #
-# --desktop-dir DIR (with desktop.fs and sdl2_console.fs, and --font FILE for a TrueType font) makes the click open a
-# window with a menu bar and a console, made with SDL2, instead of a terminal emulator. The terminal stays the
-# fallback when that window cannot open. It runs in the examples folder.
+# --gui makes the click run `NAME --gui` (a window with a menu and a console, made with SDL2) instead of opening a
+# terminal emulator. The terminal stays the fallback when that window cannot open. It runs in the examples folder.
+# --font FILE (and --font-license FILE) ships a TrueType font for that window; the user can still pick another one.
 #
 # --bundle LIB copies LIB (found through the binary's own `ldd`) into the AppImage. Everything else (ALSA, X11,
 # freetype, fontconfig...) is expected from the host, as for any AppImage.
 set -euo pipefail
 
-NAME="" BINARY="" ICON="" COMMENT="" VERSION="" OUT="." UPDATE_INFO="" BUNDLE=() EXAMPLES="" DESKTOP="" FONT="" TERMINAL=false CATEGORIES="Utility;"
+NAME="" BINARY="" ICON="" COMMENT="" VERSION="" OUT="." UPDATE_INFO="" BUNDLE=() EXAMPLES="" GUI=false FONT="" FONT_LICENSE="" TERMINAL=false CATEGORIES="Utility;"
 while [ $# -gt 0 ]; do
 	case "$1" in
 	--name) NAME="$2"; shift 2 ;;
@@ -37,8 +37,9 @@ while [ $# -gt 0 ]; do
 	--examples) EXAMPLES="$2"; shift 2 ;;
 	--bundle) BUNDLE+=("$2"); shift 2 ;;
 	--terminal) TERMINAL=true; shift ;;
-	--desktop-dir) DESKTOP="$2"; shift 2 ;;
+	--gui) GUI=true; shift ;;
 	--font) FONT="$2"; shift 2 ;;
+	--font-license) FONT_LICENSE="$2"; shift 2 ;;
 	--categories) CATEGORIES="$2"; shift 2 ;;
 	*) echo "unknown argument: $1" >&2; exit 2 ;;
 	esac
@@ -88,11 +89,11 @@ if [ -n "$EXAMPLES" ]; then
 	cp -R "$EXAMPLES/." "$APPDIR/usr/share/$ID/examples/"
 fi
 
-if [ -n "$DESKTOP" ]; then
-	[ -f "$DESKTOP/desktop.fs" ] || { echo "--desktop-dir: no desktop.fs in $DESKTOP" >&2; exit 2; }
+if [ -n "$FONT" ]; then
+	[ -f "$FONT" ] || { echo "--font: $FONT is not a file" >&2; exit 2; }
 	mkdir -p "$APPDIR/usr/share/$ID/desktop"
-	cp -R "$DESKTOP/." "$APPDIR/usr/share/$ID/desktop/"
-	[ -z "$FONT" ] || cp "$FONT" "$APPDIR/usr/share/$ID/desktop/font.ttf"
+	cp "$FONT" "$APPDIR/usr/share/$ID/desktop/font.ttf"
+	[ -z "$FONT_LICENSE" ] || cp "$FONT_LICENSE" "$APPDIR/usr/share/$ID/desktop/font-license.txt"
 fi
 
 # Terminal=false in the .desktop file on purpose: not every desktop knows how to open a terminal for Terminal=true,
@@ -111,7 +112,7 @@ if [ -d "$HERE/usr/share/@ID@/examples" ]; then
 	export @VAR@_EXAMPLES="$DATA/examples"
 fi
 EOS
-	if $TERMINAL || [ -n "$DESKTOP" ]; then
+	if $TERMINAL || $GUI; then
 		cat <<'EOS'
 # No terminal and no argument (a click on the desktop: no tty, stdin on /dev/null or closed). A pipe
 # (`echo ... | lugforth`) is not a click, and runs as is.
@@ -121,15 +122,13 @@ if [ $# -eq 0 ] && [ -z "$@VAR@_NO_TERMINAL" ] && [ ! -t 0 ] && [ ! -t 1 ] && [ 
 	SELF="${APPIMAGE:-$HERE/AppRun}"
 	mkdir -p "$DATA" 2>/dev/null && cd "$DATA"
 EOS
-		if [ -n "$DESKTOP" ]; then
+		if $GUI; then
 			cat <<'EOS'
-	# A window of our own, in the examples folder; if it cannot open, a terminal below
-	if [ -f "$HERE/usr/share/@ID@/desktop/desktop.fs" ]; then
-		[ -d "$DATA/examples" ] && cd "$DATA/examples"
-		[ -f "$HERE/usr/share/@ID@/desktop/font.ttf" ] && export @VAR@_FONT="$HERE/usr/share/@ID@/desktop/font.ttf"
-		"$HERE/usr/bin/@NAME@" "$HERE/usr/share/@ID@/desktop/desktop.fs" && exit 0
-		cd "$DATA"
-	fi
+	# A window of our own, in the examples folder; if it cannot open (exit code 1), a terminal below
+	[ -d "$DATA/examples" ] && cd "$DATA/examples"
+	[ -f "$HERE/usr/share/@ID@/desktop/font.ttf" ] && export @VAR@_FONT="$HERE/usr/share/@ID@/desktop/font.ttf"
+	"$HERE/usr/bin/@NAME@" --gui && exit 0
+	cd "$DATA"
 EOS
 		fi
 		if $TERMINAL; then

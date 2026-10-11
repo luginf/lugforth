@@ -21,7 +21,7 @@ final class Files {
   static void prepare(Context c, File home) {
     try {
       copyTree(c, "examples", new File(home, "examples"), false);
-      copyTree(c, "forth", home, true);  // main.fs and sdl2_console.fs: always the current ones
+      copyTree(c, "forth", home, true);  // main.fs: always the current one
     } catch (IOException e) {
       android.util.Log.e("lugforth", "copying files failed", e);
     }

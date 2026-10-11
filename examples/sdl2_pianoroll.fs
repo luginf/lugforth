@@ -517,7 +517,7 @@ create semi-ratio 10000 , 10595 , 11225 , 11892 , 12599 , 13348 , 14142 , 14983 
 : beep-preview ( note -- )
   note-freq { f }
   4000 to beep-volume   1 to wave   0 to pitch-drop
-  f 150 hit ;
+  f 150 drum-hit ;
 
 ( a small FluidSynth of its own, so a click sounds like the real instrument;
   lazy: the first preview opens it, silently falls back to beep-preview if no

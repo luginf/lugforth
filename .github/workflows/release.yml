@@ -75,14 +75,11 @@ jobs:
           mkdir -p appimage-examples
           cp -R examples/. appimage-examples/
           (cd appimage-examples && rm -rf bench_* *.c *.tal *.rom* Makefile *.py *xtensa* espnow.fs)
-          # the window opened by a click: menu bar and console (DejaVu Sans Mono, free license)
-          mkdir -p appimage-desktop
-          cp ports/posix/desktop.fs ports/posix/sdl2_console.fs appimage-desktop/
-          cp /usr/share/doc/fonts-dejavu-core/copyright appimage-desktop/font-license.txt
           bash tools/make_appimage.sh \
             --examples appimage-examples \
-            --desktop-dir appimage-desktop \
+            --gui \
             --font /usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf \
+            --font-license /usr/share/doc/fonts-dejavu-core/copyright \
             --name lugforth \
             --binary dist/lugforth \
             --icon docs/images/lugforth_256.png \
