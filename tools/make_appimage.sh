@@ -16,11 +16,15 @@
 # /dev/null) and no argument opens a terminal emulator and runs itself in it, in the NAME_HOME directory, so that
 # `include examples/foo.fs` works; started from a console it runs as usual in the current directory.
 #
+# --desktop-dir DIR (with desktop.fs and sdl2_console.fs, and --font FILE for a TrueType font) makes the click open a
+# window with a menu bar and a console, made with SDL2, instead of a terminal emulator. The terminal stays the
+# fallback when that window cannot open. It runs in the examples folder.
+#
 # --bundle LIB copies LIB (found through the binary's own `ldd`) into the AppImage. Everything else (ALSA, X11,
 # freetype, fontconfig...) is expected from the host, as for any AppImage.
 set -euo pipefail
 
-NAME="" BINARY="" ICON="" COMMENT="" VERSION="" OUT="." UPDATE_INFO="" BUNDLE=() EXAMPLES="" TERMINAL=false CATEGORIES="Utility;"
+NAME="" BINARY="" ICON="" COMMENT="" VERSION="" OUT="." UPDATE_INFO="" BUNDLE=() EXAMPLES="" DESKTOP="" FONT="" TERMINAL=false CATEGORIES="Utility;"
 while [ $# -gt 0 ]; do
 	case "$1" in
 	--name) NAME="$2"; shift 2 ;;
@@ -33,6 +37,8 @@ while [ $# -gt 0 ]; do
 	--examples) EXAMPLES="$2"; shift 2 ;;
 	--bundle) BUNDLE+=("$2"); shift 2 ;;
 	--terminal) TERMINAL=true; shift ;;
+	--desktop-dir) DESKTOP="$2"; shift 2 ;;
+	--font) FONT="$2"; shift 2 ;;
 	--categories) CATEGORIES="$2"; shift 2 ;;
 	*) echo "unknown argument: $1" >&2; exit 2 ;;
 	esac
@@ -82,6 +88,13 @@ if [ -n "$EXAMPLES" ]; then
 	cp -R "$EXAMPLES/." "$APPDIR/usr/share/$ID/examples/"
 fi
 
+if [ -n "$DESKTOP" ]; then
+	[ -f "$DESKTOP/desktop.fs" ] || { echo "--desktop-dir: no desktop.fs in $DESKTOP" >&2; exit 2; }
+	mkdir -p "$APPDIR/usr/share/$ID/desktop"
+	cp -R "$DESKTOP/." "$APPDIR/usr/share/$ID/desktop/"
+	[ -z "$FONT" ] || cp "$FONT" "$APPDIR/usr/share/$ID/desktop/font.ttf"
+fi
+
 # Terminal=false in the .desktop file on purpose: not every desktop knows how to open a terminal for Terminal=true,
 # and AppRun below does it itself when there is none (see the header).
 VAR=$(echo "$ID" | tr 'a-z' 'A-Z' | tr -c 'A-Z0-9\n' _)
@@ -98,15 +111,29 @@ if [ -d "$HERE/usr/share/@ID@/examples" ]; then
 	export @VAR@_EXAMPLES="$DATA/examples"
 fi
 EOS
-	if $TERMINAL; then
+	if $TERMINAL || [ -n "$DESKTOP" ]; then
 		cat <<'EOS'
-# No terminal and no argument (a click on the desktop: no tty, stdin on /dev/null or closed): open one and run
-# ourselves in it. A pipe (`echo ... | lugforth`) is not a click, and runs as is.
+# No terminal and no argument (a click on the desktop: no tty, stdin on /dev/null or closed). A pipe
+# (`echo ... | lugforth`) is not a click, and runs as is.
 if [ $# -eq 0 ] && [ -z "$@VAR@_NO_TERMINAL" ] && [ ! -t 0 ] && [ ! -t 1 ] && [ ! -t 2 ] &&
 	{ [ ! -e /proc/self/fd/0 ] || [ /proc/self/fd/0 -ef /dev/null ]; } &&
 	{ [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; }; then
 	SELF="${APPIMAGE:-$HERE/AppRun}"
 	mkdir -p "$DATA" 2>/dev/null && cd "$DATA"
+EOS
+		if [ -n "$DESKTOP" ]; then
+			cat <<'EOS'
+	# A window of our own, in the examples folder; if it cannot open, a terminal below
+	if [ -f "$HERE/usr/share/@ID@/desktop/desktop.fs" ]; then
+		[ -d "$DATA/examples" ] && cd "$DATA/examples"
+		[ -f "$HERE/usr/share/@ID@/desktop/font.ttf" ] && export @VAR@_FONT="$HERE/usr/share/@ID@/desktop/font.ttf"
+		"$HERE/usr/bin/@NAME@" "$HERE/usr/share/@ID@/desktop/desktop.fs" && exit 0
+		cd "$DATA"
+	fi
+EOS
+		fi
+		if $TERMINAL; then
+			cat <<'EOS'
 	have() { command -v "$1" >/dev/null 2>&1; }
 	if have x-terminal-emulator; then exec x-terminal-emulator -e "$SELF"
 	elif have gnome-terminal; then exec gnome-terminal -- "$SELF"
@@ -122,8 +149,11 @@ if [ $# -eq 0 ] && [ -z "$@VAR@_NO_TERMINAL" ] && [ ! -t 0 ] && [ ! -t 1 ] && [ 
 	MSG="@NAME@ needs a terminal and none was found: run it from a console."
 	if have notify-send; then notify-send "@NAME@" "$MSG"; elif have zenity; then zenity --error --text="$MSG"; else echo "$MSG" >&2; fi
 	exit 1
-fi
 EOS
+		else
+			echo '	exit 1'
+		fi
+		echo 'fi'
 	fi
 	echo 'exec "$HERE/usr/bin/@NAME@" "$@"'
 } | sed -e "s/@VAR@/$VAR/g" -e "s/@ID@/$ID/g" -e "s/@NAME@/$NAME/g" > "$APPDIR/AppRun"

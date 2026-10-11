@@ -12,24 +12,14 @@ sdl2                          \ load, sdl2 becomes your vocabulary
 run
 ```
 
-See `examples/sdl2_demo.fs` for a small tour of the words,
-`examples/sdl2_breakout.fs` for a complete game (breakout, about 200 lines)
-`examples/sdl2_drums.fs` for a minimal drum machine (16 steps, 4 drums,
-all of it usable with the mouse, or with the keyboard),
-`examples/sdl2_pianoroll.fs` for a minimal piano-roll sequencer (4 tracks with
-their own instrument, 16-step patterns that chain into a longer song, a MIDI
-soundfont for playback, export to `.mid` and to ABC notation; POSIX only,
-since it needs the soundfont and writes files) and
-`examples/sdl2_roguelike.fs` for a minimal roguelike drawn from a tile sheet
-(`examples/sdl2_tiles.png`, 8 tiles of 8x8, loaded with `sdl2-image` and
-drawn with `draw-part`; `examples/make_sdl2_tiles.fs`, itself a lugforth program, draws that sheet, and
-`examples/make_sdl2_tiles.py` does the same in Python to compare the two).
-Breakout, drums and roguelike also run in the browser.
+Examples: `sdl2_demo.fs` (tour of the words), `sdl2_breakout.fs` (a game, about
+200 lines), `sdl2_drums.fs` (16-step drum machine), `sdl2_pianoroll.fs` (piano
+roll with soundfont playback and export to `.mid` and ABC, POSIX only),
+`sdl2_roguelike.fs` (tile sheet, with music). Breakout, drums and roguelike also
+run in the browser.
 
-The complete list of words, with stack effects, is in [SDL2-words.md](SDL2-words.md).
-
-The short words also exist in the web build, so a game written with them runs
-in a browser too: see [../web/SDL2.md](../web/SDL2.md).
+All words: [SDL2-words.md](SDL2-words.md). The short words also exist in the web
+build, see [../web/SDL2.md](../web/SDL2.md).
 
 ## Packages
 
@@ -41,12 +31,9 @@ in a browser too: see [../web/SDL2.md](../web/SDL2.md).
 | `sdl2-mixer`  | libSDL2_mixer-2.0.so.0 | `libsdl2-mixer-2.0-0` | sound files, music, mixing, soundfont |
 | `sdl2-abc`    | (`sdl2-mixer`, and a soundfont for MIDI) | `fluid-soundfont-gm` or your own `.sf2` | tunes in ABC notation |
 
-The loaders are ordinary words that load their source on first use,
-like `x11` does. Typing one again just puts `sdl2` back on top.
-All words below live in the `sdl2` vocabulary, together with the raw C
-names (`SDL_Init`, `SDL_RenderFillRect`, ...) when you need something
-that has no short word. `sdl2` also sets itself as the vocabulary where
-your own definitions go, so they are never hidden by library words.
+Typing a loader again puts `sdl2` back on top. All words below live in the
+`sdl2` vocabulary, with the raw C names (`SDL_Init`, ...) for anything without
+a short word. `sdl2` is also where your definitions go.
 
 ## Short words (`sdl2`)
 
@@ -73,12 +60,10 @@ Beeps (no library beyond libSDL2): `beep ( freq ms -- )` queues a tone,
 so several `beep` in a row play as a melody. `wave` picks the shape
 (0 square, 1 triangle, 2 saw, 3 noise), `beep-volume`, `silence`, `beeping?`.
 
-Hits: `hit ( freq ms -- )` is like `beep` but starts at once and plays over
-the other sounds (8 at a time), fading out; `pitch-drop` (percent) makes the
-pitch fall while it plays, which is enough for a kick drum. The mix is queued
-about 50 ms ahead by `hit`, `flip` and `delay`, so call `flip` or `delay`
-regularly, as any game loop does. A `beep` waits for the queue and a hit does
-not: use one kind of sound per program.
+Hits: `hit ( freq ms -- )` starts at once and plays over other sounds (8 at a
+time), fading out; `pitch-drop` (percent) makes the pitch fall, enough for a
+kick drum. Call `flip` or `delay` regularly, as a game loop does. Use `beep` or
+`hit` in a program, not both.
 
 ## Images (`sdl2-image`)
 
@@ -101,16 +86,12 @@ directories that is not found is tried again without them, so
 `music ( mus -- )` (loops), `music-once`, `stop-music`, `music-volume`,
 `music?`, `free-music`. Overlapping sounds are mixed.
 
-Music files can be OGG, MP3, FLAC, Opus, WAV, MOD (and XM, S3M, IT) and MIDI,
-as far as the SDL2_mixer of your system has the decoders (checked here with
-SDL2_mixer 2.8.0, which links libmodplug, FluidSynth, vorbis, mpg123, FLAC and
-opusfile). A MIDI file is played by FluidSynth, which needs a soundfont:
-`soundfont ( a n -- )` sets one, a `.sf2` or `.sf3` file, and `soundfont?`
-does the same and returns a flag instead of throwing. The name is tried as
-given, then by its file name alone in the current directory, then in the
-directory of the running script, so a soundfont placed beside the program is
-found from anywhere: `s" mygame.sf2" soundfont`. Without one, FluidSynth uses
-the soundfont of the system, when there is one.
+Music files: OGG, MP3, FLAC, Opus, WAV, MOD and MIDI, as far as your
+SDL2_mixer has the decoders. MIDI needs a soundfont: `soundfont ( a n -- )` sets
+a `.sf2` or `.sf3` (`soundfont?` returns a flag instead of throwing). The name
+is tried as given, then in the current directory, then in the script's
+directory, so `s" mygame.sf2" soundfont` finds a file beside the program.
+Without one, FluidSynth uses the system soundfont if there is one.
 
 ## Tunes (`sdl2-abc`)
 
@@ -134,59 +115,44 @@ C D E F | [CEG]2 z2 |
 tune abc-play                      \ once; abc-loop repeats; tune-stop stops
 ```
 
-`abc ( a n -- )` reads the tune, `tune-play`, `tune-loop`, `tune-stop` and
-`tune-playing?` play it, `abc-play` and `abc-loop` do both. After `abc` you can
-change `tune-bpm` and `tune-program` (the General MIDI instrument), read
-`tune-ms` and `tune-notes`, or get the MIDI file with `tune-midi` or
-`tune-save`. The tune is written as a standard MIDI file in a temporary file of its own in
-`/tmp` (deleted once loaded) and played by SDL2_mixer, so anything that plays
-`.mid` also plays it.
+`abc ( a n -- )` reads the tune; `tune-play`, `tune-loop`, `tune-stop` and
+`tune-playing?` play it; `abc-play` and `abc-loop` do both. After `abc` you can
+change `tune-bpm` and `tune-program` (General MIDI instrument), read `tune-ms`
+and `tune-notes`, or write a MIDI file with `tune-save`.
 
-What is understood: the fields `K:` (key and mode, so `K:G` sharpens F,
-`K:Dm` flattens B), `L:`, `M:` (only to choose the default note length), `Q:`
-(`Q:1/4=120`, `Q:3/8=60` or `Q:120`) and the line `%%MIDI program n`; the notes
-`A` to `G` and `a` to `g`, the accidentals `^ _ =` (lasting until the bar
-line), the octave marks `,` and `'`, lengths such as `2`, `/2`, `3/2`, `//`;
-rests `z` and `x`; chords `[CEG]`; ties `-`; broken rhythm `>` and `<`;
-tuplets `(3`; bar lines. Chord symbols in quotes, decorations `!..!`, grace
-notes `{..}`, comments, lyrics and the other fields are skipped. Not
-understood: repeats and endings (a tune plays straight through), several
-voices (a melody line only), tempo changes inside the tune. At most 1024 notes
-are kept. The reader itself is in the vocabulary `abc-int`.
+Understood: `K:` `L:` `M:` `Q:` and `%%MIDI program n`; notes, accidentals,
+octave marks, lengths, rests, chords, ties, broken rhythm, tuplets, bar lines.
+Skipped: chord symbols, decorations, grace notes, comments, lyrics. Not
+supported: repeats, several voices, tempo changes. At most 1024 notes. The web
+build has the same words with a simple synthesizer.
 
-The same words exist in the web build, with a simple synthesizer in place of
-MIDI (see [../web/SDL2.md](../web/SDL2.md)), so a program can play its tunes
-in both. `examples/sdl2_roguelike.fs` does: two short tunes written in ABC, and
-the key `m` to switch the music off.
+## Console window (`sdl2_console.fs`)
+
+`include sdl2_console.fs` then `console` sends `type` and `key` to an SDL window with its
+own bitmap font (the Android app uses it). Add `desktop` before `console` for a menu bar
+(Examples, View, Help), a TrueType font when SDL_ttf and a font are found (`LUGFORTH_FONT`,
+or DejaVu Sans Mono of the system), mouse selection (copied), middle click or Ctrl+V to
+paste, wheel or PageUp/PageDown to scroll back, and Ctrl+wheel, Ctrl +/-, Ctrl 0 for the
+text size. The menu lists the `.fs` files of `LUGFORTH_EXAMPLES` (default: the current
+directory). ASCII only for now.
 
 ## Limits
 
-* Calls only pass integers and pointers. SDL functions that take floats or
-  structs by value (`SDL_RenderCopyEx`, rotation, ...) are not available.
-  Text colors work because `SDL_Color` fits in one register.
-* No callbacks from C into Forth, so audio uses queues (`beep`, `hit`) or the mixer.
-* Mouse positions are in logical pixels, whatever the `zoom`: checked with a
-  real pointer in a `zoom` 3 window (pointer at 97,73 of a 192x144 window
-  reads as 32,24).
-* `pressed?` reads the held state once per `events`. A key or button pressed
-  and released within one frame (about 16 ms) is not seen; a human click is
-  far longer.
-* lugforth ignores case, so `SDL_Quit` (function) and `SDL_QUIT` (event type)
-  are the same name. The function is bound as `sdl-shutdown`; `SDL_QUIT` is the
-  event constant.
+* Calls pass integers and pointers only: no floats or structs by value
+  (`SDL_RenderCopyEx`, rotation...).
+* No callbacks from C into Forth: audio uses queues (`beep`, `hit`) or the mixer.
+* Mouse positions are in logical pixels, whatever the `zoom`.
+* `pressed?` reads the held state once per `events`; a press shorter than one
+  frame is missed.
+* Names ignore case, so the function `SDL_Quit` is bound as `sdl-shutdown`;
+  `SDL_QUIT` is the event constant.
 
 ## Tests
 
-They need the libraries, so they are not part of `ninja posix`:
+They need the libraries, so `ninja posix` does not run them:
 
 ```sh
 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy out/posix/lugforth ports/posix/sdl2_tests.fs
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy out/posix/lugforth ports/posix/sdl2_media_tests.fs
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy out/posix/lugforth ports/posix/sdl2_abc_tests.fs
 ```
 
-The `dummy` drivers run without a screen or a sound card; pixels are read
-back with `SDL_RenderReadPixels`. The ABC tests check the notes, the MIDI file
-and the file lookup; that MIDI music really sounds was checked by recording the
-output of SDL with its `disk` audio driver (`SDL_AUDIODRIVER=disk
-SDL_DISKAUDIOFILE=out.raw`, 16 bit stereo at 44100 Hz), not by listening.
+Same for `sdl2_media_tests.fs` and `sdl2_abc_tests.fs`.

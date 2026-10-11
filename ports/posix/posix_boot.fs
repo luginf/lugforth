@@ -19,6 +19,7 @@ needs ../../common/phase2.fs
 needs ../../common/phase_filetools.fs
 needs ../../common/phase_desktop.fs
 needs termios.fs
+needs ../../common/lineedit.fs
 needs x11.fs
 needs graphics.fs
 needs sdl2.fs

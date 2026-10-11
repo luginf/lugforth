@@ -19,6 +19,8 @@ Compile('$dst/posix/lugforth', '$src/ports/posix/main.c',
 Alias('posix', ' '.join([
   ForthTest('$dst/tests/posix_all_tests.out',
             '$dst/posix/lugforth', '$src/common/all_tests.fs'),
+  ForthTest('$dst/tests/posix_lineedit_tests.out',
+            '$dst/posix/lugforth', '$src/ports/posix/lineedit_tests.fs'),
   TestCommand('$dst/tests/posix_see_all_test.out',
               '$dst/posix/lugforth',
               'echo internals see-all bye | $dst/posix/lugforth '

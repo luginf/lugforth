@@ -1,17 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.lugforth.web">
+    package="org.lugforth.app" android:versionCode="1" android:versionName="1.0">
   <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="35" />
-  <application android:label="lugforth" android:allowBackup="false"
-      android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen"
-      android:hardwareAccelerated="true">
-    <activity android:name=".MainActivity" android:exported="true"
-        android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout"
-        android:windowSoftInputMode="adjustResize">
+  <uses-feature android:glEsVersion="0x00020000" />
+  <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+  <uses-permission android:name="android.permission.VIBRATE" />
+  <application android:label="lugforth" android:icon="@drawable/ic_launcher"
+      android:allowBackup="false"
+      android:hardwareAccelerated="true" android:extractNativeLibs="true"
+      android:enableOnBackInvokedCallback="false"
+      android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+
+    <!-- The start screen: web terminal or native SDL2 console -->
+    <activity android:name=".LauncherActivity" android:exported="true">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
     </activity>
+
+    <!-- The web build in a WebView -->
+    <activity android:name=".WebActivity" android:exported="false"
+        android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout"
+        android:windowSoftInputMode="adjustResize" />
+
+    <!-- Lugforth as libmain.so inside SDLActivity, in a process of its own so that
+         leaving it never leaves SDL half alive for the next start -->
+    <activity android:name=".SdlActivity" android:exported="false"
+        android:process=":sdl"
+        android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+        android:screenOrientation="unspecified"
+        android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation" />
   </application>
 </manifest>

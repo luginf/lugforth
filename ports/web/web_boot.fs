@@ -18,6 +18,7 @@ needs ../../common/ansi.fs
 needs ../../common/phase2.fs
 needs ../../common/tasks.fs
 needs utils.fs
+needs ../../common/lineedit.fs
 needs sdl2.fs
 needs ../../common/abc.fs
 needs sdl2_abc.fs

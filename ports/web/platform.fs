@@ -258,6 +258,13 @@ if (!globalObj.write) {
     } else if (m = code.match(/\[([0-9]+);([0-9]+)H/)) {
       context.cy = parseInt(m[1]) - 1;
       context.cx = parseInt(m[2]) - 1;
+    } else if (m = code.match(/^\[([0-9]*)D$/)) {
+      context.cx = Math.max(0, context.cx - (parseInt(m[1]) || 1));
+    } else if (m = code.match(/^\[([0-9]*)C$/)) {
+      context.cx += parseInt(m[1]) || 1;
+    } else if (code == '[K') {
+      context.lines[context.cy][1].length = Math.min(context.lines[context.cy][1].length, context.cx);
+      context.dirty[context.cy] = 1;
     } else if (code == '[0m') {
       context.attrib = [DEFAULT_FG, DEFAULT_BG];
     } else if (m = code.match(/\[38;5;([0-9]+)m/)) {
@@ -520,6 +527,45 @@ if (!globalObj.write) {
     }
   }
   window.onkeydown = KeyDown;
+  // For the buttons of the Android app: lugkey('ArrowUp'|'Tab'...), lugfont(+1|-1).
+  window.lugkey = function(k) {
+    KeyDown({key: k, keyCode: k == 'Tab' ? 9 : 0, ctrlKey: false,
+             preventDefault: function() {}});
+  };
+  var fontPx = 0;
+  function GetFont() {
+    return fontPx || parseFloat(getComputedStyle(context.terminal).fontSize) || 16;
+  }
+  function SetFont(px) {
+    fontPx = Math.max(8, Math.min(64, Math.round(px)));
+    context.terminal.style.fontSize = fontPx + 'px';
+    try { localStorage.setItem('lugfont', fontPx); } catch (e) {}
+    window.scrollTo(0, document.body.scrollHeight);
+  }
+  window.lugfont = function(d) { SetFont(GetFont() + 2 * d); };
+  try {
+    var savedFont = parseInt(localStorage.getItem('lugfont'));
+    if (savedFont) { SetFont(savedFont); }
+  } catch (e) {}
+  // Pinch out and in change the size of the text.
+  var pinch0 = 0, pinchFont = 0;
+  function Dist(t) {
+    return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  }
+  document.addEventListener('touchstart', function(e) {
+    if (e.touches.length == 2 && !context.mode) {
+      pinch0 = Dist(e.touches); pinchFont = GetFont();
+    }
+  }, {passive: true});
+  document.addEventListener('touchmove', function(e) {
+    if (e.touches.length == 2 && pinch0) {
+      SetFont(pinchFont * Dist(e.touches) / pinch0);
+      e.preventDefault();
+    }
+  }, {passive: false});
+  document.addEventListener('touchend', function(e) {
+    if (e.touches.length < 2) { pinch0 = 0; }
+  }, {passive: true});
   window.addEventListener('paste', function(e) {
     context.Inject(e.clipboardData.getData('text'));
   });

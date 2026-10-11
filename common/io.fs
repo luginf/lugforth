@@ -23,7 +23,7 @@ defer prompt
 
 ( Core I/O )
 : bye   0 terminate ;
-( bye for a script run as `lugforth file.fs` or on the web, not for a file included from the prompt )
+( bye for a script run as "lugforth file.fs" or on the web, not for a file included from the prompt )
 : script-bye   'argc @ 1 <> if bye then ;
 : emit ( n -- ) >r rp@ 1 type rdrop ;
 : space bl emit ;   : cr 13 emit nl emit ;
@@ -103,7 +103,9 @@ variable echo -1 echo !   variable arrow -1 arrow !  0 value wascr
 : tib ( -- a ) 'tib @ ;
 create input-buffer   input-limit allot
 : tib-setup   input-buffer 'tib ! ;
-: refill   tib-setup tib input-limit accept #tib ! 0 >in ! -1 ;
+( A platform can replace the line editor, see common/lineedit.fs )
+defer edit-accept   ' accept is edit-accept
+: refill   tib-setup tib input-limit edit-accept #tib ! 0 >in ! -1 ;
 
 ( Stack Guards )
 sp0 'stack-cells @ 2 3 */ cells + constant sp-limit

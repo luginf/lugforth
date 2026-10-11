@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -48,7 +49,7 @@ static void *android_dlsym(void *h, const char *name) {
 
 #include "common/bits.h"
 #include "common/core.h"
-#include "ports/android/sdl/faults_android.h"
+#include "ports/android/app/native/faults_android.h"
 #include "common/calling.h"
 #include "common/interp.h"
 
@@ -95,6 +96,8 @@ int SDL_main(int argc, char *argv[]) {
     char *slash = strrchr(dir, '/');
     if (slash) { *slash = 0; if (chdir(dir)) { } }
   }
+  const char *cwd = getenv("LUGFORTH_CWD");  // set by SdlActivity: the examples folder
+  if (cwd && chdir(cwd)) { }
   void *heap = mmap(
       (void *) 0x8000000, HEAP_SIZE,
       PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);

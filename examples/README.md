@@ -1,97 +1,38 @@
-# Benchmarks: lugforth vs plain C vs uxn
+# Examples
 
-Two small, self-contained benchmarks compare this fork's interactive Forth
-(`out/posix/lugforth`, a native-threaded interpreter with direct FFI into
-shared libraries such as SDL2) against a compiled C reference and against
-[uxn](https://100r.co/site/uxn.html), the small stack-based virtual machine
-whose portability (it also runs on GBA, NDS, and other tiny targets) prompted
-the comparison. Each benchmark exists in three files doing the exact same
-work — same algorithm, same constants, same data — so the numbers below are
-directly comparable:
+Games and demos (SDL2 words, see `ports/posix/SDL2.md`): `sdl2_demo.fs`,
+`sdl2_breakout.fs`, `sdl2_drums.fs`, `sdl2_pianoroll.fs`, `sdl2_roguelike.fs`.
+Run one with `lugforth examples/sdl2_breakout.fs`, or `include` it from the prompt.
 
-| benchmark | lugforth | C | uxntal |
-|---|---|---|---|
-| pure computation | `bench_sieve.fs` | `bench_sieve.c` | `bench_sieve.tal` |
-| drawing throughput | `bench_lines.fs` | `bench_lines.c` | `bench_lines.tal` |
+## Benchmarks: lugforth vs C vs uxn
 
-Run `make bench` to build and run all six, or see [Makefile](Makefile) for
-individual targets (`make help` lists them). Numbers below were measured on
-this machine and will vary on others, but the *ratios* are the interesting
-part.
+Two benchmarks, each in three files doing the same work (same algorithm, constants
+and data): `bench_sieve` and `bench_lines`, as `.fs`, `.c` and `.tal`
+([uxn](https://100r.co/site/uxn.html) assembly). `make bench` builds and runs all
+six; `make help` lists the targets. The ratios matter, the times depend on the
+machine.
 
-## bench_sieve: pure computation, no display
+| benchmark | what it measures | C | uxn | lugforth |
+|---|---|---:|---:|---:|
+| `bench_sieve` | sieve up to 32768, 200 runs, no I/O | 0.078 ms | 7.1 ms | 7.8 ms |
+| `bench_lines` | 100 Bresenham lines per frame through the real display path | 0.43 ms | 3.7 ms | 3.0 ms |
 
-The sieve of Eratosthenes up to 32768 (kept below 65536 so it fits, together
-with the code, in uxn's single 64K memory bank), run 200 times back to back.
-No I/O in the timed part — this isolates raw interpreter/VM dispatch
-overhead from everything else. All three agree on the answer: 3512 primes.
+Pure interpretation is about 100 times slower than C for tight integer loops, for
+lugforth and uxn alike. With real work behind a library or device call (the SDL2
+renderer, uxn's Screen) the gap shrinks to 7-9 times, which is the case that
+matters for drawing games.
 
-| | time per run | vs C |
-|---|---:|---:|
-| C (`cc -O2`) | 0.078 ms | 1.0× |
-| uxn (`uxncli`) | 7.1 ms | ~91× |
-| lugforth | 7.8 ms | ~100× |
-
-lugforth and uxn land in the same ballpark — both are simple, non-JIT
-interpreters — and both are roughly two orders of magnitude slower than
-compiled C for tight, branch-heavy integer loops. Nothing surprising here:
-this is close to interpreter-dispatch overhead in its purest form.
-
-## bench_lines: drawing throughput, real display path
-
-100 lines, endpoints picked by a 16-bit LCG (so the three versions draw
-*exactly* the same pixels), rasterized with a hand-written Bresenham line
-algorithm (no built-in "line" primitive is used, to keep the comparison at
-the pixel level) and redrawn 50 times through the real display path of each
-platform: `SDL_RenderDrawPoint`/`SDL_RenderPresent` for C and lugforth,
-uxn's Screen device (`.Screen/pixel` DEO) for uxntal. A checksum of every
-plotted pixel, reset each frame, confirms the geometry is identical
-everywhere: `6942` (hex).
-
-| | time per frame | vs C |
-|---|---:|---:|
-| C+SDL2 (`SDL_VIDEODRIVER=dummy`) | 0.43 ms | 1.0× |
-| lugforth+SDL2 (`SDL_VIDEODRIVER=dummy`) | 3.0 ms | ~7.0× |
-| uxn (`uxncli`, headless) | 3.7 ms | ~8.7× |
-
-The gap to C narrows sharply compared to bench_sieve (~100×  down to
-~7-9×): once real work happens on the other side of a device/library call —
-the SDL2 renderer, or uxn's Screen device — the cost of *that* call
-dominates, and the overhead of the interpreter or VM that issued it matters
-much less. This is the case that actually matters for "lugforth as an
-interactive SDL2 frontend, uxn-style": drawing lots of small things every
-frame is not where an interpreted language pays the most.
-
-`make view-lines` (lugforth), `make view-lines-c` (C) and `make view-lines-uxn`
-(uxn, via `uxnemu`) each open a real window with the 100 lines drawn, left on
-screen after the timed part, to check the rendering by eye rather than just
-trust the checksum.
-
-## Notes
-
-* Numbers vary run to run (background load, thermal throttling, `dummy` vs a
-  real video driver); what stays stable across runs on this machine is the
-  order of magnitude of each ratio.
-* `bench_lines.fs`'s window normally stays open on the last frame (press esc
-  or close it to quit); set `BENCH_HEADLESS=1` to skip straight to exit,
-  which is what the Makefile's timing targets do.
-* uxntal has no signed comparison instructions, so Bresenham's error term
-  (which goes negative) is tested by hand: subtract, then check the top bit
-  of the 16-bit two's complement result. `ADD2`/`SUB2` don't care about
-  signedness, only the branches do.
-* uxn's default palette is all black; `bench_lines.tal` sets one explicitly
-  (`System/r`, `/g`, `/b`) or the lines would be correct but invisible.
+`bench_lines.fs` stays open on the last frame (Esc to quit); `BENCH_HEADLESS=1`
+exits at once. `make view-lines`, `view-lines-c` and `view-lines-uxn` open a window
+to check the drawing by eye.
 
 ## txt2tags.fs
 
-A small converter from the basic txt2tags syntax to HTML, written in Forth
-(no macros, regular expressions or pre/post processing):
+A converter from basic txt2tags syntax to HTML, written in Forth:
 
 ```
 lugforth examples/txt2tags.fs examples/txt2tags_demo.t2t > demo.html
 ```
 
 or `include examples/txt2tags.fs` then `s" doc.t2t" t2t-file`. The header
-comment of the file lists what is supported (titles, paragraphs, bold,
-italic, underline, strike, mono, nested lists, definitions, verbatim blocks,
-quotes, rules, tables, links and images).
+comment lists the supported syntax.
