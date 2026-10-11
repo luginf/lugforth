@@ -40,6 +40,6 @@ graphics
     }g
     flip
   FINISHED event = until
-  bye
+  script-bye
 ;
 run

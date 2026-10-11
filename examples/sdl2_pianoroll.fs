@@ -887,4 +887,4 @@ field-w field-h screen
 s" Piano roll" title
 demo-pattern
 run
-bye
+script-bye

@@ -32,6 +32,15 @@ release.
 
 * Linux (tarball and AppImage): built on Debian 10, needs glibc 2.27 or newer.
   The AppImage also carries the SDL2 libraries. Tested in CI.
+  Started from a console it gives the usual terminal interface; a click on it
+  from the desktop opens a terminal emulator running it. It also carries the
+  examples: on each run the missing ones are copied to
+  `~/.local/share/lugforth/examples` (your own edits are never overwritten;
+  `LUGFORTH_HOME` changes the directory, `LUGFORTH_EXAMPLES` holds the path
+  inside Forth's environment). From the desktop the working directory is
+  `~/.local/share/lugforth`, so `include examples/sdl2_demo.fs` works. Add your
+  own files to that folder; to ship more examples, put them in `examples/`
+  (the `release.yml` job picks them up, see `tools/make_appimage.sh --examples`).
 * Windows x64: built with MSVC, starts are not tested in CI yet.
 * macOS universal: builds but does not start properly yet, so it is not
   published (see the workflow). `LUGFORTH_FAULTS=1` makes the posix build report

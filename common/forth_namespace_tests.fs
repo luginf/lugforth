@@ -93,6 +93,7 @@ e: check-boot
   out: cr 
   out: space 
   out: emit 
+  out: script-bye 
   out: bye 
   out: prompt 
   out: terminate 

@@ -258,6 +258,6 @@ create arrow-table
       cleanup
     then
   FINISHED event = until
-  bye
+  script-bye
 ;
 run

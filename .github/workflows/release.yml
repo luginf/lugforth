@@ -70,8 +70,13 @@ jobs:
           mkdir -p "release/lugforth-$VERSION-linux-x86_64"
           cp dist/lugforth LICENSE NOTICE README.md "release/lugforth-$VERSION-linux-x86_64/"
           tar -C release -czf "dist/lugforth-$VERSION-linux-x86_64.tar.gz" "lugforth-$VERSION-linux-x86_64"
-          # AppImage: also carries the SDL2 libraries Lugforth loads at run time
+          # AppImage: also carries the SDL2 libraries Lugforth loads at run time, and the
+          # examples (AppRun copies them to ~/.local/share/lugforth/examples on first run)
+          mkdir -p appimage-examples
+          cp -R examples/. appimage-examples/
+          (cd appimage-examples && rm -rf bench_* *.c *.tal *.rom* Makefile *.py *xtensa* espnow.fs)
           bash tools/make_appimage.sh \
+            --examples appimage-examples \
             --name lugforth \
             --binary dist/lugforth \
             --icon docs/images/lugforth_256.png \

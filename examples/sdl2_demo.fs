@@ -71,4 +71,4 @@ w 2 / value cx   h 2 / value cy       ( the ring )
 w h screen
 s" Lugforth SDL2 demo" title
 run
-bye
+script-bye

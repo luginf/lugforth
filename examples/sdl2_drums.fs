@@ -285,4 +285,4 @@ field-w field-h screen
 s" Drum machine" title
 new-pattern
 run
-bye
+script-bye

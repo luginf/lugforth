@@ -200,4 +200,4 @@ s" Breakout" title
 0 cursor
 new-game
 run
-bye
+script-bye

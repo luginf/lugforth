@@ -23,6 +23,8 @@ defer prompt
 
 ( Core I/O )
 : bye   0 terminate ;
+( bye for a script run as `lugforth file.fs` or on the web, not for a file included from the prompt )
+: script-bye   'argc @ 1 <> if bye then ;
 : emit ( n -- ) >r rp@ 1 type rdrop ;
 : space bl emit ;   : cr 13 emit nl emit ;
 

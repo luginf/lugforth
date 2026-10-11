@@ -10,11 +10,17 @@
 # fixed by the system it was BUILT on. One built on a recent system fails on older ones with
 # "version `GLIBC_2.38' not found" (that is what happens with a hand-made one).
 #
+# --examples DIR ships DIR in the AppImage. On each run AppRun copies the files that are missing into
+# ${NAME_HOME:-${XDG_DATA_HOME:-~/.local/share}/NAME}/examples (never overwriting what the user changed), and exports
+# NAME_EXAMPLES with that path. With --terminal, an AppImage started with no terminal (a click on the desktop: no tty, stdin on
+# /dev/null) and no argument opens a terminal emulator and runs itself in it, in the NAME_HOME directory, so that
+# `include examples/foo.fs` works; started from a console it runs as usual in the current directory.
+#
 # --bundle LIB copies LIB (found through the binary's own `ldd`) into the AppImage. Everything else (ALSA, X11,
 # freetype, fontconfig...) is expected from the host, as for any AppImage.
 set -euo pipefail
 
-NAME="" BINARY="" ICON="" COMMENT="" VERSION="" OUT="." UPDATE_INFO="" BUNDLE=() TERMINAL=false CATEGORIES="Utility;"
+NAME="" BINARY="" ICON="" COMMENT="" VERSION="" OUT="." UPDATE_INFO="" BUNDLE=() EXAMPLES="" TERMINAL=false CATEGORIES="Utility;"
 while [ $# -gt 0 ]; do
 	case "$1" in
 	--name) NAME="$2"; shift 2 ;;
@@ -24,6 +30,7 @@ while [ $# -gt 0 ]; do
 	--version) VERSION="$2"; shift 2 ;;
 	--out) OUT="$2"; shift 2 ;;
 	--update-info) UPDATE_INFO="$2"; shift 2 ;;
+	--examples) EXAMPLES="$2"; shift 2 ;;
 	--bundle) BUNDLE+=("$2"); shift 2 ;;
 	--terminal) TERMINAL=true; shift ;;
 	--categories) CATEGORIES="$2"; shift 2 ;;
@@ -63,18 +70,63 @@ Comment=$COMMENT
 Exec=$NAME
 Icon=$ID
 Categories=$CATEGORIES
-Terminal=$TERMINAL
+Terminal=false
 X-AppImage-Name=$NAME
 ${VERSION:+X-AppImage-Version=$VERSION}
 EOF
 cp "$APPDIR/$ID.desktop" "$APPDIR/usr/share/applications/$ID.desktop"
 
-cat > "$APPDIR/AppRun" <<EOF
+if [ -n "$EXAMPLES" ]; then
+	[ -d "$EXAMPLES" ] || { echo "--examples: $EXAMPLES is not a directory" >&2; exit 2; }
+	mkdir -p "$APPDIR/usr/share/$ID/examples"
+	cp -R "$EXAMPLES/." "$APPDIR/usr/share/$ID/examples/"
+fi
+
+# Terminal=false in the .desktop file on purpose: not every desktop knows how to open a terminal for Terminal=true,
+# and AppRun below does it itself when there is none (see the header).
+VAR=$(echo "$ID" | tr 'a-z' 'A-Z' | tr -c 'A-Z0-9\n' _)
+{
+	cat <<'EOS'
 #!/bin/sh
-HERE="\$(dirname "\$(readlink -f "\$0")")"
-export LD_LIBRARY_PATH="\$HERE/usr/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
-exec "\$HERE/usr/bin/$NAME" "\$@"
-EOF
+HERE="$(dirname "$(readlink -f "$0")")"
+export LD_LIBRARY_PATH="$HERE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+DATA="${@VAR@_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/@ID@}"
+if [ -d "$HERE/usr/share/@ID@/examples" ]; then
+	# the AppImage is read-only: copy without its modes, and never overwrite the user's own versions
+	mkdir -p "$DATA/examples" 2>/dev/null &&
+		cp -R -n --no-preserve=mode "$HERE/usr/share/@ID@/examples/." "$DATA/examples/" 2>/dev/null
+	export @VAR@_EXAMPLES="$DATA/examples"
+fi
+EOS
+	if $TERMINAL; then
+		cat <<'EOS'
+# No terminal and no argument (a click on the desktop: no tty, stdin on /dev/null or closed): open one and run
+# ourselves in it. A pipe (`echo ... | lugforth`) is not a click, and runs as is.
+if [ $# -eq 0 ] && [ -z "$@VAR@_NO_TERMINAL" ] && [ ! -t 0 ] && [ ! -t 1 ] && [ ! -t 2 ] &&
+	{ [ ! -e /proc/self/fd/0 ] || [ /proc/self/fd/0 -ef /dev/null ]; } &&
+	{ [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; }; then
+	SELF="${APPIMAGE:-$HERE/AppRun}"
+	mkdir -p "$DATA" 2>/dev/null && cd "$DATA"
+	have() { command -v "$1" >/dev/null 2>&1; }
+	if have x-terminal-emulator; then exec x-terminal-emulator -e "$SELF"
+	elif have gnome-terminal; then exec gnome-terminal -- "$SELF"
+	elif have konsole; then exec konsole -e "$SELF"
+	elif have xfce4-terminal; then exec xfce4-terminal -x "$SELF"
+	elif have mate-terminal; then exec mate-terminal -x "$SELF"
+	elif have lxterminal; then exec lxterminal -e "$SELF"
+	elif have kitty; then exec kitty "$SELF"
+	elif have alacritty; then exec alacritty -e "$SELF"
+	elif have foot; then exec foot "$SELF"
+	elif have xterm; then exec xterm -e "$SELF"
+	fi
+	MSG="@NAME@ needs a terminal and none was found: run it from a console."
+	if have notify-send; then notify-send "@NAME@" "$MSG"; elif have zenity; then zenity --error --text="$MSG"; else echo "$MSG" >&2; fi
+	exit 1
+fi
+EOS
+	fi
+	echo 'exec "$HERE/usr/bin/@NAME@" "$@"'
+} | sed -e "s/@VAR@/$VAR/g" -e "s/@ID@/$ID/g" -e "s/@NAME@/$NAME/g" > "$APPDIR/AppRun"
 chmod +x "$APPDIR/AppRun"
 
 # appimagetool from the AppImage project: its runtime is the current static "type 2" one, which needs neither

@@ -357,4 +357,4 @@ s" Roguelike" title
 s" examples/sdl2_tiles.png" load-image to tiles
 new-game
 run
-bye
+script-bye

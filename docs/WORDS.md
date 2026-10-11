@@ -430,6 +430,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `bl` |  | ANS. Primitive defined in C. | P W |
 | `blank` |  | ANS. Primitive defined in C. | P W |
 | `bye` |  | ANS. | P W |
+| `script-bye` |  | `bye`, except in a file included from the prompt (when `'argc @` is 1). | P W |
 | `C!` |  | ANS. Primitive defined in C. | P W |
 | `c,` | `( ch -- )` | ANS. | P W |
 | `C@` |  | ANS. Primitive defined in C. | P W |
