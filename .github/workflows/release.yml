@@ -44,7 +44,7 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           ./configure.py
-          ninja out/gen/posix_boot.h
+          ninja out/gen/posix_boot.h out/gen/posix_mini_boot.h
 
       - name: Build
         run: |
@@ -55,6 +55,11 @@ jobs:
             -fomit-frame-pointer -ffunction-sections -fdata-sections \
             -Wl,--gc-sections -no-pie -std=c++11 -static-libstdc++ -static-libgcc \
             ports/posix/main.c -o dist/lugforth -ldl
+          # lugforth-mini: no editors, SDL2, X11, console window or servers
+          g++ -O2 -I . -I out -s -DLUGFORTH_MINIMAL -DLUGFORTH_MINI -fno-exceptions -fno-stack-protector \
+            -fomit-frame-pointer -ffunction-sections -fdata-sections \
+            -Wl,--gc-sections -no-pie -std=c++11 -static-libstdc++ -static-libgcc \
+            ports/posix/main.c -o dist/lugforth-mini -ldl
           echo "highest glibc symbol version needed:"
           objdump -T dist/lugforth | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1
 
@@ -63,12 +68,13 @@ jobs:
         run: |
           cd /tmp
           "$GITHUB_WORKSPACE/dist/lugforth" "$GITHUB_WORKSPACE/common/all_tests.fs" < /dev/null | tail -5
+          "$GITHUB_WORKSPACE/dist/lugforth-mini" "$GITHUB_WORKSPACE/common/all_tests.fs" < /dev/null | tail -5
 
       - name: Package
         run: |
           VERSION=$(git describe --tags --always)
           mkdir -p "release/lugforth-$VERSION-linux-x86_64"
-          cp dist/lugforth LICENSE NOTICE README.md "release/lugforth-$VERSION-linux-x86_64/"
+          cp dist/lugforth dist/lugforth-mini LICENSE NOTICE README.md "release/lugforth-$VERSION-linux-x86_64/"
           tar -C release -czf "dist/lugforth-$VERSION-linux-x86_64.tar.gz" "lugforth-$VERSION-linux-x86_64"
           # AppImage: also carries the SDL2 libraries Lugforth loads at run time, and the
           # examples (AppRun copies them to ~/.local/share/lugforth/examples on first run)
@@ -90,6 +96,7 @@ jobs:
             --bundle libSDL2_ttf-2.0.so.0 --bundle libSDL2_mixer-2.0.so.0 \
             --out dist
           mv dist/lugforth-x86_64.AppImage "dist/lugforth-$VERSION-x86_64.AppImage"
+          mv dist/lugforth-mini "dist/lugforth-mini-$VERSION-linux-x86_64"
           rm dist/lugforth
 
       - uses: actions/upload-artifact@v4

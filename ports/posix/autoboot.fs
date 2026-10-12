@@ -1,4 +1,5 @@
 \ Copyright 2021 Bradley D. Nelson
+\ Modifications Copyright 2026 Luginfo10
 \
 \ Licensed under the Apache License, Version 2.0 (the "License");
 \ you may not use this file except in compliance with the License.
@@ -15,6 +16,7 @@
 ( Include first argument if any )
 internals definitions
 ( lugforth --gui [file.fs]: the console window with a menu; a terminal if it cannot open )
+DEFINED? gui-load [IF]
 : gui-open ( -- )   gui-load s" sdl2 desktop console" eval-copy ;
 : gui-restore ( -- )   only forth also internals 1 'argc ! previous definitions ;
 : gui-start ( -- )
@@ -26,6 +28,9 @@ internals definitions
    s" Use the menu (button at the top right), or type: words" type cr
    argc 3 >= if 2 argv ['] included catch drop then
    gui-restore ;
+[ELSE]
+: gui-start ( -- )   s" --gui: this build has no window (lugforth-mini)" type cr 1 terminate ;
+[THEN]
 : autoexec
    ( Open passed file if any. )
    argc 2 >= if

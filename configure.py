@@ -1,5 +1,6 @@
 #! /usr/bin/env python3
 # Copyright 2023 Bradley D. Nelson
+# Modifications Copyright 2026 Luginfo10
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -286,6 +287,12 @@ rule compile_sim
   deps = gcc
   command = $CXX -DLUGFORTH_SIM=1 $CFLAGS $in -o $out $LIBS -MD -MF $depfile && strip $STRIP_ARGS $out
 
+rule compile_mini
+  description = CXX_MINI $in
+  depfile = $out.d
+  deps = gcc
+  command = $CXX -DLUGFORTH_MINI=1 $CFLAGS $in -o $out $LIBS -MD -MF $depfile && strip $STRIP_ARGS $out
+
 rule compile_win32
   description = WIN_CL32 $in
   deps = msvc
@@ -399,6 +406,10 @@ def Simple(op, target, source, implicit=[]):
 
 def Compile(target, source, implicit=[]):
   return Simple('compile', target, source, implicit)
+
+
+def CompileMini(target, source, implicit=[]):
+  return Simple('compile_mini', target, source, implicit)
 
 
 def CompileSim(target, source, implicit=[]):

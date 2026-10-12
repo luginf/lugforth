@@ -1,4 +1,5 @@
 \ Copyright 2022 Bradley D. Nelson
+\ Modifications Copyright 2026 Luginfo10
 \
 \ Licensed under the Apache License, Version 2.0 (the "License");
 \ you may not use this file except in compliance with the License.
@@ -604,7 +605,7 @@ DEFINED? windows [IF]
 
 e: test-windows-forth-voclist
   internals ' graphics voclist-from
-  out: graphics 
+  DEFINED? graphics [IF] out: graphics [THEN]
   out: ansi 
   out: editor 
   out: streams 
@@ -660,11 +661,24 @@ e: test-posix-forth-voclist
 e: test-posix-forth-namespace
   ' forth list-from
   out: FORTH 
+  DEFINED? httpd [IF]
   out:  
   out: web-interface 
   out: httpd 
   out: telnetd 
+  [THEN]
   out: sockets 
+  DEFINED? gui-load [IF]
+  out: writhdeck 
+  out: wd-src 
+  out: wd-go 
+  out: wd-loaded 
+  out: ed 
+  out: ed-src 
+  out: ed-go 
+  out: ed-arg-n 
+  out: ed-arg 
+  out: ed-loaded 
   out: gui-tty? 
   out: gui-load 
   out: gui-src 
@@ -676,6 +690,7 @@ e: test-posix-forth-namespace
   out: sdl2-image 
   out: sdl2 
   out: x11 
+  [THEN]
   out: form 
   out: termios 
   check-desktop

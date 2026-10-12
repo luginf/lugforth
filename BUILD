@@ -1,4 +1,5 @@
 # Copyright 2023 Bradley D. Nelson
+# Modifications Copyright 2026 Luginfo10
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,8 +14,8 @@
 # limitations under the License.
 
 SetVersions(
-    version='7.0.9.0',
-    stable='7.0.8.1')
+    version='7.0.10.0',
+    stable='7.0.9.0')
 
 Include('ports/posix')
 Include('ports/windows')

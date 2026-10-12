@@ -1,4 +1,5 @@
 \ Copyright 2021 Bradley D. Nelson
+\ Modifications Copyright 2026 Luginfo10
 \
 \ Licensed under the Apache License, Version 2.0 (the "License");
 \ you may not use this file except in compliance with the License.
@@ -44,8 +45,11 @@ internals definitions
    dup allocate throw
    swap over >r
    rot read-file throw
-   r@ swap evaluate
-   r> free throw ;
+   r@ swap
+   src-ref @ >r  0 src-ref !
+   evaluate
+   src-ref @ r> src-ref !
+   r> swap if drop else free throw then ;   ( an r| r~ r" string points into the text: keep it )
 
 : raw-included ( a n -- )
    r/o open-file throw

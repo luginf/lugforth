@@ -1,4 +1,5 @@
 \ Copyright 2021 Bradley D. Nelson
+\ Modifications Copyright 2026 Luginfo10
 \
 \ Licensed under the Apache License, Version 2.0 (the "License");
 \ you may not use this file except in compliance with the License.
@@ -52,7 +53,9 @@ old-termios termios@
 $5413 constant TIOCGWINSZ
 4 2 * constant sizeof(winsize)
 create winsize sizeof(winsize) allot
-: form ( -- h w ) stdin TIOCGWINSZ winsize ioctl throw
+0 value form-hook   ( a console that is not the tty gives its own size here )
+: form ( -- h w ) form-hook ?dup if execute exit then
+                  stdin TIOCGWINSZ winsize ioctl throw
                   winsize sl@ dup $ffff and swap $10000 / ;
 
 0 value pending

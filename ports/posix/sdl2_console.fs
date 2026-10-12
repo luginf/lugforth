@@ -32,15 +32,8 @@
 \ Mono of the system). Text size: Ctrl+wheel, Ctrl +, Ctrl -, Ctrl 0.
 
 ( The code is a string, evaluated when asked: SDL2 is only loaded then. )
-( A copy is evaluated: the words compiled would overwrite the string while it is read. )
-: eval-copy ( a n -- )
-  { a n }
-  'tib @ #tib @ >in @ { t1 t2 t3 }
-  n allocate throw { buf }
-  a buf n cmove
-  buf n ['] evaluate catch { err }
-  t3 >in !  t2 #tib !  t1 'tib !   ( a throw skips the restore of evaluate )
-  buf free drop  err throw ;
+needs eval_copy.fs
+needs sdl2.fs
 
 : gui-src r|
 sdl2
@@ -159,6 +152,8 @@ create font-data
 1000 constant con-lines
 300 constant max-cols
 create con-buf max-cols con-lines * allot
+create con-attr max-cols con-lines * 4 * allot   ( the colors of each cell, see sgr below )
+0 value cur-sgr   ( the attributes new characters get: 9 bits of foreground, 9 of background, flags )
 0 value con-cols   0 value con-rows   0 value con-cw   0 value con-ch
 0 value cx   0 value cy
 0 value dirty
@@ -175,18 +170,22 @@ defer pick-open ( n -- )   ( the color picker, further down )
 0 value sel-on
 
 : grid ( x y -- a ) max-cols * + con-buf + ;
+: attr-addr ( x y -- a ) max-cols * + 4 * con-attr + ;
 : con-clear ( -- )
-  con-buf max-cols con-lines * 32 fill  0 to cx 0 to cy  0 to back  0 to sel-on  -1 to dirty ;
+  con-buf max-cols con-lines * 32 fill  con-attr max-cols con-lines * 4 * erase
+  0 to cx 0 to cy  0 to back  0 to sel-on  -1 to dirty ;
 : con-scroll ( -- )
   con-buf max-cols + con-buf max-cols con-lines 1- * cmove
-  0 con-lines 1- grid max-cols 32 fill  0 to sel-on ;
+  0 con-lines 1- grid max-cols 32 fill  0 to sel-on
+  con-attr max-cols 4 * + con-attr max-cols 4 * con-lines 1- * cmove
+  con-attr max-cols 4 * con-lines 1- * + max-cols 4 * erase ;
 : con-nl ( -- )
   0 to cx  1 +to cy  -1 to dirty
   back if 1 +to back then
   cy con-lines >= if con-scroll con-lines 1- to cy then ;
 : put-char ( c -- )
   cx con-cols >= if con-nl then
-  cx cy grid c!  1 +to cx  -1 to dirty ;
+  cx cy grid c!  cur-sgr cx cy attr-addr l!  1 +to cx  -1 to dirty ;
 
 : kbd-shown ( -- f ) window-handle SDL_IsScreenKeyboardShown $ffffffff and 0<> ;
 : vis ( -- n ) kbd-shown if con-rows 2/ 3 max else con-rows then ;
@@ -194,8 +193,68 @@ defer pick-open ( n -- )   ( the color picker, further down )
 : view-top ( -- n ) win-top back - 0 max ;
 : scroll-by ( n -- ) back + 0 max win-top min to back  -1 to dirty ;
 
-( Just enough ANSI for page, at-xy, clear-to-eol and cursor moves; the rest is ignored )
-0 value esc-state   0 value p1   0 value p2   0 value pn
+( ANSI: page, at-xy, clear-to-eol, cursor moves, and colors: the sequences of m. Others are ignored )
+0 value esc-state   0 value p1   0 value p2
+0 value acc   0 value np   0 value pdig   0 value si   0 value sv
+create prm 8 cells allot
+: prm-reset ( -- )   0 to acc  0 to np  0 to pdig  0 to p1  0 to p2  prm 8 cells erase ;
+: prm-push ( -- )   np 8 < if acc prm np cells + !  1 +to np then  0 to acc ;
+
+( Colors as in xterm: 0 to 15 the ANSI ones, 16 to 231 a cube, 232 to 255 grays )
+: ansi16 ( i -- $rrggbb )
+  { i }
+  i 7 = if $e5e5e5 exit then   i 8 = if $7f7f7f exit then
+  i 12 = if $5c5cff exit then   i 4 = if $0000ee exit then
+  i 8 < if 205 else 255 then { v }
+  i 1 and if v 16 lshift else 0 then
+  i 2 and if v 8 lshift or then
+  i 4 and if v or then ;
+: cube-comp ( c -- v ) dup 0= if exit then 40 * 55 + ;
+: xterm>rgb ( i -- $rrggbb )
+  dup 16 < if ansi16 exit then
+  dup 232 >= if 232 - 10 * 8 + dup 16 lshift over 8 lshift or or exit then
+  16 - { n }
+  n 36 / cube-comp 16 lshift  n 6 / 6 mod cube-comp 8 lshift or  n 6 mod cube-comp or ;
+: mix1 ( a b pct -- v ) { a b pc } a 100 pc - * b pc * + 100 / ;
+: mix ( c1 c2 pct -- c )
+  { c1 c2 pc }
+  c1 16 rshift 255 and  c2 16 rshift 255 and  pc mix1 16 lshift
+  c1 8 rshift 255 and  c2 8 rshift 255 and  pc mix1 8 lshift or
+  c1 255 and  c2 255 and  pc mix1 or ;
+
+: sgr-fg ( n -- )   cur-sgr $1ff invert and  swap 1+ or to cur-sgr ;      ( n is 0 to 255, or -1 )
+: sgr-bg ( n -- )   cur-sgr $3fe00 invert and  swap 1+ 9 lshift or to cur-sgr ;
+: sgr-flag ( mask f -- )   if cur-sgr or else invert cur-sgr and then to cur-sgr ;
+: sgr-one ( v -- )
+  dup 0 = if drop 0 to cur-sgr exit then
+  dup 1 = if drop $80000 -1 sgr-flag exit then
+  dup 2 = if drop $100000 -1 sgr-flag exit then
+  dup 4 = if drop $200000 -1 sgr-flag exit then
+  dup 7 = if drop $40000 -1 sgr-flag exit then
+  dup 22 = if drop $180000 0 sgr-flag exit then
+  dup 24 = if drop $200000 0 sgr-flag exit then
+  dup 27 = if drop $40000 0 sgr-flag exit then
+  dup 39 = if drop -1 sgr-fg exit then
+  dup 49 = if drop -1 sgr-bg exit then
+  dup 30 >= over 37 <= and if 30 - sgr-fg exit then
+  dup 40 >= over 47 <= and if 40 - sgr-bg exit then
+  dup 90 >= over 97 <= and if 82 - sgr-fg exit then
+  dup 100 >= over 107 <= and if 92 - sgr-bg exit then
+  drop ;
+: sgr-apply ( -- )
+  np 0= if 0 to cur-sgr exit then
+  0 to si
+  begin si np < while
+    prm si cells + @ to sv
+    sv 38 = sv 48 = or if
+      prm si 1+ cells + @ 5 = if
+        prm si 2 + cells + @ 255 and  sv 38 = if sgr-fg else sgr-bg then
+        2 +to si
+      else prm si 1+ cells + @ 2 = if 4 +to si then then
+    else sv sgr-one then
+    1 +to si
+  repeat ;
+
 : csi-done ( c -- )
   dup [char] H = if
     drop  p2 1- 0 max con-cols 1- min to cx
@@ -207,19 +266,25 @@ defer pick-open ( n -- )   ( the color picker, further down )
   dup [char] D = if
     drop cx p1 1 max - 0 max to cx  -1 to dirty exit then
   dup [char] K = if
-    drop cx cy grid con-cols cx - 0 max 32 fill  -1 to dirty exit then
+    drop cx cy grid con-cols cx - 0 max 32 fill
+    cx cy attr-addr con-cols cx - 0 max 4 * erase  -1 to dirty exit then
+  dup [char] m = if drop sgr-apply -1 to dirty exit then
   drop ;
 : csi-char ( c -- )
   dup [char] 0 >= over [char] 9 <= and if
-    [char] 0 - pn if p2 10 * + to p2 else p1 10 * + to p1 then exit then
-  dup [char] ; = if drop 1 to pn exit then
-  dup 64 >= over 126 <= and if 0 to esc-state csi-done exit then
+    [char] 0 - acc 10 * + to acc  -1 to pdig exit then
+  dup [char] ; = if drop prm-push -1 to pdig exit then
+  dup 64 >= over 126 <= and if
+    0 to esc-state
+    pdig np 0> or if prm-push then
+    prm @ to p1   prm cell+ @ to p2
+    csi-done exit then
   drop ;
 : con-putc ( c -- )
   esc-state 2 = if csi-char exit then
   esc-state 3 = if 7 = if 0 to esc-state then exit then   ( title, ends with bell )
   esc-state 1 = if
-    dup [char] [ = if drop 2 to esc-state 0 to p1 0 to p2 0 to pn exit then
+    dup [char] [ = if drop 2 to esc-state prm-reset exit then
     [char] ] = if 3 to esc-state else 0 to esc-state then
     exit then
   dup 27 = if drop 1 to esc-state exit then
@@ -792,18 +857,40 @@ defer font-pick ( k -- )   ' drop is font-pick
 
 ( ---- Drawing ---- )
 0 value blink
+: attr@ ( x y -- a )   attr-addr sl@ ;
+: idx-color ( field default -- $rrggbb )   over 0= if nip exit then  drop 1- xterm>rgb ;
+: attr-colors ( a -- fg bg )   \ the colors of a cell: foreground and background
+  { a }
+  a $1ff and fg-col idx-color { f }
+  a 9 rshift $1ff and bg-col idx-color { b }
+  a $80000 and if
+    a $1ff and
+    dup 0= if drop $ffffff to f else dup 8 <= if 1- 8 + xterm>rgb to f else drop then then
+  then
+  a $100000 and if f b 50 mix to f then
+  a $40000 and if f b to f to b then
+  f b ;
+0 value view-t   0 value cc   0 value ca   0 value cell-f   0 value cell-b   -1 value tint-a
+: draw-cell ( col row -- )
+  { col row }
+  col row view-t + grid c@ to cc
+  col row view-t + attr@ to ca
+  col con-cw * margin +  row con-ch * top-px + margin + { px py }
+  ca tint-a <> if
+    ca attr-colors to cell-b to cell-f
+    ca to tint-a  cell-f rgb-split glyph-tint
+  then
+  cell-b bg-col <> if cell-b color px py con-cw con-ch box then
+  ca $200000 and if cell-f color px py con-ch + 2 - con-cw 1 box then
+  cc 32 > cc 127 < and if cc 32 - px py glyph-at then ;
 : con-draw ( -- )
   bg-col color cls
   fg-col rgb-split glyph-tint
   vis view-top { v top }
+  top to view-t   -1 to tint-a
   top v draw-sel
   v 0 ?do
-    con-cols 0 ?do
-      i j top + grid c@
-      dup 32 > over 127 < and if
-        32 - i con-cw * margin +  j con-ch * top-px + margin + glyph-at
-      else drop then
-    loop
+    con-cols 0 ?do  i j draw-cell  loop
   loop
   blink back 0= and if
     fg-col rgb-split 150 rgba
@@ -907,6 +994,10 @@ defer font-pick ( k -- )   ' drop is font-pick
   drop ;
 : con-pump ( -- ) begin ev SDL_PollEvent sign-extend while con-event repeat ;
 
+: con-form ( -- rows cols )   con-rows con-cols ;
+also termios
+: set-form-hook ( -- )   ['] con-form to form-hook ;
+previous
 : con-open ( -- )
   menu-on if
     z" DISPLAY" c-getenv 0=  z" WAYLAND_DISPLAY" c-getenv 0=  and  z" SDL_VIDEODRIVER" c-getenv 0=  and
@@ -921,6 +1012,7 @@ defer font-pick ( k -- )   ' drop is font-pick
   1 +to con-gen   0 to last-built
   con-layout
   renderer to con-renderer
+  set-form-hook
   SDL_StartTextInput drop
   -1 to dirty ;
 : con-ensure ( -- )
@@ -937,8 +1029,8 @@ defer font-pick ( k -- )   ' drop is font-pick
     dirty if con-draw then
     10 SDL_Delay drop
   again ;
-: con-key? ( -- f )
-  renderer con-renderer = renderer 0<> and if con-pump q-any? else 0 then ;
+: con-key? ( -- f )   ( a program that polls, as writhdeck does, still sees its output )
+  renderer con-renderer = renderer 0<> and if con-pump dirty if con-draw then q-any? else 0 then ;
 
 also internals
 : le-on ( -- )   -1 le-force ! ;   ( line editing even though stdin is no terminal )

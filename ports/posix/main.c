@@ -1,4 +1,5 @@
 // Copyright 2021 Bradley D. Nelson
+// Modifications Copyright 2026 Luginfo10
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,7 +47,11 @@
 #include "common/calling.h"
 #include "common/interp.h"
 
+#ifdef LUGFORTH_MINI
+#include "gen/posix_mini_boot.h"
+#else
 #include "gen/posix_boot.h"
+#endif
 
 // Leave the terminal as found, however we exit (a library calling exit(), as
 // Xlib does when its window is closed, bypasses the Forth terminate hook).

@@ -1,4 +1,5 @@
 \ Copyright 2023 Bradley D. Nelson
+\ Modifications Copyright 2026 Luginfo10
 \
 \ Licensed under the Apache License, Version 2.0 (the "License");
 \ you may not use this file except in compliance with the License.
@@ -30,6 +31,8 @@ needs ../../common/abc.fs
 needs sdl2_abc.fs
 needs sdl2_console_ttf.fs
 needs sdl2_console.fs
+needs editor.fs
+needs writhdeck.fs
 needs sockets.fs
 needs telnetd.fs
 needs httpd.fs

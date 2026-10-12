@@ -1,4 +1,5 @@
 \ Copyright 2022 Bradley D. Nelson
+\ Modifications Copyright 2026 Luginfo10
 \
 \ Licensed under the Apache License, Version 2.0 (the "License");
 \ you may not use this file except in compliance with the License.
@@ -56,9 +57,15 @@ variable hld
        else dup here swap >r >r zplace r> r> then ; immediate
 : ."   postpone s" state @ if postpone type else type then ; immediate
 : z"   postpone s" state @ if postpone drop else drop then ; immediate
-: r"   parse-quote state @ if swap aliteral aliteral then ; immediate
-: r|   [char] | parse state @ if swap aliteral aliteral then ; immediate
-: r~   [char] ~ parse state @ if swap aliteral aliteral then ; immediate
+variable src-ref   ( set when a string literal points into the text being read, see include-file )
+variable r-copy   ( set at the end of the boot: r" r| r~ then copy their text, as s" does )
+: r-lit ( a n -- a n | )
+  state @ 0= if exit then
+  r-copy @ if postpone $@ dup , zplace exit then
+  swap aliteral aliteral -1 src-ref ! ;
+: r"   parse-quote r-lit ; immediate
+: r|   [char] | parse r-lit ; immediate
+: r~   [char] ~ parse r-lit ; immediate
 : s>z ( a n -- z ) here >r zplace r> ;
 : z>s ( z -- a n ) 0 over begin dup c@ while 1+ swap 1+ swap repeat drop ;
 

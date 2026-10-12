@@ -131,6 +131,13 @@ create sbuf 16 allot
   s" abc" s" ab" compare 1 =assert
   s" " s" " compare 0 =assert
   s" " s" a" compare -1 =assert ;
+create rcopy-buf 64 allot
+: test-r-copy   ( a string with r| keeps its text after the source is overwritten )
+  s" : rtmp r| hello | ;" { a n }
+  a rcopy-buf n cmove   rcopy-buf n evaluate
+  rcopy-buf 64 [char] x fill
+  s" rtmp" evaluate  s" hello " compare 0 =assert ;
+
 : test-search
   s" hello world" s" wor" search assert 5 =assert c@ [char] w =assert
   s" hello" s" xyz" search 0 =assert 5 =assert drop

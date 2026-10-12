@@ -34,7 +34,8 @@ hand) builds and publishes them.
   of `lugforth --gui` (a terminal if it cannot open).
   The examples are copied on first run to `~/.local/share/lugforth/examples`
   (`LUGFORTH_HOME` changes the directory) and never overwritten.
-* **Windows x64**: MSVC build, not started in CI yet.
+* **Windows x64**: MSVC build, not started in CI yet. It has no SDL2: the SDL2 examples, `ed`,
+  `writhdeck` and the console window are for the POSIX build (Linux) only.
 * **macOS**: builds but does not start yet, so it is not published.
 
 `lugforth --gui [file.fs]` (any Linux build with SDL2) opens a console window with a
@@ -43,6 +44,13 @@ hidden until the button at the top right (or F10) is used: examples, text size,
 colors (with a color picker), system fonts, help; Alt+Enter is full screen. Size, colors and font are kept in
 `~/.local/share/lugforth/lugforth.ini` (`LUGFORTH_HOME` changes the directory), which
 can be edited: `size=`, `margin=`, `fg=` and `bg=` (hexadecimal RRGGBB), `font=` (a TrueType file), `fullscreen=` (the key, `Alt+Enter` by default).
+
+`lugforth-mini` (in the tarball, also alone) is the same POSIX build without the editors
+(`ed`, `writhdeck`), SDL2, X11, the console window and the web and telnet servers: about 110 KB
+against 260 KB, for machines that only need the interpreter. `ninja posix` builds both
+(`out/posix/lugforth-mini`), and `--gui` says there is no window. From a source checkout the
+mini can still load a part: `needs ports/posix/sdl2.fs`, then `sdl2` (SDL2 itself still has to
+be installed).
 
 Static binaries are not possible: Lugforth reaches libc, SDL2 and X11 through
 `dlopen`/`dlsym`.
@@ -55,6 +63,29 @@ Ctrl-A/E/B/F/D/K/U/L, a history of 64 lines (up, down) and Tab completion of
 words. After `include`, `needs`, `required`, `included`, `s"`, `z"`, `r|` and
 `r~`, Tab completes file names instead (not on the web). Piped input and the
 other ports use the plain `accept`.
+
+## Text editor
+
+`ed file.fs` (POSIX build, in a terminal or in the `--gui` window) opens or creates a
+text file. Arrows, Home, End, PageUp, PageDown, Delete, Ctrl+arrows (word) and
+Ctrl+Home/End; Tab inserts two spaces and Enter keeps the indentation. Selection with
+Shift+arrows, or Ctrl+K to start and stop a selection; Ctrl+C, Ctrl+X, Ctrl+V; Ctrl+Z
+undoes; Ctrl+F finds (Ctrl+N or F3 for the next one), Ctrl+G goes to a line; Ctrl+S saves
+and Ctrl+Q quits (twice if the text changed). `.fs`, `.fth` and `.4th` files are
+highlighted (comments, strings, words of the language, numbers, the name after `:`) in a
+terminal that has colors; Ctrl+T cycles the color themes (`default`, `colorforth` with red
+definitions and green words, `light`, `solarized`, `mono`), kept with the width and the goal of
+`writhdeck` in `editor.ini` beside `lugforth.ini` (`theme=colorforth`, `width=`, `goal=`, `wrap=`). The code is `ports/posix/editor.fs`, compiled the first time `ed`
+runs; `ports/posix/editor_tests.fs` tests its buffer.
+
+`writhdeck file.t2t` is the same editor for writing, after [WrithDeck](https://github.com/luginf/writhdeck)
+(`ports/posix/writhdeck.fs`, built on `editor.fs`, so both files are needed): lines wrapped
+in a centered column, txt2tags and Markdown highlighting (headings, lists, `**bold**`,
+`//italic//`, `__underline__`, `%` comments), and an Esc menu: `w` wrap, `f` focus (dims
+the paragraphs but the current one, the line stays in the middle), `h` Hemingway (no
+deleting or moving back), `t` timer (stopwatch or countdown), `o` outline of the headings,
+`s` statistics, `r` replace all, `g` daily goal, `a` autosave, `+`/`-` width, `c` color theme, `?` help. The
+status bar shows the words, the words of the session and the progress to the goal.
 
 ## Building from Source
 

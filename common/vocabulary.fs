@@ -1,4 +1,5 @@
 \ Copyright 2021 Bradley D. Nelson
+\ Modifications Copyright 2026 Luginfo10
 \
 \ Licensed under the Apache License, Version 2.0 (the "License");
 \ you may not use this file except in compliance with the License.
@@ -57,7 +58,7 @@ transfer{
   immediate? input-buffer ?echo ?arrow. arrow
   evaluate-buffer evaluate&fill aliteral value-bind
   leaving( )leaving leaving leaving,
-  parse-quote digit $@ raw.s
+  parse-quote digit $@ raw.s src-ref r-lit r-copy
   tib-setup input-limit sp-limit ?stack edit-accept
   [SKIP] [SKIP]' raw-ok boot-prompt free.
   $place zplace BUILTIN_MARK

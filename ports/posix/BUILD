@@ -1,4 +1,5 @@
 # Copyright 2023 Bradley D. Nelson
+# Modifications Copyright 2026 Luginfo10
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,11 +17,22 @@ Importation('$dst/gen/posix_boot.h', '$src/ports/posix/posix_boot.fs', name='boo
 Compile('$dst/posix/lugforth', '$src/ports/posix/main.c',
         implicit=['$dst/gen/posix_boot.h'])
 
+# lugforth-mini: the same without the editors, SDL2, X11, the console window and the servers
+Importation('$dst/gen/posix_mini_boot.h', '$src/ports/posix/posix_mini_boot.fs', name='boot')
+CompileMini('$dst/posix/lugforth-mini', '$src/ports/posix/main.c',
+            implicit=['$dst/gen/posix_mini_boot.h'])
+
 Alias('posix', ' '.join([
   ForthTest('$dst/tests/posix_all_tests.out',
             '$dst/posix/lugforth', '$src/common/all_tests.fs'),
+  ForthTest('$dst/tests/posix_mini_all_tests.out',
+            '$dst/posix/lugforth-mini', '$src/common/all_tests.fs'),
   ForthTest('$dst/tests/posix_lineedit_tests.out',
             '$dst/posix/lugforth', '$src/ports/posix/lineedit_tests.fs'),
+  ForthTest('$dst/tests/posix_editor_tests.out',
+            '$dst/posix/lugforth', '$src/ports/posix/editor_tests.fs'),
+  ForthTest('$dst/tests/posix_writhdeck_tests.out',
+            '$dst/posix/lugforth', '$src/ports/posix/writhdeck_tests.fs'),
   TestCommand('$dst/tests/posix_see_all_test.out',
               '$dst/posix/lugforth',
               'echo internals see-all bye | $dst/posix/lugforth '

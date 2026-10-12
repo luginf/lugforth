@@ -1,4 +1,5 @@
 \ Copyright 2021 Bradley D. Nelson
+\ Modifications Copyright 2026 Luginfo10
 \
 \ Licensed under the Apache License, Version 2.0 (the "License");
 \ you may not use this file except in compliance with the License.
@@ -20,6 +21,10 @@ forth definitions internals
 transfer forth
 ( Move heap to save point, with a gap. )
 setup-saving-base
+( From here on r" r| r~ copy their text into the definition. Before, in the boot, they )
+( keep its address, which saves memory on the small boards: the boot text never goes away. )
+( To go back to addresses only, remove this line. See docs/SKILLS.md, "r| copies". )
+-1 r-copy !
 forth
 ( assumes an xt for autoboot is on the dstack )
 execute
