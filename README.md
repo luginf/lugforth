@@ -34,6 +34,9 @@ hand) builds and publishes them.
   of `lugforth --gui` (a terminal if it cannot open).
   The examples are copied on first run to `~/.local/share/lugforth/examples`
   (`LUGFORTH_HOME` changes the directory) and never overwritten.
+* **Android**: `lugforth-VERSION-android.apk` (arm64), built by hand with `ports/android/build_apk.sh`
+  and attached to the release; signed with a debug key kept in `out/android/debug.keystore`, so keep
+  that file to be able to update an installed copy.
 * **Windows x64**: MSVC build, not started in CI yet. It has no SDL2: the SDL2 examples, `ed`,
   `writhdeck` and the console window are for the POSIX build (Linux) only.
 * **macOS**: builds but does not start yet, so it is not published.

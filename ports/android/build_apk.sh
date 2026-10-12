@@ -86,8 +86,12 @@ mkdir -p $W/pack/lib/$ABI
 cp $O/ndk/libs/$ABI/libSDL2.so $O/ndk/libs/$ABI/libSDL2_ttf.so $O/lib/$ABI/libmain.so $W/pack/lib/$ABI/
 (cd $W && zip -q base.apk classes.dex && cd pack && zip -q -r ../base.apk lib)
 $BT/zipalign -f -p 4 $W/base.apk $W/aligned.apk
-KS=$O/debug.keystore
+# KEYSTORE, KEYSTORE_PASS and KEY_ALIAS pick a release key (the CI takes it from a secret);
+# without them a debug key is made in out/android and reused, keep that file to update an install
+KS=${KEYSTORE:-$O/debug.keystore}
+KSPASS=${KEYSTORE_PASS:-android}
+KALIAS=${KEY_ALIAS:-debug}
 [ -f $KS ] || keytool -genkeypair -keystore $KS -storepass android -keypass android \
   -alias debug -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=lugforth debug" >/dev/null 2>&1
-$BT/apksigner sign --ks $KS --ks-pass pass:android --out $O/lugforth.apk $W/aligned.apk
+$BT/apksigner sign --ks $KS --ks-pass pass:$KSPASS --ks-key-alias $KALIAS --out $O/lugforth.apk $W/aligned.apk
 ls -l $O/lugforth.apk

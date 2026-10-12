@@ -234,10 +234,58 @@ jobs:
           name: windows
           path: dist/*
 
+  # The APK is built with the SDK and NDK of the runner and the SDL2 sources. It is signed
+  # with the key of the repository secrets ANDROID_KEYSTORE_B64 (the keystore in base64),
+  # ANDROID_KEYSTORE_PASS and ANDROID_KEY_ALIAS when they exist, else with a new debug key:
+  # an APK signed with another key cannot update an installed one, so set the secrets.
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate the boot header and the web build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ./configure.py
+          ninja out/gen/posix_boot.h web
+
+      - name: SDL2 sources
+        run: |
+          curl -sL -o "$RUNNER_TEMP/sdl2.tar.gz" https://github.com/libsdl-org/SDL/releases/download/release-2.32.10/SDL2-2.32.10.tar.gz
+          tar xzf "$RUNNER_TEMP/sdl2.tar.gz" -C "$RUNNER_TEMP"
+
+      - name: Build the APK
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            export KEYSTORE="$RUNNER_TEMP/release.keystore" KEYSTORE_PASS="$KS_PASS" KEY_ALIAS="$KS_ALIAS"
+          else
+            echo "No release key in the secrets: signing with a new debug key"
+          fi
+          SDL_SRC="$RUNNER_TEMP/SDL2-2.32.10" bash ports/android/build_apk.sh
+          VERSION=$(git describe --tags --always)
+          mkdir -p dist
+          cp out/android/lugforth.apk "dist/lugforth-$VERSION-android.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: dist/*
+
   # The macOS binary builds but does not work yet (the start loops, see the
   # "Where does the start hang?" step), so it is not published.
   release:
-    needs: [linux, windows]
+    needs: [linux, windows, android]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
@@ -248,6 +296,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: windows
+          path: dist
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: android
           path: dist
       - name: Publish
         uses: softprops/action-gh-release@v2
