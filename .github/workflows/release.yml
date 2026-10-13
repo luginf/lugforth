@@ -70,6 +70,10 @@ jobs:
           "$GITHUB_WORKSPACE/dist/lugforth" "$GITHUB_WORKSPACE/common/all_tests.fs" < /dev/null | tail -5
           "$GITHUB_WORKSPACE/dist/lugforth-mini" "$GITHUB_WORKSPACE/common/all_tests.fs" < /dev/null | tail -5
 
+      - name: Test the editors in a pseudo terminal
+        timeout-minutes: 3
+        run: python3 tools/editors_pty_test.py dist/lugforth
+
       - name: Package
         run: |
           VERSION=$(git describe --tags --always)
