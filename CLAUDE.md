@@ -60,7 +60,7 @@ In `examples/` (GPL, listed in NOTICE; `make -C examples test-ports` runs the lo
 - `3d.fs` (+ `3d_tests.fs`) and `sdl2_3d.fs`: math, objects, rotation, perspective; SDL2 drawing checked only with
   the dummy video driver (pixel counts), not on a real screen.
 - `inference/` (inference.fs, weather.fs, lamp_diagnosis.fs, tests, Makefile, READMEs): facts, rules, `infer`.
-- `sdl2_2048.fs`: SDL2 front end of 2048.fs (bitmap digits, arrows/wasd/mouse swipe); checked with the dummy driver
+- `sdl2_2048.fs`: SDL2 front end of 2048.fs (bitmap digits, arrows/wasd/mouse swipe, slide+pop animation, `--no-anim`); checked with the dummy driver
   (pixel colors of tiles and digits), not by eye. Could be added to the Android Examples list.
 Ideas left: more inference examples from his docs
 (`INFERENCE/docs/*.odt`), `3Dmodelisation`/`dumpTool` extras, other upstream projects (lotto, 6809, flog, BMP, HTTP).

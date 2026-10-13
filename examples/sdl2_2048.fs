@@ -8,6 +8,8 @@
 \   mouse               drag (or swipe on a touch screen) in a direction
 \   r                   new game
 \   esc                 quits (or close the window)
+\ The tiles slide, merged ones and new ones pop; `--no-anim` after the file name turns that off:
+\   lugforth examples/sdl2_2048.fs --no-anim
 \ Needs libSDL2.
 
 include 2048.fs
@@ -47,18 +49,93 @@ create tile-rgb  $cdc1b4 , $eee4da , $ede0c8 , $f2b179 , $f59563 , $f67c5f , $f6
 : cell-x ( col -- x )   cell gap + * margin + ;
 : cell-y ( row -- y )   cell gap + * by + ;
 
-: draw-tile ( col row -- )
-  2dup xyVal@ { col row e }
-  col cell-x { x }  row cell-y { y }
-  e tile-rgb@ color  x y cell cell box
+: tile-digit-scale ( n side -- s )   80 swap cell */  swap digits# 4 * 1- /  7 min 1 max ;
+
+\ the tile of exponent e with its top left corner at x y and its side s (an empty cell too)
+: draw-tile-at ( e x y s -- )
+  { e x y s }
+  e tile-rgb@ color  x y s s box
   e 0= if exit then
   e 2 <= if $776e65 else $f9f6f2 then color
   1 e lshift { n }
-  n  x cell 2/ +  y cell 2/ +  80 n digits# 4 * 1- /  7 min 1 max  draw-number ;
+  n  x s 2/ +  y s 2/ +  n s tile-digit-scale  draw-number ;
+
+\ ---- Animation: the tiles slide, then merged and new tiles pop ----
+true value anim-on
+0 value anim-phase   0 value anim-t0
+120 constant SLIDE-MS   110 constant POP-MS
+\ the tiles before the move: from x y, exponent, to x y (in cells)
+create mv 16 5 * cells allot   0 value nmv
+create popf 16 allot       \ per cell: 0 nothing, 1 merged here, 2 new tile
+create snap 16 allot       \ the grid after the move, before the new tile
+0 value pr   0 value pn   -1 value ppend   0 value pidx   0 value px   0 value py   0 value pe
+
+: mv-add ( x y e di -- )
+  nmv 5 * cells mv + { x y e di a }
+  pr di line-xy { x1 y1 }
+  x a !  y a cell+ !  e a 2 cells + !  x1 a 3 cells + !  y1 a 4 cells + !
+  1 +to nmv ;
+: plan-line ( r -- )
+  to pr  0 to pn  -1 to ppend
+  GRID_WIDTH 0 ?do
+    pr i line-xy to py to px  px py xyVal@ to pe
+    pe if
+      pe ppend = if
+        px py pe pidx mv-add
+        1  pr pidx line-xy GRID_WIDTH * + popf + c!
+        -1 to ppend  1 +to pn
+      else
+        ppend 0< 0= if 1 +to pn then
+        pn to pidx  pe to ppend  px py pe pidx mv-add
+      then
+    then
+  loop ;
+\ before the move d: where each tile goes
+: plan-moves ( d -- )
+  to dir  0 to nmv  popf 16 erase
+  GRID_WIDTH 0 ?do i plan-line loop ;
+
+: note-born ( -- )   \ after add-random: the cell that was empty and is not any more
+  16 0 ?do  snap i + c@ 0=  2048grid i + c@ 0<> and if 2 popf i + c! then loop ;
+
+: elapsed ( -- ms )   ticks anim-t0 - ;
+: anim-start ( phase -- )   to anim-phase  ticks to anim-t0 ;
+
+: draw-empty-cells ( -- )
+  GRID_WIDTH 0 ?do GRID_WIDTH 0 ?do  0 i cell-x j cell-y cell draw-tile-at  loop loop ;
+
+: draw-slide-one ( i -- )
+  5 * cells mv + { a }  elapsed SLIDE-MS min { t }
+  a 2 cells + @
+  a @ cell-x  a 3 cells + @ cell-x  over -  t * SLIDE-MS /  +
+  a cell+ @ cell-y  a 4 cells + @ cell-y  over -  t * SLIDE-MS /  +
+  cell draw-tile-at ;
+: draw-sliding ( -- )   nmv 0 ?do i draw-slide-one loop ;
+
+\ the size of a tile that pops: a merged tile swells, a new one grows
+: pop-side ( kind -- s )
+  elapsed POP-MS min { t }
+  2 = if  cell 2/  cell 2/ t * POP-MS /  +  exit then
+  t POP-MS 2/ > if POP-MS t - else t then  cell 12 * 2 * POP-MS */ 100 / cell +  ;
+
+: draw-pop-one ( col row -- )
+  2dup xyVal@ { col row e }
+  e 0= if exit then
+  row GRID_WIDTH * col + popf + c@ { kind }
+  kind if kind pop-side else cell then { s }
+  e  col cell-x cell s - 2/ +  row cell-y cell s - 2/ +  s  draw-tile-at ;
+: draw-popping ( -- )
+  draw-empty-cells
+  GRID_WIDTH 0 ?do GRID_WIDTH 0 ?do  i j draw-pop-one  loop loop ;
 
 : draw-board ( -- )
   $bbada0 color  margin gap - by gap -  cell gap + 4 * gap +  dup  box
-  GRID_WIDTH 0 ?do GRID_WIDTH 0 ?do  i j draw-tile  loop loop ;
+  anim-phase 1 = if draw-empty-cells draw-sliding exit then
+  anim-phase 2 = if draw-popping exit then
+  draw-empty-cells
+  GRID_WIDTH 0 ?do GRID_WIDTH 0 ?do
+    i j xyVal@ ?dup if i cell-x j cell-y cell draw-tile-at then
+  loop loop ;
 
 : game-over? ( -- f )   can-move? 0= ;
 
@@ -106,19 +183,35 @@ create tbuf 80 allot   0 value tlen
   game-over? if s"   -  game over, r for a new game" t+ then
   tbuf tlen title ;
 
-: play ( d -- )   move-tiles if add-random then  score best max to best  show-score ;
+: play ( d -- )
+  anim-phase if drop exit then
+  anim-on if dup plan-moves then
+  move-tiles if
+    2048grid snap 16 cmove
+    add-random
+    anim-on if note-born 1 anim-start then
+  then
+  score best max to best  show-score ;
+
+\ the animation goes on: slide, pop, then the plain board
+: animate ( -- )
+  anim-phase 1 = if elapsed SLIDE-MS >= if 2 anim-start then exit then
+  anim-phase 2 = if elapsed POP-MS >= if 0 to anim-phase then then ;
 
 : step ( -- )
   events
   key-esc pressed? if quit! then
-  [char] r pressed? if score best max to best  new-game show-score then
+  [char] r pressed? if 0 to anim-phase  score best max to best  new-game show-score then
   key-dir dup held <> swap to held  held 0< 0= and if held play then
   swipe-dir dup 0< 0= if play else drop then
-  draw-all
+  animate  draw-all
   dt 16 < if 16 dt - delay then ;
 
 : run ( -- ) begin step quit? until close-screen ;
 
+\ the option --no-anim after the name of the file
+: option? ( a n -- f )   { oa on }  0  argc 2 ?do  oa on i argv compare 0= or  loop ;
+s" --no-anim" option? if false to anim-on then
 ms-ticks 1 or rand-seed !
 new-game
 w h screen
