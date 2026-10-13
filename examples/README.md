@@ -1,7 +1,7 @@
 # Examples
 
 Games and demos (SDL2 words, see `ports/posix/SDL2.md`): `sdl2_demo.fs`,
-`sdl2_breakout.fs`, `sdl2_drums.fs`, `sdl2_pianoroll.fs`, `sdl2_roguelike.fs`.
+`sdl2_breakout.fs`, `sdl2_drums.fs`, `sdl2_pianoroll.fs`, `sdl2_roguelike.fs`, `sdl2_3d.fs` (turning wireframe cube, pyramid and octahedron).
 Run one with `lugforth examples/sdl2_breakout.fs`, or `include` it from the prompt.
 
 ## Benchmarks: lugforth vs C vs uxn
@@ -36,3 +36,20 @@ lugforth examples/txt2tags.fs examples/txt2tags_demo.t2t > demo.html
 
 or `include examples/txt2tags.fs` then `s" doc.t2t" t2t-file`. The header
 comment lists the supported syntax.
+
+## Ports from eForth Windows
+
+[eForth Windows](https://github.com/MPETREMANN11/eForth-Windows) by Marc Petremann is a
+ueForth for Windows, so its code loads in lugforth almost as is (`value`/`to`, `{ }` locals,
+`vocabulary`, `:noname`, floating point). Three of its projects are here; they are GPL
+(derived from his code), unlike the rest of the repository. Each file says what is his and what is new.
+
+* `2048.fs`: the game in a terminal (`include examples/2048.fs`, then `2048-play`; arrows or wasd).
+  The original only has the grid and its display; moves, merging, score, keys and end are new.
+* `3d.fs` + `sdl2_3d.fs`: 3D wireframes (`lugforth examples/sdl2_3d.fs`). `3d.fs` has the points, edges,
+  sine table, rotation and perspective (no display); the original draws with the Windows GDI, here SDL2.
+* `inference.fs` + `weather.fs`: facts (`FACT:`), rules (`:CONDITION`, `:ACTION`, `RULE:`) and the
+  engine loop `infer` (new): `include examples/inference.fs`, `include examples/weather.fs`,
+  `also facts  -1 to rain  -1 to cold  infer  .facts`.
+
+`make test-ports` runs `2048_tests.fs`, `3d_tests.fs` and `inference_tests.fs`.

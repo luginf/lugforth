@@ -18,3 +18,7 @@ Additions and modifications, Copyright 2026 Luginfo10, under the same license:
 
 Files adapted from upstream carry both the original notice and a line
 "Modifications Copyright 2026 Luginfo10".
+
+examples/2048.fs, examples/3d.fs, examples/sdl2_3d.fs, examples/inference.fs and examples/weather.fs
+(and their tests) derive from the 2048-game, 3Dforms and INFERENCE projects of Marc Petremann
+(https://github.com/MPETREMANN11/eForth-Windows), GNU General Public License. They are GPL, not Apache 2.0.

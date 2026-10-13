@@ -48,9 +48,19 @@ in `ports/web/platform.fs`), a "⋮" button for Examples/A-/A+/Help, and home. T
 the Ctrl button on a real soft keyboard (letters may arrive as key events rather than text input), and that
 nothing shows that Ctrl is armed (an indicator would help).
 
-## Ports from eForth Windows (Marc Petremann, GPL)
+## Ports from eForth Windows (Marc Petremann, GPL) - done 2026-10-13
 
 Source: https://github.com/MPETREMANN11/eForth-Windows (clone it into the scratchpad to read). Its eForth is
-a ueForth, so most code loads as is. Sibling project `~/src/forks/uf-9` did the same for a 16-bit Forth
-(see its `PORTS-EFORTH.txt`). Ported here: see `examples/` (2048, 3d, inference) and the notes in
-`examples/README.md`. These files are GPL (derived from his code), unlike the rest of the repository.
+a ueForth (7.0.7.x), so lugforth (7.0.10) loads most of it as is: `value/to`, `{ }`, `vocabulary`, `:noname`,
+floats. Only the Windows parts (GDI, `Kernel32`, `structures` with `L,`) had to be replaced.
+Sibling project `~/src/forks/uf-9` did the same for a 16-bit Forth (its `PORTS-EFORTH.txt`).
+
+In `examples/` (GPL, listed in NOTICE; `make -C examples test-ports` runs the logic tests, `make smoke` the SDL2 one):
+- `2048.fs` (+ `2048_tests.fs`): terminal game, `2048-play`. Tested in a pty; colors/layout not seen by eye.
+- `3d.fs` (+ `3d_tests.fs`) and `sdl2_3d.fs`: math, objects, rotation, perspective; SDL2 drawing checked only with
+  the dummy video driver (pixel counts), not on a real screen.
+- `inference.fs`, `weather.fs`, `inference_tests.fs`: facts, rules, `infer`.
+Ideas left: SDL2 version of 2048 with mouse/touch (for Android), more inference examples from his docs
+(`INFERENCE/docs/*.odt`), `3Dmodelisation`/`dumpTool` extras, other upstream projects (lotto, 6809, flog, BMP, HTTP).
+Gotchas met: `include` is relative to the including file; `if` at top level does not work (wrap in a word);
+`<# #s #>` takes ONE number here; `.r`, `random` ( n -- r ) are in `ansi_compat.fs`, `ms-ticks 1 or rand-seed !` seeds it.
