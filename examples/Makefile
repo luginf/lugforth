@@ -19,7 +19,7 @@ UXNCLI    ?= uxncli
 UXNEMU    ?= uxnemu
 SMOKE_TIMEOUT ?= 5
 
-SDL2_EXAMPLES := sdl2_demo.fs sdl2_breakout.fs sdl2_drums.fs sdl2_pianoroll.fs sdl2_roguelike.fs sdl2_3d.fs
+SDL2_EXAMPLES := sdl2_demo.fs sdl2_breakout.fs sdl2_drums.fs sdl2_pianoroll.fs sdl2_roguelike.fs sdl2_3d.fs sdl2_2048.fs
 
 .PHONY: help bench test-ports \
         bench-sieve bench-sieve-c bench-sieve-fs bench-sieve-uxn \
