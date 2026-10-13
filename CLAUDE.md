@@ -64,5 +64,5 @@ In `examples/` (GPL, listed in NOTICE; `make -C examples test-ports` runs the lo
   (pixel colors of tiles and digits), not by eye. Could be added to the Android Examples list.
 Ideas left: more inference examples from his docs
 (`INFERENCE/docs/*.odt`), `3Dmodelisation`/`dumpTool` extras, other upstream projects (lotto, 6809, flog, BMP, HTTP).
-Gotchas met: `include` is relative to the including file; `if` at top level does not work (wrap in a word);
+Verified in a real X window (display :0) for sdl2_2048: see docs/SKILLS.md, last bullets. Gotchas met: `include` is relative to the including file; `if` at top level does not work (wrap in a word);
 `<# #s #>` takes ONE number here; `.r`, `random` ( n -- r ) are in `ansi_compat.fs`, `ms-ticks 1 or rand-seed !` seeds it.

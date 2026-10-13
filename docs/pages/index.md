@@ -36,7 +36,7 @@ Advance. See <a href="ports.html">ports</a>.</div>
 * A terminal line editor: history, cursor keys, Tab completion of words and
   file names.
 * New ports: Android, Game Boy Advance, Raspberry Pi Pico.
-* Examples: games, benchmarks, a txt2tags converter.
+* Examples: games (Breakout, roguelike, 2048 with animation), turning 3D wireframes, a rule based inference engine, benchmarks, a txt2tags converter.
 
 ## Quick start
 
