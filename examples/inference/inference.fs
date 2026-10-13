@@ -6,8 +6,8 @@
 \ the `rules` vocabulary), `:CONDITION`, `:ACTION`, the languages of config.fs.
 \ New here: the tables that list facts and rules, and `infer`, the engine loop.
 \
-\     include examples/inference.fs
-\     include examples/weather.fs        \ an example
+\     include examples/inference/inference.fs
+\     include examples/inference/weather.fs        \ an example
 \     also facts  -1 to rain  -1 to cold  infer  .facts
 \
 \ A fact is a value (`to` changes it). A rule is a condition ( -- flag ) and an

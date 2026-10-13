@@ -1,4 +1,4 @@
-\ Tests of inference.fs and weather.fs:  lugforth examples/inference_tests.fs
+\ Tests of inference.fs and weather.fs:  lugforth examples/inference/inference_tests.fs
 \ (run from the repository root, the output must end with PASS)
 
 include inference.fs

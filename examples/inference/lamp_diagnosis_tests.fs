@@ -1,4 +1,4 @@
-\ Tests of lamp_diagnosis.fs:  lugforth examples/lamp_diagnosis_tests.fs   (the output ends with PASS)
+\ Tests of lamp_diagnosis.fs:  lugforth examples/inference/lamp_diagnosis_tests.fs   (the output ends with PASS)
 
 include inference.fs
 include lamp_diagnosis.fs

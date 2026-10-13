@@ -3,7 +3,7 @@
 #
 #   make              all the scenarios, then the unit tests
 #   make weather-rain-cold | weather-rain | weather-dry | lamp-bulb | lamp-mains | lamp-ok | chain
-#   make test         the unit tests only (../inference_tests.fs, ../lamp_diagnosis_tests.fs)
+#   make test         the unit tests only (inference_tests.fs, lamp_diagnosis_tests.fs)
 #
 # Needs ../../out/posix/lugforth (ninja posix at the repository root).
 
@@ -20,7 +20,7 @@ scenarios: weather-rain-cold weather-rain weather-dry lamp-bulb lamp-mains lamp-
 # (a fact is -1 when true, 0 when false)
 define run
 	@printf '%s\n' '== $(1)' ; \
-	printf 'include ../inference.fs\ninclude ../$(2)\nalso facts\n$(3)\ninfer\n.facts\nbye\n' > $(TMPFS) ; \
+	printf 'include inference.fs\ninclude $(2)\nalso facts\n$(3)\ninfer\n.facts\nbye\n' > $(TMPFS) ; \
 	$(LUGFORTH) $(TMPFS) 2>&1 | grep ' = ' | tr -d '\r' | sed 's/ *$$//; s/^/   /' | tee .out ; \
 	ok=yes ; for e in $(4) ; do \
 	  n=$${e%%=*} ; v=$${e##*=} ; \
@@ -50,7 +50,7 @@ lamp-ok:
 # a chain of two rules, defined in the "wrong" order: b-gives-c is tried before a-gives-b
 chain:
 	@printf '%s\n' '== Chain a -> b -> c, rules defined in reverse order' ; \
-	printf 'include ../inference.fs\nFALSE FACT: a\nFALSE FACT: b\nFALSE FACT: c\n:CONDITION b ; :ACTION TRUE to c ; RULE: b-gives-c\n:CONDITION a ; :ACTION TRUE to b ; RULE: a-gives-b\nalso facts\n-1 to a\ninfer\n.facts\nbye\n' > $(TMPFS) ; \
+	printf 'include inference.fs\nFALSE FACT: a\nFALSE FACT: b\nFALSE FACT: c\n:CONDITION b ; :ACTION TRUE to c ; RULE: b-gives-c\n:CONDITION a ; :ACTION TRUE to b ; RULE: a-gives-b\nalso facts\n-1 to a\ninfer\n.facts\nbye\n' > $(TMPFS) ; \
 	$(LUGFORTH) $(TMPFS) 2>&1 | grep ' = ' | tr -d '\r' | sed 's/ *$$//; s/^/   /' | tee .out ; \
 	if [ "$$(grep -c ' = -1' .out)" = 3 ] ; then echo "   -> OK (a, b and c are true)" ; r=0 ; else echo "   -> FAIL" ; r=1 ; fi ; \
 	rm -f $(TMPFS) .out ; exit $$r
@@ -59,7 +59,7 @@ test:
 	@echo "== Unit tests"
 	@for t in inference_tests.fs lamp_diagnosis_tests.fs ; do \
 	  printf '   %-26s' $$t ; \
-	  out=$$(cd .. && ../$(LUGFORTH:../../%=%) $$t 2>&1 | tail -1) ; echo "$$out" ; \
+	  out=$$($(LUGFORTH) $$t 2>&1 | tail -1) ; echo "$$out" ; \
 	  case "$$out" in PASS*) ;; *) exit 1 ;; esac ; \
 	done
 

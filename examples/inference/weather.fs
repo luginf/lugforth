@@ -1,8 +1,8 @@
 \ Weather: an example for inference.fs (the facts and rules are in the style of
 \ Marc Petremann's INFERENCE project, GNU General Public License).
 \
-\     include examples/inference.fs
-\     include examples/weather.fs
+\     include examples/inference/inference.fs
+\     include examples/inference/weather.fs
 \     -1 to rain  -1 to cold  infer  .facts
 
 FALSE FACT: cold

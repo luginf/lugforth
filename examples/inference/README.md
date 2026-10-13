@@ -1,11 +1,11 @@
 # Inference engine
 
-`../inference.fs` is a small forward-chaining inference engine: it applies "if ... then ..."
+`inference.fs` is a small forward-chaining inference engine: it applies "if ... then ..."
 rules to known facts until nothing new can be deduced. It is a port of the INFERENCE project of
 Marc Petremann ([eForth Windows](https://github.com/MPETREMANN11/eForth-Windows), GNU General
 Public License): the facts and the rule definitions are his, the `infer` loop is new.
 
-Files (in `examples/`): `inference.fs` (the engine), `weather.fs` and `lamp_diagnosis.fs`
+Files (in this directory): `inference.fs` (the engine), `weather.fs` and `lamp_diagnosis.fs`
 (examples), `inference_tests.fs` and `lamp_diagnosis_tests.fs` (tests, `make test-ports`).
 
 ## Facts
@@ -60,8 +60,8 @@ Facts: `cold rain ice snow umbrella slippery`.
 | `r-umbrella` | rain AND NOT cold | `umbrella` |
 
 ```forth
-include examples/inference.fs
-include examples/weather.fs
+include examples/inference/inference.fs
+include examples/inference/weather.fs
 also facts
 -1 to rain  -1 to cold
 infer
@@ -78,8 +78,8 @@ With only `-1 to rain`, just `r-umbrella` runs.
 Observed facts: `no-light`, `socket-ok`. Conclusions: `change-bulb`, `mains-failure`.
 
 ```forth
-include examples/inference.fs
-include examples/lamp_diagnosis.fs
+include examples/inference/inference.fs
+include examples/inference/lamp_diagnosis.fs
 also facts
 -1 to no-light  -1 to socket-ok
 infer  .facts
@@ -96,7 +96,7 @@ infer  .facts
 ## Writing your own
 
 ```forth
-include examples/inference.fs
+include examples/inference/inference.fs
 FALSE FACT: a   FALSE FACT: b   FALSE FACT: c
 :CONDITION a ;   :ACTION TRUE to b ;   RULE: a-gives-b
 :CONDITION b ;   :ACTION TRUE to c ;   RULE: b-gives-c

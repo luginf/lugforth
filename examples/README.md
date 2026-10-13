@@ -48,8 +48,8 @@ ueForth for Windows, so its code loads in lugforth almost as is (`value`/`to`, `
   The original only has the grid and its display; moves, merging, score, keys and end are new.
 * `3d.fs` + `sdl2_3d.fs`: 3D wireframes (`lugforth examples/sdl2_3d.fs`). `3d.fs` has the points, edges,
   sine table, rotation and perspective (no display); the original draws with the Windows GDI, here SDL2.
-* `inference.fs` + `weather.fs` + `lamp_diagnosis.fs` (explanations in `inference/README.md`, in French in `inference/README.fr.md`): facts (`FACT:`), rules (`:CONDITION`, `:ACTION`, `RULE:`) and the
-  engine loop `infer` (new): `include examples/inference.fs`, `include examples/weather.fs`,
+* `inference/` (`inference.fs`, `weather.fs`, `lamp_diagnosis.fs`) (explanations in `inference/README.md`, in French in `inference/README.fr.md`): facts (`FACT:`), rules (`:CONDITION`, `:ACTION`, `RULE:`) and the
+  engine loop `infer` (new): `include examples/inference/inference.fs`, `include examples/inference/weather.fs`,
   `also facts  -1 to rain  -1 to cold  infer  .facts`.
 
-`make test-ports` runs `2048_tests.fs`, `3d_tests.fs` and `inference_tests.fs`.
+`make test-ports` runs `2048_tests.fs`, `3d_tests.fs` and `inference/inference_tests.fs` and `inference/lamp_diagnosis_tests.fs`.

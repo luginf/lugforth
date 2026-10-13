@@ -59,7 +59,7 @@ In `examples/` (GPL, listed in NOTICE; `make -C examples test-ports` runs the lo
 - `2048.fs` (+ `2048_tests.fs`): terminal game, `2048-play`. Tested in a pty; colors/layout not seen by eye.
 - `3d.fs` (+ `3d_tests.fs`) and `sdl2_3d.fs`: math, objects, rotation, perspective; SDL2 drawing checked only with
   the dummy video driver (pixel counts), not on a real screen.
-- `inference.fs`, `weather.fs`, `inference_tests.fs`: facts, rules, `infer`.
+- `inference/` (inference.fs, weather.fs, lamp_diagnosis.fs, tests, Makefile, READMEs): facts, rules, `infer`.
 - `sdl2_2048.fs`: SDL2 front end of 2048.fs (bitmap digits, arrows/wasd/mouse swipe); checked with the dummy driver
   (pixel colors of tiles and digits), not by eye. Could be added to the Android Examples list.
 Ideas left: more inference examples from his docs

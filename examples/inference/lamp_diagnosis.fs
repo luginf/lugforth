@@ -1,8 +1,8 @@
 \ Lamp diagnosis: an example for inference.fs (the facts and rules are in the style of
 \ Marc Petremann's INFERENCE project, GNU General Public License).
 \
-\     include examples/inference.fs
-\     include examples/lamp_diagnosis.fs
+\     include examples/inference/inference.fs
+\     include examples/inference/lamp_diagnosis.fs
 \     also facts  -1 to no-light  -1 to socket-ok  infer  .facts      \ change-bulb = -1
 
 FALSE FACT: no-light         \ what we observe

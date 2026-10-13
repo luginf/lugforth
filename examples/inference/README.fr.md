@@ -1,12 +1,12 @@
 # Moteur d'inférence
 
-`../inference.fs` est un petit moteur d'inférence à chaînage avant : il applique des règles
+`inference.fs` est un petit moteur d'inférence à chaînage avant : il applique des règles
 « si... alors... » à des faits connus, jusqu'à ce qu'il n'y ait plus rien de nouveau à déduire. C'est
 un portage du projet INFERENCE de Marc Petremann
 ([eForth Windows](https://github.com/MPETREMANN11/eForth-Windows), licence GNU GPL) : les faits et
 la définition des règles sont de lui, la boucle `infer` est nouvelle.
 
-Fichiers (dans `examples/`) : `inference.fs` (le moteur), `weather.fs` et `lamp_diagnosis.fs`
+Fichiers (dans ce dossier) : `inference.fs` (le moteur), `weather.fs` et `lamp_diagnosis.fs`
 (exemples), `inference_tests.fs` et `lamp_diagnosis_tests.fs` (tests, `make test-ports`).
 Les noms des mots et des faits restent en anglais.
 
@@ -63,8 +63,8 @@ Faits : `cold` (froid), `rain` (pluie), `ice` (glace), `snow` (neige), `umbrella
 | `r-umbrella` | pluie ET PAS froid | `umbrella` |
 
 ```forth
-include examples/inference.fs
-include examples/weather.fs
+include examples/inference/inference.fs
+include examples/inference/weather.fs
 also facts
 -1 to rain  -1 to cold
 infer
@@ -82,8 +82,8 @@ Faits observés : `no-light` (pas de lumière), `socket-ok` (la prise marche). C
 `change-bulb` (changer l'ampoule), `mains-failure` (panne de secteur).
 
 ```forth
-include examples/inference.fs
-include examples/lamp_diagnosis.fs
+include examples/inference/inference.fs
+include examples/inference/lamp_diagnosis.fs
 also facts
 -1 to no-light  -1 to socket-ok
 infer  .facts
@@ -100,7 +100,7 @@ infer  .facts
 ## Écrire les tiens
 
 ```forth
-include examples/inference.fs
+include examples/inference/inference.fs
 FALSE FACT: a   FALSE FACT: b   FALSE FACT: c
 :CONDITION a ;   :ACTION TRUE to b ;   RULE: a-gives-b
 :CONDITION b ;   :ACTION TRUE to c ;   RULE: b-gives-c
