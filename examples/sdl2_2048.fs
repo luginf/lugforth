@@ -16,12 +16,12 @@ include 2048.fs
 
 sdl2
 
-472 value w   640 value h
+484 value w   640 value h
 24 value margin   12 value gap   100 value cell     \ the board: 4 cells of 100, 3 gaps, 2 margins
 150 value by                                          \ top of the board
 
 \ ---- Digits: 3x5 bitmaps, 15 bits each, the top left pixel is the highest bit ----
-create glyphs  $7B6F , $2C97 , $73E7 , $73CF , $5BC9 , $79CF , $79EF , $7249 , $7BEF , $7BCF ,
+create glyphs  $7B6F , $2C97 , $73E7 , $73CF , $5BC9 , $79CF , $79EF , $7249 , $7BEF , $7BCF ,  $7927 , $7BF5 , $79E7 , $6BAE , $7492 ,   \ then C R E B T
 
 0 value gs   0 value gx   0 value gy   0 value gbits
 : glyph-pixel ( r c -- )
@@ -30,6 +30,18 @@ create glyphs  $7B6F , $2C97 , $73E7 , $73CF , $5BC9 , $79CF , $79EF , $7249 , $
 : draw-glyph ( digit x y s -- )
   to gs  to gy  to gx  cells glyphs + @ to gbits
   5 0 ?do 3 0 ?do j i glyph-pixel loop loop ;
+
+: letter>glyph ( c -- i )   \ S and O are the 5 and the 0
+  dup [char] S = if drop 5 exit then   dup [char] O = if drop 0 exit then
+  dup [char] C = if drop 10 exit then  dup [char] R = if drop 11 exit then
+  dup [char] E = if drop 12 exit then  dup [char] B = if drop 13 exit then
+  drop 14 ;
+\ a word of the letters SCORE BT, centered on x, its top at y
+0 value ls   0 value ly   0 value lx   0 value la   0 value ln
+: draw-label ( a n x y s -- )
+  to ls  to ly  to lx  to ln  to la
+  lx  ln 4 * 1- ls * 2/  -  to lx
+  ln 0 ?do  la i + c@ letter>glyph  lx i 4 * ls * +  ly  ls  draw-glyph  loop ;
 
 \ the number of digits of n, and the number n centered on x y, the digits being 5 * s high
 : digits# ( n -- k )   1 swap begin 10 / dup while swap 1+ swap repeat drop ;
@@ -144,7 +156,8 @@ create snap 16 allot       \ the grid after the move, before the new tile
   $edc22e color  margin 24 140 60 box
   $f9f6f2 color  2048 margin 70 +  54  5 draw-number
   $bbada0 color  190 24 120 60 box   330 24 120 60 box
-  $f9f6f2 color  score 250 54 5 draw-number   best 390 54 5 draw-number
+  $f9f6f2 color  s" SCORE" 250 30 2 draw-label   s" BEST" 390 30 2 draw-label
+  score 250 62 4 draw-number   best 390 62 4 draw-number
   draw-board
   game-over? if
     $eee4da color  128 alpha
@@ -211,7 +224,9 @@ create tbuf 80 allot   0 value tlen
 
 \ the option --no-anim after the name of the file
 : option? ( a n -- f )   { oa on }  0  argc 2 ?do  oa on i argv compare 0= or  loop ;
-s" --no-anim" option? if false to anim-on then
+\ (an `if` outside a definition does not work here)
+: read-options ( -- )   s" --no-anim" option? if false to anim-on then ;
+read-options
 ms-ticks 1 or rand-seed !
 new-game
 w h screen
