@@ -275,7 +275,7 @@ only forth also internals also ansi also posix also termios also editor definiti
   s"   s statistics   r replace all   g daily goal   a autosave   + - width   c theme   x run the file" pl  1 +to orow
   s" Keys as in ed: Ctrl+S save, Ctrl+Q quit, Ctrl+F find, Ctrl+N next, Ctrl+G line," pl
   s" Ctrl+Z undo, Ctrl+Y redo, Ctrl+C X V copy cut paste, Ctrl+K mark, Shift+arrows select," pl
-  s" Ctrl+T next color theme (default colorforth light solarized mono), Ctrl+R run." pl
+  s" Ctrl+O save and back to the file browser, Ctrl+T next color theme (default colorforth light solarized mono), Ctrl+R run." pl
   wait-any ;
 : stat-page ( -- )
   page 0 to orow
@@ -463,6 +463,163 @@ only forth also internals also ansi also posix also termios also editor definiti
   dup [char] ? = if drop help-page exit then
   drop ;
 
+( ---- The file browser: `writhdeck` alone, or Ctrl+O from a text ---- )
+z" chdir" 1 sysfunc wd-chdir
+z" getcwd" 2 sysfunc wd-getcwd
+z" remove" 1 sysfunc wd-remove
+z" rename" 2 sysfunc wd-rename
+z" time" 1 sysfunc wd-time
+0 value bpool   0 value bpn   0 value btab   0 value bn   0 value bsel   0 value btop
+0 value bfilt   0 value bfilt-n   0 value bz1   0 value bz2   0 value bcwd
+0 value bdone   0 value bname   0 value bnl   0 value ba   0 value bnn
+0 value want-browser   0 value werr
+: b-alloc ( -- )
+  60000 bytes to bpool   3000 cells bytes to btab   64 bytes to bfilt
+  300 bytes to bz1   300 bytes to bz2   300 bytes to bcwd   300 bytes to bname
+  0 to bfilt-n  0 to bsel  0 to btop ;
+: b-free ( -- )   bpool free drop  btab free drop  bfilt free drop
+  bz1 free drop  bz2 free drop  bcwd free drop  bname free drop ;
+: zcopy ( a n buf -- buf )   dup >r swap dup >r cmove  0 r> r@ + c!  r> ;
+: b-e ( i -- a )   3 * cells btab + ;
+: b-name ( i -- a n )   b-e dup @ bpool + swap cell+ @ ;
+: b-dir? ( i -- f )   b-e 2 cells + @ ;
+: b-add ( a n dir -- )
+  { a n d }  bn 1000 < bpn n + 59000 < and 0= if exit then
+  bn b-e { e }
+  bpn e !  n e cell+ !  d e 2 cells + !
+  a bpool bpn + n cmove  n +to bpn  1 +to bn ;
+: b-match? ( a n -- f )   \ the filter is inside the name, case apart
+  bfilt-n 0= if 2drop -1 exit then
+  { a n }  0 { r }  0 { k }
+  begin k bfilt-n + n <= r 0= and while
+    -1 to r
+    bfilt-n 0 ?do a k + i + c@ wo-lc  bfilt i + c@ wo-lc <> if 0 to r then loop
+    1 +to k
+  repeat
+  r ;
+: b-before? ( i j -- f )   \ directories first, then by name
+  { i j }
+  i b-dir? j b-dir? <> if i b-dir? exit then
+  i b-name j b-name compare 0< ;
+: b-swap ( i j -- )
+  b-e swap b-e { a b }
+  3 0 ?do  a i cells + @  b i cells + @  a i cells + !  b i cells + !  loop ;
+: b-sort ( -- )
+  0 { m }
+  bn 0 ?do
+    i to m
+    bn i 1+ ?do  i m b-before? if i to m then loop
+    i m <> if i m b-swap then
+  loop ;
+: b-scan ( -- )
+  0 to bn  0 to bpn  0 { dh }  0 { ent }
+  s" .." -1 b-add
+  s" ." open-dir if drop exit then  to dh
+  begin dh readdir dup while
+    to ent
+    ent .d_name z>s to bnn to ba
+    ba c@ [char] . <> if
+      ent .d_type 4 = if ba bnn -1 b-add
+      else ba bnn b-match? if ba bnn 0 b-add then then
+    then
+  repeat
+  drop dh closedir drop
+  b-sort ;
+: b-cwd ( -- a n )   bcwd 290 wd-getcwd drop  bcwd dup begin dup c@ while 1+ repeat over - ;
+: b-row ( i -- )
+  dup btop - 1+ { i r }
+  0 r at-xy clear-to-eol
+  i bsel = if esc ." [7m" then
+  2 r at-xy  i b-name cols 8 - min type  i b-dir? if ." /" then
+  normal ;
+: b-draw ( -- )
+  page  0 0 at-xy  esc ." [7m"  0 to outcol
+  s"  " stype  b-cwd cols 30 - 10 max min stype
+  bfilt-n if s"   [" stype bfilt bfilt-n stype s" ]" stype then
+  cols outcol - 0 max 0 ?do 32 emit loop  normal
+  bn btop - text-rows 1- min 0 ?do btop i + b-row loop
+  0 text-rows at-xy  esc ." [7m"  0 to outcol
+  s"  Enter open  n new  / filter  r rename  d delete  b backup  q quit" stype
+  mlen if s"   " stype msg mlen stype 0 to mlen then
+  cols outcol - 0 max 0 ?do 32 emit loop  normal ;
+: b-cd ( i -- )   b-name bz1 zcopy wd-chdir drop  0 to bsel 0 to btop  b-scan ;
+: b-pick ( a n -- )   \ choose this file
+  255 min dup to ed-arg-n  ed-arg swap cmove  -1 to bdone ;
+: b-sel-name ( -- a n )   bsel b-name ;
+: b-ask-name ( a n -- f )   \ a name typed in pbuf, f true when given
+  ask 0= if drop 0 exit then  0<> ;
+: b-new ( -- )
+  s" New file: " ask 0= if drop exit then
+  dup 0= if drop exit then
+  pbuf swap b-pick ;
+: b-delete ( -- )
+  bn 0= bsel b-dir? or if exit then
+  0 text-rows at-xy esc ." [7m" s"  Delete " stype b-sel-name stype s"  ? (y/n)" stype
+  cols outcol - 0 max 0 ?do 32 emit loop normal
+  key [char] y <> if exit then
+  b-sel-name bz1 zcopy wd-remove if s" Cannot delete" say else s" Deleted" say then
+  b-scan  bsel bn 1- min 0 max to bsel ;
+: b-rename ( -- )
+  bn 0= bsel b-dir? or if exit then
+  s" New name: " ask 0= if drop exit then
+  dup 0= if drop exit then
+  pbuf swap bz2 zcopy drop
+  b-sel-name bz1 zcopy bz2 wd-rename if s" Cannot rename" say else s" Renamed" say then
+  b-scan ;
+: bn+ ( a n -- )   dup >r bname bnl + swap cmove  r> +to bnl ;
+: b-backup ( -- )
+  bn 0= bsel b-dir? or if exit then
+  b-sel-name { a n }
+  s" backups" bname zcopy drop  bname 493 ed-mkdir drop
+  0 to bnl  s" backups/" bn+  a n bn+  s" _" bn+  0 wd-time <# #s #> bn+
+  a n r/o open-file if drop s" Cannot read" say exit then
+  { fh }
+  fh file-size throw { size }
+  size 1+ bytes { buf }
+  buf size fh read-file throw drop  fh close-file drop
+  bname bnl w/o create-file if drop buf free drop s" Cannot write" say exit then
+  { out }
+  buf size out write-file drop  out close-file drop  buf free drop
+  s" Backed up in backups/" say ;
+: b-key ( code -- )
+  dup k-up = if drop bsel 1- 0 max to bsel exit then
+  dup k-down = if drop bsel 1+ bn 1- min 0 max to bsel exit then
+  dup k-pgup = if drop bsel text-rows 2 - - 0 max to bsel exit then
+  dup k-pgdn = if drop bsel text-rows 2 - + bn 1- min 0 max to bsel exit then
+  dup k-home = if drop 0 to bsel exit then
+  dup k-end = if drop bn 1- 0 max to bsel exit then
+  dup 13 = over 10 = or if drop
+    bn 0= if exit then
+    bsel b-dir? if bsel b-cd else b-sel-name b-pick then exit then
+  dup [char] n = if drop b-new exit then
+  dup [char] d = if drop b-delete exit then
+  dup [char] r = if drop b-rename exit then
+  dup [char] b = if drop b-backup exit then
+  dup [char] / = if drop
+    s" Filter: " ask if dup to bfilt-n pbuf bfilt rot cmove  0 to bsel 0 to btop  b-scan else drop then exit then
+  dup 27 = if drop
+    bfilt-n if 0 to bfilt-n  0 to bsel 0 to btop  b-scan else -1 to bdone then exit then
+  dup [char] q = if drop -1 to bdone  0 to ed-arg-n exit then
+  drop ;
+: b-loop ( -- )
+  0 to bdone  0 to ed-arg-n  b-scan
+  begin
+    refresh-size
+    bsel btop < if bsel to btop then
+    bsel btop - text-rows 2 - > if bsel text-rows 2 - - to btop then
+    b-draw
+    read-key b-key
+    bdone
+  until ;
+: browse ( -- f )   \ choose a file, which is left in ed-arg; false when none
+  ed-init  b-alloc
+  editor-raw  terminal-save  page
+  ['] b-loop catch { err }
+  terminal-restore  normal  show  restore-tty  page
+  b-free  ed-free
+  err throw
+  ed-arg-n 0<> ;
+
 ( ---- Keys, Hemingway ---- )
 : hem-block? ( code -- f )
   dup 127 = over 8 = or over k-del = or over k-left = or over k-cleft = or
@@ -470,6 +627,7 @@ only forth also internals also ansi also posix also termios also editor definiti
   over 24 = or over 26 = or over 25 = or over 1 = or nip ;
 : wd-pre ( code -- code' )
   dup 27 = if drop wd-menu 0 exit then
+  dup 15 = if drop do-save modified 0= if -1 to want-browser -1 to done then 0 exit then
   hem-on if dup hem-block? if drop s" Hemingway: only forward" say 0 exit then then ;
 : wd-wait ( -- code )
   begin key? 0= while  tick  50000 usleep drop  repeat
@@ -489,9 +647,14 @@ only forth also internals also ansi also posix also termios also editor definiti
   ['] wd-pre is pre-key   ['] wd-wait is wait-key   ['] wd-after-load is after-load ;
 : wd-main ( a n -- )
   wd-install
-  ['] ed-main catch { err }
-  ed-plain
-  err throw ;
+  begin
+    dup 0= if 2drop browse 0= if ed-plain exit then ed-arg ed-arg-n then
+    0 to want-browser
+    ['] ed-main catch to werr
+    werr if ed-plain werr throw then
+    want-browser
+  while 0 0 repeat
+  ed-plain ;
 ' wd-main is wd-go
 only forth also internals definitions
 | ;

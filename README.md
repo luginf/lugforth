@@ -88,7 +88,7 @@ in a centered column, txt2tags and Markdown highlighting (headings, lists, `**bo
 the paragraphs but the current one, the line stays in the middle), `h` Hemingway (no
 deleting or moving back), `t` timer (stopwatch or countdown), `o` outline of the headings,
 `v` word occurrences (most used words first), `q` quit,
-`s` statistics, `r` replace all, `g` daily goal, `a` autosave, `+`/`-` width, `c` color theme, `?` help. The
+`s` statistics, `r` replace all, `g` daily goal, `Ctrl+Y` redo, `Ctrl+O` save and go back to the file browser (`writhdeck` alone starts there: Enter, `n` new, `/` filter, `r` rename, `d` delete, `b` backup), `a` autosave, `+`/`-` width, `c` color theme, `?` help. The
 status bar shows the words, the words of the session and the progress to the goal.
 
 ## Building from Source

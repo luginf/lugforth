@@ -102,8 +102,28 @@ def idle_cpu():
     t.close()
 
 
+def browser():
+  with tempfile.TemporaryDirectory() as home:
+    open(os.path.join(home, 'a.txt'), 'w').write('alpha\n')
+    old = os.getcwd()
+    os.chdir(home)
+    t = Term(home)
+    t.wait_for('ok')
+    t.send('writhdeck\r', 1.5)
+    check('browser: lists the files', 'a.txt' in t.buf.decode(errors='replace'))
+    t.send(b'\x1b[B\r', 1.0)
+    t.send('X', 0.3)
+    t.send(b'\x0f', 1.0)
+    check('browser: Ctrl+O saves and comes back', 'X' in open('a.txt').read() and t.wait_for('Enter open'))
+    t.send('q', 0.5)
+    check('browser: q leaves', t.wait_for('ok'))
+    t.close()
+    os.chdir(old)
+
+
 run_editor('ed', 'hello world', 'ed')
 run_editor('writhdeck', 'hello world', 'writhdeck')
 idle_cpu()
+browser()
 print('FAILED: %d' % failed if failed else 'ALL OK')
 sys.exit(1 if failed else 0)
