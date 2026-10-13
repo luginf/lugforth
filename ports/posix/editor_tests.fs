@@ -54,6 +54,12 @@ c" fresh   0 line-no 1 =assert   2 line-no 2 =assert   4 line-no 3 =assert ;
   s" ZZ" 3 put   s" abcZZ" text=   undo   s" abc" text=
   1 1 cut   s" ac" text=   undo   s" abc" text=   2 cur =assert ;
 
+: test-redo
+  s" abc" fresh
+  s" ZZ" 3 put   undo   s" abc" text=   redo   s" abcZZ" text=   undo   s" abc" text=
+  1 1 cut   undo   redo   s" ac" text=   undo   undo   s" abc" text=
+  redo   s" ac" text=   s" Q" 0 put   redo   s" Qac" text= ;
+
 : test-typed-undo
   s" " fresh
   [char] h ins-byte [char] i ins-byte   s" hi" text=   2 cur =assert

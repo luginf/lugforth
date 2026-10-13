@@ -274,7 +274,7 @@ only forth also internals also ansi also posix also termios also editor definiti
   s"   v word occurrences (most used words)   q quit" pl
   s"   s statistics   r replace all   g daily goal   a autosave   + - width   c theme   x run the file" pl  1 +to orow
   s" Keys as in ed: Ctrl+S save, Ctrl+Q quit, Ctrl+F find, Ctrl+N next, Ctrl+G line," pl
-  s" Ctrl+Z undo, Ctrl+C X V copy cut paste, Ctrl+K mark, Shift+arrows select," pl
+  s" Ctrl+Z undo, Ctrl+Y redo, Ctrl+C X V copy cut paste, Ctrl+K mark, Shift+arrows select," pl
   s" Ctrl+T next color theme (default colorforth light solarized mono), Ctrl+R run." pl
   wait-any ;
 : stat-page ( -- )
@@ -467,7 +467,7 @@ only forth also internals also ansi also posix also termios also editor definiti
 : hem-block? ( code -- f )
   dup 127 = over 8 = or over k-del = or over k-left = or over k-cleft = or
   over k-up = or over k-pgup = or over k-home = or over k-chome = or
-  over 24 = or over 26 = or over 1 = or nip ;
+  over 24 = or over 26 = or over 25 = or over 1 = or nip ;
 : wd-pre ( code -- code' )
   dup 27 = if drop wd-menu 0 exit then
   hem-on if dup hem-block? if drop s" Hemingway: only forward" say 0 exit then then ;
