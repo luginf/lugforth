@@ -271,6 +271,7 @@ only forth also internals also ansi also posix also termios also editor definiti
   s" Esc then a letter:" pl
   s"   w wrap   f focus (dims other paragraphs)   h Hemingway (no going back)" pl
   s"   t timer (s stopwatch, c countdown, x off)   o outline of headings" pl
+  s"   v word occurrences (most used words)   q quit" pl
   s"   s statistics   r replace all   g daily goal   a autosave   + - width   c theme   x run the file" pl  1 +to orow
   s" Keys as in ed: Ctrl+S save, Ctrl+Q quit, Ctrl+F find, Ctrl+N next, Ctrl+G line," pl
   s" Ctrl+Z undo, Ctrl+C X V copy cut paste, Ctrl+K mark, Shift+arrows select," pl
@@ -354,6 +355,76 @@ only forth also internals also ansi also posix also termios also editor definiti
   drop
   n if n num-type-say else s" Not found" say then ;
 
+( ---- Word occurrences: the words of the text by frequency ---- )
+0 value wo-tab   0 value wo-n   0 value wo-sel   0 value wo-top
+: wo-e ( i -- a )   3 * cells wo-tab + ;
+: wo-lc ( c -- c' )   dup 65 >= over 90 <= and if 32 + then ;
+: wo-char? ( c -- f )   dup 128 >= swap wo-lc dup 97 >= swap 122 <= and or ;
+: wo-same? ( p q n -- f )   \ the n bytes at p and q are one word, case apart
+  -1 { p q n f }
+  n 0 ?do  p i + b@ wo-lc  q i + b@ wo-lc <> if 0 to f then loop
+  f ;
+: wo-find ( p n -- i )   \ the entry of that word, or -1
+  { p n }  -1 { r }  0 { i }
+  begin i wo-n < r 0< and while
+    i wo-e cell+ @ n = if  p i wo-e @ n wo-same? if i to r then  then
+    1 +to i
+  repeat
+  r ;
+: wo-add ( p n -- )
+  { p n }  p n wo-find { i }  wo-n wo-e { e }
+  i 0< if
+    wo-n 1000 < if  p e !  n e cell+ !  1 e 2 cells + !  1 +to wo-n  then
+  else  1 i wo-e 2 cells + +!  then ;
+: wo-collect ( -- )
+  0 to wo-n  0 { p }  0 { q }
+  begin p len < while
+    p b@ wo-char? if
+      p to q
+      begin q len < if q b@ wo-char? else 0 then while 1 +to q repeat
+      q p - 3 >= if p q p - wo-add then
+      q to p
+    else 1 +to p then
+  repeat ;
+: wo-cnt ( i -- n )   wo-e 2 cells + @ ;
+: wo-swap ( i j -- )
+  wo-e swap wo-e { a b }
+  3 0 ?do  a i cells + @  b i cells + @  a i cells + !  b i cells + !  loop ;
+: wo-sort ( -- )   \ selection sort, most frequent first
+  0 { m }
+  wo-n 0 ?do
+    i to m
+    wo-n i 1+ ?do  i wo-cnt m wo-cnt > if i to m then loop
+    i m <> if i m wo-swap then
+  loop ;
+: wo-row ( i -- )
+  dup wo-top - 1+ { i r }
+  0 r at-xy clear-to-eol
+  i wo-sel = if esc ." [7m" then
+  2 r at-xy  i wo-cnt num-type
+  10 r at-xy  i wo-e dup @ text + swap cell+ @ cols 12 - min type
+  normal ;
+: wo-draw ( -- )
+  page  2 0 at-xy  esc ." [7m" s" Word occurrences  Enter go to the first  Esc close" type normal
+  wo-n wo-top - text-rows 1- min 0 ?do wo-top i + wo-row loop ;
+: wo-show ( -- )
+  wo-tab 0= if 3000 cells bytes to wo-tab then
+  wo-collect
+  wo-n 0= if s" No words" say exit then
+  wo-sort  0 to wo-sel  0 to wo-top
+  begin
+    wo-sel wo-top < if wo-sel to wo-top then
+    wo-sel wo-top - text-rows 2 - > if wo-sel text-rows 2 - - to wo-top then
+    wo-draw
+    read-key
+    dup k-up = if drop wo-sel 1- 0 max to wo-sel 0 else
+    dup k-down = if drop wo-sel 1+ wo-n 1- min to wo-sel 0 else
+    dup k-pgup = if drop wo-sel 10 - 0 max to wo-sel 0 else
+    dup k-pgdn = if drop wo-sel 10 + wo-n 1- min to wo-sel 0 else
+    dup 13 = over 10 = or if drop wo-sel wo-e @ go -1 else
+    27 = if -1 else 0 then then then then then then
+  until ;
+
 ( ---- The Esc menu ---- )
 : timer-menu ( -- )
   s" Timer: s stopwatch, c countdown, x off" bar
@@ -368,7 +439,7 @@ only forth also internals also ansi also posix also termios also editor definiti
   s" Daily goal in words: " ask if pbuf swap to-number to goal ini-save else drop then ;
 : wd-menu ( -- )
   -1 to anchor  0 to sticky
-  s" Esc  w wrap  f focus  h hem  t timer  o outline  s stats  r replace  g goal  c theme  x run  ? help" bar
+  s" Esc  w wrap  f focus  h hem  t timer  o outline  v words  s stats  r replace  q quit  g goal  c theme  x run  ? help" bar
   key
   dup [char] w = if drop wrap-on 0= to wrap-on  cur bol to top  0 to left
                     wrap-on if s" Wrap on" else s" Wrap off" then say  ini-save exit then
@@ -378,6 +449,8 @@ only forth also internals also ansi also posix also termios also editor definiti
                     hem-on if s" Hemingway on: no going back" else s" Hemingway off" then say exit then
   dup [char] t = if drop timer-menu exit then
   dup [char] o = if drop toc-show exit then
+  dup [char] v = if drop wo-show exit then
+  dup [char] q = if drop try-quit exit then
   dup [char] s = if drop stat-page exit then
   dup [char] r = if drop replace-all exit then
   dup [char] g = if drop ask-goal exit then

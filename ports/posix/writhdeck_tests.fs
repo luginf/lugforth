@@ -69,4 +69,10 @@ x" fresh   500 cells bytes to toc-pos   toc-collect
   toc-n 3 =assert   toc-pos @ 0 =assert   toc-pos cell+ @ 11 =assert
   0 level 1 =assert   11 level 2 =assert ;
 
+: test-word-occurrences
+  s" The cat and the Cat saw a dog; the end" fresh
+  3000 cells bytes to wo-tab  wo-collect  wo-sort
+  wo-n 6 =assert   0 wo-cnt 3 =assert   1 wo-cnt 2 =assert
+  0 wo-e @ 0 =assert   wo-tab free drop ;
+
 run-tests
