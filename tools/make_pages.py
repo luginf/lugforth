@@ -141,6 +141,14 @@ def main():
                  'sdl2_roguelike.fs', 'sdl2_tiles.png'):
       if os.path.exists(demo + name):
         shutil.copy(demo + name, OUT + 'demo/' + name)
+  # the HTML examples of examples/web, which load lugforth.js from out/web in the repository
+  exdir = ROOT + 'examples/web/'
+  if os.path.isdir(OUT + 'demo') and os.path.isdir(exdir):
+    for name in sorted(os.listdir(exdir)):
+      if name.endswith('.html'):
+        text = open(exdir + name, encoding='utf-8').read()
+        text = text.replace('../../out/web/lugforth.js', 'lugforth.js')
+        open(OUT + 'demo/' + name, 'w', encoding='utf-8').write(text)
   open(OUT + '.nojekyll', 'w').close()
   print('wrote', OUT, len(os.listdir(OUT)), 'files')
 
