@@ -105,7 +105,7 @@ view: view-lines view-lines-c view-lines-uxn
 
 # the logic of the ports from eForth Windows (2048, 3d, inference): each test prints PASS
 test-ports:
-	@for t in 2048_tests.fs 3d_tests.fs inference_tests.fs; do \
+	@for t in 2048_tests.fs 3d_tests.fs inference_tests.fs lamp_diagnosis_tests.fs; do \
 	  printf "%-20s " "$$t"; \
 	  out=$$(cd .. && $(LUGFORTH:../%=%) examples/$$t 2>&1 | tail -1); echo "$$out"; \
 	  case "$$out" in PASS*) ;; *) exit 1;; esac; \
