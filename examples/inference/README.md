@@ -89,6 +89,10 @@ infer  .facts
 (`-1 to no-light` only), `r-mains` concludes `mains-failure = -1`. For a new case, call
 `clear-facts` before setting the new facts.
 
+## Try it: `make`
+
+`make` in this directory runs seven concrete scenarios (weather, lamp, a chain of rules), prints the facts after `infer` and checks the expected conclusions (`-> OK`), then the unit tests. `make weather-rain-cold`, `make lamp-bulb`... run one.
+
 ## Writing your own
 
 ```forth

@@ -93,6 +93,10 @@ infer  .facts
 (seulement `-1 to no-light`), `r-mains` conclut `mains-failure = -1`. Pour un nouveau cas, appelle
 `clear-facts` avant de poser les nouveaux faits.
 
+## Essayer : `make`
+
+`make` dans ce dossier lance sept scénarios concrets (météo, lampe, chaîne de règles), affiche les faits après `infer` et vérifie les conclusions attendues (`-> OK`), puis les tests unitaires. `make weather-rain-cold`, `make lamp-bulb`... en lancent un seul.
+
 ## Écrire les tiens
 
 ```forth
