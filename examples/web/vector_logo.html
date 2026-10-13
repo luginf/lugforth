@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Lugforth: vector lettering</title>
+<!--
+Writes LUGFORTH with strokes drawn by Forth on a canvas (needs out/web/lugforth.js,
+see README.md). Each letter is a list of points on a 4 x 6 grid, "/" lifts the pen.
+-->
+<style>body { background: #1b1b1f; color: #ddd; font-family: sans-serif; }</style>
+</head>
+<body>
+<p>
+  <button onclick="forth('6 logo')">Small</button>
+  <button onclick="forth('10 logo')">Medium</button>
+  <button onclick="forth('14 logo')">Large</button>
+  <button onclick="forth('text')">Back to the terminal</button>
+</p>
+
+<script type="text/forth">
+web
+variable ox   variable oy   variable sc   variable pen
+
+: px ( ch -- x ) [char] 0 - sc @ * ox @ + ;
+: py ( ch -- y ) [char] 0 - sc @ * oy @ + ;
+
+\ A string of "xy" points; "/" lifts the pen, spaces are ignored.
+: glyph ( a n -- )
+  beginPath  0 pen !
+  begin dup 0> while
+    over c@ dup [char] / = if
+      drop 0 pen !  1 /string
+    else dup bl = if
+      drop 1 /string
+    else
+      px  2 pick 1+ c@ py
+      pen @ if lineTo else moveTo then
+      -1 pen !  2 /string
+    then then
+  repeat
+  2drop stroke ;
+
+: letter ( ch -- a n )
+  case
+    [char] L of s" 00 06 46" endof
+    [char] U of s" 00 05 16 36 45 40" endof
+    [char] G of s" 41 30 10 01 05 16 36 45 43 23" endof
+    [char] F of s" 06 00 40 / 03 33" endof
+    [char] O of s" 10 30 41 45 36 16 05 01 10" endof
+    [char] R of s" 06 00 30 41 42 33 03 / 23 46" endof
+    [char] T of s" 00 40 / 20 26" endof
+    [char] H of s" 00 06 / 40 46 / 03 43" endof
+    s" "
+  endcase ;
+
+JSWORD: round-pen { }
+  context.ctx.lineCap = 'round';
+  context.ctx.lineJoin = 'round';
+~
+
+create colors  $ff5555 , $ffaa33 , $eeee44 , $66dd66 , $44ccdd , $5599ff , $aa77ff , $ff77cc ,
+
+: logo ( size -- )
+  sc !
+  viewport@ 2dup window             \ one canvas pixel per screen pixel
+  $1b1b1f color!  0 0 2000 2000 box
+  round-pen  sc @ 3 / 2 max lineWidth
+  sc @ 6 * - 2 / oy !               \ centered
+  sc @ 6 * 8 * - 2 / ox !
+  s" LUGFORTH" 0 do
+    dup i + c@ letter
+    colors i cells + @ color!
+    glyph
+    sc @ 6 * ox +!
+  loop drop
+  gr ;
+</script>
+<script src="../../out/web/lugforth.js"></script>
+<script>
+function forth(text) {
+  var s = unescape(encodeURIComponent(text + '\r'));   // UTF-8 bytes
+  for (var i = 0; i < s.length; i++) lugforth.inbuffer.push(s.charCodeAt(i));
+}
+</script>
+</body>
+</html>

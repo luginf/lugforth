@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Lugforth: calling a Forth word from an HTML button</title>
+<!--
+Open this file in a browser after building the web version (ninja web), which
+writes out/web/lugforth.js. The page carries its own Forth code, and the buttons
+run words of it. Change the path of lugforth.js if you move the file.
+-->
+</head>
+<body>
+<p>
+  <button onclick="forth('grTest')">Chart (grTest)</button>
+  <button onclick="forth('3 4 + .')">3 4 + .</button>
+  <button onclick="forth('hello')">hello</button>
+</p>
+<p>The chart waits for a key: click on the page, then press any key.</p>
+
+<script type="text/forth">
+web
+: hello ( -- ) ." Hello from a button" cr ;
+: grTest ( -- )
+  gr 400 300 window
+  $000000 color!
+  5 295 395 295 line
+  5 295 5 5 line
+  $ff0000 color! 10 294 10 -30 box
+  $00ff00 color! 30 294 10 -80 box
+  $ffff00 color! 50 294 10 -120 box
+  $0000ff color! 70 294 10 -45 box
+  key drop
+  text ;
+</script>
+<script src="../../out/web/lugforth.js"></script>
+<script>
+// JavaScript to Forth: the interpreter reads its keys from lugforth.inbuffer,
+// so pushing the characters of a line, then Enter (13), runs that line as if it
+// was typed. It only runs when Forth is at the prompt (not inside a `key`).
+function forth(text) {
+  var s = unescape(encodeURIComponent(text + '\r'));   // UTF-8 bytes
+  for (var i = 0; i < s.length; i++) lugforth.inbuffer.push(s.charCodeAt(i));
+}
+</script>
+</body>
+</html>

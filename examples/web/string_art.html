@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Lugforth: string art</title>
+<!--
+Draws 100 points on a circle and joins each point i to point i*k (mod 100), the
+multiplication table pattern. The buttons pick k. Needs out/web/lugforth.js.
+-->
+<style>body { background: #1b1b1f; color: #ddd; font-family: sans-serif; }</style>
+</head>
+<body>
+<p>Times table of the circle, <b>k</b> =
+  <button onclick="forth('2 art')">2</button>
+  <button onclick="forth('3 art')">3</button>
+  <button onclick="forth('7 art')">7</button>
+  <button onclick="forth('33 art')">33</button>
+  <button onclick="forth('51 art')">51</button>
+  <button onclick="forth('text')">Back to the terminal</button>
+</p>
+
+<script type="text/forth">
+web
+100 constant n   variable cx   variable cy   variable radius
+
+: angle ( k -- ) ( f: -- a ) s>f 6.283185307e f* n s>f f/ ;
+: point-x ( k -- x ) angle fcos radius @ s>f f* f>s cx @ + ;
+: point-y ( k -- y ) angle fsin radius @ s>f f* f>s cy @ + ;
+
+: hue ( k -- rgb )
+  17 mod
+  >r  255 r@ 15 * -  16 lshift
+      80 r> 12 * +  8 lshift  or  $ff or ;
+
+: art ( k -- )
+  viewport@ 2dup window             \ one canvas pixel per screen pixel
+  $1b1b1f color!  0 0 2000 2000 box
+  2dup min 9 * 20 / radius !        \ 45% of the smaller side
+  2 / cy !  2 / cx !
+  dup hue color!
+  n 0 do
+    i point-x  i point-y
+    2 pick i * point-x  3 pick i * point-y
+    line
+  loop drop
+  gr ;
+</script>
+<script src="../../out/web/lugforth.js"></script>
+<script>
+function forth(text) {
+  var s = unescape(encodeURIComponent(text + '\r'));   // UTF-8 bytes
+  for (var i = 0; i < s.length; i++) lugforth.inbuffer.push(s.charCodeAt(i));
+}
+</script>
+</body>
+</html>
