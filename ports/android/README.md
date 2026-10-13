@@ -14,7 +14,8 @@ One package. A start screen offers:
   The examples are copied on first start to `Android/data/org.lugforth.app/files/examples`
   (never overwritten, so your files stay) and the console runs there.
 
-Both have a hamburger bar at the top: arrows, Tab, text size (A- A+), help, and back to the
+Both have a hamburger bar at the top: arrows, Tab, Ctrl (tap it, then a letter: Ctrl+S, Ctrl+Q...),
+a ⋮ button for the examples, text size (A- A+) and help, and back to the
 start screen. Pinch out or in changes the text size. The console has history (up and down),
 cursor keys and Tab completion of words and, in the SDL2 version, file names.
 

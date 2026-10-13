@@ -485,7 +485,15 @@ if (!globalObj.write) {
   window.onresize = function(e) {
     Resize();
   };
+  var ctrlNext = false;
+  function CtrlLetter(ch) {   // the Ctrl button of the Android app: the next letter is a control code
+    if (!ctrlNext || !ch || ch.length != 1 || !/[a-zA-Z]/.test(ch)) return false;
+    ctrlNext = false;
+    context.inbuffer.push(ch.toUpperCase().charCodeAt(0) - 64);
+    return true;
+  }
   function KeyPress(e) {
+    if (CtrlLetter(String.fromCharCode(e.keyCode))) { e.preventDefault(); return false; }
     if (context.mobile) { e.preventDefault(); return false; }
     context.cursor_time = new Date().getTime();
     context.inbuffer.push(e.keyCode);
@@ -502,6 +510,8 @@ if (!globalObj.write) {
       'PageUp': [27, 91, 53, 92],
       'PageDown': [27, 91, 54, 92],
     };
+    if (CtrlLetter(e.key)) { e.preventDefault(); return false; }
+    if (e.key == 'Ctrl') { ctrlNext = !ctrlNext; return false; }
     if (context.mobile && e.key == 'Enter') {
       context.inbuffer.push(13);
       e.preventDefault();

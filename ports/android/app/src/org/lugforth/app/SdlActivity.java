@@ -106,7 +106,7 @@ public class SdlActivity extends SDLActivity implements MenuBar.Target {
   @Override public String help() {
     return "Pinch out or in: bigger or smaller text.\n\n"
         + "Menu keys: Tab completes a word or a file name, arrows move in the line and through the history, "
-        + "Ex lists the examples and includes the one you tap. A keyboard has F11 and F12 "
+        + "Ctrl then a letter types a control code (Ctrl, S saves in ed). The \u22ee button lists the examples (a tap includes one), the text size and this help. A keyboard has F11 and F12 "
         + "for the text size.\n\n"
         + "Try:\n  1 2 + .\n  words\n  ls\n  include sdl2_breakout.fs\n\n"
         + "The examples are in\n" + new File(home, "examples").getPath() + "\n"
