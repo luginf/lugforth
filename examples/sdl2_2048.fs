@@ -63,7 +63,7 @@ create tile-rgb  $cdc1b4 , $eee4da , $ede0c8 , $f2b179 , $f59563 , $f67c5f , $f6
 \ ---- Animation: the tiles slide, then merged and new tiles pop ----
 true value anim-on
 0 value anim-phase   0 value anim-t0
-120 constant SLIDE-MS   110 constant POP-MS
+220 constant SLIDE-MS   200 constant POP-MS
 \ the tiles before the move: from x y, exponent, to x y (in cells)
 create mv 16 5 * cells allot   0 value nmv
 create popf 16 allot       \ per cell: 0 nothing, 1 merged here, 2 new tile
@@ -105,7 +105,7 @@ create snap 16 allot       \ the grid after the move, before the new tile
   GRID_WIDTH 0 ?do GRID_WIDTH 0 ?do  0 i cell-x j cell-y cell draw-tile-at  loop loop ;
 
 : draw-slide-one ( i -- )
-  5 * cells mv + { a }  elapsed SLIDE-MS min { t }
+  5 * cells mv + { a }  elapsed SLIDE-MS min dup SLIDE-MS 2* swap - * SLIDE-MS / { t }     \ ease out
   a 2 cells + @
   a @ cell-x  a 3 cells + @ cell-x  over -  t * SLIDE-MS /  +
   a cell+ @ cell-y  a 4 cells + @ cell-y  over -  t * SLIDE-MS /  +
@@ -115,8 +115,8 @@ create snap 16 allot       \ the grid after the move, before the new tile
 \ the size of a tile that pops: a merged tile swells, a new one grows
 : pop-side ( kind -- s )
   elapsed POP-MS min { t }
-  2 = if  cell 2/  cell 2/ t * POP-MS /  +  exit then
-  t POP-MS 2/ > if POP-MS t - else t then  cell 12 * 2 * POP-MS */ 100 / cell +  ;
+  2 = if  cell 3 /  cell 3 / 2 * t * POP-MS /  +  exit then
+  t POP-MS 2/ > if POP-MS t - else t then  cell 25 * 2 * POP-MS */ 100 / cell +  ;
 
 : draw-pop-one ( col row -- )
   2dup xyVal@ { col row e }
