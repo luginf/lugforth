@@ -3,6 +3,14 @@
 Lugforth is a fork of ueForth (Brad Nelson), 64-bit, ignores case. Read `docs/SKILLS.md`
 (pitfalls learned the hard way) and `README.md` before touching anything.
 
+## Start from the current main
+
+Several sessions work on this repository at once, and `main` moves while a session runs
+(a cloud session clones it once, at its start). Before the first commit of a change, and
+again before opening a pull request: `git fetch origin main`, then start from (or merge in)
+`origin/main`, and say so if `main` has moved meanwhile. Look for a file (`CLAUDE.md`
+included) in `origin/main` too before saying it does not exist.
+
 ## Build and test
 
     python3 configure.py && ninja posix     # out/posix/lugforth (and lugforth-mini); also runs all .fs tests
