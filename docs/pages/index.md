@@ -11,8 +11,9 @@ Linux (tarball, AppImage) and Windows builds on the
 <div class="card"><h3>Try it</h3>
 The <a href="demo/terminal.html">web version</a>, with
 <a href="demo/sdl2_breakout.html">Breakout</a>,
-<a href="demo/sdl2_drums.html">drums</a> and a
-<a href="demo/sdl2_roguelike.html">roguelike</a>.
+<a href="demo/sdl2_drums.html">drums</a>, a
+<a href="demo/sdl2_roguelike.html">roguelike</a> and a
+<a href="demo/sdl2_pinball.html">pinball</a> (touch buttons on phones).
 Any game file also runs with <code>terminal.html?run=sdl2_roguelike.fs</code>.</div>
 <div class="card"><h3>Words</h3>
 <a href="words.html">All words</a>,
