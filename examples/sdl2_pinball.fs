@@ -30,7 +30,9 @@
 \
 \ The physics works in fixed point, 4096 units to a pixel, 6 steps a frame:
 \ the ball is a circle, the walls segments, the flippers turning segments
-\ whose speed is given to the ball, the bumpers and slingshots kick it.
+\ whose speed is given to the ball, the bumpers and slingshots kick it. A
+\ small bumper sits between the flippers, and a one-way gate at the top of
+\ the shooter lane keeps a launched ball from coming back to the plunger.
 
 sdl2
 
@@ -47,7 +49,7 @@ sdl2
 
 ( ---- Settings and game state ---- )
 
-10 value gravity     ( units added to the speed each step )
+7 value gravity      ( units added to the speed each step )
 90 value bounce      ( walls give back bounce/256 of the speed )
 3 value balls
 1 value setting-g   1 value setting-e   0 value setting-b
@@ -93,6 +95,8 @@ create segs 64 seg-size * allot
 : wall ( x1 y1 x2 y2 -- ) 0 to new-kind add-seg ;
 : sling ( x1 y1 x2 y2 -- ) 1 to new-kind add-seg 0 to new-kind ;
 : target ( x1 y1 x2 y2 id -- ) to new-id 2 to new-kind add-seg 0 to new-kind ;
+: gate ( x1 y1 x2 y2 -- )   ( one way: drawn right to left, it lets the ball up through it and stops it from above )
+  3 to new-kind add-seg 0 to new-kind ;
 0 value last-x   0 value last-y
 : start-at ( x y -- ) to last-y to last-x ;
 : wall-to ( x y -- ) 2dup last-x last-y 2swap wall start-at ;
@@ -104,6 +108,9 @@ create segs 64 seg-size * allot
   12 180 start-at  12 50 wall-to  18 30 wall-to  30 16 wall-to  48 7 wall-to
   70 3 wall-to  140 3 wall-to  165 7 wall-to  185 15 wall-to  199 27 wall-to
   207 42 wall-to  208 60 wall-to  208 236 wall-to  196 236 wall-to  196 70 wall-to
+  ( the one-way gate at the top of the shooter lane: the ball goes up
+    through it, and one coming down rolls off it into the table )
+  208 58 196 70 gate
   ( slopes down to the flippers )
   12 180 64 209 wall   196 180 144 209 wall
   ( slingshots: two walls and a kicking side )
@@ -121,11 +128,14 @@ create segs 64 seg-size * allot
 
 ( ---- Bumpers, lanes, flippers ---- )
 
-create bumpers 78 , 72 , 130 , 72 , 104 , 100 ,
-9 constant bumper-r
-create flashes 3 cells allot
-: bumper-x ( i -- x ) 2* cells bumpers + @ ;
-: bumper-y ( i -- y ) 2* 1+ cells bumpers + @ ;
+( x, y, radius; the last one is the small bumper between the flippers, low
+  enough for a ball to drain on each side of it )
+create bumpers 78 , 72 , 9 ,  130 , 72 , 9 ,  104 , 100 , 9 ,  104 , 236 , 4 ,
+4 constant #bumpers
+create flashes #bumpers cells allot
+: bumper-x ( i -- x ) 3 * cells bumpers + @ ;
+: bumper-y ( i -- y ) 3 * 1+ cells bumpers + @ ;
+: bumper-r ( i -- r ) 3 * 2 + cells bumpers + @ ;
 
 create lanes 3 cells allot     ( lit or not )
 : lane ( i -- a ) cells lanes + ;
@@ -209,12 +219,17 @@ create prev-keys 8 allot   prev-keys 8 erase
 : seg-hit ( s -- )
   { s }
   s s-kind @ 2 = s s-up @ 0= and if exit then
+  s s-kind @ 3 = if   ( a gate only acts on a ball above it )
+    by s s-ay @ - 4 arshift s s-dx @ *  bx s s-ax @ - 4 arshift s s-dy @ *  -
+    0> 0= if exit then
+  then
   s s-ax @ s s-ay @ s s-dx @ s s-dy @ s s-len @ closest
   0 to svx  0 to svy  radius to rs
   s s-kind @ case
     0 of bounce to rest 0 to kick endof
     1 of 120 to rest 900 to kick endof
     2 of 60 to rest 0 to kick endof
+    3 of bounce to rest 0 to kick endof
   endcase
   contact if
     s s-kind @ 1 = if 10 add 520 30 snd then
@@ -224,8 +239,11 @@ create prev-keys 8 allot   prev-keys 8 erase
 : bumper-hit ( i -- )
   { i }
   i bumper-x px to cx   i bumper-y px to cy
-  radius bumper-r px + to rs  0 to svx  0 to svy  150 to rest  1300 to kick
-  contact if 100 add 1 +to bonus 8 i cells flashes + ! 330 50 snd then ;
+  radius i bumper-r px + to rs  0 to svx  0 to svy  150 to rest  1300 to kick
+  contact if
+    100 add 1 +to bonus 8 i cells flashes + ! 330 50 snd
+    bx cx - abs 1024 < if frames 1 and if 400 else -400 then +to vx then   ( never balanced on top )
+  then ;
 
 : flipper-hit ( i -- )
   fl { f }
@@ -262,7 +280,7 @@ create prev-keys 8 allot   prev-keys 8 erase
   0 move-flipper  1 move-flipper
   gravity +to vy  vx +to bx  vy +to by  clamp-speed
   #segs 0 ?do i seg seg-hit loop
-  3 0 do i bumper-hit loop
+  #bumpers 0 do i bumper-hit loop
   0 flipper-hit  1 flipper-hit
   lane-sensors ;
 
@@ -322,7 +340,7 @@ create prev-keys 8 allot   prev-keys 8 erase
   target-timer if -1 +to target-timer target-timer 0= if targets-up then then
   by u>p 248 > if lose-ball then ;
 
-create gravities 7 , 10 , 14 ,
+create gravities 5 , 7 , 10 ,
 create bounces 60 , 90 , 130 ,
 create ball-counts 3 , 5 ,
 : settings ( -- )
@@ -337,7 +355,7 @@ create ball-counts 3 , 5 ,
 
 : update ( -- )
   1 +to frames
-  3 0 do i cells flashes + dup @ 1- 0 max swap ! loop
+  #bumpers 0 do i cells flashes + dup @ 1- 0 max swap ! loop
   demo? if settings  start? if 0 new-game exit then then
   state 1 = if play exit then
   state 2 = if -1 +to timer timer 0= if next-ball then exit then
@@ -413,12 +431,13 @@ $ff7020 constant c-orange  $30a0ff constant c-blue    $303030 constant c-dim
     1 of c-orange color s s-x1 @ s s-y1 @ s s-x2 @ s s-y2 @ thick-line endof
     2 of s s-up @ if c-blue else c-dim then color
          s s-x1 @ s s-y1 @ s s-x2 @ s s-y2 @ thick-line endof
+    3 of c-green color s s-x1 @ s s-y1 @ s s-x2 @ s s-y2 @ line endof
   endcase ;
 
 : draw-bumper ( i -- )
-  { i }  i bumper-x { x }  i bumper-y { y }
-  i cells flashes + @ if c-white color x y bumper-r disc then
-  c-violet color  x y bumper-r circle  x y 5 circle  x y 2 disc ;
+  { i }  i bumper-x { x }  i bumper-y { y }  i bumper-r { r }
+  i cells flashes + @ if c-white color x y r disc then
+  c-violet color  x y r circle  r 5 > if x y 5 circle then  x y 2 disc ;
 
 : draw-flipper ( i -- )   ( discs from the pivot to the tip, thinner at the tip )
   fl { f }
@@ -483,7 +502,7 @@ $ff7020 constant c-orange  $30a0ff constant c-blue    $303030 constant c-dim
   black color cls
   draw-stars
   #segs 0 ?do i seg draw-seg loop
-  3 0 do i draw-bumper loop
+  #bumpers 0 do i draw-bumper loop
   draw-lanes  0 draw-flipper  1 draw-flipper  draw-plunger  draw-ball
   draw-panel
   flip ;
