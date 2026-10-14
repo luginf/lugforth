@@ -5,7 +5,11 @@ name: GitHub Pages
 on:
   push:
     branches: [ main ]
-    paths: [ 'docs/**', 'tools/make_pages.py', 'tools/words_added.py', 'ports/posix/SDL2*.md', 'examples/README.md', 'NOTICE', '.github/workflows/pages.yml' ]
+    # the site, and what goes into demo/: the web interpreter (common/, ports/web/),
+    # the games it runs (examples/sdl2_*) and the HTML examples (examples/web/)
+    paths: [ 'docs/**', 'tools/make_pages.py', 'tools/words_added.py', 'ports/posix/SDL2*.md',
+             'examples/README.md', 'NOTICE', '.github/workflows/pages.yml',
+             'common/**', 'ports/web/**', 'examples/sdl2_*', 'examples/web/**' ]
   workflow_dispatch:
 
 permissions:
