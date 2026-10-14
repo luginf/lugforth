@@ -42,8 +42,8 @@ on the left play the drums. The keyboard works too: space, up/down (5 bpm),
 In the roguelike, arrows or w a s d move, space waits and a click steps
 toward the clicked tile.
 
-In the pinball (Night Raid), z and m or the arrows move the flippers, space
-or down held then let go launches the ball, n nudges and Enter starts a game.
+In the pinball (Night Raid), z and m or the arrows move the flippers, down
+held then let go launches the ball, space or n nudges and Enter starts a game.
 On a touch screen (or with `?touch` in the address) the page shows buttons over
 the game: the two flippers at the bottom, LAUNCH, START and NUDGE. Each one
 follows its own finger and sets the key in `context.sdl.down` (the same codes

@@ -34,8 +34,8 @@ comes back to it) with two tables. `common.fs` holds what they share (fixed poin
 3x5 font, seven segment digits).
 - `raid.fs`, Night Raid: lines on a black screen, the score on a panel, missions from cadet to
   ace, gravity, bounce and number of balls to choose, and a demo where the machine plays until
-  Enter. Keys: z/m (or the shifts, or the arrows) for the flippers, space or down held then let
-  go for the plunger, n to nudge (TILT if too much).
+  Enter. Keys: z/m (or the shifts, or the arrows) for the flippers, down held then let
+  go for the plunger, space or n to nudge (TILT if too much).
 - `night.fs`, Night Strike: a table laid out after an early 80s coin-op pinball whose screen
   captures and fix mode (38 game variables) were studied: NIGHT lanes, DROP targets, A B C D,
   F L Y, a captive hole, a dive bomb chute that can hold balls (multi-ball), two spinners,

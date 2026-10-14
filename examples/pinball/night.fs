@@ -45,6 +45,7 @@
 \   down (hold, let go)          plunger
 \   space                        nudge the table; a and l nudge from the left, from the right
 \   q   s   (or enter)           insert a coin, start or add a player (1 to 4)
+\   b                            the machine plays (b again: you)
 \   esc                          back to the menu
 \ Only libSDL2 is needed. Same fixed point physics as raid.fs: 4096 units to
 \ a pixel, 6 steps a frame, walls are segments, the ball a circle.
@@ -57,7 +58,7 @@ sdl2
 
 ( ---- Settings and state ---- )
 
-5 value gravity      ( the original has a "forward incline" of 8 )
+4 value gravity      ( the original has a "forward incline" of 8 )
 100 value bounce     ( walls give back bounce/256 of the speed )
 5 value balls-per-game
 650000 value free-score
@@ -141,10 +142,10 @@ create segs 80 seg-size * allot
   81 76 96 108 vkick   81 110 96 108 wall
   202 76 187 108 vkick   202 110 187 108 wall
   ( the lanes between the slingshots and the outer wall, and the slopes to the flippers )
-  92 150 92 168 mwall   92 168 114 176 mwall
+  92 150 92 164 mwall   92 164 115 173 mwall
   ( the slingshots )
-  104 128 104 160 mwall   104 160 116 168 mwall   116 168 104 128 sling
-  167 168 179 128 sling
+  104 128 104 156 mwall   104 156 115 163 mwall   115 163 104 128 sling
+  168 163 179 128 sling
   ( the building, its roof and the chute on its right )
   100 30 100 72 wall   121 30 121 72 wall   100 30 110 23 wall   110 23 121 30 wall
   100 72 121 72 wall   130 32 130 74 wall
@@ -214,12 +215,15 @@ create flippers 2 fl-size * allot
 
 ( ---- Keys ---- )
 
+0 value bot?   0 value bot-left   0 value bot-right   0 value bot-hold   0 value bot-side
+0 value debug   0 value fast
+
 225 constant key-lshift   229 constant key-rshift
 create prev-keys 16 allot   prev-keys 16 erase
 : edge ( f n -- f )   ( true only when the key has just gone down )
   prev-keys + dup c@ >r over swap c! r> 0= and ;
-: left-key? ( -- f ) [char] z pressed? key-left pressed? or key-lshift pressed? or ;
-: right-key? ( -- f ) [char] m pressed? key-right pressed? or key-rshift pressed? or [char] / pressed? or ;
+: left-key? ( -- f ) bot? if bot-left exit then [char] z pressed? key-left pressed? or key-lshift pressed? or ;
+: right-key? ( -- f ) bot? if bot-right exit then [char] m pressed? key-right pressed? or key-rshift pressed? or [char] / pressed? or ;
 : plunger-key? ( -- f ) key-down pressed? ;
 
 ( ---- Sound ---- )
@@ -484,9 +488,13 @@ create mults 1 , 3 , 5 ,
   plunger-key? if plunge 2 + 100 min to plunge
   else plunge if launch then then ;
 
+: bump ( dvx -- )   ( one shove of the table: the balls jump, the tilt gauge fills )
+  tilted mode 1 <> or if drop exit then
+  -600 kick-balls  45 +to tilt  90 25 snd ;
 : nudge ( -- )
-  [char] a pressed? 1 edge tilted 0= and if 500 -600 kick-balls 45 +to tilt 90 25 snd then
-  [char] l pressed? 4 edge tilted 0= and if -500 -600 kick-balls 45 +to tilt 90 25 snd then
+  [char] a pressed? 1 edge if 500 bump then
+  [char] l pressed? 4 edge if -500 bump then
+  key-space pressed? 8 edge if frames 1 and if 350 else -350 then bump then
   tilt 100 > tilted 0= and if -1 to tilted 110 400 snd then
   tilt 0> if -1 +to tilt then ;
 
@@ -496,7 +504,10 @@ create mults 1 , 3 , 5 ,
   else lites 2* dup 32 and if 31 and 1 or then then
   to lites ;
 
+0 value ball-frames
 : end-ball ( -- )
+  debug if ." ball" ball# . ." frames" frames ball-frames - . ." score" score . ." bonus" bonus . cr then
+  frames to ball-frames
   tilted if 0 to bonus then
   2 to mode  0 to timer ;
 : check-drain ( -- )
@@ -520,7 +531,7 @@ create mults 1 , 3 , 5 ,
     then
   loop found ;
 : game-over ( -- )
-  0 to mode
+  0 to mode  debug if 1 to leave then
   0 nplayers 0 do i cells pscore + @ max loop
   dup high > if 3 +to credits fanfare then  high max to high ;
 
@@ -546,18 +557,43 @@ create mults 1 , 3 , 5 ,
     then
   then ;
 
+: bot-play ( -- )   ( the machine: shoots, flips a ball that comes down near a flipper )
+  mode 0 = if 1 to credits [char] s pressed? drop 1 new-game exit then
+  mode 1 <> if exit then
+  lane-ball 0< 0= if
+    plunge 60 < if 2 +to plunge else 60 to plunge launch then
+  then
+  bot-hold if
+    -1 +to bot-hold
+    bot-hold 0= if 0 to bot-left 0 to bot-right then
+  else
+    0 to bot-left  0 to bot-right
+    #bl 0 do
+      i bl-st @ 1 = if
+        i bl cell+ @ u>p oy 150 + > i bl 3 cells + @ -300 > and
+        i bl @ u>p 202 < and if
+          i bl @ u>p 141 < if -1 to bot-left else -1 to bot-right then
+          frames 7 mod 0= if 0 to bot-hold else 5 frames 5 mod + to bot-hold then
+        then
+      then
+    loop
+  then ;
+
 : play ( -- )
   left-key? 2 edge if 90 25 snd 0 rotate-lites then
   right-key? 3 edge if 90 25 snd -1 rotate-lites then
-  plunger nudge
+  bot? if bot-play else plunger then nudge
   6 0 do step loop
   check-drain
+  debug 2 > frames 5 mod 0= and if #bl 0 do i bl-st @ . i bl @ u>p . i bl cell+ @ u>p oy - . ." | " loop mode . hole-ball . gate-on . cr then
   target-timer if -1 +to target-timer target-timer 0= if targets-up then then ;
 
 : update ( -- )
-  1 +to frames
+  1 +to frames  debug frames 9000 > and if 1 to leave then
   #bumpers 0 do i cells flashes + dup @ 1- 0 max swap ! loop
   spin-tick hole-tick start-keys
+  [char] b pressed? 9 edge if bot? 0= to bot? then
+  bot? mode 1 <> and if bot-play then
   mode 1 = if play exit then
   mode 2 = if bonus-count then ;
 
@@ -582,7 +618,7 @@ $ffff55 constant c-lit   $602860 constant c-dim    $303030 constant c-grey
     4 of c-cyan color endof
   endcase
   s s-x1 @ s s-y1 @ s s-x2 @ s s-y2 @
-  k 1 = k 4 = or if thick-line else line then ;
+  k 1 = k 4 = or  s segs - seg-size / 14 < k 0= and  or if thick-line else line then ;
 
 : lamp ( lit? x y -- )   ( a 3 by 3 light )
   rot if c-lit else c-dim then color  3 3 box ;
@@ -596,16 +632,35 @@ $ffff55 constant c-lit   $602860 constant c-dim    $303030 constant c-grey
   i cells flashes + @ if c-white color x y r disc then
   c-mag color  x y r circle  i bumper-kind 0= if x y r 2 - circle then  x y 1 disc ;
 
+: vhatch ( x1 x2 t1 t2 b1 b2 -- )   ( vertical lines every 2 pixels between two edges )
+  { x1 x2 t1 t2 b1 b2 }  x2 x1 - { w }
+  x2 1+ x1 do
+    i  i x1 - t2 t1 - * w / t1 + oy +
+    i  i x1 - b2 b1 - * w / b1 + oy +  line
+  2 +loop ;
+
+: draw-hatches ( -- )
+  c-white color
+  105 114 131 160 157 162 vhatch   169 178 160 131 162 157 vhatch
+  c-cyan color
+  82 95 78 106 110 108 vhatch   188 201 106 78 108 110 vhatch ;
+
 : draw-building ( -- )
-  ( the captive target, four city windows, the hole under it )
-  c-mag color  110 54 oy + 10 circle  110 54 oy + 4 circle
-  110 44 oy + 110 64 oy + line  100 54 oy + 120 54 oy + line
+  ( a magenta block with black windows, a captive target and the hangar below )
+  c-mag color  100 30 oy + 22 43 box
+  7 0 do  110 i 10 * 7 / - 23 oy + i +  110 i 10 * 7 / + 23 oy + i +  line  loop
+  black color  102 36 oy + 6 5 box  112 36 oy + 6 5 box  102 62 oy + 6 5 box  112 62 oy + 6 5 box
   4 0 do
-    cities 1 i lshift and if c-lit else c-dim then color
-    104 i 1 and 9 * + 36 oy + i 2 / 20 * +  6 5 box
+    cities 1 i lshift and if
+      c-lit color  102 i 1 and 10 * + 36 oy + i 2 / 26 * +  6 5 box
+    then
   loop
-  c-mag color  110 83 oy + 4 circle  110 83 oy + 1 disc
-  97 78 oy + 124 78 oy + line   96 90 oy + 126 90 oy + line ;
+  black color  110 52 oy + 9 disc
+  c-mag color  110 52 oy + 7 circle  110 52 oy + 3 circle
+  110 46 oy + 110 58 oy + line  104 52 oy + 116 52 oy + line
+  98 124 74 74 92 92 vhatch
+  black color  98 82 oy + 124 82 oy + line
+  black color  110 83 oy + 5 disc   c-white color  110 83 oy + 4 circle  110 83 oy + 1 disc ;
 
 : draw-lights ( -- )
   ( the NIGHT lanes )
@@ -646,7 +701,7 @@ $ffff55 constant c-lit   $602860 constant c-dim    $303030 constant c-grey
   f f-px @ u>p { x }  f f-py @ u>p { y }
   f f-len @ u>p { l }
   c-mag color
-  l 1+ 0 do  x c i * 1024 / +  y s i * 1024 / +  2 i l 2/ > 0= +  disc  loop ;
+  l 1+ 0 do  x c i * 1024 / +  y s i * 1024 / +  4 i l 3 / > + i l 2* 3 / > + disc  loop ;
 
 : draw-balls ( -- )
   c-white color
@@ -660,13 +715,34 @@ $ffff55 constant c-lit   $602860 constant c-dim    $303030 constant c-grey
   203 oy 196 + 210 oy 196 + line
   5 0 do 204 oy 194 + i 2 * +  209 oy 195 + i 2 * +  line loop ;
 
+: draw-frame ( -- )   ( the cyan edge on the left, the white bar on the right )
+  c-cyan color  79 30 oy + 79 196 oy + line
+  c-white color  212 40 oy + 212 196 oy + line ;
+
 : draw-table ( -- )
+  draw-frame
   #segs 0 ?do i seg draw-seg loop
+  draw-hatches
   #bumpers 0 do i draw-bumper loop
   draw-building draw-lights draw-drop-tags draw-spinners
   0 draw-flipper  1 draw-flipper  draw-plunger  draw-balls ;
 
 ( ---- The panels ---- )
+
+: vbar ( x y h w -- )   ( vertical lines every 2 pixels )
+  { x y h w }  w 0 do  x i + y x i + y h + line  2 +loop ;
+: stripe-char ( c x y s -- )   ( a letter made of vertical bars, like the title of the original )
+  { c x y s }  c $7f and cells glyphs + @ { bits }
+  15 0 do
+    bits 14 i - rshift 1 and if  x i 3 mod s * +  y i 3 / s * +  s 1- s vbar  then
+  loop ;
+: stripe-say ( a n x y s -- )
+  { a n x y s }
+  n 0 ?do a i + c@ x i 4 * s * + y s stripe-char loop ;
+: dotted-box ( x y w h -- )
+  { x y w h }
+  w 0 do  x i + y dot  x i + y h + dot  2 +loop
+  h 0 do  x y i + dot  x w + y i + dot  2 +loop ;
 
 : draw-score6 ( n x y -- )
   { n x y }
@@ -685,20 +761,24 @@ $ffff55 constant c-lit   $602860 constant c-dim    $303030 constant c-grey
 
 : draw-bomber ( x y -- )   ( seen from above, x is the middle )
   { x y }  c-mag color
-  x y x y 28 + line  x 1+ y x 1+ y 28 + line
-  x 26 - y 10 + x 26 + y 10 + thick-line
-  x 12 - y 24 + x 12 + y 24 + line
-  4 0 do  x 22 - i 12 * + y 6 + 3 8 box  loop ;
+  x 2 - y 4 + 4 34 box
+  x 26 - y 12 + 52 7 box
+  x 10 - y 30 + 20 4 box
+  4 0 do  x 22 - i 12 * + y 6 + i 1 and 3 * + 4 12 box  loop
+  black color  x 1- y 8 + 2 3 box ;
 
 : draw-left ( -- )
+  c-mag color
+  4 0 do  2 i 30 * 29 + 72 22 dotted-box  loop
   4 0 do i draw-player loop
-  38 150 draw-bomber
+  38 146 draw-bomber
   c-cyan color  s" CREDITS" 4 190 1 say   s" BALL" 52 190 1 say
-  c-white color  credits 20 202 2 say-number  ball# 66 202 2 say-number ;
+  2 200 36 20 dotted-box  44 200 34 20 dotted-box
+  c-white color  credits 20 204 2 say-number  ball# 70 204 2 say-number ;
 
 : draw-right ( -- )
   c-mag color  214 0 214 240 line
-  s" NIGHT" 222 24 4 say   s" STRIKE" 224 46 3 say
+  s" NIGHT" 220 20 5 stripe-say   s" STRIKE" 222 46 3 stripe-say
   c-cyan color  s" HIGH" 224 78 1 say   c-white color  high 312 78 1 say-number
   20 0 do  i bonus < if c-lit else c-dim then color  226 180 i 4 * - 14 2 box  loop
   c-cyan color  s" BONUS" 224 186 1 say
@@ -723,7 +803,7 @@ $ffff55 constant c-lit   $602860 constant c-dim    $303030 constant c-grey
   events
   key-esc pressed? if 1 to leave then
   update draw-all
-  dt 16 < if 16 dt - delay then ;
+  dt 16 < fast 0= and if 16 dt - delay then ;
 
 : night ( -- )   ( one session at the machine, until Esc or the window is closed )
   0 to leave  0 to mode  0 to nplayers  0 to cur  0 to credits  0 to frames
