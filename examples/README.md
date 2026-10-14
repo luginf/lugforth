@@ -26,6 +26,11 @@ matters for drawing games.
 exits at once. `make view-lines`, `view-lines-c` and `view-lines-uxn` open a window
 to check the drawing by eye.
 
+## varvara/
+
+A Uxn/Varvara virtual machine in Forth: `lugforth examples/varvara/uxncli.fs
+program.rom` runs a ROM in the terminal. See `varvara/README.md`.
+
 ## txt2tags.fs
 
 A converter from basic txt2tags syntax to HTML, written in Forth:
