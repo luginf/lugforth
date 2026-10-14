@@ -86,7 +86,7 @@ create segs 64 seg-size * allot
   x1 s s-x1 !  y1 s s-y1 !  x2 s s-x2 !  y2 s s-y2 !
   x1 px s s-ax !  y1 px s s-ay !
   x2 x1 - px { ex }  y2 y1 - px { ey }
-  ex ex * ey ey * + isqrt { l }
+  ex 4 arshift dup *  ey 4 arshift dup *  + isqrt 16 * { l }   ( 32-bit cells on the web )
   l s s-len !  ex 1024 * l / s s-dx !  ey 1024 * l / s s-dy !
   new-kind s s-kind !  new-id s s-id !  -1 s s-up !
   1 +to #segs ;
@@ -175,18 +175,21 @@ create prev-keys 8 allot   prev-keys 8 erase
 : contact ( -- hit? )
   ( ball against the point cx cy, at distance rs; the surface moves at
     svx svy, gives back rest/256 of the speed and kicks by kick )
+  ( distances are squared at 1/256 pixel, to stay within 32-bit cells on the web )
   bx cx - { dx }  by cy - { dy }
-  dx dx * dy dy * + { d2 }
-  d2 rs rs * >= d2 0= or if 0 exit then
+  dx abs rs >= dy abs rs >= or if 0 exit then
+  dx 4 arshift { dx' }  dy 4 arshift { dy' }
+  dx' dx' * dy' dy' * + { d2 }
+  d2 rs 4 arshift dup * >= d2 0= or if 0 exit then
   d2 isqrt { d }
-  dx 1024 * d / to nx   dy 1024 * d / to ny
-  rs d - { pen }
+  dx' 1024 * d / to nx   dy' 1024 * d / to ny
+  rs d 16 * - { pen }
   nx pen * 1024 / +to bx   ny pen * 1024 / +to by
   vx svx - { rvx }   vy svy - { rvy }
   rvx nx * rvy ny * + 1024 / { vn }
   vn 0< if
-    nx vn * 256 rest + * 262144 / negate +to rvx
-    ny vn * 256 rest + * 262144 / negate +to rvy
+    nx vn * 1024 / 256 rest + * 256 / negate +to rvx
+    ny vn * 1024 / 256 rest + * 256 / negate +to rvy
     rvx svx + nx kick * 1024 / + to vx
     rvy svy + ny kick * 1024 / + to vy
   then
@@ -194,7 +197,7 @@ create prev-keys 8 allot   prev-keys 8 erase
 
 : closest ( x y dx dy len -- )   ( closest point to the ball on a segment )
   { ax ay sdx sdy len }
-  bx ax - sdx *  by ay - sdy *  + 1024 / 0 max len min { t }
+  bx ax - 4 arshift sdx *  by ay - 4 arshift sdy *  + 64 / 0 max len min { t }
   ax sdx t * 1024 / + to cx   ay sdy t * 1024 / + to cy ;
 
 : target-hit ( s -- )
@@ -252,7 +255,7 @@ create prev-keys 8 allot   prev-keys 8 erase
   then ;
 
 : clamp-speed ( -- )
-  vx vx * vy vy * + isqrt { v }
+  vx 4 arshift dup *  vy 4 arshift dup *  + isqrt 16 * { v }
   v vmax > if vx vmax * v / to vx  vy vmax * v / to vy then ;
 
 : step ( -- )   ( one of the 6 steps of a frame )
@@ -442,9 +445,7 @@ $ff7020 constant c-orange  $30a0ff constant c-blue    $303030 constant c-dim
 
 ( ---- The panel ---- )
 
-: s, ( a n -- ) here swap dup allot cmove ;
-create ranks s" CADET  " s, s" PILOT  " s, s" CAPTAIN" s, s" MAJOR  " s, s" COLONEL" s, s" ACE    " s,
-: rank ( n -- a n ) 1- 7 * ranks + 7 ;
+: rank ( n -- a n ) 1- 7 *  s" CADET  PILOT  CAPTAINMAJOR  COLONELACE    " drop +  7 ;
 
 : draw-plane ( x y lit? -- )
   if c-green else c-dim then color

@@ -1,0 +1,111 @@
+<!--
+Copyright 2026 Luginfo10
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Lugforth Night Raid</title>
+<!--
+  Night Raid, a pinball in the style of Night Mission Pinball, written once
+  with the sdl2 short words: the very same file, examples/sdl2_pinball.fs,
+  also runs on Linux with SDL2.
+  Keys: z / m or the arrows for the flippers, space or down held then let go
+  for the plunger, n to nudge, Enter to start, g e b for the settings.
+  On a touch screen (or with ?touch in the address) buttons are shown: the
+  two flippers at the bottom, LAUNCH (hold then let go), START and NUDGE.
+  Each button follows its own finger, so both flippers can be held at once.
+  The Forth file is fetched with XMLHttpRequest, so serve this directory
+  over http, for example: python3 -m http.server
+-->
+<style>
+  body { background: #000; color: #fff; font-family: sans-serif; }
+  #again { position: fixed; inset: 0; display: none; align-items: center;
+           justify-content: center; flex-direction: column; gap: 1em;
+           z-index: 200000; background: #000; color: #fff; }
+  #again button { font-size: 1.5em; padding: 0.5em 1.5em; cursor: pointer; }
+  #pad { display: none; }
+  #pad div { position: fixed; z-index: 100001; box-sizing: border-box;
+             display: flex; align-items: center; justify-content: center;
+             color: rgba(255, 255, 255, 0.6); font: bold 16px sans-serif;
+             border: 2px solid rgba(255, 112, 32, 0.5); border-radius: 12px;
+             background: rgba(255, 112, 32, 0.08);
+             touch-action: none; user-select: none; -webkit-user-select: none; }
+  #pad div.on { background: rgba(255, 112, 32, 0.35); }
+  #left   { left: 1%;  bottom: 1%; width: 40%; height: 22%; }
+  #right  { right: 1%; bottom: 1%; width: 40%; height: 22%; }
+  #launch { right: 1%; bottom: 24%; width: 18%; height: 14%; }
+  #start  { left: 1%;  top: 1%; width: 18%; height: 9%; }
+  #nudge  { left: 42%; bottom: 1%; width: 16%; height: 10%; }
+</style>
+<div id="again">
+  <div>Game closed.</div>
+  <button onclick="location.reload()">Play again</button>
+</div>
+<div id="pad">
+  <div id="left">FLIP</div>
+  <div id="right">FLIP</div>
+  <div id="launch">LAUNCH</div>
+  <div id="start">START</div>
+  <div id="nudge">NUDGE</div>
+</div>
+<script>
+  (function() {
+    function sdl() { return window.lugforth && window.lugforth.sdl; }
+    // A button holds a key of the game while a finger (or the mouse) is on it:
+    // the same codes as the keyboard, z m space Enter n.
+    function bind(id, code) {
+      var el = document.getElementById(id);
+      function down(e) {
+        var S = sdl();
+        e.preventDefault(); e.stopPropagation();
+        if (!S || !S.open) { return; }
+        if (S.ensureAudio) { S.ensureAudio(); }
+        if (!S.down[code]) { S.hit[code] = 1; }
+        S.down[code] = 1;
+        el.classList.add('on');
+        el.setPointerCapture(e.pointerId);
+      }
+      function up(e) {
+        var S = sdl();
+        if (S) { S.down[code] = 0; }
+        el.classList.remove('on');
+      }
+      el.addEventListener('pointerdown', down);
+      el.addEventListener('pointerup', up);
+      el.addEventListener('pointercancel', up);
+      el.addEventListener('lostpointercapture', up);
+      el.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+    }
+    bind('left', 122); bind('right', 109); bind('launch', 32);
+    bind('start', 13); bind('nudge', 110);
+
+    var touch = /[?&]touch\b/.test(location.search) ||
+                'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    // Show the buttons while the game screen is open, and "Play again" when
+    // the game closes it (Esc): the Forth interpreter stops there because the
+    // game file ends with bye.
+    var was = false;
+    setInterval(function() {
+      var S = sdl();
+      var open = !!(S && S.open);
+      document.getElementById('pad').style.display = open && touch ? 'block' : 'none';
+      if (was && !open) { document.getElementById('again').style.display = 'flex'; }
+      was = open;
+    }, 300);
+  })();
+</script>
+<script type="text/forth" src="sdl2_pinball.fs"></script>
+<script src="lugforth.js"></script>

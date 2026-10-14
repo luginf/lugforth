@@ -36,7 +36,9 @@ plays until Enter. Keys: z/m (or the shifts, or the arrows) for the flippers,
 space or down held then let go for the plunger, n to nudge (TILT if too
 much). The physics is in fixed point (4096 units to a pixel, 6 steps a
 frame): circle against segments, turning flippers that give their speed to
-the ball, bumpers and slingshots that kick it.
+the ball, bumpers and slingshots that kick it. It also runs in the browser,
+`ports/web/sdl2_pinball.html`, with touch buttons on phones. Its arithmetic stays
+within 32-bit cells, which the web build has.
 
 ## varvara/
 
