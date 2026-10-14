@@ -47,7 +47,7 @@ sdl2
 
 ( ---- Settings and game state ---- )
 
-10 value gravity     ( units added to the speed each step )
+7 value gravity      ( units added to the speed each step )
 90 value bounce      ( walls give back bounce/256 of the speed )
 3 value balls
 1 value setting-g   1 value setting-e   0 value setting-b
@@ -322,7 +322,7 @@ create prev-keys 8 allot   prev-keys 8 erase
   target-timer if -1 +to target-timer target-timer 0= if targets-up then then
   by u>p 248 > if lose-ball then ;
 
-create gravities 7 , 10 , 14 ,
+create gravities 5 , 7 , 10 ,
 create bounces 60 , 90 , 130 ,
 create ball-counts 3 , 5 ,
 : settings ( -- )
