@@ -4,8 +4,9 @@ The web build has the same `sdl2` short words as the Linux build
 (`ports/posix/SDL2.md`), drawn on an HTML canvas. A game written with them runs
 unchanged in both: `examples/sdl2_breakout.fs` is loaded as is by
 `ports/web/sdl2_breakout.html`, `examples/sdl2_drums.fs` by
-`ports/web/sdl2_drums.html` and `examples/sdl2_roguelike.fs` (with its tile sheet
-`examples/sdl2_tiles.png`) by `ports/web/sdl2_roguelike.html`.
+`ports/web/sdl2_drums.html`, `examples/sdl2_roguelike.fs` (with its tile sheet
+`examples/sdl2_tiles.png`) by `ports/web/sdl2_roguelike.html` and
+`examples/sdl2_pinball.fs` by `ports/web/sdl2_pinball.html`.
 
 ```forth
 sdl2                          \ loads on first use, like on Linux
@@ -26,6 +27,7 @@ cd out/web && python3 -m http.server
 # then open http://localhost:8000/sdl2_breakout.html
 # or            http://localhost:8000/sdl2_drums.html
 # or            http://localhost:8000/sdl2_roguelike.html
+# or            http://localhost:8000/sdl2_pinball.html
 ```
 
 Arrows, mouse or touch move the paddle. Space, click or tap launches the
@@ -39,6 +41,14 @@ on the left play the drums. The keyboard works too: space, up/down (5 bpm),
 
 In the roguelike, arrows or w a s d move, space waits and a click steps
 toward the clicked tile.
+
+In the pinball (Night Raid), z and m or the arrows move the flippers, space
+or down held then let go launches the ball, n nudges and Enter starts a game.
+On a touch screen (or with `?touch` in the address) the page shows buttons over
+the game: the two flippers at the bottom, LAUNCH, START and NUDGE. Each one
+follows its own finger and sets the key in `context.sdl.down` (the same codes
+as the keyboard), so both flippers can be held at once, which the single
+pointer of the canvas cannot do.
 
 ## What exists
 

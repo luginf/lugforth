@@ -1,7 +1,8 @@
 # Examples
 
 Games and demos (SDL2 words, see `ports/posix/SDL2.md`): `sdl2_demo.fs`,
-`sdl2_breakout.fs`, `sdl2_drums.fs`, `sdl2_pianoroll.fs`, `sdl2_roguelike.fs`, `sdl2_3d.fs` (turning wireframe cube, pyramid and octahedron).
+`sdl2_breakout.fs`, `sdl2_drums.fs`, `sdl2_pianoroll.fs`, `sdl2_roguelike.fs`, `sdl2_3d.fs` (turning wireframe cube, pyramid and octahedron),
+`sdl2_pinball.fs`.
 Run one with `lugforth examples/sdl2_breakout.fs`, or `include` it from the prompt.
 
 ## Benchmarks: lugforth vs C vs uxn
@@ -25,6 +26,24 @@ matters for drawing games.
 `bench_lines.fs` stays open on the last frame (Esc to quit); `BENCH_HEADLESS=1`
 exits at once. `make view-lines`, `view-lines-c` and `view-lines-uxn` open a window
 to check the drawing by eye.
+
+## sdl2_pinball.fs
+
+Night Raid, a pinball in the style of Night Mission Pinball (subLOGIC, 1982):
+lines on a black screen, the score on a panel, missions from cadet to ace,
+gravity, bounce and number of balls to choose, and a demo where the machine
+plays until Enter. Keys: z/m (or the shifts, or the arrows) for the flippers,
+space or down held then let go for the plunger, n to nudge (TILT if too
+much). The physics is in fixed point (4096 units to a pixel, 6 steps a
+frame): circle against segments, turning flippers that give their speed to
+the ball, bumpers and slingshots that kick it. It also runs in the browser,
+`ports/web/sdl2_pinball.html`, with touch buttons on phones. Its arithmetic stays
+within 32-bit cells, which the web build has.
+
+## varvara/
+
+A Uxn/Varvara virtual machine in Forth: `lugforth examples/varvara/uxncli.fs
+program.rom` runs a ROM in the terminal. See `varvara/README.md`.
 
 ## txt2tags.fs
 

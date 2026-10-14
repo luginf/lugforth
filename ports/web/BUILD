@@ -43,6 +43,8 @@ WEB_ITEMS = [
   Copy('$dst/web/sdl2_roguelike.html', '$src/ports/web/sdl2_roguelike.html'),
   Copy('$dst/web/sdl2_roguelike.fs', '$src/examples/sdl2_roguelike.fs'),
   Copy('$dst/web/sdl2_tiles.png', '$src/examples/sdl2_tiles.png'),
+  Copy('$dst/web/sdl2_pinball.html', '$src/ports/web/sdl2_pinball.html'),
+  Copy('$dst/web/sdl2_pinball.fs', '$src/examples/sdl2_pinball.fs'),
 ]
 
 if D8_AVAILABLE:

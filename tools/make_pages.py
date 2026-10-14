@@ -138,7 +138,8 @@ def main():
     os.makedirs(OUT + 'demo')
     for name in ('terminal.html', 'lugforth.js', 'sdl2_breakout.html', 'sdl2_breakout.fs',
                  'sdl2_drums.html', 'sdl2_drums.fs', 'sdl2_roguelike.html',
-                 'sdl2_roguelike.fs', 'sdl2_tiles.png'):
+                 'sdl2_roguelike.fs', 'sdl2_tiles.png', 'sdl2_pinball.html',
+                 'sdl2_pinball.fs'):
       if os.path.exists(demo + name):
         shutil.copy(demo + name, OUT + 'demo/' + name)
   # the HTML examples of examples/web, which load lugforth.js from out/web in the repository
