@@ -90,6 +90,9 @@ These words have the same names and stack effects as on Linux, see
   `events`, which the Linux version misses.
 * **Mouse and touch** positions are in logical pixels, as on Linux, and a
   touch counts as `LEFT-BUTTON`.
+* **On a phone**, the keyboard of the device does not come up while a screen
+  is open: the terminal gives the focus to its hidden text field on a tap only
+  when no screen is open, and `screen` takes the focus away from it.
 * **Images** are loaded by the browser, so any format it reads works.
   `load-image` waits for the file (the interpreter yields meanwhile) and
   throws if it cannot be loaded. As on Linux, a name with directories that is

@@ -430,7 +430,12 @@ if (!globalObj.write) {
     ta.addEventListener('compositionend', Reset);
     document.body.appendChild(ta);
     Reset();
-    context.focusInput = function() { ta.focus(); };
+    context.focusInput = function() {
+      // Not while a game screen (sdl2.fs) is open: its taps are not typing,
+      // and the focus would bring the keyboard over the game.
+      if (context.sdl && context.sdl.open) { return; }
+      ta.focus();
+    };
     document.addEventListener('click', context.focusInput);
     document.addEventListener('touchend', context.focusInput);
     ta.focus();

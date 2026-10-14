@@ -232,6 +232,8 @@ JSWORD: js-screen { w h z }
   document.body.appendChild(o);
   S.overlay = o; S.canvas = c; S.ctx = c.getContext('2d');
   S.open = true; S.quit = 0; S.mx = 0; S.my = 0; S.frame = false;
+  // Hide the keyboard of a phone (the terminal's hidden textarea had the focus).
+  if (document.activeElement && document.activeElement.blur) { document.activeElement.blur(); }
   S.setColor(0, 0, 0, 255);
   S.ctx.fillRect(0, 0, w, h);
   S.layout();
