@@ -30,7 +30,8 @@
 \
 \ The physics works in fixed point, 4096 units to a pixel, 6 steps a frame:
 \ the ball is a circle, the walls segments, the flippers turning segments
-\ whose speed is given to the ball, the bumpers and slingshots kick it.
+\ whose speed is given to the ball, the bumpers and slingshots kick it. A
+\ rubber post between the flippers sends a ball coming down the middle aside.
 
 sdl2
 
@@ -227,6 +228,15 @@ create prev-keys 8 allot   prev-keys 8 erase
   radius bumper-r px + to rs  0 to svx  0 to svy  150 to rest  1300 to kick
   contact if 100 add 1 +to bonus 8 i cells flashes + ! 330 50 snd then ;
 
+104 constant post-x   236 constant post-y   3 constant post-r
+: post-hit ( -- )   ( the rubber post between the flippers )
+  post-x px to cx  post-y px to cy
+  radius post-r px + to rs  0 to svx  0 to svy  80 to rest  120 to kick
+  contact if
+    10 add 260 20 snd
+    bx cx - abs 1024 < if frames 1 and if 400 else -400 then +to vx then   ( never balanced on top )
+  then ;
+
 : flipper-hit ( i -- )
   fl { f }
   f f-th @ cos-sin { c s }
@@ -263,6 +273,7 @@ create prev-keys 8 allot   prev-keys 8 erase
   gravity +to vy  vx +to bx  vy +to by  clamp-speed
   #segs 0 ?do i seg seg-hit loop
   3 0 do i bumper-hit loop
+  post-hit
   0 flipper-hit  1 flipper-hit
   lane-sensors ;
 
@@ -484,6 +495,7 @@ $ff7020 constant c-orange  $30a0ff constant c-blue    $303030 constant c-dim
   draw-stars
   #segs 0 ?do i seg draw-seg loop
   3 0 do i draw-bumper loop
+  c-white color post-x post-y post-r circle  c-orange color post-x post-y 1 disc
   draw-lanes  0 draw-flipper  1 draw-flipper  draw-plunger  draw-ball
   draw-panel
   flip ;
