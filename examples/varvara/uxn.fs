@@ -33,37 +33,25 @@ create devs $100 allot
 create wst 0 , $100 allot   ( pointer cell, then 256 bytes )
 create rst 0 , $100 allot
 
-variable pc
-variable stk     ( the stack an instruction works on )
-variable oth     ( the other one, for STH and JSR )
-variable sp-a    ( the pointer pops go through: the stack's own, or kp in keep mode )
-variable kp
-variable short?
-variable running
+0 value pc
+0 value running
+0 value kp      ( in keep mode, the stack pointer the pops go through )
 
 : ram@ ( a -- b ) $ffff and ram + c@ ;
 : ram! ( b a -- ) $ffff and ram + c! ;
 : ram2@ ( a -- v ) dup ram@ 8 lshift swap 1+ ram@ or ;
 : ram2! ( v a -- ) over 8 rshift over ram! 1+ ram! ;
+: zram2@ ( a -- v ) dup ram@ 8 lshift swap 1+ $ff and ram@ or ;   ( zero page wraps )
+: zram2! ( v a -- ) over 8 rshift over ram! 1+ $ff and ram! ;
 : sx8 ( b -- n ) $80 xor $80 - ;
+: pc! ( a -- ) $ffff and to pc ;
+: kp! ( n -- ) to kp ;
 
 ( ---- stacks ---- )
 
 : spush ( b s -- ) dup >r @ r@ cell+ + c! r@ @ 1+ $ff and r> ! ;
-: pop8 ( -- b ) sp-a @ dup @ 1- $ff and tuck swap ! stk @ cell+ + c@ ;
-: pop16 ( -- v ) pop8 pop8 8 lshift or ;
-: pop ( -- v ) short? @ if pop16 else pop8 then ;
-: push8 ( b -- ) stk @ spush ;
-: push16 ( v -- ) dup 8 rshift push8 push8 ;
-: push ( v -- ) short? @ if push16 else push8 then ;
-: opush ( v -- ) short? @ if dup 8 rshift oth @ spush then oth @ spush ;
-: flag ( f -- ) 1 and push8 ;
-
-: jump ( addr -- ) short? @ 0= if sx8 pc @ + then $ffff and pc ! ;
-: ld ( a -- v ) short? @ if ram2@ else ram@ then ;
-: st ( v a -- ) short? @ if ram2! else ram! then ;
-: zld ( a -- v ) short? @ if dup ram@ 8 lshift swap 1+ $ff and ram@ or else ram@ then ;
-: zst ( v a -- ) short? @ if over 8 rshift over ram! 1+ $ff and then ram! ;
+: spop8 ( s -- b ) dup >r @ 1- $ff and dup r@ ! r> cell+ + c@ ;
+: kpop8 ( s -- b ) kp 1- $ff and dup to kp + cell+ c@ ;
 
 ( ---- devices ---- )
 
@@ -77,77 +65,108 @@ create deo-tab $10 cells allot
 : device! ( dei-xt deo-xt n -- ) cells tuck deo-tab + ! dei-tab + ! ;
 : dei-byte ( p -- b ) $ff and dup 4 rshift cells dei-tab + @ execute ;
 : deo-byte ( v p -- ) $ff and tuck dev! dup 4 rshift cells deo-tab + @ execute ;
+: dei2 ( p -- v ) dup dei-byte 8 lshift swap 1+ dei-byte or ;
+: deo2 ( v p -- ) over 8 rshift over deo-byte 1+ deo-byte ;
 
-( ---- the 32 instructions ---- )
+( ---- the instructions, compiled once for each of the 8 modes ---- )
+\ An opcode is 3 mode bits (k r 2) and 5 bits of operation. The words below
+\ are macros: compiled into an instruction, each picks the code of the mode
+\ being built (c-mode), so an instruction never tests its mode when it runs.
 
-: op-inc pop 1+ push ;
-: op-pop pop drop ;
-: op-nip pop pop drop push ;
-: op-swp pop pop swap push push ;
-: op-rot pop pop pop >r push push r> push ;
-: op-dup pop dup push push ;
-: op-ovr pop pop dup >r push push r> push ;
-: op-equ pop pop = flag ;
-: op-neq pop pop <> flag ;
-: op-gth pop pop < flag ;
-: op-lth pop pop > flag ;
-: op-jmp pop jump ;
-: op-jcn pop pop8 if jump else drop then ;
-: op-jsr pop pc @ dup 8 rshift oth @ spush oth @ spush jump ;
-: op-sth pop opush ;
-: op-ldz pop8 zld push ;
-: op-stz pop8 pop swap zst ;
-: op-ldr pop8 sx8 pc @ + ld push ;
-: op-str pop8 sx8 pc @ + pop swap st ;
-: op-lda pop16 ld push ;
-: op-sta pop16 pop swap st ;
-: op-dei pop8 short? @ if dup dei-byte 8 lshift swap 1+ dei-byte or else dei-byte then push ;
-: op-deo pop8 pop swap short? @ if over 8 rshift over deo-byte 1+ then deo-byte ;
-: op-add pop pop + push ;
-: op-sub pop pop swap - push ;
-: op-mul pop pop * push ;
-: op-div pop pop swap dup if / else 2drop 0 then push ;
-: op-and pop pop and push ;
-: op-ora pop pop or push ;
-: op-eor pop pop xor push ;
-: op-sft pop8 pop swap dup >r $f and rshift r> 4 rshift lshift push ;
+create optab $100 cells allot
+0 value c-mode
+: c-short ( -- f ) c-mode 1 and ;
+: c-stk ( -- s ) c-mode 2 and if rst else wst then ;
+: c-oth ( -- s ) c-mode 2 and if wst else rst then ;
+: c-keep ( -- f ) c-mode 4 and ;
+: lit, ( n -- ) postpone literal ;
 
-create ops
-  0 , ' op-inc , ' op-pop , ' op-nip , ' op-swp , ' op-rot , ' op-dup , ' op-ovr ,
-  ' op-equ , ' op-neq , ' op-gth , ' op-lth , ' op-jmp , ' op-jcn , ' op-jsr , ' op-sth ,
-  ' op-ldz , ' op-stz , ' op-ldr , ' op-str , ' op-lda , ' op-sta , ' op-dei , ' op-deo ,
-  ' op-add , ' op-sub , ' op-mul , ' op-div , ' op-and , ' op-ora , ' op-eor , ' op-sft ,
+: pre ( -- ) c-keep if c-stk lit, postpone @ postpone kp! then ; immediate
+: pop8 c-keep if c-stk lit, postpone kpop8 exit then   ( inline: S @ 1- $ff and dup S ! S+cell + c@ )
+  c-stk lit, postpone @ postpone 1- $ff lit, postpone and postpone dup c-stk lit, postpone !
+  c-stk cell+ lit, postpone + postpone c@ ; immediate
+: pop16 postpone pop8 postpone pop8 8 lit, postpone lshift postpone or ; immediate
+: pop c-short if postpone pop16 else postpone pop8 then ; immediate
+: push8 ( inline: S @ S+cell + c! S @ 1+ $ff and S ! )
+  c-stk lit, postpone @ c-stk cell+ lit, postpone + postpone c!
+  c-stk lit, postpone @ postpone 1+ $ff lit, postpone and c-stk lit, postpone ! ; immediate
+: push c-short if postpone dup 8 lit, postpone rshift postpone push8 then
+  postpone push8 ; immediate
+: opush c-short if postpone dup 8 lit, postpone rshift c-oth lit, postpone spush then
+  c-oth lit, postpone spush ; immediate
+: opush16 postpone dup 8 lit, postpone rshift c-oth lit, postpone spush
+  c-oth lit, postpone spush ; immediate
+: flag 1 lit, postpone and postpone push8 ; immediate
+: jump c-short 0= if postpone sx8 postpone pc postpone + then postpone pc! ; immediate
+: ram@, ( -- ) $ffff lit, postpone and ram lit, postpone + postpone c@ ;   ( ram@ inline )
+: ld c-short if postpone ram2@ else ram@, then ; immediate
+: st c-short if postpone ram2! else postpone ram! then ; immediate
+: zld c-short if postpone zram2@ else ram lit, postpone + postpone c@ then ; immediate
+: zst c-short if postpone zram2! else postpone ram! then ; immediate
+: dei c-short if postpone dei2 else postpone dei-byte then ; immediate
+: deo c-short if postpone deo2 else postpone deo-byte then ; immediate
+: fetch c-short if postpone pc postpone ram2@ 2 lit, else postpone pc ram@, 1 lit, then
+  postpone pc postpone + postpone pc! ; immediate
 
-: mode ( ins -- )
-  dup $20 and 0<> short? !
-  dup $40 and if rst wst else wst rst then oth ! stk !
-  $80 and if stk @ @ kp ! kp else stk @ then sp-a ! ;
+: op! ( xt n -- ) c-mode 5 lshift + cells optab + ! ;
+: lit! ( xt -- ) c-keep if 0 op! else drop then ;   ( LIT is the k form of BRK )
 
-: rel16 ( -- addr ) pc @ ram2@ pc @ 2 + + $ffff and ;
-: skip2 ( -- ) pc @ 2 + $ffff and pc ! ;
-: lit ( ins -- )
-  mode short? @ if pc @ ram2@ 2 else pc @ ram@ 1 then
-  pc @ + $ffff and pc ! push ;
-: special ( ins -- )   ( the opcodes whose low five bits are 0 )
-  dup $80 and if lit exit then
-  0 mode
-  case
-    $00 of 0 running ! endof                                   ( BRK )
-    $20 of pop8 if rel16 pc ! else skip2 then endof            ( JCI )
-    $40 of rel16 pc ! endof                                    ( JMI )
-    $60 of pc @ 2 + dup 8 rshift rst spush rst spush           ( JSI )
-           rel16 pc ! endof
-  endcase ;
+: instructions r~
+: op-inc pre pop 1+ push ;                  ' op-inc $01 op!
+: op-pop pre pop drop ;                     ' op-pop $02 op!
+: op-nip pre pop pop drop push ;            ' op-nip $03 op!
+: op-swp pre pop pop swap push push ;       ' op-swp $04 op!
+: op-rot pre pop pop pop >r push push r> push ;  ' op-rot $05 op!
+: op-dup pre pop dup push push ;            ' op-dup $06 op!
+: op-ovr pre pop pop dup >r push push r> push ;  ' op-ovr $07 op!
+: op-equ pre pop pop = flag ;               ' op-equ $08 op!
+: op-neq pre pop pop <> flag ;              ' op-neq $09 op!
+: op-gth pre pop pop < flag ;               ' op-gth $0a op!
+: op-lth pre pop pop > flag ;               ' op-lth $0b op!
+: op-jmp pre pop jump ;                     ' op-jmp $0c op!
+: op-jcn pre pop pop8 if jump else drop then ;  ' op-jcn $0d op!
+: op-jsr pre pop pc opush16 jump ;          ' op-jsr $0e op!
+: op-sth pre pop opush ;                    ' op-sth $0f op!
+: op-ldz pre pop8 zld push ;                ' op-ldz $10 op!
+: op-stz pre pop8 pop swap zst ;            ' op-stz $11 op!
+: op-ldr pre pop8 sx8 pc + ld push ;        ' op-ldr $12 op!
+: op-str pre pop8 sx8 pc + pop swap st ;    ' op-str $13 op!
+: op-lda pre pop16 ld push ;                ' op-lda $14 op!
+: op-sta pre pop16 pop swap st ;            ' op-sta $15 op!
+: op-dei pre pop8 dei push ;                ' op-dei $16 op!
+: op-deo pre pop8 pop swap deo ;            ' op-deo $17 op!
+: op-add pre pop pop + push ;               ' op-add $18 op!
+: op-sub pre pop pop swap - push ;          ' op-sub $19 op!
+: op-mul pre pop pop * push ;               ' op-mul $1a op!
+: op-div pre pop pop swap dup if / else 2drop 0 then push ;  ' op-div $1b op!
+: op-and pre pop pop and push ;             ' op-and $1c op!
+: op-ora pre pop pop or push ;              ' op-ora $1d op!
+: op-eor pre pop pop xor push ;             ' op-eor $1e op!
+: op-sft pre pop8 pop swap dup >r $f and rshift r> 4 rshift lshift push ;  ' op-sft $1f op!
+: op-lit fetch push ;                       ' op-lit lit!
+~ ;
+: build ( mode -- ) to c-mode instructions evaluate ;
+0 build 1 build 2 build 3 build 4 build 5 build 6 build 7 build
 
-: step ( -- )
-  pc @ ram + c@  pc @ 1+ $ffff and pc !
-  dup $1f and ?dup if cells ops + @ swap mode execute else special then ;
+: rel16 ( -- addr ) pc ram2@ pc 2 + + $ffff and ;
+: op-brk ( -- ) 0 to running ;
+: op-jci ( -- ) wst spop8 if rel16 else pc 2 + then pc! ;
+: op-jmi ( -- ) rel16 pc! ;
+: op-jsi ( -- ) pc 2 + dup 8 rshift rst spush rst spush rel16 pc! ;
+' op-brk $00 cells optab + !
+' op-jci $20 cells optab + !
+' op-jmi $40 cells optab + !
+' op-jsi $60 cells optab + !
+
+: step ( -- ) pc ram + c@  pc 1+ $ffff and to pc  cells optab + @ execute ;
 
 : halted? ( -- f ) $0f dev@ 0<> ;
 : exit-code ( -- n ) $0f dev@ $7f and ;
 : eval ( addr -- )
   dup 0= halted? or if drop exit then
-  pc ! -1 running ! begin step running @ 0= until ;
+  to pc -1 to running
+  begin pc ram + c@  pc 1+ $ffff and to pc  cells optab + @ execute
+  running 0= until ;
 
 ( ---- System device: ports $00-$0f ---- )
 
@@ -193,7 +212,7 @@ previous
     $04 of $04 dev@ wst ! endof
     $05 of $05 dev@ rst ! endof
     $0e of $0e dev@ if debug-stacks then endof
-    $0f of halted? if 0 running ! then endof
+    $0f of halted? if 0 to running then endof
   endcase ;
 
 ( ---- Console output: ports $10-$1f ---- )

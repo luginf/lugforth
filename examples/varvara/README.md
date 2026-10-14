@@ -44,9 +44,13 @@ device, checked by hand. The upstream `opctest.rom` has not been run yet.
 
 ## Speed
 
-Each Uxn instruction costs about a microsecond (one pass of `bench_sieve.tal`
-takes 0.86 s, against 7 ms in the C uxn), so about 100 times slower than
-uxn: enough for ROMs that mostly wait for events, not for heavy ones.
+Each of the 256 opcodes is its own Forth word, compiled at load time from
+one source for each of the 8 modes (`build` in `uxn.fs`): the macros `pop`,
+`push`, `jump`... pick the stack, the width and the keep pointer of the mode
+being built, so nothing tests the mode while a ROM runs, and the stacks are
+reached inline. One pass of `bench_sieve.tal` takes 0.43 s, against 7 ms in
+the C uxn: about 60 times slower, enough for ROMs that mostly wait for
+events, not for heavy ones.
 
 ## Not done yet
 
