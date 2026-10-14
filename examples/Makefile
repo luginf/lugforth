@@ -19,9 +19,9 @@ UXNCLI    ?= uxncli
 UXNEMU    ?= uxnemu
 SMOKE_TIMEOUT ?= 5
 
-SDL2_EXAMPLES := sdl2_demo.fs sdl2_breakout.fs sdl2_drums.fs sdl2_pianoroll.fs sdl2_roguelike.fs
+SDL2_EXAMPLES := sdl2_demo.fs sdl2_breakout.fs sdl2_drums.fs sdl2_pianoroll.fs sdl2_roguelike.fs sdl2_3d.fs sdl2_2048.fs
 
-.PHONY: help bench \
+.PHONY: help bench test-ports \
         bench-sieve bench-sieve-c bench-sieve-fs bench-sieve-uxn \
         bench-lines bench-lines-c bench-lines-fs bench-lines-uxn \
         view-lines view-lines-c view-lines-uxn view \
@@ -35,6 +35,7 @@ help:
 	@echo "make view-lines-c       bench_lines.c in a real SDL2 window (C)"
 	@echo "make view-lines-uxn     bench_lines.tal in uxnemu (real window)"
 	@echo "make view              all three of the above, one after another"
+	@echo "make test-ports         tests of the logic of 2048, 3d and inference"
 	@echo "make smoke              headless load-test of every SDL2 example (catches load/syntax errors)"
 	@echo "make clean              remove built binaries and .rom files"
 
@@ -101,6 +102,14 @@ view: view-lines view-lines-c view-lines-uxn
 # without erroring out (catches the "Error including" class of bug found
 # repeatedly while writing these: a couple of seconds under a dummy video/
 # audio driver is enough to reach the main loop and stay there) ----
+
+# the logic of the ports from eForth Windows (2048, 3d, inference): each test prints PASS
+test-ports:
+	@for t in 2048_tests.fs 3d_tests.fs inference/inference_tests.fs inference/lamp_diagnosis_tests.fs; do \
+	  printf "%-20s " "$$t"; \
+	  out=$$(cd .. && $(LUGFORTH:../%=%) examples/$$t 2>&1 | tail -1); echo "$$out"; \
+	  case "$$out" in PASS*) ;; *) exit 1;; esac; \
+	done
 
 smoke:
 	@for f in $(SDL2_EXAMPLES); do \

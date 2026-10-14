@@ -51,7 +51,14 @@ forth definitions tasks also internals
 ;
 
 DEFINED? ms-ticks [IF]
-  : ms ( n -- ) ms-ticks >r begin pause ms-ticks r@ - over >= until rdrop drop ;
+  DEFINED? posix [IF]
+    ( POSIX: sleep 1 ms between two pauses, a plain busy wait uses 100% of a CPU )
+    also posix
+    : ms ( n -- ) ms-ticks >r begin pause 1000 usleep drop ms-ticks r@ - over >= until rdrop drop ;
+    previous
+  [ELSE]
+    : ms ( n -- ) ms-ticks >r begin pause ms-ticks r@ - over >= until rdrop drop ;
+  [THEN]
 [THEN]
 
 tasks definitions

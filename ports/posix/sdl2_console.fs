@@ -977,15 +977,23 @@ defer font-pick ( k -- )   ' drop is font-pick
   dup $400 = if drop mouse-move exit then
   drop wheel-event ;
 
+0 value ctrl-next   \ set by the Ctrl button of the Android app (F9): the next letter is a control code
 : con-event ( -- )
   ev-type
   dup SDL_QUIT = if drop bye exit then
   dup SDL_TEXTINPUT = if
     drop help-open if 0 to help-open -1 to dirty then
     pick-on if pick-close exit then
+    ctrl-next if
+      ev 12 + c@ 32 or dup [char] a >= over [char] z <= and
+      if 96 - q-push 0 to ctrl-next exit then drop 0 to ctrl-next then
     ev 12 + begin dup c@ dup while q-push 1+ repeat 2drop exit then
   dup SDL_KEYDOWN = if
-    drop ev 24 + sl@ to kmod  ev 20 + sl@ con-key-event exit then
+    drop ev 24 + sl@ to kmod  ev 20 + sl@
+    dup $40000042 = if drop ctrl-next 0= to ctrl-next exit then
+    ctrl-next if 0 to ctrl-next dup [char] a >= over [char] z <= and
+      if 96 - q-push exit then then
+    con-key-event exit then
   dup $400 >= over $403 <= and if
     menu-on if mouse-event exit then
     $401 = if SDL_StartTextInput drop -1 to dirty then exit then

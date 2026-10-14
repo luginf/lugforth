@@ -151,6 +151,26 @@ final class MenuBar {
     b.show();
   }
 
+  // Ex, A-, A+ and ? are in a card, to keep room for the keys in the bar
+  private void showMore(final Target t) {
+    final java.util.ArrayList<String> items = new java.util.ArrayList<String>();
+    if (t.examples() != null) items.add("Examples");
+    items.add("Text smaller (A-)");
+    items.add("Text bigger (A+)");
+    items.add("Help (?)");
+    final boolean ex = t.examples() != null;
+    new android.app.AlertDialog.Builder(act)
+        .setItems(items.toArray(new String[0]), new android.content.DialogInterface.OnClickListener() {
+          @Override public void onClick(android.content.DialogInterface d, int i) {
+            if (ex) i--;
+            if (i < 0) showExamples(t);
+            else if (i == 0) t.font(-1);
+            else if (i == 1) t.font(1);
+            else showHelp(t.help());
+          }
+        }).show();
+  }
+
   private View build(View content, String title, final Target t) {
     final FrameLayout root = new FrameLayout(act);
     root.setBackgroundColor(0xFF000000);
@@ -184,15 +204,16 @@ final class MenuBar {
     panel.setBackgroundColor(BAR);
     panel.setVisibility(View.GONE);
     panel.addView(key("Tab", KeyEvent.KEYCODE_TAB, t));
+    panel.addView(action("Ctrl", new Runnable() { public void run() {
+      // sticky: the next letter typed is a control code (F9 for the SDL console)
+      t.key(KeyEvent.KEYCODE_F9, true);
+      t.key(KeyEvent.KEYCODE_F9, false);
+    } }));
     panel.addView(key("\u2190", KeyEvent.KEYCODE_DPAD_LEFT, t));
     panel.addView(key("\u2191", KeyEvent.KEYCODE_DPAD_UP, t));
     panel.addView(key("\u2193", KeyEvent.KEYCODE_DPAD_DOWN, t));
     panel.addView(key("\u2192", KeyEvent.KEYCODE_DPAD_RIGHT, t));
-    if (t.examples() != null)
-      panel.addView(action("Ex", new Runnable() { public void run() { showExamples(t); } }));
-    panel.addView(action("A-", new Runnable() { public void run() { t.font(-1); } }));
-    panel.addView(action("A+", new Runnable() { public void run() { t.font(1); } }));
-    panel.addView(action("?", new Runnable() { public void run() { showHelp(t.help()); } }));
+    panel.addView(action("\u22ee", new Runnable() { public void run() { showMore(t); } }));
     panel.addView(action("\u2302", new Runnable() { public void run() { t.start(); } }));
     col.addView(panel, 1, new LinearLayout.LayoutParams(
         ViewGroup.LayoutParams.MATCH_PARENT, px(52)));

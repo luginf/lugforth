@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Lugforth: outline lettering</title>
+<!--
+Writes LUGFORTH as polygons (an outline and a darker fill) drawn by Forth on a canvas
+(needs out/web/lugforth.js, see README.md). Each letter is one or more polygons on a
+5 x 7 grid, the second one of O, R is a hole.
+-->
+<style>body { background: #1b1b1f; color: #ddd; font-family: sans-serif; }</style>
+</head>
+<body>
+<p>
+  <button onclick="forth('7 logo')">Small</button>
+  <button onclick="forth('10 logo')">Medium</button>
+  <button onclick="forth('14 logo')">Large</button>
+  <button onclick="forth('text')">Back to the terminal</button>
+</p>
+
+<script type="text/forth">
+web
+variable ox   variable oy   variable sc   variable pen
+
+: px ( ch -- x ) [char] 0 - sc @ * ox @ + ;
+: py ( ch -- y ) [char] 0 - sc @ * oy @ + ;
+
+JSWORD: closePath { }
+  context.ctx.closePath();
+~
+
+JSWORD: ink! { c }
+  context.ctx.strokeStyle = '#' + ('000000' + (c & 0xffffff).toString(16)).slice(-6);
+~
+
+JSWORD: fill-holes { }
+  context.ctx.fill('evenodd');      // holes stay empty
+~
+
+JSWORD: sharp-pen { }
+  context.ctx.lineJoin = 'miter';
+~
+
+\ Polygons of "xy" points on a 5 x 7 grid. "/" closes the polygon and starts
+\ another one (a hole, as in O, R and G); spaces are ignored.
+: polygons ( a n -- )
+  beginPath  0 pen !
+  begin dup 0> while
+    over c@ dup [char] / = if
+      drop closePath 0 pen !  1 /string
+    else dup bl = if
+      drop 1 /string
+    else
+      px  2 pick 1+ c@ py
+      pen @ if lineTo else moveTo then
+      -1 pen !  2 /string
+    then then
+  repeat
+  2drop closePath ;
+
+: letter ( ch -- a n )
+  case
+    [char] L of s" 00 10 16 56 57 07" endof
+    [char] U of s" 00 10 16 46 40 50 57 07" endof
+    [char] G of s" 10 50 51 21 12 15 26 46 44 34 33 53 57 17 06 01" endof
+    [char] F of s" 00 50 51 11 13 43 44 14 17 07" endof
+    [char] O of s" 10 40 51 56 47 17 06 01 / 21 31 42 45 36 26 15 12" endof
+    [char] R of s" 00 40 51 53 44 57 47 34 14 17 07 / 11 41 43 13" endof
+    [char] T of s" 00 50 51 31 37 27 21 01" endof
+    [char] H of s" 00 10 13 43 40 50 57 47 44 14 17 07" endof
+    s" "
+  endcase ;
+
+create colors  $ff5555 , $ffaa33 , $eeee44 , $66dd66 , $44ccdd , $5599ff , $aa77ff , $ff77cc ,
+
+: logo ( size -- )
+  sc !
+  viewport@ 2dup window             \ one canvas pixel per screen pixel
+  $1b1b1f color!  0 0 2000 2000 box
+  sharp-pen  2 lineWidth
+  sc @ 7 * - 2 / oy !               \ centered
+  sc @ 6 * 8 * - 2 / ox !
+  s" LUGFORTH" 0 do
+    dup i + c@ letter  polygons
+    colors i cells + @
+    dup 1 rshift $7f7f7f and color!   \ dark fill
+    ink!                              \ bright outline
+    fill-holes  stroke
+    sc @ 6 * ox +!
+  loop drop
+  gr ;
+</script>
+<script src="../../out/web/lugforth.js"></script>
+<script>
+function forth(text) {
+  var s = unescape(encodeURIComponent(text + '\r'));   // UTF-8 bytes
+  for (var i = 0; i < s.length; i++) lugforth.inbuffer.push(s.charCodeAt(i));
+}
+</script>
+</body>
+</html>

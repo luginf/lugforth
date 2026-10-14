@@ -15,7 +15,7 @@ run
 Examples: `sdl2_demo.fs` (tour of the words), `sdl2_breakout.fs` (a game, about
 200 lines), `sdl2_drums.fs` (16-step drum machine), `sdl2_pianoroll.fs` (piano
 roll with soundfont playback and export to `.mid` and ABC, POSIX only),
-`sdl2_roguelike.fs` (tile sheet, with music), `sdl2_pinball.fs` (a pinball in the
+`sdl2_roguelike.fs` (tile sheet, with music), `sdl2_3d.fs` (turning wireframe cube, pyramid and octahedron), `sdl2_2048.fs` (2048 with a slide and pop animation, `--no-anim` turns it off; digits drawn from a 3x5 bitmap), `sdl2_pinball.fs` (a pinball in the
 style of Night Mission, fixed point physics). Breakout, drums and roguelike also
 run in the browser.
 

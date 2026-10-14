@@ -14,7 +14,12 @@ The <a href="demo/terminal.html">web version</a>, with
 <a href="demo/sdl2_drums.html">drums</a>, a
 <a href="demo/sdl2_roguelike.html">roguelike</a> and a
 <a href="demo/sdl2_pinball.html">pinball</a> (touch buttons on phones).
-Any game file also runs with <code>terminal.html?run=sdl2_roguelike.fs</code>.</div>
+Any game file also runs with <code>terminal.html?run=sdl2_roguelike.fs</code>.
+Drawing from HTML buttons: <a href="demo/button.html">Forth word called by a button</a>,
+<a href="demo/vector_logo.html">vector lettering</a>,
+<a href="demo/vector_logo_outline.html">outline lettering</a>,
+<a href="demo/string_art.html">string art</a>
+(<a href="https://github.com/luginf/lugforth/tree/main/examples/web">sources</a>).</div>
 <div class="card"><h3>Words</h3>
 <a href="words.html">All words</a>,
 <a href="new-words.html">words added by Lugforth</a>,
@@ -32,7 +37,7 @@ Advance. See <a href="ports.html">ports</a>.</div>
 * A terminal line editor: history, cursor keys, Tab completion of words and
   file names.
 * New ports: Android, Game Boy Advance, Raspberry Pi Pico.
-* Examples: games, benchmarks, a txt2tags converter.
+* Examples: games (Breakout, roguelike, 2048 with animation), turning 3D wireframes, a rule based inference engine, benchmarks, a txt2tags converter.
 
 ## Quick start
 

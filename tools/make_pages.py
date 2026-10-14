@@ -64,7 +64,8 @@ def fix_links(page, source, body):
   base = os.path.dirname(source)
   def repl(m):
     url = m.group(1)
-    if re.match(r'^(https?:|mailto:|#)', url) or url.split('#')[0] in SITE_PAGES:
+    if re.match(r'^(https?:|mailto:|#)', url) or url.split('#')[0] in SITE_PAGES \
+        or url.startswith('demo/'):
       return m.group(0)
     path, _, frag = url.partition('#')
     full = os.path.normpath(os.path.join(base, path))
@@ -80,8 +81,8 @@ def layout(page, title, body):
   return """<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>%s - Lugforth</title><link rel="stylesheet" href="style.css"></head>
-<body><header><a class="brand" href="index.html">Lugforth</a><nav>%s</nav></header>
+<title>%s - Lugforth</title><script src="theme.js"></script><link rel="stylesheet" href="style.css"></head>
+<body><header><a class="brand" href="index.html">Lugforth</a><nav>%s</nav><button id="theme-toggle" class="theme-toggle" type="button" hidden aria-label="Toggle light/dark theme" title="Toggle light/dark theme"></button></header>
 <main>%s</main>
 <footer>Unofficial fork of <a href="https://github.com/flagxor/ueforth">uEforth</a>
 by Bradley D. Nelson. Source: <a href="https://github.com/luginf/lugforth">github.com/luginf/lugforth</a>.
@@ -118,6 +119,7 @@ def main():
     shutil.rmtree(OUT)
   os.makedirs(OUT)
   shutil.copy(ROOT + 'docs/pages/style.css', OUT + 'style.css')
+  shutil.copy(ROOT + 'docs/pages/theme.js', OUT + 'theme.js')
   jobs = dict(PAGES)
   for page, (title, sources) in jobs.items():
     parts = []
@@ -140,6 +142,14 @@ def main():
                  'sdl2_pinball.fs'):
       if os.path.exists(demo + name):
         shutil.copy(demo + name, OUT + 'demo/' + name)
+  # the HTML examples of examples/web, which load lugforth.js from out/web in the repository
+  exdir = ROOT + 'examples/web/'
+  if os.path.isdir(OUT + 'demo') and os.path.isdir(exdir):
+    for name in sorted(os.listdir(exdir)):
+      if name.endswith('.html'):
+        text = open(exdir + name, encoding='utf-8').read()
+        text = text.replace('../../out/web/lugforth.js', 'lugforth.js')
+        open(OUT + 'demo/' + name, 'w', encoding='utf-8').write(text)
   open(OUT + '.nojekyll', 'w').close()
   print('wrote', OUT, len(os.listdir(OUT)), 'files')
 

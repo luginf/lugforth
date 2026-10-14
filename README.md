@@ -73,7 +73,7 @@ other ports use the plain `accept`.
 text file. Arrows, Home, End, PageUp, PageDown, Delete, Ctrl+arrows (word) and
 Ctrl+Home/End; Tab inserts two spaces and Enter keeps the indentation. Selection with
 Shift+arrows, or Ctrl+K to start and stop a selection; Ctrl+C, Ctrl+X, Ctrl+V; Ctrl+Z
-undoes; Ctrl+F finds (Ctrl+N or F3 for the next one), Ctrl+G goes to a line; Ctrl+S saves
+undoes and Ctrl+Y redoes; Ctrl+F finds (Ctrl+N or F3 for the next one), Ctrl+G goes to a line; Ctrl+S saves
 and Ctrl+Q quits (twice if the text changed). `.fs`, `.fth` and `.4th` files are
 highlighted (comments, strings, words of the language, numbers, the name after `:`) in a
 terminal that has colors; Ctrl+T cycles the color themes (`default`, `colorforth` with red
@@ -87,8 +87,20 @@ in a centered column, txt2tags and Markdown highlighting (headings, lists, `**bo
 `//italic//`, `__underline__`, `%` comments), and an Esc menu: `w` wrap, `f` focus (dims
 the paragraphs but the current one, the line stays in the middle), `h` Hemingway (no
 deleting or moving back), `t` timer (stopwatch or countdown), `o` outline of the headings,
-`s` statistics, `r` replace all, `g` daily goal, `a` autosave, `+`/`-` width, `c` color theme, `?` help. The
+`v` word occurrences (most used words first), `q` quit,
+`s` statistics, `r` replace all, `g` daily goal, `Ctrl+Y` redo, `Ctrl+O` save and go back to the file browser (`writhdeck` alone starts there: Enter, `n` new, `/` filter, `r` rename, `d` delete, `b` backup), `a` autosave, `+`/`-` width, `c` color theme, `?` help. The
 status bar shows the words, the words of the session and the progress to the goal.
+
+## Examples
+
+`examples/` has games, benchmarks and demos, see `examples/README.md`: SDL2 programs
+(`sdl2_breakout.fs`, `sdl2_roguelike.fs`, `sdl2_3d.fs` with turning wireframes, `sdl2_2048.fs`
+with sliding tiles, `--no-anim` turns the animation off), the terminal `2048.fs`, and a small
+rule based inference engine (`examples/inference/`, with a README in English and in French and a
+Makefile that runs concrete scenarios). 2048, 3d and the inference engine are ports of projects of
+Marc Petremann ([eForth Windows](https://github.com/MPETREMANN11/eForth-Windows)); they are GPL, unlike the rest of
+the repository (see `NOTICE`). `make -C examples test-ports` runs their tests and `make -C examples smoke`
+loads every SDL2 example.
 
 ## Building from Source
 

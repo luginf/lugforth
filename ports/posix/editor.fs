@@ -178,7 +178,7 @@ defer pre-key ( code -- code' )   defer wait-key ( -- code )   defer after-load
 ( ---- Undo: a log of the changes, the newest at the end ---- )
 \ a record is its bytes, then the count, the position and the kind (1 insert, 2 delete)
 32768 constant log-max
-0 value log   0 value log-n
+0 value log   0 value log-n   0 value rlog   0 value rlog-n
 : log-push ( kind pos a n -- )
   { kind pos a n }
   n 3 cells + log-max > if exit then
@@ -192,8 +192,12 @@ defer pre-key ( code -- code' )   defer wait-key ( -- code )   defer after-load
   log log-n + @ { n }  log log-n + cell+ @ { pos }  log log-n + 2 cells + @ { kind }
   n negate +to log-n
   kind pos log log-n + n ;
+: swap-logs ( -- )   log rlog to log to rlog   log-n rlog-n to log-n to rlog-n ;
+: rlog-push ( kind pos a n -- )   swap-logs log-push swap-logs ;
+: rlog-pop ( -- kind pos a n )   swap-logs log-pop swap-logs ;
 : log-extend ( c pos -- f )   \ add a typed byte to the last insert when it continues it
   { c pos }
+  0 to rlog-n
   log-n 0= if 0 exit then
   log log-n + cell - @ 1 <> if 0 exit then
   log log-n + 3 cells - @ 3 cells + log-n + log-max > if 0 exit then
@@ -213,13 +217,20 @@ defer pre-key ( code -- code' )   defer wait-key ( -- code )   defer after-load
   text pos + n + text pos + len pos - n - cmove
   n negate +to len  -1 to modified  -1 to hl-stale  1 +to edits ;
 : put ( a n pos -- )   \ insert, with undo
-  { a n pos }  1 pos a n log-push  a n pos raw-insert ;
+  { a n pos }  0 to rlog-n  1 pos a n log-push  a n pos raw-insert ;
 : cut ( pos n -- )   \ delete, with undo
-  { pos n }  2 pos text pos + n log-push  pos n raw-delete ;
+  { pos n }  0 to rlog-n  2 pos text pos + n log-push  pos n raw-delete ;
 : undo
   log-n 0= if s" Nothing to undo" say exit then
   log-pop { kind pos a n }
+  kind pos a n rlog-push
   kind 1 = if pos n raw-delete pos to cur else a n pos raw-insert pos n + to cur then
+  -1 to anchor ;
+: redo
+  rlog-n 0= if s" Nothing to redo" say exit then
+  rlog-pop { kind pos a n }
+  kind pos a n log-push
+  kind 1 = if a n pos raw-insert pos n + to cur else pos n raw-delete pos to cur then
   -1 to anchor ;
 
 ( ---- Selection and clipboard ---- )
@@ -612,6 +623,7 @@ z" mkdir" 2 sysfunc ed-mkdir
   dup 14 = if drop find-next exit then
   dup 7 = if drop ask-goto exit then
   dup 26 = if drop undo exit then
+  dup 25 = if drop redo exit then
   dup 20 = if drop next-theme exit then
   dup 18 = if drop run-file exit then
   dup 12 = if drop exit then
@@ -622,7 +634,7 @@ z" mkdir" 2 sysfunc ed-mkdir
 : ed-init ( -- )
   256 bytes to fname  80 bytes to msg  128 bytes to pbuf  64 bytes to kwbuf
   4 bytes to onebyte  300 bytes to ibuf  80 bytes to lastfind
-  log-max 3 cells + bytes to log
+  log-max 3 cells + bytes to log   log-max 3 cells + bytes to rlog   0 to rlog-n
   4096 bytes to text  4096 to cap  0 to len
   0 to flen  0 to mlen  0 to lastfind-n  0 to log-n
   0 to cbuf-cap  0 to cbuf  0 to clip-n  0 to clip-cap  0 to clip
@@ -630,7 +642,7 @@ z" mkdir" 2 sysfunc ed-mkdir
   0 to cur  0 to top  0 to left  0 to want  -1 to hl-stale ;
 : ed-free ( -- )
   fname free drop  msg free drop  pbuf free drop  kwbuf free drop
-  onebyte free drop  ibuf free drop  lastfind free drop  log free drop  text free drop
+  onebyte free drop  ibuf free drop  lastfind free drop  log free drop  rlog free drop  text free drop
   cbuf if cbuf free drop then   clip if clip free drop then ;
 : loop-keys ( -- )
   begin
