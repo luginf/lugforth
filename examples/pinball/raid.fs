@@ -14,16 +14,16 @@
 \ See the License for the specific language governing permissions and
 \ limitations under the License.
 
-\ Night Raid, a pinball in the style of Night Mission Pinball (subLOGIC, 1982):
+\ Night Raid, a pinball with a night bombing mission theme (mode 1 of the pinball menu):
 \ a table drawn with lines on a black screen, the score on a panel at the
 \ right, missions to fly, and the physics can be tuned. Only libSDL2 is needed.
 \   z  or left shift or left     left flipper
 \   m  or right shift or right   right flipper
-\   space or down (hold, let go) plunger
-\   n                            nudge the table (too much and it is TILT)
+\   down (hold, let go)          plunger
+\   space or n                   nudge the table (too much and it is TILT)
 \   enter or 1                   start a game
 \   g e b (before a game)        gravity, bounce, balls per game
-\   esc                          quit
+\   esc                          back to the menu
 \ Before a game the machine plays alone. Hit the four drop targets to fly a
 \ mission (6 ranks, from cadet to ace); light the three top lanes to raise the
 \ bonus multiplier (the flippers move the lit lanes).
@@ -35,18 +35,11 @@
 \ the shooter lane keeps a launched ball from coming back to the plunger.
 
 sdl2
+[undefined] pb-common [if] include common.fs [then]
+
+\ This file only defines: `raid` plays one session. pinball.fs is the menu.
 
 320 constant view-w   240 constant view-h
-: px ( pixels -- units ) 12 lshift ;
-: u>p ( units -- pixels ) 12 arshift ;
-
-: isqrt ( n -- r )   ( integer square root, Newton )
-  dup 2 < if exit then
-  dup >r begin dup r@ over / + 2/ 2dup > while nip repeat drop r> drop ;
-
-: cos-sin ( mrad -- cos sin )   ( both times 1024 )
-  s>f 1000e f/ fdup fcos 1024e f* f>s fsin 1024e f* f>s ;
-
 ( ---- Settings and game state ---- )
 
 7 value gravity      ( units added to the speed each step )
@@ -62,6 +55,7 @@ sdl2
 0 value timer        ( frames left in states 2 and 3 )
 0 value plunge       ( 0 to 100 )
 0 value frames
+0 value leave       ( set by Esc: back to the menu )
 
 ( ---- The ball ---- )
 
@@ -170,7 +164,7 @@ create prev-keys 8 allot   prev-keys 8 erase
 : right-key? ( -- f )
   demo? if demo-right exit then
   [char] m pressed? key-right pressed? or key-rshift pressed? or [char] / pressed? or ;
-: plunger-key? ( -- f ) demo? if 0 exit then key-down pressed? key-space pressed? or ;
+: plunger-key? ( -- f ) demo? if 0 exit then key-down pressed? ;
 
 ( ---- Sound and score ---- )
 
@@ -306,7 +300,7 @@ create prev-keys 8 allot   prev-keys 8 erase
   else plunge if launch then then ;
 
 : nudge ( -- )
-  [char] n pressed? 1 edge demo? 0= and tilted 0= and if
+  [char] n pressed? key-space pressed? or 1 edge demo? 0= and tilted 0= and if
     frames 1 and if 500 else -500 then +to vx  -700 +to vy  45 +to tilt
     tilt 100 > if -1 to tilted 120 400 snd then
   then
@@ -360,62 +354,6 @@ create ball-counts 3 , 5 ,
   state 1 = if play exit then
   state 2 = if -1 +to timer timer 0= if next-ball then exit then
   state 3 = if -1 +to timer timer 0= if 1 new-game then then ;
-
-( ---- Text: a 3x5 font ---- )
-
-create glyphs 128 cells allot   glyphs 128 cells erase
-: glyph ( a n c -- )   ( 5 rows of 3: # a dot, . none, spaces ignored )
-  >r 0 -rot over + swap ?do
-    i c@ dup [char] # = swap [char] . = or if 2* i c@ [char] # = 1 and or then
-  loop r> cells glyphs + ! ;
-s" ### #.# ### #.# #.#" char A glyph   s" ##. #.# ##. #.# ##." char B glyph
-s" ### #.. #.. #.. ###" char C glyph   s" ##. #.# #.# #.# ##." char D glyph
-s" ### #.. ##. #.. ###" char E glyph   s" ### #.. ##. #.. #.." char F glyph
-s" ### #.. #.# #.# ###" char G glyph   s" #.# #.# ### #.# #.#" char H glyph
-s" ### .#. .#. .#. ###" char I glyph   s" ..# ..# ..# #.# ###" char J glyph
-s" #.# #.# ##. #.# #.#" char K glyph   s" #.. #.. #.. #.. ###" char L glyph
-s" #.# ### ### #.# #.#" char M glyph   s" ##. #.# #.# #.# #.#" char N glyph
-s" ### #.# #.# #.# ###" char O glyph   s" ### #.# ### #.. #.." char P glyph
-s" ### #.# #.# ### ..#" char Q glyph   s" ### #.# ##. #.# #.#" char R glyph
-s" ### #.. ### ..# ###" char S glyph   s" ### .#. .#. .#. .#." char T glyph
-s" #.# #.# #.# #.# ###" char U glyph   s" #.# #.# #.# #.# .#." char V glyph
-s" #.# #.# ### ### #.#" char W glyph   s" #.# #.# .#. #.# #.#" char X glyph
-s" #.# #.# .#. .#. .#." char Y glyph   s" ### ..# .#. #.. ###" char Z glyph
-s" ### #.# #.# #.# ###" char 0 glyph   s" .#. ##. .#. .#. ###" char 1 glyph
-s" ### ..# ### #.. ###" char 2 glyph   s" ### ..# ### ..# ###" char 3 glyph
-s" #.# #.# ### ..# ..#" char 4 glyph   s" ### #.. ### ..# ###" char 5 glyph
-s" ### #.. ### #.# ###" char 6 glyph   s" ### ..# ..# ..# ..#" char 7 glyph
-s" ### #.# ### #.# ###" char 8 glyph   s" ### #.# ### ..# ###" char 9 glyph
-s" ... ... ### ... ..." char - glyph   s" .#. .#. .#. ... .#." char ! glyph
-s" ... .#. ... .#. ..." char : glyph   s" ... #.# .#. #.# ..." char x glyph
-
-: draw-char ( c x y s -- )
-  { c x y s }  c $7f and cells glyphs + @ { bits }
-  15 0 do
-    bits 14 i - rshift 1 and if  x i 3 mod s * +  y i 3 / s * +  s s box  then
-  loop ;
-: say ( a n x y s -- )   ( text, 4*s pixels a character )
-  { a n x y s }
-  n 0 ?do a i + c@ x i 4 * s * + y s draw-char loop ;
-: say-number ( n x y s -- )   ( right aligned on x )
-  { n x y s }
-  n <# #s #> { a l }  a l x l 4 * s * - y s say ;
-
-( ---- Seven segment score ---- )
-
-create segments $3f c, $06 c, $5b c, $4f c, $66 c, $6d c, $7d c, $07 c, $7f c, $6f c,
-: seg7 ( d x y -- )   ( a digit 8 wide and 14 high )
-  { d x y }  d segments + c@ { m }
-  m 1 and if x 1+ y 6 2 box then
-  m 2 and if x 6 + y 1+ 2 6 box then
-  m 4 and if x 6 + y 7 + 2 6 box then
-  m 8 and if x 1+ y 12 + 6 2 box then
-  m 16 and if x y 7 + 2 6 box then
-  m 32 and if x y 1+ 2 6 box then
-  m 64 and if x 1+ y 6 + 6 2 box then ;
-: draw-score ( n x y -- )   ( 7 digits )
-  { n x y }
-  7 0 do  n 10 mod  x 6 i - 11 * +  y seg7  n 10 / to n  loop ;
 
 ( ---- Drawing the table ---- )
 
@@ -509,17 +447,15 @@ $ff7020 constant c-orange  $30a0ff constant c-blue    $303030 constant c-dim
 
 : frame ( -- )
   events
-  key-esc pressed? if quit! then
+  key-esc pressed? if 1 to leave then
   update draw-all
   dt 16 < if 16 dt - delay then ;
 
-: run ( -- ) begin frame quit? until close-screen ;
-
-build-table build-flippers
-3 to zoom
-view-w view-h screen
-s" Night Raid" title
-0 cursor
-1 new-game
-run
-script-bye
+: raid ( -- )   ( one game session, until Esc or the window is closed )
+  0 to leave
+  build-table build-flippers
+  view-w view-h open-screen
+  s" Night Raid" title
+  0 cursor
+  1 new-game
+  begin frame leave quit? or until ;

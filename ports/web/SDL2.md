@@ -6,7 +6,7 @@ unchanged in both: `examples/sdl2_breakout.fs` is loaded as is by
 `ports/web/sdl2_breakout.html`, `examples/sdl2_drums.fs` by
 `ports/web/sdl2_drums.html`, `examples/sdl2_roguelike.fs` (with its tile sheet
 `examples/sdl2_tiles.png`) by `ports/web/sdl2_roguelike.html` and
-`examples/sdl2_pinball.fs` by `ports/web/sdl2_pinball.html`.
+`examples/pinball/` by `ports/web/sdl2_pinball.html`.
 
 ```forth
 sdl2                          \ loads on first use, like on Linux

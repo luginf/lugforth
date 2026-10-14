@@ -17,7 +17,8 @@ included) in `origin/main` too before saying it does not exist.
     python3 tools/editors_pty_test.py out/posix/lugforth   # pty test of ed, writhdeck (save, browser, idle CPU)
     make -C examples smoke                  # headless load of the SDL2 examples (SDL_VIDEODRIVER=dummy)
 
-No Xvfb here, only `xdotool`; SDL graphics can only be checked headless (dummy driver, `SDL_RenderReadPixels`).
+Xvfb and `xdotool` are installed: run `Xvfb :99 &`, then the SDL examples with `DISPLAY=:99` and screenshot with `import -window root`
+(hold a key with `xdotool keydown`, sleep 0.25, `keyup`: a quick `xdotool key` is missed by the game loop). Headless alone: dummy driver, `SDL_RenderReadPixels`.
 The Android toolchain is NOT on this PC: anything in `ports/android` or `ports/web` is written blind and
 compiled later on another machine. Write the code carefully and say so in the commit.
 

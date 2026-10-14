@@ -20,10 +20,10 @@ limitations under the License.
 <title>Lugforth Night Raid</title>
 <!--
   Night Raid, a pinball in the style of Night Mission Pinball, written once
-  with the sdl2 short words: the very same file, examples/sdl2_pinball.fs,
+  with the sdl2 short words: the very same file, examples/pinball/,
   also runs on Linux with SDL2.
-  Keys: z / m or the arrows for the flippers, space or down held then let go
-  for the plunger, n to nudge, Enter to start, g e b for the settings.
+  Keys: z / m or the arrows for the flippers, down held then let go
+  for the plunger, space or n to nudge, Enter to start, g e b for the settings.
   On a touch screen (or with ?touch in the address) buttons are shown: the
   two flippers at the bottom, LAUNCH (hold then let go), START and NUDGE.
   Each button follows its own finger, so both flippers can be held at once.
@@ -65,7 +65,7 @@ limitations under the License.
   (function() {
     function sdl() { return window.lugforth && window.lugforth.sdl; }
     // A button holds a key of the game while a finger (or the mouse) is on it:
-    // the same codes as the keyboard, z m space Enter n.
+    // the same codes as the keyboard, z m down Enter space.
     function bind(id, code) {
       var el = document.getElementById(id);
       function down(e) {
@@ -89,8 +89,8 @@ limitations under the License.
       el.addEventListener('lostpointercapture', up);
       el.addEventListener('contextmenu', function(e) { e.preventDefault(); });
     }
-    bind('left', 122); bind('right', 109); bind('launch', 32);
-    bind('start', 13); bind('nudge', 110);
+    bind('left', 122); bind('right', 109); bind('launch', 209);
+    bind('start', 13); bind('nudge', 32);
 
     var touch = /[?&]touch\b/.test(location.search) ||
                 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -107,5 +107,8 @@ limitations under the License.
     }, 300);
   })();
 </script>
-<script type="text/forth" src="sdl2_pinball.fs"></script>
+<script type="text/forth" src="pinball_common.fs"></script>
+<script type="text/forth" src="pinball_raid.fs"></script>
+<script type="text/forth" src="pinball_night.fs"></script>
+<script type="text/forth" src="pinball_menu.fs"></script>
 <script src="lugforth.js"></script>

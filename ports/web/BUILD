@@ -44,7 +44,10 @@ WEB_ITEMS = [
   Copy('$dst/web/sdl2_roguelike.fs', '$src/examples/sdl2_roguelike.fs'),
   Copy('$dst/web/sdl2_tiles.png', '$src/examples/sdl2_tiles.png'),
   Copy('$dst/web/sdl2_pinball.html', '$src/ports/web/sdl2_pinball.html'),
-  Copy('$dst/web/sdl2_pinball.fs', '$src/examples/sdl2_pinball.fs'),
+  Copy('$dst/web/pinball_common.fs', '$src/examples/pinball/common.fs'),
+  Copy('$dst/web/pinball_raid.fs', '$src/examples/pinball/raid.fs'),
+  Copy('$dst/web/pinball_night.fs', '$src/examples/pinball/night.fs'),
+  Copy('$dst/web/pinball_menu.fs', '$src/examples/pinball/pinball.fs'),
 ]
 
 if D8_AVAILABLE:
