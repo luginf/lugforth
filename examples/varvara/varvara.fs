@@ -23,6 +23,7 @@
 \ System colors costs nothing. VARVARA_ZOOM sets the zoom (default 2).
 
 needs uxn.fs
+needs file.fs
 sdl2
 also uxn definitions
 
@@ -30,6 +31,9 @@ z" SDL_CreateRGBSurfaceWithFormat" 5 sdl SDL_CreateRGBSurfaceWithFormat ( flags 
 z" SDL_SetPaletteColors" 4 sdl SDL_SetPaletteColors ( palette colors first n -- n )
 z" SDL_SetWindowSize" 3 sdl SDL_SetWindowSize ( window w h -- void )
 z" SDL_StartTextInput" 0 sdl SDL_StartTextInput ( -- void )
+z" SDL_SaveBMP_RW" 3 sdl SDL_SaveBMP_RW ( surface rw free -- n )
+z" SDL_free" 1 sdl SDL_free ( a -- void )
+$1000 constant SDL_DROPFILE
 $13000801 constant SDL_PIXELFORMAT_INDEX8
 $0303 constant SDL_TEXTINPUT
 
@@ -210,7 +214,25 @@ create blending
   drop 0 ;
 
 0 value quit-gui
+0 value reboot   ( -1 when F4 or a dropped file asks to load the ROM again )
+create rom-path 512 allot
+0 value rom-len
+: zoom-step ( -- )
+  scale 3 < if scale 1+ else 1 then to scale
+  window-handle scr-w scale * scr-h scale * SDL_SetWindowSize drop ;
+: screenshot ( -- )
+  surface z" varvara.bmp" z" wb" SDL_RWFromFile 1 SDL_SaveBMP_RW drop ;
+: rom! ( a n -- ) 511 min dup to rom-len rom-path swap cmove ;
+: shortcut ( sym -- f )   ( F1 zoom, F2 stacks, F3 screenshot, F4 reboot )
+  case
+    $4000003a of zoom-step -1 endof
+    $4000003b of flush-out debug-stacks -1 endof
+    $4000003c of screenshot -1 endof
+    $4000003d of -1 to reboot -1 endof
+    0 swap
+  endcase ;
 : key-down ( -- )
+  ev 20 + sl@ shortcut if exit then
   ev 20 + sl@ dup key-button ?dup if -1 buttons then
   ev 24 + uw@ key-char ?dup if send-key then ;
 : key-up ( -- ) ev 20 + sl@ key-button ?dup if 0 buttons then ;
@@ -218,6 +240,7 @@ create blending
 : uxn-event ( -- )
   ev ul@ case
     SDL_QUIT of -1 to quit-gui endof
+    SDL_DROPFILE of ev 8 + @ dup dup zlen rom! SDL_free -1 to reboot endof
     SDL_KEYDOWN of key-down endof
     SDL_KEYUP of key-up endof
     SDL_TEXTINPUT of text-input endof
@@ -255,32 +278,200 @@ create now-t 8 allot
     drop dev@ 0
   endcase ;
 
+( ---- Audio: four sample channels, mixed in software ---- )
+\ Same algorithm as the C uxn: each channel steps through its sample at a pitch
+\ (single cycle for samples up to 256 bytes, else a repeat at the note rate),
+\ shaped by an ADSR envelope, left and right volume in one nibble each. The mix
+\ of the four channels is queued ahead (about 60 ms) by `audio-pump` once a frame.
+
+44100 constant rate
+$4000 rate * 11025 / constant note-period
+rate 15 / constant adsr-step
+2646 constant lead   ( frames kept queued )
+
+create advances
+  $80000 , $879c8 , $8facd , $9837f , $a1451 , $aadc1 ,
+  $b504f , $bfc88 , $cb2ff , $d7450 , $e411f , $f1a1c ,
+
+: fld ( n "name" -- ) create cells , does> @ + ;   ( a field of a channel, in cells )
+ 0 fld a-adv    1 fld a-per    2 fld a-cnt    3 fld a-i      4 fld a-len
+ 5 fld a-addr   6 fld a-age    7 fld a-a      8 fld a-d      9 fld a-s
+10 fld a-r     11 fld a-vl    12 fld a-vr    13 fld a-rep   14 fld a-done
+create achan 4 16 cells * allot
+: ch ( n -- a ) 16 cells * achan + ;
+
+0 value audio-dev
+create aspec 32 allot
+create amix 2048 2* cells allot     ( 2048 frames, left and right )
+create aout 2048 4 * allot          ( the same as signed 16 bits )
+
+: envelope ( c age -- e )
+  { c age }
+  c a-r @ 0= if $888 exit then
+  age c a-a @ < if $888 age * c a-a @ / exit then
+  age c a-d @ < if $444 c a-d @ 2* c a-a @ - age - * c a-d @ c a-a @ - / exit then
+  age c a-s @ < if $444 exit then
+  age c a-r @ < if $444 c a-r @ age - * c a-r @ c a-s @ - / exit then
+  0 c a-adv ! 0 ;
+
+: render-chan ( c n -- )   ( adds n frames of a channel to amix )
+  { c n }
+  c a-adv @ 0= c a-per @ 0= or if exit then
+  n 0 ?do
+    c a-adv @ 0= if leave then
+    c a-adv @ c a-cnt +!
+    c a-cnt @ c a-per @ / c a-i +!
+    c a-cnt @ c a-per @ mod c a-cnt !
+    c a-i @ c a-len @ >= if
+      c a-rep @ if c a-i @ c a-len @ mod c a-i ! else 0 c a-adv ! leave then
+    then
+    c a-addr @ c a-i @ + ram@ $80 -
+    c a-age @ dup 1+ c a-age !  c swap envelope *
+    dup c a-vl @ * $180 / amix i 2* cells + +!
+        c a-vr @ * $180 / amix i 2* 1+ cells + +!
+  loop
+  c a-adv @ 0= if 1 c a-done ! then ;
+
+: audio-start ( n -- )   ( the pitch port of channel n was written )
+  { n }
+  n $10 * $30 + { base }
+  n ch { c }
+  base $f + dev@ $7f and { pitch }
+  base 8 + dev2@ { adsr }
+  base $a + dev2@ c a-len !
+  base $c + dev2@ c a-addr !
+  base $e + dev@ dup 4 rshift c a-vl !  $f and c a-vr !
+  base $f + dev@ $80 and 0= c a-rep !
+  pitch 108 < c a-len @ 0<> and 0= if 0 c a-adv ! exit then
+  advances pitch 12 mod cells + @  8 pitch 12 / -  rshift c a-adv !
+  adsr-step adsr 12 rshift * c a-a !
+  adsr-step adsr 8 rshift $f and * c a-a @ + c a-d !
+  adsr-step adsr 4 rshift $f and * c a-d @ + c a-s !
+  adsr-step adsr $f and * c a-s @ + c a-r !
+  0 c a-age !  0 c a-i !
+  c a-len @ $100 <= if note-period 337 * 2/ c a-len @ / else note-period then c a-per ! ;
+
+: audio-deo ( p -- )
+  dup $f and $f = if 4 rshift 3 - audio-start else drop then ;
+
+: vu ( c i -- n )
+  { c i }  c a-adv @ 0= c a-per @ 0= or if 0 exit then
+  i if c a-vr @ else c a-vl @ then 0= if 0 exit then
+  c c a-age @ envelope  i if c a-vr @ else c a-vl @ then * $800 / 1+ $f min ;
+
+: audio-dei ( p -- b )
+  { p }
+  p $f and { port }  p $f0 and { base }  p 4 rshift 3 - ch { c }
+  audio-dev 0= if base port + dev@ exit then
+  port 4 = if c 0 vu 4 lshift c 1 vu or exit then
+  port 2 = if c a-i @ dup 8 rshift base 2 + dev! base 3 + dev! then
+  base port + dev@ ;
+
+: audio-open ( -- )
+  SDL_INIT_AUDIO SDL_InitSubSystem if exit then
+  aspec 32 erase
+  rate aspec l!  AUDIO_S16SYS aspec 4 + w!  2 aspec 6 + c!  1024 aspec 8 + w!
+  0 0 aspec 0 0 SDL_OpenAudioDevice $ffffffff and to audio-dev
+  audio-dev if audio-dev 0 SDL_PauseAudioDevice drop then ;
+
+: audio-close ( -- )
+  audio-dev if audio-dev SDL_CloseAudioDevice drop 0 to audio-dev then ;
+
+: audio-active? ( -- f ) 0 4 0 do i ch a-adv @ 0<> or loop ;
+
+: audio-pump ( -- )
+  audio-dev 0= if exit then
+  audio-active? 0= if exit then
+  lead audio-dev SDL_GetQueuedAudioSize $ffffffff and 2 rshift - 2048 min { n }
+  n 1 < if exit then
+  amix n 2* cells erase
+  4 0 do i ch n render-chan loop
+  n 2* 0 do amix i cells + @ 32767 min -32768 max aout i 2* + w! loop
+  audio-dev aout n 4 * SDL_QueueAudio drop
+  4 0 do
+    i ch a-done @ if
+      0 i ch a-done !
+      i $10 * $30 + dev2@ ?dup if eval then
+    then
+  loop ;
+
 ( ---- Main loop ---- )
 
 : setup-devices ( -- )
   ['] system-dei ['] varvara-system-deo 0 device!
   ['] plain-dei ['] screen-deo 2 device!
+  4 0 do ['] audio-dei ['] audio-deo i 3 + device! loop
   ['] datetime-dei ['] plain-deo $c device! ;
 
 : frame ( -- )
   begin ev SDL_PollEvent $ffffffff and while uxn-event repeat
-  $20 dev2@ eval
+  $20 dev2@ eval  audio-pump  flush-out
   dirty if present then ;
 
+: basename ( a n -- a' n' )   ( the part after the last slash )
+  begin
+    2dup [char] / scan dup while
+    1 /string 2swap 2drop
+  repeat 2drop ;
+create title-buf 256 allot
+: window-title ( a n -- )   ( forth/uxn/varvara : name.rom )
+  basename 200 min { a n }
+  s" forth/uxn/varvara : " title-buf swap cmove
+  a title-buf 20 + n cmove
+  title-buf n 20 + title ;
+
+: reset-screen ( -- )   ( back to 512 x 320 after a reboot )
+  512 320 open-surface
+  window-handle 512 scale * 320 scale * SDL_SetWindowSize drop
+  renderer 512 320 SDL_RenderSetLogicalSize drop ;
+
+( ---- Console input: the arguments of the command line, then stdin ---- )
+also posix
+z" poll" 3 sysfunc libc-poll
+previous
+create pfd 8 allot
+0 value stdin-eof
+: stdin-ready? ( -- f ) 0 pfd l!  1 pfd 4 + w!  0 pfd 6 + w!  pfd 1 0 libc-poll 0> ;
+: stdin-pump ( -- )   ( what was typed in the terminal goes to the Console vector )
+  stdin-eof if exit then
+  64 0 do
+    stdin-ready? 0= if leave then
+    stdin-byte dup 0< if drop -1 to stdin-eof leave then
+    console-input
+  loop ;
+
+: boot ( -- )
+  rom-path rom-len load-rom  setup-devices  setup-files
+  achan 4 16 cells * erase
+  rom-path rom-len window-title
+  reset-screen
+  argc 3 > if 1 $17 dev! then
+  $100 eval  run-args  present ;
+
 : varvara ( a n -- )   ( run the ROM named a n )
-  load-rom setup-devices
+  rom!
   z" VARVARA_ZOOM" libc-getenv ?dup if c@ [char] 0 - 1 max 8 min to scale then
-  scale to zoom  512 320 screen  s" Varvara" title
-  512 320 open-surface  SDL_StartTextInput drop
-  $100 eval  present
+  scale to zoom  512 320 screen
+  512 320 open-surface  SDL_StartTextInput drop  audio-open
+  boot
   0 to quit-gui  ticks { next }
   begin quit-gui halted? or 0= while
-    frame
+    reboot if 0 to reboot boot then
+    stdin-pump  frame
     17 +to next  next ticks - dup 0> if SDL_Delay drop else drop ticks to next then
   repeat
-  flush-out close-screen ;
+  flush-out audio-close close-screen ;
+
+: script-dir ( -- a n )   ( the directory of this file, with its slash )
+  1 argv
+  begin dup while 2dup + 1- c@ [char] / = if exit then 1- repeat
+  2drop s" " ;
+create boot-path 512 allot
+: boot-rom ( -- a n )   ( boot.rom, next to varvara.fs )
+  script-dir 400 min { a n }
+  a boot-path n cmove  s" boot.rom" boot-path n + swap cmove
+  boot-path n 8 + ;
 
 : varvara-main ( -- )
-  argc 3 < if ." usage: lugforth varvara.fs program.rom" cr 1 terminate then
-  2 argv varvara exit-code terminate ;
+  argc 3 < if boot-rom else 2 argv then varvara exit-code terminate ;
 varvara-main

@@ -6,13 +6,16 @@ lugforth, so that Uxn ROMs run inside lugforth.
 | file | what it is |
 |---|---|
 | `uxn.fs` | the Uxn CPU (32 opcodes, modes 2/r/k, 16 banks of 64 KB), the System device (stack pointers, memory fill and copy, debug, halt) and Console output |
+| `file.fs` | the two File devices ($a0, $b0): read, write, append, stat, delete, directory listing, sandbox in the working directory |
+| `boot.rom`, `boot.tal` | the ROM `varvara.fs` shows when started without a ROM: the usage line and a drawing of a file dropped on a square (source in uxntal, built with `uxnasm boot.tal boot.rom`) |
 | `uxncli.fs` | runs a ROM in the terminal, like `uxncli` |
-| `varvara.fs` | runs a ROM in an SDL2 window, like `uxnemu`: Screen, Controller, Mouse, Datetime |
+| `varvara.fs` | runs a ROM in an SDL2 window, like `uxnemu`: Screen, Controller, Mouse, Datetime, Audio, File, Console input |
 | `uxn_tests.fs` | 102 tests: random programs, jumps and calls, System device |
 
 ```
 lugforth examples/varvara/uxncli.fs program.rom [arguments]
 lugforth examples/varvara/varvara.fs program.rom
+lugforth examples/varvara/varvara.fs                # boot.rom: usage and drop a ROM on the window
 lugforth examples/varvara/uxn_tests.fs
 ```
 
@@ -31,7 +34,23 @@ runs 60 times a second.
 Keys: Ctrl is button A, Alt B, Shift Select, Home Start, and the arrows;
 letters come from SDL text input, Enter, Backspace, Tab, Esc and Delete from
 the key itself, Ctrl+letter sends the letter. Mouse: position, the three
-buttons and the wheel. Console output still goes to the terminal.
+buttons and the wheel. Console output goes to the terminal; the arguments after the
+ROM name, then what is typed in the terminal (stdin, polled once a frame), come in
+through the Console vector.
+
+Shortcuts of uxnemu: F1 zoom 1 to 3, F2 prints the two stacks in the terminal (no
+overlay), F3 saves `varvara.bmp`, F4 reboots the ROM, dropping a ROM file on the
+window loads it.
+
+## Audio
+
+Four channels, mixed in software with the algorithm of the C uxn (single cycle
+samples up to 256 bytes, sample repeat above, ADSR envelope, one volume nibble per
+side, the vector called when a note ends, VU and position ports). The mix is queued
+about 60 ms ahead once per frame through SDL_QueueAudio. Checked by rendering a
+note with the SDL `disk` audio driver and comparing it with uxnemu: same length,
+peak and period (the samples differ by one unit here and there, rounding of the
+envelope). `SDL_AUDIODRIVER=dummy` or no sound card: the ROM runs silent.
 
 ## Tests
 
@@ -40,7 +59,8 @@ The expected results of `uxn_tests.fs` come from
 opcode test suite: 100 random programs without jumps or devices (the two
 stacks and a hash of the memory are compared), one program with jumps, calls,
 `LDR`/`STR` and keep mode (its Console output), and one with the System
-device, checked by hand. The upstream `opctest.rom` has not been run yet.
+device, checked by hand. The upstream `opctest.rom` (assembled with uxnasm from uxn2's `etc/tests`) passes, with a
+output identical to uxncli's, and so does uxn2's `file.tal` (File device).
 
 ## Speed
 
@@ -54,4 +74,6 @@ events, not for heavy ones.
 
 ## Not done yet
 
-File and Audio devices; Console input in the window.
+The debugger overlay of F2. File: the sandbox check is a little looser than the C one
+(any realpath failure counts as a missing file) and the code reads the directory entry
+name at offset 19 of `struct dirent` (Linux).

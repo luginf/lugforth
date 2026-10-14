@@ -1,0 +1,158 @@
+( boot.rom: shown by varvara.fs when it is started without a ROM )
+( written by hand in uxntal, assemble with: uxnasm boot.tal boot.rom )
+|00 @System &vector $2 &expansion $2 &wst $1 &rst $1 &metadata $2 &r $2 &g $2 &b $2
+|20 @Screen &vector $2 &width $2 &height $2 &auto $1 &pad $1 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1
+
+|100
+@on-reset
+	( four colors: 0 background, 1 text, 2 yellow, 3 blue )
+	#1ff6 .System/r DEO2  #0fcc .System/g DEO2  #3f4f .System/b DEO2
+	#0150 .Screen/width DEO2  #0080 .Screen/height DEO2
+	( the usage line )
+	#0010 .Screen/x DEO2  #0010 .Screen/y DEO2  ;usage print
+	( a rom file, a square of 3 x 3 tiles )
+	;tile/solid #0028 #0048 #22 #42 draw
+	;tile/solid #0028 #0050 #22 #42 draw
+	;tile/solid #0028 #0058 #22 #42 draw
+	#0024 .Screen/x DEO2  #0068 .Screen/y DEO2  ;rom-label print
+	( the arrow )
+	;tile/shaft #0060 #0050 #72 #42 draw
+	;tile/head #00a0 #0050 #02 #42 draw
+	( the square to drop it in: corners, then the four sides )
+	;tile/tl #00b8 #0038 #02 #43 draw
+	;tile/top #00c0 #0038 #42 #43 draw
+	;tile/tr #00e8 #0038 #02 #43 draw
+	;tile/left #00b8 #0040 #41 #43 draw
+	;tile/right #00e8 #0040 #41 #43 draw
+	;tile/bl #00b8 #0068 #02 #43 draw
+	;tile/bottom #00c0 #0068 #42 #43 draw
+	;tile/br #00e8 #0068 #02 #43 draw
+	#00c4 .Screen/x DEO2  #0050 .Screen/y DEO2  ;drop-label print
+	BRK
+
+( draw: addr* x* y* auto ctrl -- )
+@draw
+	STH .Screen/auto DEO .Screen/y DEO2 .Screen/x DEO2 .Screen/addr DEO2
+	STHr .Screen/sprite DEO
+	JMP2r
+
+( print: str* -- ; one 8x8 tile for each byte, from the space on, in color 1 )
+@print
+	#00 .Screen/auto DEO
+	&w
+		LDAk DUP ?{ POP POP2 JMP2r }
+		#20 SUB #00 SWP #30 SFT2 ;font ADD2 .Screen/addr DEO2
+		#41 .Screen/sprite DEO
+		.Screen/x DEI2 #0008 ADD2 .Screen/x DEO2
+		INC2 !&w
+
+@usage "usage: 20 "lugforth 20 "varvara.fs 20 "program.rom 00
+@rom-label ".rom 00
+@drop-label "drop 00
+
+@tile
+	&solid ff ff ff ff ff ff ff ff
+	&shaft 00 00 00 ff ff 00 00 00
+	&head 80 c0 e0 f0 f0 e0 c0 80
+	&top ff ff 00 00 00 00 00 00
+	&bottom 00 00 00 00 00 00 ff ff
+	&left c0 c0 c0 c0 c0 c0 c0 c0
+	&right 03 03 03 03 03 03 03 03
+	&tl ff ff c0 c0 c0 c0 c0 c0
+	&tr ff ff 03 03 03 03 03 03
+	&bl c0 c0 c0 c0 c0 c0 ff ff
+	&br 03 03 03 03 03 03 ff ff
+
+( the font: ASCII 32 to 122, 8 bytes each, only the letters of the texts are drawn )
+@font
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 60 60 00   ( . )
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 60 60 00 60 60 00   ( : )
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00   ( A )
+	00 00 00 00 00 00 00 00   ( B )
+	00 00 00 00 00 00 00 00   ( C )
+	00 00 00 00 00 00 00 00   ( D )
+	00 00 00 00 00 00 00 00   ( E )
+	00 00 00 00 00 00 00 00   ( F )
+	00 00 00 00 00 00 00 00   ( G )
+	00 00 00 00 00 00 00 00   ( H )
+	00 00 00 00 00 00 00 00   ( I )
+	00 00 00 00 00 00 00 00   ( J )
+	00 00 00 00 00 00 00 00   ( K )
+	00 00 00 00 00 00 00 00   ( L )
+	00 00 00 00 00 00 00 00   ( M )
+	00 00 00 00 00 00 00 00   ( N )
+	00 00 00 00 00 00 00 00   ( O )
+	00 00 00 00 00 00 00 00   ( P )
+	00 00 00 00 00 00 00 00   ( Q )
+	00 00 00 00 00 00 00 00   ( R )
+	00 00 00 00 00 00 00 00   ( S )
+	00 00 00 00 00 00 00 00   ( T )
+	00 00 00 00 00 00 00 00   ( U )
+	00 00 00 00 00 00 00 00   ( V )
+	00 00 00 00 00 00 00 00   ( W )
+	00 00 00 00 00 00 00 00   ( X )
+	00 00 00 00 00 00 00 00   ( Y )
+	00 00 00 00 00 00 00 00   ( Z )
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 00 00 00 00 00 00
+	00 00 78 04 7c 84 84 7c   ( a )
+	00 00 00 00 00 00 00 00   ( b )
+	00 00 00 00 00 00 00 00   ( c )
+	04 04 74 8c 8c 8c 74 00   ( d )
+	00 00 70 88 f8 80 78 00   ( e )
+	30 40 f0 40 40 40 40 00   ( f )
+	00 00 78 88 88 78 08 70   ( g )
+	80 80 b0 c8 88 88 88 00   ( h )
+	00 00 00 00 00 00 00 00   ( i )
+	00 00 00 00 00 00 00 00   ( j )
+	00 00 00 00 00 00 00 00   ( k )
+	60 20 20 20 20 20 70 00   ( l )
+	00 00 d0 a8 a8 88 88 00   ( m )
+	00 00 00 00 00 00 00 00   ( n )
+	00 00 70 88 88 88 70 00   ( o )
+	00 00 b0 c8 88 c8 b0 80   ( p )
+	00 00 00 00 00 00 00 00   ( q )
+	00 00 b0 c8 80 80 80 00   ( r )
+	00 00 78 80 70 08 f0 00   ( s )
+	40 40 f0 40 40 48 30 00   ( t )
+	00 00 88 88 88 98 68 00   ( u )
+	00 00 88 88 88 50 20 00   ( v )
+	00 00 00 00 00 00 00 00   ( w )
+	00 00 00 00 00 00 00 00   ( x )
+	00 00 00 00 00 00 00 00   ( y )
+	00 00 00 00 00 00 00 00   ( z )

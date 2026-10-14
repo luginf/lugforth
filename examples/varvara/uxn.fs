@@ -212,7 +212,7 @@ previous
     $04 of $04 dev@ wst ! endof
     $05 of $05 dev@ rst ! endof
     $0e of $0e dev@ if debug-stacks then endof
-    $0f of halted? if 0 to running then endof
+    $0f of endof   ( the halt takes effect at the end of the vector )
   endcase ;
 
 ( ---- Console output: ports $10-$1f ---- )
@@ -240,4 +240,14 @@ previous
 : console-input ( c type -- )   ( call the Console vector with one byte )
   $17 dev! $12 dev! $10 dev2@ eval ;
 
+also posix
+: stdin-byte ( -- c t | -1 ) pad 1 stdin -rot read 1 = if pad c@ 1 else -1 then ;
+previous
+
+: run-args ( -- )
+  argc 3 > 0= if exit then   ( ?do would run away with start above limit )
+  argc 3 ?do
+    i argv 0 ?do dup i + c@ 2 console-input loop drop
+    10  i 1+ argc = if 4 else 3 then  console-input
+  loop ;
 previous definitions

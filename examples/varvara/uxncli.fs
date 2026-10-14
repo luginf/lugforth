@@ -21,17 +21,10 @@
 \ and the exit code is the one written to System/state.
 
 needs uxn.fs
+needs file.fs
 also uxn
 
-also posix
-: stdin-byte ( -- c t | -1 ) pad 1 stdin -rot read 1 = if pad c@ 1 else -1 then ;
-previous
 
-: run-args ( -- )
-  argc 3 ?do
-    i argv 0 ?do dup i + c@ 2 console-input loop drop
-    10  i 1+ argc = if 4 else 3 then  console-input
-  loop ;
 : run-stdin ( -- )
   begin halted? 0= $10 dev2@ 0<> and while
     stdin-byte dup 0< if drop 0 4 console-input exit then
@@ -40,7 +33,7 @@ previous
 
 : uxncli ( -- )
   argc 3 < if ." usage: lugforth uxncli.fs program.rom [arguments]" cr 1 terminate then
-  2 argv load-rom
+  2 argv load-rom setup-files
   argc 3 > if 1 $17 dev! then
   $100 eval  run-args  run-stdin
   flush-out exit-code terminate ;
