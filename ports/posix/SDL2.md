@@ -15,7 +15,8 @@ run
 Examples: `sdl2_demo.fs` (tour of the words), `sdl2_breakout.fs` (a game, about
 200 lines), `sdl2_drums.fs` (16-step drum machine), `sdl2_pianoroll.fs` (piano
 roll with soundfont playback and export to `.mid` and ABC, POSIX only),
-`sdl2_roguelike.fs` (tile sheet, with music). Breakout, drums and roguelike also
+`sdl2_roguelike.fs` (tile sheet, with music), `sdl2_pinball.fs` (a pinball in the
+style of Night Mission, fixed point physics). Breakout, drums and roguelike also
 run in the browser.
 
 All words: [SDL2-words.md](SDL2-words.md). The short words also exist in the web
