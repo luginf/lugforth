@@ -270,12 +270,14 @@ create px 4 allot
 0 value last-key
 0 value wheel
 create keys 256 allot   keys 256 erase
+create scans 512 allot   scans 512 erase   ( keys by SDL scancode, whatever the layout )
 
 : key-index ( sym scancode -- n )
   swap dup $40000000 and if drop $7f and 128 + else nip $ff and then ;
 : key-event ( f -- )
   ev 20 + sl@ ev 16 + sl@ key-index { f k }
   f k keys + c!
+  f ev 16 + sl@ $1ff and scans + c!
   f if k to last-key then
 ;
 : button-event ( f -- )
@@ -302,6 +304,7 @@ create keys 256 allot   keys 256 erase
 : quit! ( -- ) -1 to quitting ;
 : fold-case ( k -- k ) dup 65 >= over 90 <= and if 32 + then ;
 : pressed? ( k -- f ) fold-case $ff and keys + c@ 0<> ;
+: scan? ( scancode -- f ) $1ff and scans + c@ 0<> ;   ( by place on the keyboard: 4 is the key A of a QWERTY )
 
 ( ---- Beeps: square, triangle, saw and noise waves through a queue ---- )
 44100 constant sample-rate
@@ -366,7 +369,9 @@ create voices #voices voice-size * allot
 \ fall while it plays. The mix is queued a few milliseconds ahead by flip, delay
 \ and drum-hit itself, so call flip or delay regularly.
 0 value pitch-drop   ( percent the pitch falls during a hit, 0 to 100 )
-2205 constant latency   ( samples kept queued, 50 ms )
+2205 value latency   ( samples kept queued, 50 ms; a synth can lower it )
+0 value render-hook   ( optional xt, n -- : adds n more samples to mix )
+0 value active-hook   ( optional xt, -- f : true while render-hook has sound to give )
 create mix 4096 cells allot
 create mixed 4096 2* allot
 
@@ -399,11 +404,12 @@ create mixed 4096 2* allot
 : render { n buf }   ( mixes the voices into n samples of buf )
   mix n cells erase
   #voices 0 ?do i voice n mix-voice loop
+  render-hook if n render-hook execute then
   n 0 ?do mix i cells + @ 32767 min -32768 max buf i 2* + w! loop
 ;
 : pump ( -- )   ( tops the queue up with the mix of the voices )
   audio-open? 0= if exit then
-  voices-active 0= if exit then
+  voices-active 0=  active-hook if active-hook execute 0= and then  if exit then
   latency audio-dev SDL_GetQueuedAudioSize $ffffffff and 2/ - { n }
   n 1 < if exit then
   n mixed render

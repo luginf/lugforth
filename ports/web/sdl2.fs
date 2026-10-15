@@ -34,6 +34,7 @@ r~
     open: false, w: 0, h: 0, zoom: 1, overlay: null, canvas: null, ctx: null,
     style: 'rgb(0,0,0)', r: 0, g: 0, b: 0, a: 255,
     down: new Uint8Array(256), hit: new Uint8Array(256), snap: new Uint8Array(256),
+    sdown: new Uint8Array(512), shit: new Uint8Array(512), ssnap: new Uint8Array(512),
     mx: 0, my: 0, wheel: 0, pwheel: 0, lastKey: 0, quit: 0, frame: false,
     ac: null, beepEnd: 0, hitEnd: 0, nodes: [], noise: null, cursorHidden: false
   };
@@ -149,6 +150,7 @@ r~
     S.silence();
     S.open = false; S.overlay = null; S.canvas = null; S.ctx = null;
     S.down.fill(0); S.hit.fill(0); S.snap.fill(0);
+    S.sdown.fill(0); S.shit.fill(0); S.ssnap.fill(0);
     if (document.fullscreenElement) { document.exitFullscreen(); }
   };
   S.pos = function(e) {
@@ -163,6 +165,19 @@ r~
              ArrowLeft: 208, ArrowRight: 207, ArrowUp: 210, ArrowDown: 209};
     return m[k] === undefined ? 0 : m[k];
   }
+  // The SDL scancode of a key by its place on the keyboard (e.code), whatever the layout.
+  var SCAN = {Comma: 54, Period: 55, Slash: 56, Semicolon: 51, Quote: 52, Minus: 45,
+              Equal: 46, BracketLeft: 47, BracketRight: 48, Backslash: 49, Backquote: 53,
+              Space: 44, Enter: 40, Escape: 41, Backspace: 42, Tab: 43,
+              ArrowRight: 79, ArrowLeft: 80, ArrowDown: 81, ArrowUp: 82};
+  function scanCode(e) {
+    var c = e.code;
+    if (!c) { return 0; }
+    if (/^Key[A-Z]$/.test(c)) { return 4 + c.charCodeAt(3) - 65; }
+    if (/^Digit[1-9]$/.test(c)) { return 30 + c.charCodeAt(5) - 49; }
+    if (c === 'Digit0') { return 39; }
+    return SCAN[c] === undefined ? 0 : SCAN[c];
+  }
   function ours(e) {
     return S.open && !e.ctrlKey && !e.metaKey && !e.altKey && !/^F[0-9]+$/.test(e.key);
   }
@@ -176,19 +191,26 @@ r~
         if (!S.down[c]) { S.hit[c] = 1; }
         S.down[c] = 1; S.lastKey = c;
       }
+      var sc = scanCode(e);
+      if (sc) {
+        if (!S.sdown[sc]) { S.shit[sc] = 1; }
+        S.sdown[sc] = 1;
+      }
       e.preventDefault(); e.stopImmediatePropagation();
     }, true);
     window.addEventListener('keyup', function(e) {
       if (!ours(e)) { return; }
       var c = keyCode(e);
       if (c) { S.down[c] = 0; }
+      var sc = scanCode(e);
+      if (sc) { S.sdown[sc] = 0; }
       e.preventDefault(); e.stopImmediatePropagation();
     }, true);
     window.addEventListener('keypress', function(e) {
       if (!ours(e)) { return; }
       e.preventDefault(); e.stopImmediatePropagation();
     }, true);
-    window.addEventListener('blur', function() { S.down.fill(0); });
+    window.addEventListener('blur', function() { S.down.fill(0); S.sdown.fill(0); });
     window.addEventListener('resize', function() { S.layout(); });
   }
 })();
@@ -397,11 +419,18 @@ JSWORD: events { }
     S.snap[i] = (S.down[i] + S.hit[i]) > 0 ? 1 : 0;
   }
   S.hit.fill(0);
+  for (var j = 0; j < 512; ++j) {
+    S.ssnap[j] = (S.sdown[j] + S.shit[j]) > 0 ? 1 : 0;
+  }
+  S.shit.fill(0);
   S.wheel = S.pwheel; S.pwheel = 0;
 ~
 JSWORD: pressed? { k -- f }
   if (k >= 65 && k <= 90) { k += 32; }
   return context.sdl.snap[k & 255] ? -1 : 0;
+~
+JSWORD: scan? { k -- f }
+  return context.sdl.ssnap[k & 511] ? -1 : 0;
 ~
 JSWORD: quit? { -- f }
   return context.sdl.quit ? -1 : 0;
@@ -446,6 +475,7 @@ JSWORD: js-beep { freq ms w vol }
 ~
 : beep ( freq ms -- ) wave beep-volume js-beep ;
 0 value pitch-drop
+2205 value latency   ( no effect in a browser: WebAudio schedules the sound itself )
 JSWORD: js-hit { freq ms w vol fall }
   var S = context.sdl;
   S.ensureAudio();

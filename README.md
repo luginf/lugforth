@@ -94,7 +94,7 @@ status bar shows the words, the words of the session and the progress to the goa
 ## Examples
 
 `examples/` has games, benchmarks and demos, see `examples/README.md`: SDL2 programs
-(`sdl2_breakout.fs`, `sdl2_roguelike.fs`, `sdl2_3d.fs` with turning wireframes, `sdl2_2048.fs`
+(`sdl2_breakout.fs`, `fm/sdl2_fm.fs` (an FM synthesizer, MIDI keyboard in Linux and in the browser), `sdl2_roguelike.fs`, `sdl2_3d.fs` with turning wireframes, `sdl2_2048.fs`
 with sliding tiles, `--no-anim` turns the animation off), the terminal `2048.fs`, and a small
 rule based inference engine (`examples/inference/`, with a README in English and in French and a
 Makefile that runs concrete scenarios). 2048, 3d and the inference engine are ports of projects of

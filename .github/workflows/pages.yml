@@ -35,7 +35,7 @@ jobs:
           ./configure.py
           ninja out/posix/lugforth out/web/lugforth.js out/web/terminal.html \
             out/web/sdl2_breakout.html out/web/sdl2_breakout.fs out/web/sdl2_drums.html \
-            out/web/sdl2_drums.fs out/web/sdl2_roguelike.html out/web/sdl2_roguelike.fs \
+            out/web/sdl2_drums.fs out/web/sdl2_fm.html out/web/sdl2_fm.fs out/web/fm_midi_parser.fs out/web/fm_engine_web.fs out/web/sdl2_roguelike.html out/web/sdl2_roguelike.fs \
             out/web/sdl2_tiles.png out/web/sdl2_pinball.html out/web/pinball_common.fs out/web/pinball_raid.fs out/web/pinball_night.fs out/web/pinball_menu.fs
       - name: Build the site
         run: python3 tools/make_pages.py

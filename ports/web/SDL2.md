@@ -4,7 +4,8 @@ The web build has the same `sdl2` short words as the Linux build
 (`ports/posix/SDL2.md`), drawn on an HTML canvas. A game written with them runs
 unchanged in both: `examples/sdl2_breakout.fs` is loaded as is by
 `ports/web/sdl2_breakout.html`, `examples/sdl2_drums.fs` by
-`ports/web/sdl2_drums.html`, `examples/sdl2_roguelike.fs` (with its tile sheet
+`ports/web/sdl2_drums.html`, `examples/fm/sdl2_fm.fs` (an FM synthesizer with MIDI input, see `examples/fm/README.md`) by
+`examples/fm/sdl2_fm.html`, `examples/sdl2_roguelike.fs` (with its tile sheet
 `examples/sdl2_tiles.png`) by `ports/web/sdl2_roguelike.html` and
 `examples/pinball/` by `ports/web/sdl2_pinball.html`.
 
@@ -26,6 +27,7 @@ ninja web
 cd out/web && python3 -m http.server
 # then open http://localhost:8000/sdl2_breakout.html
 # or            http://localhost:8000/sdl2_drums.html
+# or            http://localhost:8000/sdl2_fm.html
 # or            http://localhost:8000/sdl2_roguelike.html
 # or            http://localhost:8000/sdl2_pinball.html
 ```
@@ -61,14 +63,14 @@ These words have the same names and stack effects as on Linux, see
   blue yellow cyan magenta orange purple pink brown gray`
 * Drawing: `cls dot line box frame hline disc circle flip pixel@`
 * Timing: `ticks delay dt`
-* Input: `events quit? quit! pressed? last-key mouse-x mouse-y wheel`, the
+* Input: `events quit? quit! pressed? scan? last-key mouse-x mouse-y wheel`, the
   `key-` constants (`key-left key-right key-up key-down key-space key-enter
   key-esc key-tab key-backspace`) and `LEFT-BUTTON MIDDLE-BUTTON RIGHT-BUTTON`
 * Images (the words of `sdl2-image`, which is a no-op here):
   `load-image free-image image-size draw draw-size draw-part image-alpha
   image-tint`
 * Beeps and hits: `beep drum-hit pitch-drop silence beeping? wave beep-volume
-  audio-open audio-open?`
+  audio-open audio-open? latency`
 
 ## What is different
 
@@ -114,6 +116,10 @@ These words have the same names and stack effects as on Linux, see
   to be typed and gives `music-volume`. A looping tune waits for the sound to
   be allowed and starts at its next repeat if it was not yet. Loudness is
   `music-volume` (0 to 128, as on Linux).
+* **`scan?`** takes the place of a key (`KeyboardEvent.code`), so a row of piano keys
+  does not move on an AZERTY keyboard. Only letters, digits, comma, period, slash,
+  semicolon, quote, brackets, minus, equal, space, enter, escape, tab, backspace and
+  the arrows have a scancode here.
 * **`line`** uses Bresenham's algorithm and may differ by a pixel from the
   SDL one.
 * **`bye`** stops the web interpreter. A game file that ends with `bye`, like

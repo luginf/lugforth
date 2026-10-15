@@ -13,10 +13,10 @@ run
 ```
 
 Examples: `sdl2_demo.fs` (tour of the words), `sdl2_breakout.fs` (a game, about
-200 lines), `sdl2_drums.fs` (16-step drum machine), `sdl2_pianoroll.fs` (piano
+200 lines), `sdl2_drums.fs` (16-step drum machine), `fm/sdl2_fm.fs` (two operator FM synthesizer, MIDI in, kept out of the interpreter: see `fm/README.md`), `sdl2_pianoroll.fs` (piano
 roll with soundfont playback and export to `.mid` and ABC, POSIX only),
 `sdl2_roguelike.fs` (tile sheet, with music), `sdl2_3d.fs` (turning wireframe cube, pyramid and octahedron), `sdl2_2048.fs` (2048 with a slide and pop animation, `--no-anim` turns it off; digits drawn from a 3x5 bitmap), `pinball/pinball.fs` (a pinball in the
-style of Night Mission, fixed point physics). Breakout, drums and roguelike also
+style of Night Mission, fixed point physics). Breakout, drums, the FM synthesizer and roguelike also
 run in the browser.
 
 All words: [SDL2-words.md](SDL2-words.md). The short words also exist in the web
@@ -56,6 +56,9 @@ Input: `pressed? ( key -- f )` with `[char] a`, `key-left key-right key-up
 key-down key-space key-enter key-esc key-tab key-backspace`,
 `LEFT-BUTTON MIDDLE-BUTTON RIGHT-BUTTON`, `mouse-x`, `mouse-y`, `last-key`,
 `wheel`. Same names and meaning as the generic graphics interface.
+`scan? ( scancode -- f )` tells whether a key is held by its place on the keyboard
+(SDL scancode: 4 is the key A of a QWERTY, 20 is Q...), whatever the layout: use it
+for a piano or WASD style row of keys that must not move on an AZERTY keyboard.
 
 Beeps (no library beyond libSDL2): `beep ( freq ms -- )` queues a tone,
 so several `beep` in a row play as a melody. `wave` picks the shape

@@ -1,7 +1,7 @@
 # Examples
 
 Games and demos (SDL2 words, see `ports/posix/SDL2.md`): `sdl2_demo.fs`,
-`sdl2_breakout.fs`, `sdl2_drums.fs`, `sdl2_pianoroll.fs`, `sdl2_roguelike.fs`, `sdl2_3d.fs` (turning wireframe cube, pyramid and octahedron),
+`sdl2_breakout.fs`, `sdl2_drums.fs`, `fm/sdl2_fm.fs` (FM synthesizer with MIDI input, also in the browser; see `fm/README.md`), `sdl2_pianoroll.fs`, `sdl2_roguelike.fs`, `sdl2_3d.fs` (turning wireframe cube, pyramid and octahedron),
 `pinball/pinball.fs`.
 Run one with `lugforth examples/sdl2_breakout.fs`, or `include` it from the prompt.
 
