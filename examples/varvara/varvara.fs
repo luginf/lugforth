@@ -133,20 +133,61 @@ create blending
 0 value spr-2bpp
 0 value spr-opaque
 0 value spr-bits
+0 value cv-ready
+0 value keepm    ( bits of a pixel byte kept: the other layer )
+create cv 4 cells allot   ( by pixel value 0 to 3: the new byte for the layer, shifted, or -1 )
+: set-colors-table ( -- )
+  4 0 do
+    i spr-opaque or if
+      i 16 * spr-color + blending + c@  fg? if 2 lshift then
+    else -1 then
+    cv i cells + !
+  loop
+  fg? if 3 else $0c then to keepm ;
+
+$0101010101010101 constant ones
+0 value row-p
+0 value row-x
+: draw-row ( x y -- )   ( the 8 pixels of spr-bits on one row )
+  $ffff and dup scr-h u< 0= if 2drop exit then
+  pitch * pixels + to row-p  to row-x
+  8 0 do
+    spr-bits 1 and spr-bits 7 rshift 2 and or cells cv + @
+    dup 0< 0= if
+      row-x  spr-flipx if i else 7 i - then +  $ffff and
+      dup scr-w u< if row-p + dup c@ keepm and 2 pick or swap c! drop else 2drop then
+    else drop then
+    spr-bits 1 rshift to spr-bits
+  loop ;
+
+: zero-tile? ( a -- f )   ( all the bytes of the tile are 0 )
+  spr-2bpp if 16 else 8 then 0
+  ?do dup i + ram@ if drop 0 unloop exit then loop drop -1 ;
+
+: fill-tile ( x y -- )   ( an opaque 8x8 tile of 0 bits: one 8 byte write for each row )
+  { x y }
+  cv @ ones * { vv }  keepm ones * { km }
+  x $ffff and 8 + scr-w > if
+    8 0 do 0 to spr-bits  x y i + draw-row loop exit
+  then
+  x $ffff and { xm }
+  8 0 do
+    y i + $ffff and dup scr-h u< if pitch * pixels + xm + dup @ km and vv or swap ! else drop then
+  loop ;
+
 : blit ( addr x y -- )
   { a x y }
+  a zero-tile? if
+    spr-opaque 0= if exit then
+    cv-ready 0= if set-colors-table -1 to cv-ready then
+    x y fill-tile exit
+  then
+  cv-ready 0= if set-colors-table -1 to cv-ready then
   8 0 do
     a i + ram@  spr-2bpp if a i + 8 + ram@ 8 lshift or then  to spr-bits
-    y  spr-flipy if 7 i - else i then  +  $ffff and
-    8 0 do
-      spr-bits 1 and  spr-bits 7 rshift 2 and  or
-      dup spr-opaque or if
-        16 * spr-color + blending + c@
-        x  spr-flipx if i else 7 i - then  +  $ffff and
-        2 pick plot
-      else drop then
-      spr-bits 1 rshift to spr-bits
-    loop drop
+    spr-bits spr-opaque or if
+      x  y spr-flipy if 7 i - else i then +  draw-row
+    then
   loop ;
 
 : sprite ( -- )
@@ -157,6 +198,7 @@ create blending
   ctrl $20 and 0<> to spr-flipy
   ctrl $80 and 0<> to spr-2bpp
   spr-color 5 mod 0<> spr-color 0= or to spr-opaque
+  0 to cv-ready
   spr-flipx if -1 else 1 then { fx }
   spr-flipy if -1 else 1 then { fy }
   move 1 and 3 lshift { dx }  move 2 and 2 lshift { dy }

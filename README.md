@@ -102,6 +102,16 @@ Marc Petremann ([eForth Windows](https://github.com/MPETREMANN11/eForth-Windows)
 the repository (see `NOTICE`). `make -C examples test-ports` runs their tests and `make -C examples smoke`
 loads every SDL2 example.
 
+## Varvara: running Uxn ROMs
+
+`examples/varvara/` is a [Uxn/Varvara](https://100r.co/site/uxn.html) virtual machine written in
+lugforth. `lugforth examples/varvara/varvara.fs program.rom` runs a ROM in an SDL2 window, like
+`uxnemu` (Screen, Controller, Mouse, Datetime, Audio, File, Console input; F1 zoom, F3 screenshot,
+F4 reboot, drop a ROM on the window; started without a ROM it shows a usage screen).
+`uxncli.fs` runs a ROM in the terminal, like `uxncli`. The upstream opcode test (`opctest.rom`)
+passes. It is about 60 times slower than the C uxn, so it suits ROMs that mostly wait for events;
+see `examples/varvara/README.md`.
+
 ## Building from Source
 
 To build from source:

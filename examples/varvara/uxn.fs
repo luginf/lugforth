@@ -171,22 +171,35 @@ create optab $100 cells allot
 ( ---- System device: ports $00-$0f ---- )
 
 : bank-addr ( bank addr -- a ) $ffff and swap banks 1- and $10000 * + ram + ;
+: in-bank? ( a len -- f )   ( the whole range stays in its 64 KB bank )
+  swap $ffff and + $10000 <= ;
 : expansion ( -- )   ( a command in memory: fill, copy left or copy right )
   $02 dev2@ { cmd }
   cmd 1+ ram2@ { len }
-  cmd ram@ case
-    $00 of len 0 ?do
-             cmd 7 + ram@  cmd 3 + ram2@ cmd 5 + ram2@ i + bank-addr c!
-           loop endof
-    $01 of len 0 ?do
+  cmd ram@ { op }
+  op 0= if
+    cmd 5 + ram2@ len in-bank? if
+      cmd 3 + ram2@ cmd 5 + ram2@ bank-addr len cmd 7 + ram@ fill exit
+    then
+    len 0 ?do
+      cmd 7 + ram@  cmd 3 + ram2@ cmd 5 + ram2@ i + bank-addr c!
+    loop exit
+  then
+  op 1 = op 2 = or if
+    cmd 5 + ram2@ len in-bank? cmd 9 + ram2@ len in-bank? and if
+      cmd 3 + ram2@ cmd 5 + ram2@ bank-addr
+      cmd 7 + ram2@ cmd 9 + ram2@ bank-addr  len
+      op 1 = if cmove else cmove> then exit
+    then
+  then
+  op 1 = if len 0 ?do
              cmd 3 + ram2@ cmd 5 + ram2@ i + bank-addr c@
              cmd 7 + ram2@ cmd 9 + ram2@ i + bank-addr c!
-           loop endof
-    $02 of len 0 ?do
+           loop exit then
+  op 2 = if len 0 ?do
              cmd 3 + ram2@ cmd 5 + ram2@ len + i - 1- bank-addr c@
              cmd 7 + ram2@ cmd 9 + ram2@ len + i - 1- bank-addr c!
-           loop endof
-  endcase ;
+           loop then ;
 
 also posix
 create obuf $1000 allot
