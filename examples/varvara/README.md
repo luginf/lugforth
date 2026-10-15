@@ -8,6 +8,7 @@ lugforth, so that Uxn ROMs run inside lugforth.
 | `uxn.fs` | the Uxn CPU (32 opcodes, modes 2/r/k, 16 banks of 64 KB), the System device (stack pointers, memory fill and copy, debug, halt) and Console output |
 | `file.fs` | the two File devices ($a0, $b0): read, write, append, stat, delete, directory listing, sandbox in the working directory |
 | `boot.rom`, `boot.tal` | the ROM `varvara.fs` shows when started without a ROM: the usage line and a drawing of a file dropped on a square (source in uxntal, built with `uxnasm boot.tal boot.rom`) |
+| `launch.fs` | a launcher with options (window or terminal, zoom, screen size, mouse, sound, tokens for writhdeck-uxn), like the `writhdeck-uxn` script |
 | `uxncli.fs` | runs a ROM in the terminal, like `uxncli` |
 | `varvara.fs` | runs a ROM in an SDL2 window, like `uxnemu`: Screen, Controller, Mouse, Datetime, Audio, File, Console input |
 | `uxn_tests.fs` | 102 tests: random programs, jumps and calls, System device |
@@ -22,6 +23,41 @@ lugforth examples/varvara/uxn_tests.fs
 `uxncli.fs` passes the arguments then stdin to the Console vector (type 2 for
 an argument byte, 3 between arguments, 1 for stdin, 4 at the end) and exits
 with the code written to System/state.
+
+## Launcher
+
+```
+lugforth examples/varvara/launch.fs [options] [rom [file or arguments...]]
+```
+
+| option | |
+|---|---|
+| `-c`, `--console` | run in the terminal (like `uxncli.fs`), the terminal is put in raw mode and restored at the end |
+| `-z`, `--zoom N` | zoom of the window, 1 to 8 |
+| `-s`, `--size WxH` | screen size at the start (default 512x320); the ROM can resize it |
+| `--no-mouse`, `-q` | ignore the mouse events, no sound |
+| `-w`, `--writhdeck` | writhdeck-uxn conventions: without a ROM, `$WRITHDECK_UXN/bin/writhdeck.rom` (`writhdeck-cli.rom` with `-c`; default directory `~/src/writerdeck/writhdeck-uxn`); the file is opened from its own directory (the File device refuses other paths); the size becomes a token |
+| `-l`, `-f NAME`, `-m`, `-a WORD` | tokens for the second argument of the ROM: `light`, the font (`vga`, `cream`, `prop`, `creamprop` give `f1` `f2` `f3`), `mouse`, any word |
+
+Without a ROM it shows `boot.rom`.
+
+The options go BEFORE the ROM: the options are read up to the first argument that is not
+one, then that argument is the ROM if it ends with `.rom`, else the file; everything after
+the ROM is given to the ROM as it is. So with `varvara.fs`, which has no options,
+`varvara.fs writhdeck.rom README.md -s 640x400 -m` gives `-s` and the others to the ROM, which
+does not know them. To open a file with options, go through `launch.fs`:
+
+```
+lugforth examples/varvara/launch.fs -w -s 640x400 -m README.md
+lugforth examples/varvara/launch.fs -w -s 640x400 -m /path/to/writhdeck.rom README.md
+lugforth examples/varvara/launch.fs -w -s 1280x800 -m -f cream notes.txt
+lugforth examples/varvara/launch.fs -w -c notes.txt
+```
+
+With `-w` and no ROM given, the ROM is `$WRITHDECK_UXN/bin/writhdeck.rom` (default directory
+`~/src/writerdeck/writhdeck-uxn`); give the ROM just before the file to choose another one.
+`varvara.fs` and `uxncli.fs` still run by themselves (they read `program.rom
+[arguments]` from the command line); the launcher loads both without starting them.
 
 ## Window
 

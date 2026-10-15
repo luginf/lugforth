@@ -108,7 +108,8 @@ loads every SDL2 example.
 lugforth. `lugforth examples/varvara/varvara.fs program.rom` runs a ROM in an SDL2 window, like
 `uxnemu` (Screen, Controller, Mouse, Datetime, Audio, File, Console input; F1 zoom, F3 screenshot,
 F4 reboot, drop a ROM on the window; started without a ROM it shows a usage screen).
-`uxncli.fs` runs a ROM in the terminal, like `uxncli`. The upstream opcode test (`opctest.rom`)
+`uxncli.fs` runs a ROM in the terminal, like `uxncli`, and `launch.fs` is a launcher with options
+(`-c` terminal, `-z` zoom, `-s WxH` screen size, `--no-mouse`, `-q`, tokens for writhdeck-uxn). The upstream opcode test (`opctest.rom`)
 passes. It is about 60 times slower than the C uxn, so it suits ROMs that mostly wait for events;
 see `examples/varvara/README.md`.
 

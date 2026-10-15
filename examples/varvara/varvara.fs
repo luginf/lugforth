@@ -46,6 +46,11 @@ $0303 constant SDL_TEXTINPUT
 0 value scr-h
 0 value dirty
 2 value scale
+0 value zoom-set    ( the launcher chose the zoom )
+512 value init-w   ( screen size at the start of a ROM )
+320 value init-h
+0 value no-mouse   ( ignore the mouse events )
+0 value no-audio   ( no sound device )
 
 create colors 16 4 * allot   ( SDL_Color: r g b a )
 : palette ( -- a ) surface 8 + @ 8 + @ ;
@@ -279,7 +284,11 @@ create rom-path 512 allot
   ev 24 + uw@ key-char ?dup if send-key then ;
 : key-up ( -- ) ev 20 + sl@ key-button ?dup if 0 buttons then ;
 : text-input ( -- ) ev 12 + begin dup c@ ?dup while send-key 1+ repeat drop ;
+: mouse-type? ( t -- f )
+  dup SDL_MOUSEMOTION = over SDL_MOUSEBUTTONDOWN = or
+  over SDL_MOUSEBUTTONUP = or swap SDL_MOUSEWHEEL = or ;
 : uxn-event ( -- )
+  no-mouse if ev ul@ mouse-type? if exit then then
   ev ul@ case
     SDL_QUIT of -1 to quit-gui endof
     SDL_DROPFILE of ev 8 + @ dup dup zlen rom! SDL_free -1 to reboot endof
@@ -462,10 +471,10 @@ create title-buf 256 allot
   a title-buf 20 + n cmove
   title-buf n 20 + title ;
 
-: reset-screen ( -- )   ( back to 512 x 320 after a reboot )
-  512 320 open-surface
-  window-handle 512 scale * 320 scale * SDL_SetWindowSize drop
-  renderer 512 320 SDL_RenderSetLogicalSize drop ;
+: reset-screen ( -- )   ( back to the initial size after a reboot )
+  init-w init-h open-surface
+  window-handle init-w scale * init-h scale * SDL_SetWindowSize drop
+  renderer init-w init-h SDL_RenderSetLogicalSize drop ;
 
 ( ---- Console input: the arguments of the command line, then stdin ---- )
 also posix
@@ -487,14 +496,15 @@ create pfd 8 allot
   achan 4 16 cells * erase
   rom-path rom-len window-title
   reset-screen
-  argc 3 > if 1 $17 dev! then
+  n-args 0> if 1 $17 dev! then
   $100 eval  run-args  present ;
 
 : varvara ( a n -- )   ( run the ROM named a n )
   rom!
-  z" VARVARA_ZOOM" libc-getenv ?dup if c@ [char] 0 - 1 max 8 min to scale then
-  scale to zoom  512 320 screen
-  512 320 open-surface  SDL_StartTextInput drop  audio-open
+  zoom-set 0= if z" VARVARA_ZOOM" libc-getenv ?dup if c@ [char] 0 - 1 max 8 min to scale then then
+  scale to zoom  init-w init-h screen
+  init-w init-h open-surface  SDL_StartTextInput drop
+  no-audio 0= if audio-open then
   boot
   0 to quit-gui  ticks { next }
   begin quit-gui halted? or 0= while
@@ -515,5 +525,6 @@ create boot-path 512 allot
   boot-path n 8 + ;
 
 : varvara-main ( -- )
+  3 args-from-argv
   argc 3 < if boot-rom else 2 argv then varvara exit-code terminate ;
-varvara-main
+[undefined] launching [if] varvara-main [then]

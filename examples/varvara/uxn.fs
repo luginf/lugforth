@@ -253,14 +253,33 @@ previous
 : console-input ( c type -- )   ( call the Console vector with one byte )
   $17 dev! $12 dev! $10 dev2@ eval ;
 
+( ---- the arguments given to the ROM ---- )
+\ A small table of strings, filled from the command line (args-from-argv) or by
+\ the launcher (arg-add), then sent to the Console vector by run-args.
+16 constant max-args
+create arg-ptr max-args cells allot
+create arg-len max-args cells allot
+create arg-pool 2048 allot
+0 value n-args
+0 value pool-used
+: arg-add ( a n -- )
+  n-args max-args = if 2drop exit then
+  dup pool-used + 2047 > if 2drop exit then
+  dup arg-len n-args cells + !  arg-pool pool-used + dup arg-ptr n-args cells + !
+  swap dup >r cmove  r> +to pool-used  1 +to n-args ;
+: arg-get ( i -- a n ) dup cells arg-ptr + @ swap cells arg-len + @ ;
+: args-clear ( -- ) 0 to n-args  0 to pool-used ;
+: args-from-argv ( first -- )   ( the command line arguments from index first )
+  args-clear
+  argc over > if argc swap ?do i argv arg-add loop else drop then ;
+
 also posix
 : stdin-byte ( -- c t | -1 ) pad 1 stdin -rot read 1 = if pad c@ 1 else -1 then ;
 previous
 
-: run-args ( -- )
-  argc 3 > 0= if exit then   ( ?do would run away with start above limit )
-  argc 3 ?do
-    i argv 0 ?do dup i + c@ 2 console-input loop drop
-    10  i 1+ argc = if 4 else 3 then  console-input
+: run-args ( -- )   ( the ROM arguments, then a last one flagged as the end )
+  n-args 0 ?do
+    i arg-get 0 ?do dup i + c@ 2 console-input loop drop
+    10  i 1+ n-args = if 4 else 3 then  console-input
   loop ;
 previous definitions

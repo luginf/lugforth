@@ -27,14 +27,18 @@ also uxn
 
 : run-stdin ( -- )
   begin halted? 0= $10 dev2@ 0<> and while
-    stdin-byte dup 0< if drop 0 4 console-input exit then
-    console-input
+    stdin-byte dup 0< if drop 0 4 console-input flush-out exit then
+    console-input flush-out
   repeat ;
+
+: uxncli-run ( a n -- code )   ( run the ROM, its arguments are in the table )
+  load-rom setup-files
+  n-args 0> if 1 $17 dev! then
+  $100 eval  run-args  run-stdin
+  flush-out exit-code ;
 
 : uxncli ( -- )
   argc 3 < if ." usage: lugforth uxncli.fs program.rom [arguments]" cr 1 terminate then
-  2 argv load-rom setup-files
-  argc 3 > if 1 $17 dev! then
-  $100 eval  run-args  run-stdin
-  flush-out exit-code terminate ;
-uxncli
+  3 args-from-argv
+  2 argv uxncli-run terminate ;
+[undefined] launching [if] uxncli [then]
