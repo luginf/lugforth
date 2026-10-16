@@ -261,6 +261,44 @@ static void fb_line(cell_t x1, cell_t y1, cell_t x2, cell_t y2) {
   }
 }
 
+// Text in the 8x8 font (font8x8.h), each font pixel a scale x scale square,
+// in the pen color. UTF-8: U+0000-U+007F and U+00A0-U+00FF have glyphs,
+// any other character is drawn as '?'.
+#include "ports/rpi/font8x8.h"
+
+static const unsigned char *text_glyph(const unsigned char **s, const unsigned char *end) {
+  unsigned c = *(*s)++;
+  if (c >= 0x80) {
+    int more = c >= 0xF0 ? 3 : c >= 0xE0 ? 2 : c >= 0xC0 ? 1 : 0;
+    unsigned cp = c & (0x3F >> more);
+    for (int i = 0; i < more && *s < end && (**s & 0xC0) == 0x80; i++) cp = (cp << 6) | (*(*s)++ & 0x3F);
+    if (!more || cp < 0xA0 || cp > 0xFF) return font8x8_basic['?'];
+    return font8x8_latin[cp - 0xA0];
+  }
+  return font8x8_basic[c];
+}
+
+static cell_t text_length(const unsigned char *s, cell_t n) {
+  const unsigned char *end = s + n;
+  cell_t count = 0;
+  while (s < end) { text_glyph(&s, end); count++; }
+  return count;
+}
+
+static void fb_text(cell_t x, cell_t y, const unsigned char *s, cell_t n, cell_t scale) {
+  const unsigned char *end = s + n;
+  if (scale < 1) scale = 1;
+  while (s < end) {
+    const unsigned char *g = text_glyph(&s, end);
+    for (int j = 0; j < 8; j++) {
+      for (int i = 0; i < 8; i++) {
+        if (g[j] & (1 << i)) fb_box(x + i * scale, y + j * scale, scale, scale);
+      }
+    }
+    x += 8 * scale;
+  }
+}
+
 static cell_t fb_pixel(cell_t x, cell_t y) {
   if (!fb_back || x < 0 || y < 0 || x >= fb_w || y >= fb_h) return 0;
   return fb_back[y * fb_w + x];

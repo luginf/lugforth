@@ -15,8 +15,8 @@
 ( The sdl2 short words on bare metal: the HDMI framebuffer, keys from the UART )
 \ Same names and stack effects as ports/posix/sdl2.fs and ports/web/sdl2.fs,
 \ so a game written with the short words (examples/sdl2_breakout.fs) runs
-\ unchanged. Drawing is in C (FB- words in ports/rpi/screen.h). Only the
-\ drawing, timing and key words exist: no images, text or sound yet (beep
+\ unchanged. Drawing is in C (FB- words in ports/rpi/screen.h). Drawing,
+\ text (a built-in 8x8 font), timing and keys; no images or sound yet (beep
 \ is silent). See ports/rpi/README.md.
 
 vocabulary sdl2   also rpi also sdl2 definitions
@@ -134,6 +134,17 @@ forget-keys
 : mouse-y ( -- n ) 0 ;
 : wheel ( -- n ) 0 ;
 
+( ---- Text: one built-in 8x8 font, scaled ---- )
+\ As sdl2-ttf on Linux, but no TrueType: load-font ignores the file name and
+\ gives the 8x8 font scaled to about pt pixels (8 or less: 1, 16: 2, 24: 3).
+\ Without load-font, text uses scale 1. UTF-8, Latin-1 accents included.
+1 value current-font
+: load-font ( a n pt -- font ) nip nip 4 + 8 / 1 max ;
+: font ( font -- ) to current-font ;
+: free-font ( font -- ) drop ;
+: text ( x y a n -- ) current-font fb-text ;
+: text-size ( a n -- w h ) text-length 8 * current-font *  8 current-font * ;
+
 ( ---- Sound: none yet ---- )
 0 value wave   3000 value beep-volume   0 value pitch-drop
 : beep ( freq ms -- ) 2drop ;
@@ -141,3 +152,4 @@ forget-keys
 
 previous previous forth definitions
 : sdl2 ( -- ) also sdl2 ;
+: sdl2-ttf ( -- ) sdl2 ;   ( the text words are part of sdl2 here )

@@ -51,6 +51,11 @@ The words that exist:
 * Colors: `color rgb rgba alpha pen pen-r pen-g pen-b pen-a` and the named
   colors.
 * Drawing: `cls box frame dot hline line disc circle pixel@ flip`.
+* Text: `load-font font free-font text text-size` (and `sdl2-ttf`, which
+  does nothing). There is no TrueType: one built-in 8x8 font (font8x8,
+  public domain), scaled. `s" any.ttf" 16 load-font font` gives scale 2. The
+  text is UTF-8, with the Latin-1 accents (é à ç ö...); other characters are
+  drawn as `?`.
 * Time: `ticks delay dt`.
 * Input: `events pressed? last-key quit? quit!`, the `key-` constants.
   `mouse-x`, `mouse-y` and `wheel` are always 0.
@@ -167,7 +172,7 @@ behind the firmware mailbox, which is not done yet.
 ## Not done yet
 
 * No filesystem (no SD card driver): programs come in over the serial line.
-* No images, text or sound in the sdl2 words; no USB keyboard or mouse.
+* No images or sound in the sdl2 words; no USB keyboard or mouse.
 * Real hardware: no data cache invalidation before the MMU goes on. The
   firmware runs with caches off, so this should not matter, but it is
   unchecked. The Pi 4 GIC addresses (0xFF841000/0xFF842000) are from the

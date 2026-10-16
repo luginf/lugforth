@@ -25,6 +25,7 @@ screen's pixels (QEMU monitor `screendump`); the same on virt with
 
 import os
 import random
+import re
 import socket
 import subprocess
 import sys
@@ -80,8 +81,9 @@ class Board:
     text = self.out[self.pos:i]
     self.pos = i + len(PROMPT)
     text = text.replace('\r', '')
-    if text.startswith(line):          # the echo
-      text = text[len(line):]
+    echo = line.encode().decode('latin-1')   # output is read as bytes
+    if text.startswith(echo):
+      text = text[len(echo):]
     return text.strip()
 
   def send(self, data):
@@ -192,6 +194,44 @@ def test_lines(b):
   b.run('close-screen previous')
 
 
+def font8x8():
+  """The glyphs of ports/rpi/font8x8.h, by code point."""
+  root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+  rows = re.findall(r'\{(0x[^}]*)\},\s*// U\+([0-9A-F]+)',
+                    open(os.path.join(root, 'ports', 'rpi', 'font8x8.h')).read())
+  return {int(cp, 16): [int(v, 16) for v in vals.split(',')] for vals, cp in rows}
+
+
+def test_text(b):
+  """text at scale 1 and 2, accents included, against the font file."""
+  w, h = 160, 60
+  font = font8x8()
+  items = [(2, 3, 1, 'Forth 42 !?'), (3, 20, 2, 'Été à'), (150, 50, 1, 'xyz')]
+  b.run('sdl2 1 to zoom %d %d screen black color cls white color' % (w, h))
+  for x, y, scale, t in items:
+    r = b.run('s" x" %d load-font font %d %d s" %s" text' % (8 * scale, x, y, t))
+    check('text %r' % t, r, 'ERROR' not in r)
+  b.run('flip')
+  want = set()
+  for x, y, scale, t in items:
+    for k, ch in enumerate(t):
+      g = font.get(ord(ch), font[ord('?')])
+      for j in range(8):
+        for i in range(8):
+          if g[j] >> i & 1:
+            for dy in range(scale):
+              for dx in range(scale):
+                px, py = x + 8 * scale * k + i * scale + dx, y + j * scale + dy
+                if 0 <= px < w and 0 <= py < h:
+                  want.add((px, py))
+  s = b.screen()
+  got = {(x, y) for y in range(h) for x in range(w) if pixel(s, x, y) == 'ffffff'}
+  check('text: %d pixels as font8x8.h' % len(want), sorted(want ^ got)[:5], got == want)
+  r = b.run('1 font s" Été" text-size . . 3 font s" ab" text-size . . 1 font')
+  check('text-size', r, r.split()[:4] == ['8', '24', '24', '48'])
+  b.run('close-screen previous')
+
+
 def test_breakout(b):
   """Loads examples/sdl2_breakout.fs line by line (the line `run` starts
   the game), checks the screen, launches the ball, quits with Esc."""
@@ -230,6 +270,7 @@ def test_screen_only(name, args, tmp):
   try:
     b.boot()
     test_lines(b)
+    test_text(b)
     test_breakout(b)
     code = b.bye()
     check('bye exits qemu', code, code is not None)
@@ -274,6 +315,7 @@ def test_board(name, args, has_gpio, tmp):
       check('no screen on virt without ramfb', r, 'ERROR' in r)
     if has_gpio:
       test_lines(b)
+      test_text(b)
       test_breakout(b)
     code = b.bye()
     check('bye exits qemu', code, code is not None)
