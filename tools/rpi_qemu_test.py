@@ -163,7 +163,7 @@ def test_breakout(b):
   got = [pixel(s, 3 * x, 3 * y) for x, y in [(160, 150), (16, 37), (160, 227), (160, 220)]]
   check('breakout drawn', got, got == ['101830', 'ff0000', 'ffffff', 'ffff00'])
   b.send(b' ')
-  time.sleep(1)
+  time.sleep(0.4)   # 3 pixels a frame upward: gone from the paddle, not yet lost
   s = b.screen()
   got = pixel(s, 3 * 160, 3 * 220)
   check('ball launched', got, got == '101830')
