@@ -299,6 +299,81 @@ static void fb_text(cell_t x, cell_t y, const unsigned char *s, cell_t n, cell_t
   }
 }
 
+// Images: the PNG files built into the kernel (tools/rpi_assets.py makes
+// gen/rpi_assets.h from the Makefile's ASSETS), 0xAARRGGBB. A handle is
+// an index in images[] plus 1; each has its own tint and alpha, as an
+// SDL texture has.
+#include "gen/rpi_assets.h"
+
+#define MAX_IMAGES 64
+static struct { const uint32_t *px; int w, h; uint32_t tint; int alpha; } images[MAX_IMAGES];
+
+static const char *base_name(const char *s, cell_t *n) {
+  for (cell_t i = *n; i > 0; i--) {
+    if (s[i - 1] == '/') { *n -= i; return s + i; }
+  }
+  return s;
+}
+
+// A handle, or 0 if no built-in image has that name (directories ignored).
+static cell_t image_load(const char *name, cell_t n) {
+  name = base_name(name, &n);
+  for (int a = 0; rpi_assets[a].name; a++) {
+    if ((cell_t) strlen(rpi_assets[a].name) != n || memcmp(rpi_assets[a].name, name, n)) continue;
+    for (int i = 0; i < MAX_IMAGES; i++) {
+      if (images[i].px) continue;
+      images[i].px = rpi_assets[a].px;
+      images[i].w = rpi_assets[a].w; images[i].h = rpi_assets[a].h;
+      images[i].tint = 0xFFFFFF; images[i].alpha = 255;
+      return i + 1;
+    }
+    return 0;
+  }
+  return 0;
+}
+
+static int image_ok(cell_t img) { return img >= 1 && img <= MAX_IMAGES && images[img - 1].px; }
+static void image_free(cell_t img) { if (image_ok(img)) images[img - 1].px = 0; }
+static cell_t image_w(cell_t img) { return image_ok(img) ? images[img - 1].w : 0; }
+static cell_t image_h(cell_t img) { return image_ok(img) ? images[img - 1].h : 0; }
+static void image_tint(cell_t img, cell_t rgb) { if (image_ok(img)) images[img - 1].tint = (uint32_t) rgb & 0xFFFFFF; }
+static void image_alpha(cell_t img, cell_t a) {
+  if (image_ok(img)) images[img - 1].alpha = a < 0 ? 0 : a > 255 ? 255 : (int) a;
+}
+
+// The part sx sy sw sh of the image into x y w h of the screen, nearest
+// pixel, colors times the tint, alpha times the image alpha.
+static void image_draw(cell_t img, cell_t sx, cell_t sy, cell_t sw, cell_t sh,
+                       cell_t x, cell_t y, cell_t w, cell_t h) {
+  if (!fb_back || !image_ok(img) || w <= 0 || h <= 0 || sw <= 0 || sh <= 0) return;
+  const uint32_t *px = images[img - 1].px;
+  int iw = images[img - 1].w, ih = images[img - 1].h;
+  uint32_t t = images[img - 1].tint, ia = (uint32_t) images[img - 1].alpha;
+  uint32_t tr = (t >> 16) & 255, tg = (t >> 8) & 255, tb = t & 255;
+  cell_t x0 = x < 0 ? 0 : x, y0 = y < 0 ? 0 : y;
+  cell_t x1 = x + w > fb_w ? fb_w : x + w, y1 = y + h > fb_h ? fb_h : y + h;
+  for (cell_t j = y0; j < y1; j++) {
+    cell_t v = sy + (j - y) * sh / h;
+    if (v < 0 || v >= ih) continue;
+    uint32_t *row = fb_back + j * fb_w;
+    for (cell_t i = x0; i < x1; i++) {
+      cell_t u = sx + (i - x) * sw / w;
+      if (u < 0 || u >= iw) continue;
+      uint32_t c = px[v * iw + u];
+      uint32_t a = (c >> 24) * ia / 255;
+      if (!a) continue;
+      uint32_t r = ((c >> 16) & 255) * tr / 255, g = ((c >> 8) & 255) * tg / 255, b = (c & 255) * tb / 255;
+      if (a < 255) {
+        uint32_t d = row[i], na = 255 - a;
+        r = (r * a + ((d >> 16) & 255) * na) / 255;
+        g = (g * a + ((d >> 8) & 255) * na) / 255;
+        b = (b * a + (d & 255) * na) / 255;
+      }
+      row[i] = (r << 16) | (g << 8) | b;
+    }
+  }
+}
+
 static cell_t fb_pixel(cell_t x, cell_t y) {
   if (!fb_back || x < 0 || y < 0 || x >= fb_w || y >= fb_h) return 0;
   return fb_back[y * fb_w + x];

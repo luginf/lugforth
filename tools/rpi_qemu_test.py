@@ -232,6 +232,52 @@ def test_text(b):
   b.run('close-screen previous')
 
 
+def test_images(b):
+  """Built-in images: draw, draw-size, draw-part, tint and alpha, every pixel
+  against the same arithmetic on the PNG (tools/rpi_assets.py decodes it)."""
+  root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+  sys.path.insert(0, os.path.join(root, 'tools'))
+  import rpi_assets
+  iw, ih, px = rpi_assets.decode_png(open(os.path.join(root, 'examples', 'sdl2_tiles.png'), 'rb').read())
+  w, h, bg = 120, 60, 0x101830
+  fb = [[bg] * w for _ in range(h)]
+
+  def draw(sx, sy, sw, sh, x, y, dw, dh, tint, alpha):
+    tr, tg, tb = tint >> 16 & 255, tint >> 8 & 255, tint & 255
+    for j in range(max(0, y), min(h, y + dh)):
+      v = sy + (j - y) * sh // dh
+      for i in range(max(0, x), min(w, x + dw)):
+        u = sx + (i - x) * sw // dw
+        c = px[v * iw + u]
+        a = (c >> 24) * alpha // 255
+        if not a:
+          continue
+        r, g, bb = (c >> 16 & 255) * tr // 255, (c >> 8 & 255) * tg // 255, (c & 255) * tb // 255
+        if a < 255:
+          d = fb[j][i]
+          r = (r * a + (d >> 16 & 255) * (255 - a)) // 255
+          g = (g * a + (d >> 8 & 255) * (255 - a)) // 255
+          bb = (bb * a + (d & 255) * (255 - a)) // 255
+        fb[j][i] = r << 16 | g << 8 | bb
+
+  draw(0, 0, iw, ih, 2, 2, iw, ih, 0xffffff, 255)            # draw
+  draw(0, 0, iw, ih, -10, 14, 2 * iw, 3 * ih, 0xffffff, 255)   # draw-size, clipped
+  draw(16, 0, 8, 8, 100, 40, 24, 24, 0xff8040, 255)          # draw-part, tinted
+  draw(8, 0, 8, 8, 10, 40, 16, 16, 0xffffff, 128)            # half transparent
+  b.run('sdl2 1 to zoom %d %d screen $101830 color cls' % (w, h))
+  r = b.run('s" examples/sdl2_tiles.png" load-image value img  img image-size . .')
+  check('image-size', r, r.split()[:2] == [str(ih), str(iw)])
+  b.run('img 2 2 draw  img -10 14 %d %d draw-size' % (2 * iw, 3 * ih))
+  b.run('img $ff8040 image-tint  img 16 0 8 8 100 40 24 24 draw-part  img $ffffff image-tint')
+  b.run('img 128 image-alpha  img 8 0 8 8 10 40 16 16 draw-part  img 255 image-alpha  flip')
+  s = b.screen()
+  bad = [(x, y) for y in range(h) for x in range(w) if pixel(s, x, y) != '%06x' % fb[y][x]]
+  check('images: %d pixels as the PNG' % (w * h), bad[:5], not bad)
+  r = b.run('s" nothing.png" load-image')
+  check('unknown image throws', r, 'ERROR' in r)
+  b.run('img free-image close-screen previous')
+
+
 def test_breakout(b):
   """Loads examples/sdl2_breakout.fs line by line (the line `run` starts
   the game), checks the screen, launches the ball, quits with Esc."""
@@ -271,6 +317,7 @@ def test_screen_only(name, args, tmp):
     b.boot()
     test_lines(b)
     test_text(b)
+    test_images(b)
     test_breakout(b)
     code = b.bye()
     check('bye exits qemu', code, code is not None)
@@ -316,6 +363,7 @@ def test_board(name, args, has_gpio, tmp):
     if has_gpio:
       test_lines(b)
       test_text(b)
+      test_images(b)
       test_breakout(b)
     code = b.bye()
     check('bye exits qemu', code, code is not None)

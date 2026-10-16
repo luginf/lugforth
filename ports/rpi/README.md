@@ -56,6 +56,15 @@ The words that exist:
   public domain), scaled. `s" any.ttf" 16 load-font font` gives scale 2. The
   text is UTF-8, with the Latin-1 accents (é à ç ö...); other characters are
   drawn as `?`.
+* Images: `load-image free-image image-size draw draw-size draw-part
+  image-alpha image-tint` (and `sdl2-image`, which does nothing). There is
+  no filesystem, so the images are built into the kernel: the PNG files of
+  `ASSETS` in the Makefile (`examples/sdl2_tiles.png`,
+  `examples/sdl2_tiles_alt.png`) are turned into pixels by
+  `tools/rpi_assets.py`. That script has its own PNG decoder and needs only
+  zlib. `load-image` finds them by name, ignoring directories, and throws
+  -38 for any other name. Add your own with
+  `make ASSETS="a.png b.png"`.
 * Time: `ticks delay dt`.
 * Input: `events pressed? last-key quit? quit!`, the `key-` constants.
   `mouse-x`, `mouse-y` and `wheel` are always 0.
@@ -172,7 +181,7 @@ behind the firmware mailbox, which is not done yet.
 ## Not done yet
 
 * No filesystem (no SD card driver): programs come in over the serial line.
-* No images or sound in the sdl2 words; no USB keyboard or mouse.
+* No sound in the sdl2 words; no USB keyboard or mouse.
 * Real hardware: no data cache invalidation before the MMU goes on. The
   firmware runs with caches off, so this should not matter, but it is
   unchecked. The Pi 4 GIC addresses (0xFF841000/0xFF842000) are from the

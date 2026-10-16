@@ -48,7 +48,15 @@
   XV(rpi, "FB-PIXEL", FB_PIXEL, n1 = fb_pixel(n1, n0); DROP) \
   XV(rpi, "FB-FLIP", FB_FLIP, fb_flip()) \
   XV(rpi, "FB-TEXT", FB_TEXT, fb_text(n4, n3, b2, n1, n0); DROPn(5)) \
-  XV(rpi, "TEXT-LENGTH", TEXT_LENGTH, n1 = text_length(b1, n0); DROP)
+  XV(rpi, "TEXT-LENGTH", TEXT_LENGTH, n1 = text_length(b1, n0); DROP) \
+  XV(rpi, "IMAGE-LOAD", IMAGE_LOAD, n1 = image_load(c1, n0); DROP) \
+  XV(rpi, "IMAGE-FREE", IMAGE_FREE, image_free(n0); DROP) \
+  XV(rpi, "IMAGE-W", IMAGE_W, n0 = image_w(n0)) \
+  XV(rpi, "IMAGE-H", IMAGE_H, n0 = image_h(n0)) \
+  XV(rpi, "IMAGE-TINT!", IMAGE_TINT, image_tint(n1, n0); DROPn(2)) \
+  XV(rpi, "IMAGE-ALPHA!", IMAGE_ALPHA, image_alpha(n1, n0); DROPn(2)) \
+  XV(rpi, "IMAGE-DRAW", IMAGE_DRAW, \
+     image_draw(n8, n7, n6, n5, n4, n3, n2, n1, n0); DROPn(9))
 
 #define PLATFORM_OPCODE_LIST \
   REQUIRED_MEMORY_SUPPORT \
