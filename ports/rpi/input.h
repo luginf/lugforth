@@ -36,6 +36,20 @@ static void in_put_char(int c) {
   if (in_chars_head - in_chars_tail < sizeof in_chars) in_chars[in_chars_head++ % sizeof in_chars] = (uint8_t) c;
 }
 
+// Text for programs that read the keyboard themselves (the varvara port): the
+// characters typed, no escape sequences, kept while `events` drops the console's.
+static uint8_t in_text[64];
+static unsigned in_text_head, in_text_tail;
+
+static void in_put_text(int c) {
+  if (in_text_head - in_text_tail < sizeof in_text) in_text[in_text_head++ % sizeof in_text] = (uint8_t) c;
+}
+
+static int in_get_text(void) {
+  if (in_text_head == in_text_tail) return -1;
+  return in_text[in_text_tail++ % sizeof in_text];
+}
+
 static int in_get_char(void) {
   if (in_chars_head == in_chars_tail) return -1;
   return in_chars[in_chars_tail++ % sizeof in_chars];
@@ -55,10 +69,34 @@ static const char key_shift[64] = {
   'B', 'N', 'M', '<', '>', '?', 0, '*', 0, ' ', 0, 0, 0, 0, 0, 0,
 };
 
+// French AZERTY, for the characters sent to the console only (the sdl2 key
+// codes stay those of the key positions). Linux key codes; UTF-8 strings, 0:
+// the qwerty path (Enter, Backspace, space...). AltGr (right Alt) layer below.
+static int in_azerty, in_altgr;
+static const char *const fr_plain[64] = {
+  [2] = "&", "\xc3\xa9", "\"", "'", "(", "-", "\xc3\xa8", "_", "\xc3\xa7", "\xc3\xa0", ")", "=",
+  [16] = "a", "z", "e", "r", "t", "y", "u", "i", "o", "p", "^", "$",
+  [30] = "q", "s", "d", "f", "g", "h", "j", "k", "l", "m", "\xc3\xb9", "\xc2\xb2",
+  [43] = "*", "w", "x", "c", "v", "b", "n", ",", ";", ":", "!",
+};
+static const char *const fr_shift[64] = {
+  [2] = "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "\xc2\xb0", "+",
+  [16] = "A", "Z", "E", "R", "T", "Y", "U", "I", "O", "P", "\xc2\xa8", "\xc2\xa3",
+  [30] = "Q", "S", "D", "F", "G", "H", "J", "K", "L", "M", "%", 0,
+  [43] = "\xc2\xb5", "W", "X", "C", "V", "B", "N", "?", ".", "/", "\xc2\xa7",
+};
+static const char *const fr_altgr[64] = {
+  [3] = "~", "#", "{", "[", "|", "`", "\\", "^", "@", "]", "}",
+};
+
 #define KEY_LEFTCTRL 29
 #define KEY_LEFTSHIFT 42
 #define KEY_RIGHTSHIFT 54
 #define KEY_RIGHTCTRL 97
+#define KEY_LEFTALT 56
+#define KEY_RIGHTALT 100
+#define KEY_HOME 102
+#define KEY_102ND 86
 #define KEY_UP 103
 #define KEY_LEFT 105
 #define KEY_RIGHT 106
@@ -75,6 +113,12 @@ static int key_sdl_code(int code) {
     case KEY_LEFT: return 208;
     case KEY_RIGHT: return 207;
     case KEY_UP: return 210;
+    case KEY_LEFTCTRL: case KEY_RIGHTCTRL: return 224;
+    case KEY_LEFTSHIFT: case KEY_RIGHTSHIFT: return 225;
+    case KEY_LEFTALT: case KEY_RIGHTALT: return 226;
+    case KEY_HOME: return 227;
+    case 88: return 228;        // F12
+    case 62: return 229;        // F4
     case KEY_DOWN: return 209;
     case BTN_LEFT: return 255;
     case BTN_MIDDLE: return 254;
@@ -86,22 +130,35 @@ static int key_sdl_code(int code) {
 
 // A key or button went down (1), up (0) or repeated (2).
 __attribute__((unused)) static void input_key(int code, int value) {
-  if (code == KEY_LEFTSHIFT || code == KEY_RIGHTSHIFT) { in_shift = value != 0; return; }
-  if (code == KEY_LEFTCTRL || code == KEY_RIGHTCTRL) { in_ctrl = value != 0; return; }
+  if (code == KEY_LEFTSHIFT || code == KEY_RIGHTSHIFT) in_shift = value != 0;
+  if (code == KEY_LEFTCTRL || code == KEY_RIGHTCTRL) in_ctrl = value != 0;
+  if (code == KEY_RIGHTALT) in_altgr = value != 0;
   int k = key_sdl_code(code);
   if (k) {
-    if (value == 1) { in_down[k] = 1; in_hit[k] = 1; in_last_key = k; }
+    if (value == 1) { in_down[k] = 1; in_hit[k] = 1; if (k < 224) in_last_key = k; }
     if (value == 0) in_down[k] = 0;
   }
+  if (k >= 224) return;       // a modifier, Home or a function key: no character
   if (!value) return;
   // Characters for the console, arrows as the terminal sends them.
   const char *arrow = code == KEY_UP ? "\033[A" : code == KEY_DOWN ? "\033[B" :
                       code == KEY_RIGHT ? "\033[C" : code == KEY_LEFT ? "\033[D" : 0;
   if (arrow) { while (*arrow) in_put_char(*arrow++); return; }
+  if (in_azerty) {
+    const char *f = code == KEY_102ND ? (in_shift ? ">" : "<") :
+                    code > 0 && code < 64 ?
+                    (in_altgr ? fr_altgr[code] : in_shift ? fr_shift[code] : fr_plain[code]) : 0;
+    if (f) {
+      if (in_ctrl && f[1] == 0 && (f[0] | 32) >= 'a' && (f[0] | 32) <= 'z') in_put_char((f[0] | 32) - 'a' + 1);
+      else while (*f) { in_put_text((unsigned char) *f); in_put_char((unsigned char) *f++); }
+      return;
+    }
+  }
   if (code <= 0 || code >= 64) return;
   int c = (unsigned char) (in_shift ? key_shift[code] : key_plain[code]);
   if (!c) return;
   if (in_ctrl && ((c | 32) >= 'a' && (c | 32) <= 'z')) c = (c | 32) - 'a' + 1;
+  if (!in_ctrl) in_put_text(c);
   if (c == 8) c = 127;                        // what a terminal sends for Backspace
   in_put_char(c);
 }

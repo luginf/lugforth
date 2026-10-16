@@ -56,6 +56,17 @@ transfer rpi-builtins
 : gpio@ ( pin -- f )    $34 gpio-reg ul@ and 0<> ;
 forth definitions
 
+( Keyboard layout of the console: US by default, or French AZERTY with AltGr )
+also rpi
+: azerty ( -- )   1 keyboard! ;
+: qwerty ( -- )   0 keyboard! ;
+previous
+
+( Size of the console on the screen: 1 is 640x480, 2 is 1280x960, 3 is 1920x1440 )
+also rpi
+: console-zoom ( n -- )   con-zoom! ;
+previous
+
 ( paste: a whole file over the serial line, evaluated as include would )
 \ Without an SD card: send `paste`, then the text, then Ctrl-D (4). The
 \ text is kept and evaluated at once, so strings and comments may span

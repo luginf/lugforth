@@ -308,6 +308,51 @@ def qbtn(down):
   return {'type': 'btn', 'data': {'down': down, 'button': 'left'}}
 
 
+def test_console(b):
+  """The Forth console is drawn on the screen: 1280x960, the banner as light
+  pixels at the top, an inverse block cursor; a game's screen replaces it
+  and close-screen brings it back."""
+  def lit(scr, y0, y1):
+    return sum(1 for y in range(y0, y1) for x in range(0, 1280, 4) if pixel(scr, x, y) != '000000')
+  scr = b.screen()
+  check('console: 1280x960', scr[:2], scr[:2] == (1280, 960))
+  check('console: banner drawn', lit(scr, 0, 32), lit(scr, 0, 32) > 200)
+  b.run('40 0 ?do i . loop')
+  b.run('sdl2 320 240 screen $ff0000 color cls flip')
+  scr = b.screen()
+  check('console: the sdl2 screen replaces it', pixel(scr, 5, 5), pixel(scr, 5, 5) == 'ff0000')
+  b.run('close-screen')
+  scr = b.screen()
+  check('console: back after close-screen', scr[:2], scr[:2] == (1280, 960))
+  check('console: cleared, prompt drawn', lit(scr, 0, 32), 0 < lit(scr, 0, 32) < 200)
+  b.run('1 console-zoom')
+  scr = b.screen()
+  check('console: 1 console-zoom is 640x480', scr[:2], scr[:2] == (640, 480))
+  check('console: and drawn', lit(scr, 0, 16), lit(scr, 0, 16) > 50)
+  b.run('2 console-zoom 1 2 + .')
+
+
+def test_varvara(b):
+  """A Uxn ROM on the board (examples/varvara/varvara_rpi.fs): boot.rom draws
+  a yellow square and a text, F12 ends it and the console comes back."""
+  r = b.run('include varvara/varvara_rpi.fs')
+  check('varvara: loads', r, 'ERROR' not in r and 'rror' not in r)
+  b.send(b's" varvara/boot.rom" varvara\r')
+  time.sleep(6)
+  scr = b.screen()
+  check('varvara: screen 672x256 (336x128, zoom 2)', scr[:2], scr[:2] == (672, 256))
+  check('varvara: background', pixel(scr, 5, 5), pixel(scr, 5, 5) == '110033')
+  sq = pixel(scr, 104, 168)
+  check('varvara: the yellow square', sq, sq == 'ffcc44')
+  b.qmp([qkey('f12', True)])
+  time.sleep(0.3)
+  b.qmp([qkey('f12', False)])
+  b.wait_for(PROMPT, b.pos, 15)
+  b.pos = len(b.out)
+  r = b.run('1 2 + .')
+  check('varvara: F12 gives the prompt back, stack clean', r, r.split()[0] == '3')
+
+
 def test_input(b, what):
   """A keyboard and a pointer (virtio on virt, USB on raspi3b), driven by
   QMP: keys held and released, the button, absolute then relative motion;
@@ -475,6 +520,10 @@ def make_disk(path, fat, mbr):
     with open(os.path.join(tmp, name), 'wb') as f:
       f.write(data)
     rpi_mkdisk.put(spec, os.path.join(tmp, name), name)
+  # The Varvara port (examples/varvara) is loaded from the disk by test_varvara.
+  vdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'examples', 'varvara')
+  for name in ('uxn.fs', 'screen.fs', 'varvara_rpi.fs', 'boot.rom'):
+    rpi_mkdisk.put(spec, os.path.join(vdir, name), 'varvara/' + name)
   return spec
 
 
@@ -651,6 +700,8 @@ def test_board(name, args, has_gpio, tmp):
       r = b.run('sdl2 320 240 screen')
       check('no screen on virt without ramfb', r, 'ERROR' in r)
     if has_gpio:
+      test_console(b)
+      test_varvara(b)
       test_input(b, 'usb')
       test_lines(b)
       test_text(b)

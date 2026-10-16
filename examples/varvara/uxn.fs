@@ -201,13 +201,18 @@ create optab $100 cells allot
              cmd 7 + ram2@ cmd 9 + ram2@ len + i - 1- bank-addr c!
            loop then ;
 
-also posix
 create obuf $1000 allot
 variable olen
+[defined] posix [if]
+also posix
 : flush-out ( -- ) olen @ if stdout obuf olen @ write drop 0 olen ! then ;
-: out-byte ( b -- ) olen @ obuf + c! 1 olen +! olen @ $1000 = if flush-out then ;
 : err-byte ( b -- ) flush-out pad c! stderr pad 1 write drop ;
 previous
+[else]   ( the bare-metal board: the console, no stderr )
+: flush-out ( -- ) olen @ if obuf olen @ type 0 olen ! then ;
+: err-byte ( b -- ) flush-out emit ;
+[then]
+: out-byte ( b -- ) olen @ obuf + c! 1 olen +! olen @ $1000 = if flush-out then ;
 
 : .hex2 ( b -- ) base @ >r hex <# # # #> type r> base ! ;
 : .stack ( s -- ) dup @ 0 ?do dup cell+ i + c@ .hex2 space loop drop ;
@@ -269,6 +274,7 @@ create arg-pool 2048 allot
   swap dup >r cmove  r> +to pool-used  1 +to n-args ;
 : arg-get ( i -- a n ) dup cells arg-ptr + @ swap cells arg-len + @ ;
 : args-clear ( -- ) 0 to n-args  0 to pool-used ;
+[defined] argc [if]
 : args-from-argv ( first -- )   ( the command line arguments from index first )
   args-clear
   argc over > if argc swap ?do i argv arg-add loop else drop then ;
@@ -276,6 +282,7 @@ create arg-pool 2048 allot
 also posix
 : stdin-byte ( -- c t | -1 ) pad 1 stdin -rot read 1 = if pad c@ 1 else -1 then ;
 previous
+[then]
 
 : run-args ( -- )   ( the ROM arguments, then a last one flagged as the end )
   n-args 0 ?do

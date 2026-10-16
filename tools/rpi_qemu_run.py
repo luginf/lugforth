@@ -19,6 +19,7 @@ terminal into the board's keyboard and console.
 
   tools/rpi_qemu_run.py examples/sdl2_breakout.fs
   tools/rpi_qemu_run.py --board virt examples/sdl2_breakout.fs   (ramfb screen)
+  tools/rpi_qemu_run.py --gui                  (the Forth console in the window)
 
 The keyboard and mouse of the QEMU window work too (USB on raspi3b,
 virtio on virt): in a game, and at the prompt, whose output stays here.
@@ -46,6 +47,8 @@ def main():
   ap = argparse.ArgumentParser()
   ap.add_argument('--board', choices=['pi3', 'virt'], default='pi3')
   ap.add_argument('--out', default=os.path.join(ROOT, 'out', 'rpi'))
+  ap.add_argument('--gui', action='store_true',
+                  help='the console is the QEMU window itself (screen and keyboard); no serial, no files sent')
   ap.add_argument('--headless', action='store_true', help='no QEMU window')
   ap.add_argument('--audio', default=None,
                   help='QEMU audio driver (pa, pipewire, alsa, sdl, none...); default: pa or pipewire if running')
@@ -79,6 +82,10 @@ def main():
       qemu += ['-device', 'virtio-sound-device,audiodev=snd0']
   if args.headless:
     qemu += ['-display', 'none']
+  if args.gui:
+    # The board draws its console on the screen and reads the window's keyboard.
+    qemu += ['-serial', 'null', '-monitor', 'none']
+    return subprocess.call(qemu)
   qemu += ['-serial', 'stdio', '-monitor', 'none']
   proc = subprocess.Popen(qemu, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
   fd = proc.stdout.fileno()

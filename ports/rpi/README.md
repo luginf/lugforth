@@ -76,6 +76,39 @@ make -C ports/rpi run-pi3    # QEMU raspi3b
 make -C ports/rpi test       # boots both, checks answers over the serial line
 ```
 
+## The console on the screen
+
+```sh
+make -C ports/rpi gui              # QEMU raspi3b: the Forth prompt in the window
+make -C ports/rpi gui BOARD=virt   # QEMU virt with -device ramfb
+```
+
+When there is a framebuffer, the console is drawn on it as well as sent to
+the UART (`console.h`): 1280x960, 80x30 cells of the 8x8 font (glyphs doubled
+in height, then x2). The size is a choice: `make gui ZOOM=1` builds a 640x480 console,
+`1 console-zoom` (or 2, 3 for 1920x1440) changes it at the prompt, and the
+line can go into `autoexec.fs`, a block cursor, scrolling, and the ANSI sequences of
+`common/lineedit.fs` and `ansi.fs` (cursor moves, `H J K`, colors with `m`).
+The keys of the window (USB or virtio keyboard) reach `key` as on the serial
+line, so `make gui` needs no terminal. It is the same on a Pi with an HDMI
+screen and a USB keyboard. Without a framebuffer (virt without `-device
+ramfb`) nothing changes. The keyboard is US (QWERTY) at boot; type `azerty` for
+the French layout (`qwerty` goes back). QEMU sends key positions, so the
+layout is the board's: AltGr (right Alt) gives `~ # { [ | ` \\ ^ @ ] }`, and
+`é è ç à ù` work. Put `azerty` in `autoexec.fs` on the SD card to have it at
+boot. It changes the characters typed at the prompt, not the key codes of
+`pressed?` (positions, as WASD needs).
+
+The sdl2 word `screen` takes the framebuffer over, and `close-screen` gives
+the console back (cleared). Fault messages still go to the UART only.
+
+## Uxn / Varvara
+
+`examples/varvara/varvara_rpi.fs` runs Uxn ROMs on the board (screen, keys, mouse, console;
+no files, no sound): see `examples/varvara/README.md`. It uses `FB-BLIT8`, which draws a
+picture of 8-bit palette indexes on the screen, and the keys Ctrl, Shift, Alt, Home, F4 and
+F12 that `pressed?` now sees (codes 224 to 229), and `INPUT-TEXT` for the characters typed.
+
 ## Graphics: the sdl2 words
 
 The vocabulary `sdl2` has the same short words as Linux

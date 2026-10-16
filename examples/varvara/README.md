@@ -10,6 +10,8 @@ lugforth, so that Uxn ROMs run inside lugforth.
 | `boot.rom`, `boot.tal` | the ROM `varvara.fs` shows when started without a ROM: the usage line and a drawing of a file dropped on a square (source in uxntal, built with `uxnasm boot.tal boot.rom`) |
 | `launch.fs` | a launcher with options (window or terminal, zoom, screen size, mouse, sound, tokens for writhdeck-uxn), like the `writhdeck-uxn` script |
 | `uxncli.fs` | runs a ROM in the terminal, like `uxncli` |
+| `screen.fs` | the Screen device (two layers, sprites, fills), the Controller and Mouse devices: shared by `varvara.fs` and `varvara_rpi.fs`, which draw and read the keys their own way |
+| `varvara_rpi.fs` | runs a ROM on the bare-metal board of `ports/rpi` (see below) |
 | `varvara.fs` | runs a ROM in an SDL2 window, like `uxnemu`: Screen, Controller, Mouse, Datetime, Audio, File, Console input |
 | `uxn_tests.fs` | 102 tests: random programs, jumps and calls, System device |
 
@@ -113,3 +115,26 @@ events, not for heavy ones.
 The debugger overlay of F2. File: the sandbox check is a little looser than the C one
 (any realpath failure counts as a missing file) and the code reads the directory entry
 name at offset 19 of `struct dirent` (Linux).
+
+## On the bare-metal board (ports/rpi)
+
+`varvara_rpi.fs` runs a ROM in the QEMU window (or on a Pi's HDMI screen), through the
+`sdl2` words of the board. `make -C ports/rpi disk` puts `examples/varvara/` on the SD
+image as `varvara/`, then `make -C ports/rpi gui DISK=../../out/rpi/disk.img` and, at the prompt:
+
+```
+include varvara/varvara_rpi.fs
+s" varvara/boot.rom" varvara
+```
+
+`1 to varvara-zoom` before `varvara` gives a window of the ROM's own size (default zoom 2).
+Keys: Ctrl is A, Alt is B, Shift is Select, Home is Start, the arrows, and the text typed
+(`azerty` works). F4 loads the ROM again and F12 quits, back to the Forth console. The mouse
+is the QEMU window's. Checked with `boot.rom`, writhdeck-uxn's ROM (typing in it) and a test
+ROM (mouse, keys, console output); `make -C ports/rpi test` runs `boot.rom`.
+
+Not done on the board: the File devices (a ROM cannot open or save a file: `file.fs` is
+written with libc), Audio (the board has no raw sample queue, only its oscillators),
+Datetime, and the arguments and stdin of the Console device. It is slow under QEMU's
+emulation of a Pi 3 (about half a second to redraw writhdeck's 960x576 screen after a key);
+a real Pi should be faster.

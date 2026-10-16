@@ -149,6 +149,9 @@ static int fb_hw_open(uint32_t pw, uint32_t ph) { (void) pw; (void) ph; return -
 
 // 0 on success, -1 if there is no framebuffer (virt without ramfb, or a
 // refusal).
+static int con_on;               // console.h
+static void con_init(void);
+
 static cell_t fb_open(cell_t w, cell_t h, cell_t zoom) {
   if (w <= 0 || h <= 0 || zoom <= 0 || w * zoom > 4096 || h * zoom > 4096) return -1;
   if (fb_hw_open((uint32_t) (w * zoom), (uint32_t) (h * zoom))) return -1;
@@ -156,9 +159,13 @@ static cell_t fb_open(cell_t w, cell_t h, cell_t zoom) {
   if (!back) return -1;
   fb_back = back;
   fb_w = (int) w; fb_h = (int) h; fb_zoom = (int) zoom;
+  con_on = 0;                       // the screen is the program's now
   for (int k = 0; k < fb_w * fb_h; k++) fb_back[k] = 0;
   return 0;
 }
+
+// CLOSE-SCREEN: the text console comes back.
+static void fb_close(void) { fb_w = fb_h = 0; con_init(); }
 
 static void fb_set_color(cell_t rgb, cell_t alpha) {
   fb_color = (uint32_t) rgb & 0xFFFFFF;
@@ -377,6 +384,19 @@ static void image_draw(cell_t img, cell_t sx, cell_t sy, cell_t sw, cell_t sh,
 static cell_t fb_pixel(cell_t x, cell_t y) {
   if (!fb_back || x < 0 || y < 0 || x >= fb_w || y >= fb_h) return 0;
   return fb_back[y * fb_w + x];
+}
+
+// Draws a w x h picture of 8-bit palette indexes (low 4 bits used) onto the
+// back buffer from its top left corner, with 16 $rrggbb colors: the varvara port.
+static void fb_blit8(const uint8_t *px, cell_t w, cell_t h, const uint32_t *pal) {
+  if (!fb_back) return;
+  if (w > fb_w) w = fb_w;
+  if (h > fb_h) h = fb_h;
+  for (cell_t y = 0; y < h; y++) {
+    uint32_t *dst = fb_back + y * fb_w;
+    for (cell_t x = 0; x < w; x++) dst[x] = pal[px[x] & 15] & 0xFFFFFF;
+    px += w;
+  }
 }
 
 static void fb_flip(void) {

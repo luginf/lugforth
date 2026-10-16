@@ -152,6 +152,10 @@ static int hid_to_linux(int u) {
   if (u >= 0x1E && u <= 0x27) return 2 + (u - 0x1E);       // 1..9 0
   if (u >= 0x28 && u <= 0x38) return from_0x28[u - 0x28];
   switch (u) {
+    case 0x3D: return 62;          // F4
+    case 0x45: return 88;          // F12
+    case 0x4A: return KEY_HOME;
+    case 0x64: return KEY_102ND;   // the key beside the left Shift of an ISO keyboard
     case 0x4F: return KEY_RIGHT;
     case 0x50: return KEY_LEFT;
     case 0x51: return KEY_DOWN;

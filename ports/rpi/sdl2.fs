@@ -27,7 +27,7 @@ vocabulary sdl2   also rpi also sdl2 definitions
 : screen ( w h -- )
   2dup to height to width  zoom fb-open if -21 throw then
   -1 to screen-open?   0 to quitting ;
-: close-screen ( -- )   0 to screen-open? ;
+: close-screen ( -- )   screen-open? if fb-close then  0 to screen-open? ;
 : title ( a n -- ) 2drop ;
 : fullscreen ( f -- ) drop ;
 : cursor ( f -- ) drop ;

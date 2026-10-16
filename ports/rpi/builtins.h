@@ -29,7 +29,7 @@
   XV(internals, "RAW-YIELD", RAW_YIELD, snd_pump()) \
   XV(internals, "RAW-TERMINATE", RAW_TERMINATE, rpi_terminate(n0); DROP) \
   YV(internals, getchar_timeout_us, n0 = getchar_timeout_us(n0)) \
-  XV(internals, "RAW-TYPE", RAW_TYPE, uart_write(b1, n0); DROPn(2))
+  XV(internals, "RAW-TYPE", RAW_TYPE, uart_write(b1, n0); con_write(b1, n0); DROPn(2))
 
 #define RPI_SUPPORT \
   XV(rpi, "US-TICKS", US_TICKS, PUSH us_ticks()) \
@@ -46,6 +46,8 @@
   XV(rpi, "FB-LINE", FB_LINE, fb_line(n3, n2, n1, n0); DROPn(4)) \
   XV(rpi, "FB-PIXEL", FB_PIXEL, n1 = fb_pixel(n1, n0); DROP) \
   XV(rpi, "FB-FLIP", FB_FLIP, fb_flip()) \
+  XV(rpi, "FB-BLIT8", FB_BLIT8, fb_blit8(b3, n2, n1, (const uint32_t *) a0); DROPn(4)) \
+  XV(rpi, "FB-CLOSE", FB_CLOSE, fb_close()) \
   XV(rpi, "FB-TEXT", FB_TEXT, fb_text(n4, n3, b2, n1, n0); DROPn(5)) \
   XV(rpi, "TEXT-LENGTH", TEXT_LENGTH, n1 = text_length(b1, n0); DROP) \
   XV(rpi, "IMAGE-LOAD", IMAGE_LOAD, n1 = image_load(c1, n0); DROP) \
@@ -65,7 +67,10 @@
   XV(rpi, "INPUT-LAST-KEY", INPUT_LAST_KEY, PUSH input_last_key()) \
   XV(rpi, "INPUT-MOUSE-X", INPUT_MOUSE_X, PUSH in_mouse_x) \
   XV(rpi, "INPUT-MOUSE-Y", INPUT_MOUSE_Y, PUSH in_mouse_y) \
+  XV(rpi, "INPUT-TEXT", INPUT_TEXT, PUSH in_get_text()) \
   XV(rpi, "INPUT-WHEEL", INPUT_WHEEL, PUSH in_wheel) \
+  XV(rpi, "CON-ZOOM!", CON_ZOOM_SET, con_set_zoom(n0); DROP) \
+  XV(rpi, "KEYBOARD!", KEYBOARD_SET, in_azerty = n0 != 0; DROP) \
   XV(rpi, "UART-KEY", UART_KEY, PUSH uart_getc_nowait())
 
 // Sound (sound.h), for beep, drum-hit and the tunes of sdl2-abc.

@@ -242,6 +242,8 @@ static void sleep_us(uint64_t us) {
 // slices of at most 1 ms: a key waits that long at worst.
 static int console_extra_char(void);   // a keyboard's, input.h
 
+static void con_sync(void);            // the screen console, console.h
+
 static int getchar_timeout_us(cell_t us) {
   uint64_t end = us_ticks() + (uint64_t) us;
   for (;;) {
@@ -250,6 +252,7 @@ static int getchar_timeout_us(cell_t us) {
     if (c >= 0) return c;
     uint64_t now = us_ticks();
     if (now >= end) return -1;
+    con_sync();
     sleep_us(end - now < 1000 ? end - now : 1000);
   }
 }
@@ -351,6 +354,7 @@ extern char __tls_base[];
 extern void _set_tls(void *tls);
 
 #include "ports/rpi/screen.h"
+#include "ports/rpi/console.h"
 #include "ports/rpi/virtio.h"
 #include "ports/rpi/input.h"
 #include "ports/rpi/usb.h"
@@ -371,6 +375,7 @@ int main(int argc, char *argv[]) {
   void *heap = malloc(HEAP_SIZE);
   if (!heap) { uart_puts("lugforth: no memory for the heap\n"); rpi_halt(); }
   input_init();
+  con_init();
   snd_init();
   fs_init();
   forth_init(argc, argv, heap, HEAP_SIZE, boot, sizeof(boot));

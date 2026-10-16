@@ -21,6 +21,10 @@
 #   make run-pi3      QEMU raspi3b, same kernel8.img as a real Pi 3
 #   make run-pty      QEMU virt on a pty, for tools/pico_send.py -p /dev/pts/N
 #   make screen       QEMU raspi3b with its screen in a window, keys from here
+#   make gui          the same window as the Forth console itself: text on the
+#                     screen, keys from the window (BOARD=virt: with -device ramfb)
+#                     ZOOM=1 (640x480) or ZOOM=2 (1280x960, the default) sets its
+#                     size at boot; `1 console-zoom` changes it at the prompt
 #   make breakout     the same, with examples/sdl2_breakout.fs sent and started
 #   make roguelike    the same with examples/sdl2_roguelike.fs (images, tunes)
 #                     (BOARD=virt: on QEMU virt, -device ramfb, with sound)
@@ -38,7 +42,8 @@ QEMU ?= qemu-system-aarch64
 VERSION := $(shell sed -n "s/.*version='\([^']*\)'.*/\1/p" $(ROOT)/BUILD | head -1)
 REVISION := $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
 
-CFLAGS := --specs=picolibc.specs -mcpu=cortex-a53 -O2 -Wall -Werror -Wno-missing-braces \
+ZOOM ?= 2
+CFLAGS := -DCON_ZOOM=$(ZOOM) --specs=picolibc.specs -mcpu=cortex-a53 -O2 -Wall -Werror -Wno-missing-braces \
   -ffreestanding -fno-stack-protector -fno-exceptions -fno-omit-frame-pointer \
   -I $(ROOT) -I $(OUT)
 LDFLAGS := -nostartfiles -T rpi.ld -Wl,--no-warn-rwx-segments
@@ -71,11 +76,16 @@ $(OUT)/gen/rpi_assets.h: $(ASSETS) $(ROOT)/tools/rpi_assets.py
 	mkdir -p $(OUT)/gen
 	python3 $(ROOT)/tools/rpi_assets.py -o $@ $(ASSETS)
 
-$(OUT)/virt/lugforth.elf: $(SOURCES) $(OUT)/gen/rpi_boot.h $(OUT)/gen/rpi_assets.h
+# Rewritten only when ZOOM changes, so that the kernels are rebuilt then.
+$(OUT)/gen/ZOOM: FORCE
+	mkdir -p $(OUT)/gen
+	printf '%s' '$(ZOOM)' | cmp -s - $@ || printf '%s' '$(ZOOM)' > $@
+
+$(OUT)/virt/lugforth.elf: $(SOURCES) $(OUT)/gen/ZOOM $(OUT)/gen/rpi_boot.h $(OUT)/gen/rpi_assets.h
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(VIRT_DEFS) $(LDFLAGS) start.S main.c -o $@ -lm
 
-$(OUT)/%/lugforth.elf: $(SOURCES) $(OUT)/gen/rpi_boot.h $(OUT)/gen/rpi_assets.h
+$(OUT)/%/lugforth.elf: $(SOURCES) $(OUT)/gen/ZOOM $(OUT)/gen/rpi_boot.h $(OUT)/gen/rpi_assets.h
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(if $(filter pi3,$*),$(PI3_DEFS),$(PI4_DEFS)) $(LDFLAGS) \
 	  start.S main.c -o $@ -lm
@@ -98,6 +108,9 @@ RUN := python3 $(ROOT)/tools/rpi_qemu_run.py --board $(BOARD) --out $(OUT) $(if 
 screen: all
 	$(RUN)
 
+gui: all
+	$(RUN) --gui
+
 breakout: all
 	$(RUN) $(ROOT)/examples/sdl2_breakout.fs
 
@@ -106,7 +119,8 @@ roguelike: all
 
 disk:
 	mkdir -p $(OUT)
-	python3 $(ROOT)/tools/rpi_mkdisk.py $(OUT)/disk.img $(wildcard $(ROOT)/examples/*.fs)
+	python3 $(ROOT)/tools/rpi_mkdisk.py $(OUT)/disk.img $(wildcard $(ROOT)/examples/*.fs) \
+	  $(foreach f,$(wildcard $(ROOT)/examples/varvara/*.fs $(ROOT)/examples/varvara/*.rom),$(f)=varvara/$(notdir $(f)))
 
 test: all
 	python3 $(ROOT)/tools/rpi_qemu_test.py $(OUT)
@@ -115,5 +129,5 @@ clean:
 	rm -rf $(OUT)
 
 .SECONDARY:
-.PHONY: all run run-pi3 run-pty screen breakout roguelike disk test clean FORCE
+.PHONY: all run run-pi3 run-pty screen gui breakout roguelike disk test clean FORCE
 FORCE:
