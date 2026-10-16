@@ -57,6 +57,14 @@ in `ports/web/platform.fs`), a "⋮" button for Examples/A-/A+/Help, and home. T
 the Ctrl button on a real soft keyboard (letters may arrive as key events rather than text input), and that
 nothing shows that Ctrl is armed (an indicator would help).
 
+## Bare-metal AArch64 (ports/rpi)
+
+`make -C ports/rpi test` builds out/rpi/{virt/lugforth.elf,pi3/kernel8.img,pi4/kernel8.img} and boots the first two
+under QEMU (`virt`, `raspi3b`), checking answers over the serial line (tools/rpi_qemu_test.py). Needs
+`gcc-aarch64-linux-gnu picolibc-aarch64-linux-gnu qemu-system-arm` (apt, installable in the cloud container).
+No OS, picolibc, PL011 console, MMU identity map (needed: unaligned accesses fault with it off), faults become
+THROW. Not tried on a real Pi; Pi 4 written blind (QEMU 8.2 has no raspi4b). See ports/rpi/README.md.
+
 ## Ports from eForth Windows (Marc Petremann, GPL) - done 2026-10-13
 
 Source: https://github.com/MPETREMANN11/eForth-Windows (clone it into the scratchpad to read). Its eForth is
