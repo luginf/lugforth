@@ -15,13 +15,15 @@
 
 """Boots the bare-metal ports/rpi images under QEMU and talks to them over
 the serial console: arithmetic, floats, timer, faults, allocation, GPIO,
-and that `bye` makes QEMU exit.
+and that `bye` makes QEMU exit. On raspi3b it also loads
+examples/sdl2_breakout.fs over the serial line, plays it, and checks the
+screen's pixels (QEMU monitor `screendump`).
 
   tools/rpi_qemu_test.py [out/rpi]        (what `make -C ports/rpi test` runs)
 """
 
 import os
-import re
+import socket
 import subprocess
 import sys
 import threading
@@ -32,10 +34,14 @@ PROMPT = '--> '
 
 
 class Board:
-  def __init__(self, args):
+  def __init__(self, args, tmp):
+    self.tmp = tmp
+    self.sock = os.path.join(tmp, 'monitor.sock')
     self.proc = subprocess.Popen(
-        [QEMU] + args + ['-display', 'none', '-serial', 'stdio', '-monitor', 'none'],
+        [QEMU] + args + ['-display', 'none', '-serial', 'stdio',
+                         '-monitor', 'unix:%s,server,nowait' % self.sock],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    self.monitor = None
     self.out = ''
     self.lock = threading.Lock()
     threading.Thread(target=self.reader, daemon=True).start()
@@ -76,6 +82,35 @@ class Board:
       text = text[len(line):]
     return text.strip()
 
+  def send(self, data):
+    self.proc.stdin.write(data)
+    self.proc.stdin.flush()
+
+  def screen(self):
+    """The screen as (width, height, rgb bytes), from a QEMU screendump."""
+    if not self.monitor:
+      self.monitor = socket.socket(socket.AF_UNIX)
+      self.monitor.connect(self.sock)
+      self.monitor.settimeout(5)
+      time.sleep(0.2)
+      self.monitor.recv(65536)
+    path = os.path.join(self.tmp, 'screen.ppm')
+    if os.path.exists(path):
+      os.remove(path)
+    self.monitor.send(('screendump %s\n' % path).encode())
+    end = time.time() + 10
+    while time.time() < end:
+      time.sleep(0.2)
+      try:
+        data = open(path, 'rb').read()
+        parts = data.split(b'\n', 3)
+        w, h = map(int, parts[1].split())
+        if len(parts[3]) >= w * h * 3:
+          return w, h, parts[3]
+      except (OSError, IndexError, ValueError):
+        pass
+    raise RuntimeError('no screendump')
+
   def bye(self, timeout=20):
     self.proc.stdin.write(b'bye\r')
     self.proc.stdin.flush()
@@ -102,9 +137,46 @@ def check(name, got, ok):
     print('  FAIL  %s: %r' % (name, got))
 
 
-def test_board(name, args, has_gpio):
+def pixel(screen, x, y):
+  w, h, rgb = screen
+  i = (y * w + x) * 3
+  return '%02x%02x%02x' % (rgb[i], rgb[i + 1], rgb[i + 2])
+
+
+def test_breakout(b):
+  """Loads examples/sdl2_breakout.fs line by line (the line `run` starts
+  the game), checks the screen, launches the ball, quits with Esc."""
+  root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+  lines = open(os.path.join(root, 'examples', 'sdl2_breakout.fs')).read().split('\n')
+  start = lines.index('run')
+  errors = ''
+  for line in lines[:start]:
+    r = b.run(line)
+    if 'ERROR' in r or 'NOT FOUND' in r:
+      errors += line + ': ' + r + '\n'
+  check('breakout loads', errors, errors == '')
+  b.send(b'run\r')
+  time.sleep(1.5)
+  s = b.screen()
+  check('breakout screen 960x720 (zoom 3)', s[:2], s[:2] == (960, 720))
+  # Logical pixels times 3: background, top-left red brick, paddle, ball.
+  got = [pixel(s, 3 * x, 3 * y) for x, y in [(160, 150), (16, 37), (160, 227), (160, 220)]]
+  check('breakout drawn', got, got == ['101830', 'ff0000', 'ffffff', 'ffff00'])
+  b.send(b' ')
+  time.sleep(1)
+  s = b.screen()
+  got = pixel(s, 3 * 160, 3 * 220)
+  check('ball launched', got, got == '101830')
+  b.send(b'\x1b')   # Esc: the game ends, close-screen, the prompt is back
+  b.wait_for(PROMPT, b.pos, 10)
+  b.pos = len(b.out)
+  r = b.run('2 3 * .')
+  check('prompt after breakout', r, r.split()[0] == '6')
+
+
+def test_board(name, args, has_gpio, tmp):
   print('%s: qemu %s' % (name, ' '.join(args)))
-  b = Board(args)
+  b = Board(args, tmp)
   try:
     banner = b.boot()
     check('banner', banner, ('Lugforth (%s)' % name) in banner)
@@ -133,6 +205,10 @@ def test_board(name, args, has_gpio):
     else:
       r = b.run('also rpi 21 gpio@ previous')
       check('no gpio on virt', r, 'ERROR' in r)
+      r = b.run('sdl2 320 240 screen')
+      check('no screen on virt', r, 'ERROR' in r)
+    if has_gpio:
+      test_breakout(b)
     code = b.bye()
     check('bye exits qemu', code, code is not None)
   except Exception as e:
@@ -143,10 +219,12 @@ def test_board(name, args, has_gpio):
 
 def main():
   out = sys.argv[1] if len(sys.argv) > 1 else 'out/rpi'
+  tmp = os.path.join(out, 'test')
+  os.makedirs(tmp, exist_ok=True)
   test_board('qemu-virt', ['-M', 'virt', '-cpu', 'cortex-a53', '-m', '128M',
-                           '-kernel', os.path.join(out, 'virt', 'lugforth.elf')], False)
+                           '-kernel', os.path.join(out, 'virt', 'lugforth.elf')], False, tmp)
   test_board('pi3', ['-M', 'raspi3b', '-no-reboot',
-                     '-kernel', os.path.join(out, 'pi3', 'kernel8.img')], True)
+                     '-kernel', os.path.join(out, 'pi3', 'kernel8.img')], True, tmp)
   print('%s' % ('ALL OK' if failures == 0 else '%d FAILED' % failures))
   sys.exit(1 if failures else 0)
 

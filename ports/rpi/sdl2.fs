@@ -1,0 +1,143 @@
+\ Copyright 2026 Luginfo10
+\
+\ Licensed under the Apache License, Version 2.0 (the "License");
+\ you may not use this file except in compliance with the License.
+\ You may obtain a copy of the License at
+\
+\     http://www.apache.org/licenses/LICENSE-2.0
+\
+\ Unless required by applicable law or agreed to in writing, software
+\ distributed under the License is distributed on an "AS IS" BASIS,
+\ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+\ See the License for the specific language governing permissions and
+\ limitations under the License.
+
+( The sdl2 short words on bare metal: the HDMI framebuffer, keys from the UART )
+\ Same names and stack effects as ports/posix/sdl2.fs and ports/web/sdl2.fs,
+\ so a game written with the short words (examples/sdl2_breakout.fs) runs
+\ unchanged. Drawing is in C (FB- words in ports/rpi/screen.h). Only the
+\ drawing, timing and key words exist: no images, text or sound yet (beep
+\ is silent). See ports/rpi/README.md.
+
+vocabulary sdl2   also rpi also sdl2 definitions
+
+( ---- Screen ---- )
+1 value zoom   0 value width   0 value height   0 value screen-open?
+0 value quitting
+: screen ( w h -- )
+  2dup to height to width  zoom fb-open if -21 throw then
+  -1 to screen-open?   0 to quitting ;
+: close-screen ( -- )   0 to screen-open? ;
+: title ( a n -- ) 2drop ;
+: fullscreen ( f -- ) drop ;
+: cursor ( f -- ) drop ;
+
+( ---- Colors ---- )
+0 value pen-r   0 value pen-g   0 value pen-b   255 value pen-a
+: rgba ( r g b a -- )
+  255 and to pen-a  255 and to pen-b  255 and to pen-g  255 and to pen-r
+  pen-r 16 lshift pen-g 8 lshift or pen-b or  pen-a fb-color ;
+: rgb ( r g b -- ) 255 rgba ;
+: color ( $rrggbb -- )
+  dup 16 rshift swap dup 8 rshift swap rgb ;
+: alpha ( a -- ) >r pen-r pen-g pen-b r> rgba ;
+: pen ( -- n ) pen-r pen-g 8 lshift or pen-b 16 lshift or pen-a 24 lshift or ;
+
+$000000 constant black    $ffffff constant white
+$ff0000 constant red      $00c000 constant green
+$0000ff constant blue     $ffff00 constant yellow
+$00ffff constant cyan     $ff00ff constant magenta
+$ff8000 constant orange   $800080 constant purple
+$ff80c0 constant pink     $804000 constant brown
+$808080 constant gray
+
+( ---- Drawing ---- )
+: box ( x y w h -- ) fb-box ;
+: cls ( -- ) pen-a >r 255 alpha  0 0 width height fb-box  r> alpha ;
+: dot ( x y -- ) 1 1 fb-box ;
+: hline ( x y w -- ) 1 fb-box ;
+: line ( x1 y1 x2 y2 -- ) fb-line ;
+: frame ( x y w h -- )
+  { x y w h }
+  w 0> h 0> and if
+    x y w 1 box   x y h + 1- w 1 box
+    x y 1 h box   x w + 1- y 1 h box
+  then ;
+: disc ( cx cy r -- )
+  dup { cx cy r x }
+  r 1+ 0 do
+    begin x x * i i * + r r * > while x 1- to x repeat
+    cx x - cy i + x 2* 1+ 1 box
+    i if cx x - cy i - x 2* 1+ 1 box then
+  loop ;
+: circle ( cx cy r -- )
+  dup { cx cy r x }
+  r 1+ 0 do
+    begin x x * i i * + r r * > while x 1- to x repeat
+    cx x + cy i + dot  cx x - cy i + dot  cx x + cy i - dot  cx x - cy i - dot
+    cx i + cy x + dot  cx i - cy x + dot  cx i + cy x - dot  cx i - cy x - dot
+  loop ;
+: pixel@ ( x y -- $rrggbb ) fb-pixel ;
+
+( ---- Timing ---- )
+: ticks ( -- ms ) ms-ticks ;
+: delay ( ms -- ) ms ;
+0 value dt   0 value last-flip
+: flip ( -- ) fb-flip  ticks dup last-flip - to dt  to last-flip ;
+
+( ---- Keys, from the serial line ---- )
+\ A terminal sends a byte when a key goes down, and again for each auto-repeat,
+\ never when it goes up. So a key counts as held for key-hold ms after its
+\ last byte. Arrows come as ESC [ A..D. Raise key-hold (or shorten the
+\ terminal's auto-repeat delay, xset r rate 200 40) if a held key stutters.
+255 constant LEFT-BUTTON   254 constant MIDDLE-BUTTON   253 constant RIGHT-BUTTON
+208 constant key-left    207 constant key-right
+210 constant key-up      209 constant key-down
+32 constant key-space    13 constant key-enter    27 constant key-esc
+9 constant key-tab       8 constant key-backspace
+
+120 value key-hold
+0 value last-key
+create key-times 256 cells allot
+: forget-keys   256 0 do -1000000 key-times i cells + ! loop ;
+forget-keys
+: key-hit ( k -- ) 255 and dup to last-key  ticks swap cells key-times + ! ;
+: key-within ( ms -- k|-1 )   ( a byte, or -1 if none comes in time )
+  ticks + { end }
+  begin key? if key exit then ticks end - 0< 0= until -1 ;
+: arrow ( c -- )
+  dup [char] A = if drop key-up key-hit exit then
+  dup [char] B = if drop key-down key-hit exit then
+  dup [char] C = if drop key-right key-hit exit then
+  dup [char] D = if drop key-left key-hit exit then
+  drop ;
+: escape ( -- c|-1 )   ( after an ESC: an arrow, or the Esc key and what follows )
+  10 key-within dup [char] [ = if drop 10 key-within arrow -1 exit then
+  key-esc key-hit ;
+: one-key ( c -- )
+  dup 27 = if
+    drop escape dup 0< if drop exit then
+    dup 27 = if drop key-esc key-hit exit then
+  then
+  dup 10 = if drop key-enter key-hit exit then
+  dup 127 = if drop key-backspace key-hit exit then
+  dup [char] A >= over [char] Z <= and if 32 + then
+  key-hit ;
+: events ( -- ) begin key? while key one-key repeat ;
+: pressed? ( k -- f )
+  dup [char] A >= over [char] Z <= and if 32 + then
+  255 and cells key-times + @ ticks swap - key-hold < ;
+: scan? ( k -- f ) drop 0 ;
+: quit? ( -- f ) quitting ;
+: quit! ( -- ) -1 to quitting ;
+: mouse-x ( -- n ) 0 ;
+: mouse-y ( -- n ) 0 ;
+: wheel ( -- n ) 0 ;
+
+( ---- Sound: none yet ---- )
+0 value wave   3000 value beep-volume   0 value pitch-drop
+: beep ( freq ms -- ) 2drop ;
+: drum-hit ( freq ms -- ) 2drop ;
+
+previous previous forth definitions
+: sdl2 ( -- ) also sdl2 ;

@@ -22,6 +22,63 @@ make -C ports/rpi run-pi3    # QEMU raspi3b
 make -C ports/rpi test       # boots both, checks answers over the serial line
 ```
 
+## Graphics: the sdl2 words
+
+The vocabulary `sdl2` has the same short words as Linux
+(`ports/posix/SDL2-words.md`) and the web (`ports/web/SDL2.md`). So
+`examples/sdl2_breakout.fs` runs unchanged, sent over the serial line:
+
+```sh
+make -C ports/rpi breakout   # QEMU raspi3b window; play from this terminal
+make -C ports/rpi screen     # the same window, prompt only
+```
+
+`tools/rpi_qemu_run.py` (what both targets run) sends the file one line at a
+time, waiting for the prompt each time. The line that does not give the
+prompt back (`run`) starts the game. From then on, the terminal is the
+keyboard: arrows, space, Esc. Ctrl-] quits.
+
+```forth
+sdl2  2 to zoom  160 120 screen
+$101830 color cls  red color 10 10 50 30 box  white color 120 20 15 circle  flip
+```
+
+The words that exist:
+
+* Screen: `screen close-screen screen-open? zoom width height`. `title`,
+  `fullscreen` and `cursor` do nothing.
+* Colors: `color rgb rgba alpha pen pen-r pen-g pen-b pen-a` and the named
+  colors.
+* Drawing: `cls box frame dot hline line disc circle pixel@ flip`.
+* Time: `ticks delay dt`.
+* Input: `events pressed? last-key quit? quit!`, the `key-` constants.
+  `mouse-x`, `mouse-y` and `wheel` are always 0.
+* Sound: `beep` and `drum-hit` are silent.
+
+How it works:
+
+* `screen` asks the firmware for a 32-bit framebuffer of `width*zoom` by
+  `height*zoom` through the mailbox. QEMU's raspi3b emulates it; on HDMI the
+  firmware scales it to the monitor.
+* Drawing goes to a back buffer in C (`screen.h`, the `FB-` words of `rpi`).
+* `flip` copies the back buffer to the screen, each pixel as a zoom x zoom
+  square, then cleans the data cache. It takes about 5 ms under QEMU at
+  zoom 3.
+* `virt` has no such framebuffer, so `screen` throws -21 there.
+
+Keys come from the serial terminal, which sends a byte when a key goes down
+(and again for each auto-repeat) but nothing when it goes up. So a key counts
+as held for `key-hold` ms (120) after its last byte. A held arrow moves,
+pauses for the terminal's repeat delay, then moves on. `xset r rate 200 40`
+shortens that pause. A USB keyboard would need a USB host stack (DWC2 on the
+Pi 3).
+
+`make test` loads breakout this way, reads the screen through QEMU's
+`screendump` (bricks, paddle and ball colors), launches the ball with space,
+and leaves with Esc.
+
+## Leaving
+
 `bye` makes QEMU exit: PSCI `SYSTEM_OFF` on `virt`, a watchdog reset on the Pi.
 On a real Pi that reset restarts the board instead.
 
@@ -101,7 +158,7 @@ behind the firmware mailbox, which is not done yet.
 ## Not done yet
 
 * No filesystem (no SD card driver): programs come in over the serial line.
-* No HDMI output (framebuffer through the mailbox), no USB keyboard.
+* No images, text or sound in the sdl2 words; no USB keyboard or mouse.
 * Real hardware: no data cache invalidation before the MMU goes on. The
   firmware runs with caches off, so this should not matter, but it is
   unchecked. The Pi 4 GIC addresses (0xFF841000/0xFF842000) are from the

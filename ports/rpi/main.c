@@ -335,6 +335,7 @@ void _exit(int code) { rpi_terminate(code); for (;;) {} }
 extern char __tls_base[];
 extern void _set_tls(void *tls);
 
+#include "ports/rpi/screen.h"
 #include "ports/rpi/builtins.h"
 
 #include "common/bits.h"

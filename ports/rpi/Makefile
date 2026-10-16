@@ -20,6 +20,8 @@
 #   make run          QEMU virt, console in this terminal (Ctrl-A X quits)
 #   make run-pi3      QEMU raspi3b, same kernel8.img as a real Pi 3
 #   make run-pty      QEMU virt on a pty, for tools/pico_send.py -p /dev/pts/N
+#   make screen       QEMU raspi3b with its screen in a window, keys from here
+#   make breakout     the same, with examples/sdl2_breakout.fs sent and started
 #   make test         boots both under QEMU and checks the answers
 
 ROOT := ../..
@@ -37,8 +39,8 @@ CFLAGS := --specs=picolibc.specs -mcpu=cortex-a53 -O2 -Wall -Werror -Wno-missing
   -I $(ROOT) -I $(OUT)
 LDFLAGS := -nostartfiles -T rpi.ld -Wl,--no-warn-rwx-segments
 
-SOURCES := start.S main.c builtins.h rpi.ld
-FORTH := rpi_boot.fs allocation.fs platform.fs autoboot.fs $(wildcard $(ROOT)/common/*.fs)
+SOURCES := start.S main.c builtins.h screen.h rpi.ld
+FORTH := rpi_boot.fs allocation.fs platform.fs sdl2.fs autoboot.fs $(wildcard $(ROOT)/common/*.fs)
 
 # virt: RAM at 1G (QEMU's default -m 128M). Pi: loaded at 0x80000 by the
 # firmware, the C heap stops at 512M (every Pi 3 and 4 has that much).
@@ -77,6 +79,12 @@ run-pi3: $(OUT)/pi3/kernel8.img
 run-pty: $(OUT)/virt/lugforth.elf
 	$(QEMU) -M virt -cpu cortex-a53 -m 128M -display none -monitor none -serial pty -kernel $<
 
+screen: $(OUT)/pi3/kernel8.img
+	python3 $(ROOT)/tools/rpi_qemu_run.py --out $(OUT)
+
+breakout: $(OUT)/pi3/kernel8.img
+	python3 $(ROOT)/tools/rpi_qemu_run.py --out $(OUT) $(ROOT)/examples/sdl2_breakout.fs
+
 test: all
 	python3 $(ROOT)/tools/rpi_qemu_test.py $(OUT)
 
@@ -84,4 +92,4 @@ clean:
 	rm -rf $(OUT)
 
 .SECONDARY:
-.PHONY: all run run-pi3 run-pty test clean
+.PHONY: all run run-pi3 run-pty screen breakout test clean
