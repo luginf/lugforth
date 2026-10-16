@@ -27,7 +27,7 @@
 
 #define REQUIRED_SYSTEM_SUPPORT \
   X("MS-TICKS", MS_TICKS, PUSH ms_ticks()) \
-  XV(internals, "RAW-YIELD", RAW_YIELD, ) \
+  XV(internals, "RAW-YIELD", RAW_YIELD, snd_pump()) \
   XV(internals, "RAW-TERMINATE", RAW_TERMINATE, rpi_terminate(n0); DROP) \
   YV(internals, getchar_timeout_us, n0 = getchar_timeout_us(n0)) \
   XV(internals, "RAW-TYPE", RAW_TYPE, uart_write(b1, n0); DROPn(2))
@@ -69,12 +69,26 @@
   XV(rpi, "INPUT-WHEEL", INPUT_WHEEL, PUSH in_wheel) \
   XV(rpi, "UART-KEY", UART_KEY, PUSH uart_getc_nowait())
 
+// Sound (sound.h), for beep, drum-hit and the tunes of sdl2-abc.
+#define RPI_SOUND_SUPPORT \
+  XV(rpi, "SND-BEEP", SND_BEEP, snd_beep(n3, n2, n1, n0); DROPn(4)) \
+  XV(rpi, "SND-HIT", SND_HIT, snd_hit(n4, n3, n2, n1, n0); DROPn(5)) \
+  XV(rpi, "SND-SILENCE", SND_SILENCE, snd_silence()) \
+  XV(rpi, "SND-BUSY", SND_BUSY, PUSH snd_busy()) \
+  XV(rpi, "SND-OK", SND_OK, PUSH snd_ok()) \
+  XV(rpi, "SND-TUNE-CLEAR", SND_TUNE_CLEAR, snd_tune_clear()) \
+  XV(rpi, "SND-TUNE-ADD", SND_TUNE_ADD, snd_tune_add(n2, n1, n0); DROPn(3)) \
+  XV(rpi, "SND-TUNE-RUN", SND_TUNE_RUN, snd_tune_run(n3, n2, n1, n0); DROPn(4)) \
+  XV(rpi, "SND-TUNE-STOP", SND_TUNE_STOP, snd_tune_stop()) \
+  XV(rpi, "SND-TUNE-PLAYING", SND_TUNE_PLAYING, PUSH snd_tune_playing())
+
 #define PLATFORM_OPCODE_LIST \
   REQUIRED_MEMORY_SUPPORT \
   REQUIRED_SYSTEM_SUPPORT \
   RPI_SUPPORT \
   RPI_SCREEN_SUPPORT \
   RPI_INPUT_SUPPORT \
+  RPI_SOUND_SUPPORT \
   CALLING_OPCODE_LIST \
   FLOATING_POINT_LIST
 

@@ -16,8 +16,8 @@
 \ Same names and stack effects as ports/posix/sdl2.fs and ports/web/sdl2.fs,
 \ so a game written with the short words (examples/sdl2_breakout.fs) runs
 \ unchanged. Drawing is in C (FB- words in ports/rpi/screen.h). Drawing,
-\ text (a built-in 8x8 font), images (built into the kernel), timing and
-\ keys; no sound yet (beep is silent). See ports/rpi/README.md.
+\ text (a built-in 8x8 font), images (built into the kernel), timing, keys
+\ and mouse, beeps and ABC tunes. See ports/rpi/README.md.
 
 vocabulary sdl2   also rpi also sdl2 definitions
 
@@ -164,12 +164,53 @@ forget-keys
 : image-alpha ( img a -- ) image-alpha! ;
 : image-tint ( img $rrggbb -- ) image-tint! ;
 
-( ---- Sound: none yet ---- )
+( ---- Sound: beeps and hits, as on Linux ---- )
+\ Mixed in C (ports/rpi/sound.h) and played by virtio-sound on QEMU virt, the
+\ headphone jack on a Pi 3. Silent without one (audio-open? is false).
 0 value wave   3000 value beep-volume   0 value pitch-drop
-: beep ( freq ms -- ) 2drop ;
-: drum-hit ( freq ms -- ) 2drop ;
+2205 value latency   ( no effect here: the output keeps its own queue )
+44100 constant sample-rate
+: beep ( freq ms -- ) wave beep-volume snd-beep ;
+: drum-hit ( freq ms -- ) wave beep-volume pitch-drop snd-hit ;
+: silence ( -- ) snd-silence ;
+: beeping? ( -- f ) snd-busy ;
+: audio-open ( -- ) ;
+: audio-open? ( -- f ) snd-ok ;
+
+( ---- Music: no files and no MIDI here; tunes in ABC are, see sdl2-abc ---- )
+2500 value tune-level   ( amplitude of the notes of a tune, 0 to 32767 )
+: music-volume ( 0..128 -- ) 2500 * 128 / to tune-level ;
+: soundfont? ( a n -- f ) 2drop 0 ;
+: soundfont ( a n -- ) 2drop ;
+: tune-stop ( -- ) snd-tune-stop ;
+: tune-playing? ( -- f ) snd-tune-playing ;
 
 previous previous forth definitions
 : sdl2 ( -- ) also sdl2 ;
 : sdl2-ttf ( -- ) sdl2 ;   ( the text words are part of sdl2 here )
 : sdl2-image ( -- ) sdl2 ;   ( the image words too )
+: sdl2-mixer ( -- ) sdl2 ;   ( music volume and soundfont words: no files here )
+
+\ sdl2-abc: tunes in ABC notation (common/abc.fs reads them), played by the
+\ mixer's oscillators as on the web: the triangle wave, or the one in wave.
+also internals
+variable abc-loaded
+: sdl2-abc ( -- )
+  sdl2  abc-loaded @ if exit then  -1 abc-loaded !
+  current @  also sdl2 definitions
+  abc-parser evaluate
+  r~
+also abc-int also rpi
+: ticks>ms ( ticks -- ms ) 125 * tune-bpm / ;
+: tune-send ( loop -- )
+  snd-tune-clear
+  n-notes 0 ?do  i nk@  i nt@ ticks>ms  i nd@ ticks>ms  snd-tune-add  loop
+  tune-ms  wave 1 = wave 0 = or if 1 else wave then  tune-level  snd-tune-run ;
+: tune-play ( -- ) 0 tune-send ;
+: tune-loop ( -- ) -1 tune-send ;
+: abc-play ( a n -- ) abc tune-play ;
+: abc-loop ( a n -- ) abc tune-loop ;
+previous previous
+~ evaluate
+  previous current ! ;
+previous

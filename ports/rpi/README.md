@@ -68,7 +68,12 @@ The words that exist:
 * Time: `ticks delay dt`.
 * Input: `events pressed? last-key quit? quit! mouse-x mouse-y wheel`, the
   `key-` and `-BUTTON` constants. `scan?` is always false.
-* Sound: `beep` and `drum-hit` are silent.
+* Sound: `beep drum-hit pitch-drop silence beeping? wave beep-volume
+  audio-open audio-open? latency sample-rate`, as on Linux.
+* Tunes: `sdl2-abc`, then `abc-play abc-loop tune-play tune-loop tune-stop
+  tune-playing? music-volume`. The ABC reader is the shared `common/abc.fs`,
+  and the notes are played by oscillators, as on the web. `soundfont` does
+  nothing, and there is no `load-sound` or `load-music` (no files).
 
 How it works:
 
@@ -120,6 +125,33 @@ prompt.
 this way, reads the screen through QEMU's
 `screendump` (bricks, paddle and ball colors), launches the ball with space,
 and leaves with Esc.
+
+Sound (`sound.h`) is mixed in C at 44100 Hz:
+
+* Beeps play in a queue; hits play at once, 8 at a time, fading out, with
+  their pitch falling by `pitch-drop`; tune notes have a short attack and a
+  linear decay.
+* It is fed at every `pause` (so by `ms`, `delay` and `key`) and while the
+  prompt waits.
+* QEMU virt: virtio-sound (`-device virtio-sound-device,audiodev=...`),
+  16-bit, 8 periods of 10 ms in flight.
+* Pi 3: the PWM of the headphone jack (GPIO 40 and 41), fed by DMA from
+  two half buffers, the CPU linking the next one while the DMA plays the
+  other. It is **written without a board**. QEMU has the PWM's registers but
+  plays nothing, and it runs a DMA chain at once, without the PWM's pacing,
+  so `snd_init` notices that and stays silent there.
+* `make test` records virt's sound through `-audiodev wav` and checks it:
+  440 then 660 Hz for 300 ms with 200 ms of silence between, a `drum-hit`
+  that fades, and the notes C E G c of a tune.
+
+## Sending files: paste
+
+There is no filesystem. Type `paste`, send the text, then Ctrl-D (byte 4).
+The text is kept and evaluated at once, as `include` would, so strings and
+comments may span lines: `examples/sdl2_roguelike.fs` keeps its tunes in
+`r~ ... ~` over several lines, which line by line sending breaks.
+`tools/rpi_qemu_run.py` sends files this way (`make roguelike`). Up to
+`paste-max` bytes (256K).
 
 ## Leaving
 
@@ -202,7 +234,8 @@ behind the firmware mailbox, which is not done yet.
 ## Not done yet
 
 * No filesystem (no SD card driver): programs come in over the serial line.
-* No sound in the sdl2 words. USB: no split transactions (real Pi 3 B), no Pi 4.
+* USB: no split transactions (real Pi 3 B), no Pi 4. Sound on the Pi 3 is
+  untried, and there is none on the Pi 4.
 * Real hardware: no data cache invalidation before the MMU goes on. The
   firmware runs with caches off, so this should not matter, but it is
   unchecked. The Pi 4 GIC addresses (0xFF841000/0xFF842000) are from the

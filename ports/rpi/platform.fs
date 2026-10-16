@@ -56,6 +56,19 @@ transfer rpi-builtins
 : gpio@ ( pin -- f )    $34 gpio-reg ul@ and 0<> ;
 forth definitions
 
+( paste: a whole file over the serial line, evaluated as include would )
+\ There is no filesystem: send `paste`, then the text, then Ctrl-D (4). The
+\ text is kept and evaluated at once, so strings and comments may span
+\ lines (r~ ... ~ tunes, for example), which line by line sending breaks.
+\ tools/rpi_qemu_run.py sends files this way.
+262144 value paste-max
+: paste ( -- )
+  paste-max allocate throw 0 { buf n }
+  begin key dup 4 <> while
+    n paste-max < if buf n + c! n 1+ to n else drop then
+  repeat drop
+  buf n ['] evaluate catch  buf free drop  throw ;
+
 ( Setup entry )
 internals also rpi
 : ok   ." Lugforth (" board type ." )" raw-ok ;

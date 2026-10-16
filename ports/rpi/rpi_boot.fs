@@ -19,6 +19,7 @@ needs ../../common/tasks.fs
 needs ../../common/streams.fs
 needs ../../common/ansi.fs
 needs platform.fs
+needs ../../common/abc.fs
 needs sdl2.fs
 needs autoboot.fs
 needs ../../common/fini.fs

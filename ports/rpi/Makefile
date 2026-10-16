@@ -22,7 +22,8 @@
 #   make run-pty      QEMU virt on a pty, for tools/pico_send.py -p /dev/pts/N
 #   make screen       QEMU raspi3b with its screen in a window, keys from here
 #   make breakout     the same, with examples/sdl2_breakout.fs sent and started
-#                     (BOARD=virt: the same on QEMU virt, -device ramfb)
+#   make roguelike    the same with examples/sdl2_roguelike.fs (images, tunes)
+#                     (BOARD=virt: on QEMU virt, -device ramfb, with sound)
 #   make test         boots both under QEMU and checks the answers
 
 ROOT := ../..
@@ -40,7 +41,7 @@ CFLAGS := --specs=picolibc.specs -mcpu=cortex-a53 -O2 -Wall -Werror -Wno-missing
   -I $(ROOT) -I $(OUT)
 LDFLAGS := -nostartfiles -T rpi.ld -Wl,--no-warn-rwx-segments
 
-SOURCES := start.S main.c builtins.h screen.h font8x8.h rpi.ld
+SOURCES := start.S main.c builtins.h screen.h font8x8.h virtio.h input.h usb.h sound.h rpi.ld
 # Images built into the kernel for load-image (no filesystem): PNG files.
 ASSETS ?= $(ROOT)/examples/sdl2_tiles.png $(ROOT)/examples/sdl2_tiles_alt.png
 FORTH := rpi_boot.fs allocation.fs platform.fs sdl2.fs autoboot.fs $(wildcard $(ROOT)/common/*.fs)
@@ -96,6 +97,9 @@ screen: all
 breakout: all
 	python3 $(ROOT)/tools/rpi_qemu_run.py --board $(BOARD) --out $(OUT) $(ROOT)/examples/sdl2_breakout.fs
 
+roguelike: all
+	python3 $(ROOT)/tools/rpi_qemu_run.py --board $(BOARD) --out $(OUT) $(ROOT)/examples/sdl2_roguelike.fs
+
 test: all
 	python3 $(ROOT)/tools/rpi_qemu_test.py $(OUT)
 
@@ -103,5 +107,5 @@ clean:
 	rm -rf $(OUT)
 
 .SECONDARY:
-.PHONY: all run run-pi3 run-pty screen breakout test clean FORCE
+.PHONY: all run run-pi3 run-pty screen breakout roguelike test clean FORCE
 FORCE:

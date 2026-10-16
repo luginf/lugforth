@@ -22,8 +22,10 @@ terminal into the board's keyboard and console.
 
 The keyboard and mouse of the QEMU window work too (USB on raspi3b,
 virtio on virt): in a game, and at the prompt, whose output stays here.
-Each line is sent once the prompt is back. A line that does not give the
-prompt back within a few seconds (a game loop) ends the sending. Ctrl-]
+Each file is sent with the board's paste word, then evaluated at once as
+include would. A file that does not give the prompt back within a few
+seconds (a game loop) ends the sending. Sound goes to the host's
+PulseAudio or PipeWire when there is one (--audio none: silent). Ctrl-]
 quits (QEMU too).
 """
 
@@ -45,6 +47,8 @@ def main():
   ap.add_argument('--board', choices=['pi3', 'virt'], default='pi3')
   ap.add_argument('--out', default=os.path.join(ROOT, 'out', 'rpi'))
   ap.add_argument('--headless', action='store_true', help='no QEMU window')
+  ap.add_argument('--audio', default=None,
+                  help='QEMU audio driver (pa, pipewire, alsa, sdl, none...); default: pa or pipewire if running')
   ap.add_argument('files', nargs='*')
   args = ap.parse_args()
 
@@ -57,6 +61,15 @@ def main():
              '-global', 'virtio-mmio.force-legacy=false',
              '-device', 'virtio-keyboard-device', '-device', 'virtio-tablet-device',
              '-kernel', os.path.join(args.out, 'virt', 'lugforth.elf')]
+  audio = args.audio
+  if audio is None:
+    run = os.environ.get('XDG_RUNTIME_DIR', '/run/user/%d' % os.getuid())
+    audio = ('pa' if os.path.exists(os.path.join(run, 'pulse', 'native')) else
+             'pipewire' if os.path.exists(os.path.join(run, 'pipewire-0')) else 'none')
+  if audio != 'none':
+    qemu += ['-audiodev', '%s,id=snd0' % audio]
+    if args.board == 'virt':
+      qemu += ['-device', 'virtio-sound-device,audiodev=snd0']
   if args.headless:
     qemu += ['-display', 'none']
   qemu += ['-serial', 'stdio', '-monitor', 'none']
@@ -82,25 +95,17 @@ def main():
 
   if read_until_prompt(60) is None:
     return proc.wait()
+  # Each file goes with the paste word: kept, then evaluated at once, as
+  # include would (strings and comments may span lines). A file that ends
+  # by starting a game does not give the prompt back: keys go to it.
   for name in args.files:
     with open(name, 'rb') as f:
-      lines = f.read().split(b'\n')
-    while lines and not lines[-1].strip():
-      lines.pop()
-    running = False
-    for line in lines:
-      proc.stdin.write(line + b'\r')
-      proc.stdin.flush()
-      got = read_until_prompt(5)
-      if got is None:
-        return proc.wait()
-      if not got:
-        running = True
-        break
-      if b'ERROR' in got:
-        sys.stderr.write('\n%s: stopped at an error\n' % name)
-        break
-    if running:
+      proc.stdin.write(b'paste\r' + f.read() + b'\x04')
+    proc.stdin.flush()
+    got = read_until_prompt(5)
+    if got is None:
+      return proc.wait()
+    if not got:
       break
 
   sys.stderr.write('\n[keys go to the board; Ctrl-] quits]\n')

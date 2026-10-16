@@ -68,7 +68,10 @@ Graphics: `sdl2` short words on the mailbox framebuffer (ports/rpi/sdl2.fs, scre
 `make -C ports/rpi breakout` plays examples/sdl2_breakout.fs in a QEMU raspi3b window (`BOARD=virt`: virt with
 `-device ramfb`, set up through fw_cfg), `make test` checks both by screendump.
 Text (font8x8), images (PNGs built in by tools/rpi_assets.py), keyboard/mouse (virtio-input on virt with
-`-global virtio-mmio.force-legacy=false`, DWC2 USB HID on pi3; tested through QMP input-send-event).
+`-global virtio-mmio.force-legacy=false`, DWC2 USB HID on pi3; tested through QMP input-send-event), sound
+(sound.h mixer, virtio-sound on virt checked from a -audiodev wav file; Pi 3 PWM+DMA written blind), `paste`
+(a whole file over serial, then Ctrl-D: multi-line strings work). `make roguelike` runs examples/sdl2_roguelike.fs.
+QEMU runs a whole bcm2835 DMA chain at once: a looping chain hangs it (even SIGTERM), so never start one blindly.
 
 ## Ports from eForth Windows (Marc Petremann, GPL) - done 2026-10-13
 

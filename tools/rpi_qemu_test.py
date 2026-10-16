@@ -354,6 +354,103 @@ def test_input(b, what):
   check('%s: typing at the prompt' % what, r, '2 3 * .' in r and '6' in r.split())
 
 
+def paste(b, text, wait_prompt=True):
+  """Send a whole text with the paste word: evaluated at once, as include."""
+  b.send(b'paste\r' + text + b'\x04')
+  if not wait_prompt:
+    return ''
+  b.wait_for(PROMPT, b.pos, 60)
+  i = b.out.rfind(PROMPT)
+  r = b.out[b.pos:i].replace('\r', '')
+  b.pos = i + len(PROMPT)
+  return r
+
+
+def test_roguelike(b):
+  """examples/sdl2_roguelike.fs (images, tints, mouse, ABC tunes in r~
+  strings over several lines) sent with paste: it draws and plays."""
+  root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+  t0 = time.time()
+  start = len(b.out)
+  paste(b, open(os.path.join(root, 'examples', 'sdl2_roguelike.fs'), 'rb').read(), False)
+  b.wait_for('esc: quit', b.pos, 60)
+  check('roguelike received by paste (%.1f s)' % (time.time() - t0), '', True)
+  time.sleep(1.5)
+  s = b.screen()
+  lit = sum(1 for y in range(0, s[1], 3) for x in range(0, s[0], 3) if pixel(s, x, y) != '000000')
+  red = sum(1 for y in range(s[1] - 48, s[1], 3) for x in range(0, 300, 3) if pixel(s, x, y)[:2] > 'c0'
+            and pixel(s, x, y)[2:4] < '60')
+  check('roguelike drawn (%d lit, %d red heart pixels)' % (lit, red), '', lit > 1000 and red > 20)
+  b.send(b'\x1b')
+  b.wait_for(PROMPT, b.pos, 10)
+  b.pos = len(b.out)
+  r = b.run('tune-playing? . tune-stop tune-playing? .')
+  bad = 'ERROR' in b.out[start:] or 'no music' in b.out[start:]
+  check('roguelike: no error, its tune plays', r, r.split()[:2] == ['-1', '0'] and not bad)
+  b.run('previous')
+
+
+def test_sound_play(b):
+  """Beeps, a hit and a tune, recorded by QEMU (-audiodev wav); check_sound
+  reads the first four sounds of the file."""
+  b.run('sdl2 440 300 beep 0 200 beep 660 300 beep 1500 ms')
+  b.run('1 to wave 300 400 drum-hit 700 ms 0 to wave')
+  paste(b, b'sdl2-abc\nr~ X:1\nL:1/4\nQ:1/4=120\nK:C\nC E G c\n~ abc-play 2500 ms\n')
+
+
+def wav_segments(x, rate):
+  """(start, end) sample ranges that are not silent."""
+  segs, on, quiet, gap = [], None, 0, int(rate * 0.004)
+  for i, v in enumerate(x):
+    if abs(v) > 60:
+      if on is None:
+        on = i
+      quiet = 0
+    elif on is not None:
+      quiet += 1
+      if quiet > gap:
+        segs.append((on, i - quiet))
+        on = None
+  if on is not None:
+    segs.append((on, len(x)))
+  return segs
+
+
+def wav_freq(x, a, b, rate):
+  z = sum(1 for k in range(a + 1, b) if (x[k - 1] < 0) != (x[k] < 0))
+  return z / 2 / ((b - a) / rate)
+
+
+def check_sound(path):
+  import wave
+  import struct
+  w = wave.open(path)
+  rate, ch = w.getframerate(), w.getnchannels()
+  d = w.readframes(w.getnframes())
+  x = struct.unpack('<%dh' % (len(d) // 2), d)[::ch]
+  segs = [(a, b) for a, b in wav_segments(x, rate) if b - a > rate * 0.05]
+  check('sound: %d sounds recorded' % len(segs), [(round(a / rate, 2), round((b - a) / rate, 2)) for a, b in segs],
+        len(segs) >= 4)
+  if len(segs) < 4:
+    return
+  (a1, b1), (a2, b2), (a3, b3) = segs[:3]
+  f1, f2 = wav_freq(x, a1, b1, rate), wav_freq(x, a2, b2, rate)
+  check('beep 440 Hz 300 ms (%.0f Hz, %.3f s)' % (f1, (b1 - a1) / rate), '',
+        abs(f1 - 440) < 10 and abs((b1 - a1) / rate - 0.3) < 0.01)
+  check('then 200 ms of silence (%.3f s)' % ((a2 - b1) / rate), '', abs((a2 - b1) / rate - 0.2) < 0.01)
+  check('beep 660 Hz 300 ms (%.0f Hz, %.3f s)' % (f2, (b2 - a2) / rate), '',
+        abs(f2 - 660) < 10 and abs((b2 - a2) / rate - 0.3) < 0.01)
+  n = (b3 - a3) // 10
+  head, tail = max(abs(v) for v in x[a3:a3 + n]), max(abs(v) for v in x[b3 - 2 * n:b3 - n])
+  check('drum-hit fades out (%d then %d)' % (head, tail), '', head > 2500 and tail < head / 3)
+  # The tune: C E G c, a quarter note each at 120 per minute.
+  t0 = segs[3][0]
+  want = [261.6, 329.6, 392.0, 523.3]
+  got = [wav_freq(x, t0 + int(rate * (0.5 * k + 0.05)), t0 + int(rate * (0.5 * k + 0.4)), rate) for k in range(4)]
+  check('tune C E G c (%s Hz)' % ' '.join('%.0f' % f for f in got), '',
+        all(abs(g - f) / f < 0.03 for g, f in zip(got, want)))
+
+
 def test_breakout(b):
   """Loads examples/sdl2_breakout.fs line by line (the line `run` starts
   the game), checks the screen, launches the ball, quits with Esc."""
@@ -386,23 +483,33 @@ def test_breakout(b):
 
 
 def test_screen_only(name, args, tmp):
-  """virt with -device ramfb and virtio input: the same screen and input
-  tests as on raspi3b."""
+  """virt with -device ramfb, virtio input and sound: the same screen and
+  input tests as on raspi3b, and the sound, recorded in tmp/sound.wav."""
+  wav = os.path.join(tmp, 'sound.wav')
+  if os.path.exists(wav):
+    os.remove(wav)
+  args = args + ['-audiodev', 'wav,id=snd0,path=%s' % wav, '-device', 'virtio-sound-device,audiodev=snd0']
   print('%s: qemu %s' % (name, ' '.join(args)))
   b = Board(args, tmp)
   try:
     b.boot()
+    test_sound_play(b)   # first: the other tests make sounds too
     test_input(b, 'virtio')
     test_lines(b)
     test_text(b)
     test_images(b)
     test_breakout(b)
+    test_roguelike(b)
     code = b.bye()
     check('bye exits qemu', code, code is not None)
   except Exception as e:
     check('session', str(e), False)
   finally:
     b.kill()
+  if os.path.exists(wav):
+    check_sound(wav)
+  else:
+    check('sound recorded', wav, False)
 
 
 def test_board(name, args, has_gpio, tmp):

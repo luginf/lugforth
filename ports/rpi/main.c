@@ -124,7 +124,9 @@ static void mmu_init(void) {
 // ---- PL011 UART: 115200 8N1 on the Pi (48 MHz UART clock, the firmware's
 // default), whatever QEMU gives on virt. ----
 static void uart_init(void) {
-#ifdef PERIPHERAL_BASE
+#ifndef PERIPHERAL_BASE
+  REG(UART_BASE + 0x2C) = (3 << 5) | (1 << 4);      // LCRH: 8 bits, FIFOs (QEMU: 16 bytes at a time)
+#else
   REG(UART_BASE + 0x30) = 0;                        // CR: off
   uint32_t sel = REG(GPIO_BASE + 0x04);             // GPFSEL1: GPIO 14 and 15
   sel &= ~((7u << 12) | (7u << 15));
@@ -302,6 +304,16 @@ uint64_t rpi_exception(uint64_t kind, uint64_t esr, uint64_t elr, uint64_t far) 
     uart_puts("lugforth: halted, vector "); uart_puthex(kind); uart_puts("\n");
     rpi_halt();
   }
+  // A fault that comes back at once, again and again (a broken boot, where
+  // each throw faults anew): stop instead of filling the console.
+  static uint64_t burst_start;
+  static int burst;
+  uint64_t now = ms_ticks();
+  if (now - burst_start > 1000) { burst_start = now; burst = 0; }
+  if (++burst > 50) {
+    uart_puts("lugforth: too many faults, halted\n");
+    rpi_halt();
+  }
   g_in_fault = 1;
   switch (ec) {
     case 0x20: case 0x21: case 0x24: case 0x25:      // instruction/data abort
@@ -342,8 +354,9 @@ extern void _set_tls(void *tls);
 #include "ports/rpi/virtio.h"
 #include "ports/rpi/input.h"
 #include "ports/rpi/usb.h"
+#include "ports/rpi/sound.h"
 
-static int console_extra_char(void) { input_poll(); return in_get_char(); }
+static int console_extra_char(void) { snd_pump(); input_poll(); return in_get_char(); }
 #include "ports/rpi/builtins.h"
 
 #include "common/bits.h"
@@ -356,6 +369,7 @@ int main(int argc, char *argv[]) {
   void *heap = malloc(HEAP_SIZE);
   if (!heap) { uart_puts("lugforth: no memory for the heap\n"); rpi_halt(); }
   input_init();
+  snd_init();
   forth_init(argc, argv, heap, HEAP_SIZE, boot, sizeof(boot));
   for (;;) { g_sys->rp = forth_run(g_sys->rp); }
   return 1;
