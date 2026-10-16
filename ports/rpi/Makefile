@@ -81,7 +81,7 @@ $(OUT)/%/kernel8.img: $(OUT)/%/lugforth.elf
 	$(OBJCOPY) -O binary $< $@
 
 run: $(OUT)/virt/lugforth.elf
-	$(QEMU) -M virt -cpu cortex-a53 -m 128M -nographic -kernel $<
+	$(QEMU) -M virt -cpu cortex-a53 -m 128M -nographic -global virtio-mmio.force-legacy=false -kernel $<
 
 run-pi3: $(OUT)/pi3/kernel8.img
 	$(QEMU) -M raspi3b -nographic -no-reboot -kernel $<

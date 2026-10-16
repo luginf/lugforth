@@ -67,6 +67,8 @@ THROW. Not tried on a real Pi; Pi 4 written blind (QEMU 8.2 has no raspi4b). See
 Graphics: `sdl2` short words on the mailbox framebuffer (ports/rpi/sdl2.fs, screen.h), keys from the UART;
 `make -C ports/rpi breakout` plays examples/sdl2_breakout.fs in a QEMU raspi3b window (`BOARD=virt`: virt with
 `-device ramfb`, set up through fw_cfg), `make test` checks both by screendump.
+Text (font8x8), images (PNGs built in by tools/rpi_assets.py), keyboard/mouse (virtio-input on virt with
+`-global virtio-mmio.force-legacy=false`, DWC2 USB HID on pi3; tested through QMP input-send-event).
 
 ## Ports from eForth Windows (Marc Petremann, GPL) - done 2026-10-13
 

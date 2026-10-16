@@ -23,6 +23,7 @@ screen's pixels (QEMU monitor `screendump`); the same on virt with
   tools/rpi_qemu_test.py [out/rpi]        (what `make -C ports/rpi test` runs)
 """
 
+import json
 import os
 import random
 import re
@@ -40,9 +41,12 @@ class Board:
   def __init__(self, args, tmp):
     self.tmp = tmp
     self.sock = os.path.join(tmp, 'monitor.sock')
+    self.qmp_sock = os.path.join(tmp, 'qmp.sock')
+    self.qmp_file = None
     self.proc = subprocess.Popen(
         [QEMU] + args + ['-display', 'none', '-serial', 'stdio',
-                         '-monitor', 'unix:%s,server,nowait' % self.sock],
+                         '-monitor', 'unix:%s,server,nowait' % self.sock,
+                         '-qmp', 'unix:%s,server,nowait' % self.qmp_sock],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     self.monitor = None
     self.out = ''
@@ -85,6 +89,21 @@ class Board:
     if text.startswith(echo):
       text = text[len(echo):]
     return text.strip()
+
+  def qmp(self, events):
+    """Input events (QMP input-send-event): keys, buttons, pointer."""
+    if not self.qmp_file:
+      q = socket.socket(socket.AF_UNIX)
+      q.connect(self.qmp_sock)
+      self.qmp_file = q.makefile('rw')
+      self.qmp_file.readline()
+      self.qmp_file.write(json.dumps({'execute': 'qmp_capabilities'}) + '\n')
+      self.qmp_file.flush()
+      self.qmp_file.readline()
+    self.qmp_file.write(json.dumps({'execute': 'input-send-event',
+                                    'arguments': {'events': events}}) + '\n')
+    self.qmp_file.flush()
+    return 'return' in self.qmp_file.readline()
 
   def send(self, data):
     self.proc.stdin.write(data)
@@ -278,6 +297,63 @@ def test_images(b):
   b.run('img free-image close-screen previous')
 
 
+def qkey(name, down):
+  return {'type': 'key', 'data': {'down': down, 'key': {'type': 'qcode', 'data': name}}}
+
+
+def qbtn(down):
+  return {'type': 'btn', 'data': {'down': down, 'button': 'left'}}
+
+
+def test_input(b, what):
+  """A keyboard and a pointer (virtio on virt, USB on raspi3b), driven by
+  QMP: keys held and released, the button, absolute then relative motion;
+  then typing at the prompt."""
+  b.run('sdl2 1 to zoom 320 240 screen')
+  b.run(': st [char] a pressed? . key-left pressed? . LEFT-BUTTON pressed? . '
+        'mouse-x . mouse-y . last-key . ;')
+  b.run(': watch ( ms -- ) ticks + begin events dup ticks - 0< until drop st ;')
+
+  def during_watch(events):
+    b.send(b'600 watch\r')
+    time.sleep(0.2)
+    ok = b.qmp(events)
+    b.wait_for(PROMPT, b.pos, 10)
+    i = b.out.rfind(PROMPT)
+    text = b.out[b.pos:i].replace('\r', '')
+    b.pos = i + len(PROMPT)
+    return ok, text.replace('600 watch', '').split()[:6]
+
+  abs_xy = [{'type': 'abs', 'data': {'axis': 'x', 'value': 16384}},
+            {'type': 'abs', 'data': {'axis': 'y', 'value': 8192}}]
+  ok, r = during_watch([qkey('a', True), qkey('left', True), qbtn(True)] + abs_xy)
+  check('%s: keys, button, pointer down' % what, r, ok and r == ['-1', '-1', '-1', '160', '60', '208'])
+  ok, r = during_watch([qkey('a', False)])
+  check('%s: a released' % what, r, ok and r == ['0', '-1', '-1', '160', '60', '208'])
+  rel = [{'type': 'rel', 'data': {'axis': 'x', 'value': 10}},
+         {'type': 'rel', 'data': {'axis': 'y', 'value': 5}}]
+  ok, r = during_watch([qkey('left', False), qbtn(False)] + rel)
+  check('%s: all released, mouse moved by 10 5' % what, r, ok and r == ['0', '0', '0', '170', '65', '208'])
+  # Back to the middle, where breakout's paddle starts (it follows the mouse).
+  during_watch(abs_xy)
+  b.run('close-screen previous')
+  # QEMU's USB keyboard queues 16 events at most: type in two goes.
+  keys = []
+  for k in ['2', 'spc', '3', 'spc']:
+    keys += [qkey(k, True), qkey(k, False)]
+  b.qmp(keys)
+  time.sleep(0.3)
+  keys = [qkey('shift', True), qkey('8', True), qkey('8', False), qkey('shift', False)]
+  for k in ['spc', 'dot', 'ret']:
+    keys += [qkey(k, True), qkey(k, False)]
+  b.qmp(keys)
+  b.wait_for(PROMPT, b.pos, 10)
+  i = b.out.rfind(PROMPT)
+  r = b.out[b.pos:i].replace('\r', '')
+  b.pos = i + len(PROMPT)
+  check('%s: typing at the prompt' % what, r, '2 3 * .' in r and '6' in r.split())
+
+
 def test_breakout(b):
   """Loads examples/sdl2_breakout.fs line by line (the line `run` starts
   the game), checks the screen, launches the ball, quits with Esc."""
@@ -310,11 +386,13 @@ def test_breakout(b):
 
 
 def test_screen_only(name, args, tmp):
-  """virt with -device ramfb: the same screen tests as on raspi3b."""
+  """virt with -device ramfb and virtio input: the same screen and input
+  tests as on raspi3b."""
   print('%s: qemu %s' % (name, ' '.join(args)))
   b = Board(args, tmp)
   try:
     b.boot()
+    test_input(b, 'virtio')
     test_lines(b)
     test_text(b)
     test_images(b)
@@ -361,6 +439,7 @@ def test_board(name, args, has_gpio, tmp):
       r = b.run('sdl2 320 240 screen')
       check('no screen on virt without ramfb', r, 'ERROR' in r)
     if has_gpio:
+      test_input(b, 'usb')
       test_lines(b)
       test_text(b)
       test_images(b)
@@ -379,10 +458,13 @@ def main():
   os.makedirs(tmp, exist_ok=True)
   test_board('qemu-virt', ['-M', 'virt', '-cpu', 'cortex-a53', '-m', '128M',
                            '-kernel', os.path.join(out, 'virt', 'lugforth.elf')], False, tmp)
-  test_screen_only('qemu-virt + ramfb',
+  test_screen_only('qemu-virt + ramfb + virtio input',
                    ['-M', 'virt', '-cpu', 'cortex-a53', '-m', '128M', '-device', 'ramfb',
+                    '-global', 'virtio-mmio.force-legacy=false', '-device', 'virtio-keyboard-device',
+                    '-device', 'virtio-tablet-device', '-device', 'virtio-mouse-device',
                     '-kernel', os.path.join(out, 'virt', 'lugforth.elf')], tmp)
-  test_board('pi3', ['-M', 'raspi3b', '-no-reboot',
+  test_board('pi3', ['-M', 'raspi3b', '-no-reboot', '-device', 'usb-kbd', '-device', 'usb-tablet',
+                     '-device', 'usb-mouse',
                      '-kernel', os.path.join(out, 'pi3', 'kernel8.img')], True, tmp)
   print('%s' % ('ALL OK' if failures == 0 else '%d FAILED' % failures))
   sys.exit(1 if failures else 0)

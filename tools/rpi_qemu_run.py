@@ -20,6 +20,8 @@ terminal into the board's keyboard and console.
   tools/rpi_qemu_run.py examples/sdl2_breakout.fs
   tools/rpi_qemu_run.py --board virt examples/sdl2_breakout.fs   (ramfb screen)
 
+The keyboard and mouse of the QEMU window work too (USB on raspi3b,
+virtio on virt): in a game, and at the prompt, whose output stays here.
 Each line is sent once the prompt is back. A line that does not give the
 prompt back within a few seconds (a game loop) ends the sending. Ctrl-]
 quits (QEMU too).
@@ -48,10 +50,12 @@ def main():
 
   qemu = [os.environ.get('QEMU', 'qemu-system-aarch64')]
   if args.board == 'pi3':
-    qemu += ['-M', 'raspi3b', '-no-reboot',
+    qemu += ['-M', 'raspi3b', '-no-reboot', '-device', 'usb-kbd', '-device', 'usb-tablet',
              '-kernel', os.path.join(args.out, 'pi3', 'kernel8.img')]
   else:
     qemu += ['-M', 'virt', '-cpu', 'cortex-a53', '-m', '128M', '-device', 'ramfb',
+             '-global', 'virtio-mmio.force-legacy=false',
+             '-device', 'virtio-keyboard-device', '-device', 'virtio-tablet-device',
              '-kernel', os.path.join(args.out, 'virt', 'lugforth.elf')]
   if args.headless:
     qemu += ['-display', 'none']

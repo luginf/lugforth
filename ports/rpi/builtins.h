@@ -58,11 +58,23 @@
   XV(rpi, "IMAGE-DRAW", IMAGE_DRAW, \
      image_draw(n8, n7, n6, n5, n4, n3, n2, n1, n0); DROPn(9))
 
+// Keyboard and mouse (input.h), and the serial line alone for the sdl2
+// words' own key decoding.
+#define RPI_INPUT_SUPPORT \
+  XV(rpi, "INPUT-EVENTS", INPUT_EVENTS, input_snapshot()) \
+  XV(rpi, "INPUT-DOWN?", INPUT_DOWN, n0 = input_down(n0)) \
+  XV(rpi, "INPUT-LAST-KEY", INPUT_LAST_KEY, PUSH input_last_key()) \
+  XV(rpi, "INPUT-MOUSE-X", INPUT_MOUSE_X, PUSH in_mouse_x) \
+  XV(rpi, "INPUT-MOUSE-Y", INPUT_MOUSE_Y, PUSH in_mouse_y) \
+  XV(rpi, "INPUT-WHEEL", INPUT_WHEEL, PUSH in_wheel) \
+  XV(rpi, "UART-KEY", UART_KEY, PUSH uart_getc_nowait())
+
 #define PLATFORM_OPCODE_LIST \
   REQUIRED_MEMORY_SUPPORT \
   REQUIRED_SYSTEM_SUPPORT \
   RPI_SUPPORT \
   RPI_SCREEN_SUPPORT \
+  RPI_INPUT_SUPPORT \
   CALLING_OPCODE_LIST \
   FLOATING_POINT_LIST
 

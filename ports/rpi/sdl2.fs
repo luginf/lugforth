@@ -85,10 +85,12 @@ $808080 constant gray
 0 value dt   0 value last-flip
 : flip ( -- ) fb-flip  ticks dup last-flip - to dt  to last-flip ;
 
-( ---- Keys, from the serial line ---- )
-\ A terminal sends a byte when a key goes down, and again for each auto-repeat,
-\ never when it goes up. So a key counts as held for key-hold ms after its
-\ last byte. Arrows come as ESC [ A..D. Raise key-hold (or shorten the
+( ---- Keys and mouse: a real keyboard, and the serial line ---- )
+\ A keyboard and mouse (virtio-input on QEMU virt, USB on the Pi: input.h)
+\ give real key down and up and the pointer. The serial line works too, but
+\ a terminal sends a byte when a key goes down, and again for each
+\ auto-repeat, never when it goes up. So a key typed there counts as held
+\ for key-hold ms after its last byte. Arrows come as ESC [ A..D. Raise key-hold (or shorten the
 \ terminal's auto-repeat delay, xset r rate 200 40) if a held key stutters.
 255 constant LEFT-BUTTON   254 constant MIDDLE-BUTTON   253 constant RIGHT-BUTTON
 208 constant key-left    207 constant key-right
@@ -104,7 +106,7 @@ forget-keys
 : key-hit ( k -- ) 255 and dup to last-key  ticks swap cells key-times + ! ;
 : key-within ( ms -- k|-1 )   ( a byte, or -1 if none comes in time )
   ticks + { end }
-  begin key? if key exit then ticks end - 0< 0= until -1 ;
+  begin uart-key dup 0< 0= if exit then drop ticks end - 0< 0= until -1 ;
 : arrow ( c -- )
   dup [char] A = if drop key-up key-hit exit then
   dup [char] B = if drop key-down key-hit exit then
@@ -123,16 +125,19 @@ forget-keys
   dup 127 = if drop key-backspace key-hit exit then
   dup [char] A >= over [char] Z <= and if 32 + then
   key-hit ;
-: events ( -- ) begin key? while key one-key repeat ;
-: pressed? ( k -- f )
-  dup [char] A >= over [char] Z <= and if 32 + then
-  255 and cells key-times + @ ticks swap - key-hold < ;
+: events ( -- )
+  input-events   input-last-key ?dup if to last-key then
+  begin uart-key dup 0< 0= while one-key repeat drop ;
+: pressed? ( k -- f )   ( held on a keyboard, or recently on the serial line )
+  dup [char] A >= over [char] Z <= and if 32 + then 255 and
+  dup input-down? if drop -1 exit then
+  cells key-times + @ ticks swap - key-hold < ;
 : scan? ( k -- f ) drop 0 ;
 : quit? ( -- f ) quitting ;
 : quit! ( -- ) -1 to quitting ;
-: mouse-x ( -- n ) 0 ;
-: mouse-y ( -- n ) 0 ;
-: wheel ( -- n ) 0 ;
+: mouse-x ( -- n ) input-mouse-x ;
+: mouse-y ( -- n ) input-mouse-y ;
+: wheel ( -- n ) input-wheel ;
 
 ( ---- Text: one built-in 8x8 font, scaled ---- )
 \ As sdl2-ttf on Linux, but no TrueType: load-font ignores the file name and

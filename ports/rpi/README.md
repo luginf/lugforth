@@ -66,8 +66,8 @@ The words that exist:
   -38 for any other name. Add your own with
   `make ASSETS="a.png b.png"`.
 * Time: `ticks delay dt`.
-* Input: `events pressed? last-key quit? quit!`, the `key-` constants.
-  `mouse-x`, `mouse-y` and `wheel` are always 0.
+* Input: `events pressed? last-key quit? quit! mouse-x mouse-y wheel`, the
+  `key-` and `-BUTTON` constants. `scan?` is always false.
 * Sound: `beep` and `drum-hit` are silent.
 
 How it works:
@@ -88,12 +88,33 @@ How it works:
   are written through `fw_cfg` (the file `etc/ramfb`, by DMA). Without
   `-device ramfb` there is no such file, so `screen` throws -21.
 
-Keys come from the serial terminal, which sends a byte when a key goes down
-(and again for each auto-repeat) but nothing when it goes up. So a key counts
-as held for `key-hold` ms (120) after its last byte. A held arrow moves,
-pauses for the terminal's repeat delay, then moves on. `xset r rate 200 40`
-shortens that pause. A USB keyboard would need a USB host stack (DWC2 on the
-Pi 3).
+Keys and mouse (`input.h`, `usb.h`, `virtio.h`):
+
+* A real keyboard and pointer give true key down and up, the position and
+  the buttons, polled without interrupts. The keys typed also reach the
+  prompt (`key`). While a game calls `events`, they are game keys only.
+  * Pi 3: the USB host controller (DWC2), in DMA mode, enumerates through
+    hubs. It keeps boot keyboards, boot mice and QEMU's `usb-tablet`
+    (absolute). QEMU: `-device usb-kbd -device usb-tablet`.
+  * virt: `virtio-input` (`-device virtio-keyboard-device -device
+    virtio-tablet-device`, or `virtio-mouse-device`), over modern
+    virtio-mmio, hence `-global virtio-mmio.force-legacy=false` (QEMU's
+    default is legacy). The same virtio layer serves the sound.
+  * `make breakout`, `make screen` and `tools/rpi_qemu_run.py` add these
+    devices, so the QEMU window's keyboard and mouse work.
+  * Not done: split transactions. A full or low speed keyboard behind a high
+    speed hub needs them, and the USB ports of a real Pi 3 B are behind one
+    (LAN9514). A Pi 3 A+ has its port on the controller itself. The Pi 4's
+    USB-A ports are on an xHCI controller, not handled.
+* The serial terminal still works: it sends a byte when a key goes down (and
+  again for each auto-repeat) but nothing when it goes up. So a key typed
+  there counts as held for `key-hold` ms (120) after its last byte.
+  `xset r rate 200 40` shortens the pause of a held key before it repeats.
+
+`make test` drives the keyboard and pointer through QEMU's QMP
+(`input-send-event`) on virt and raspi3b. It checks keys held and released,
+the button, absolute and relative motion, and typing `2 3 * .` at the
+prompt.
 
 `make test` does this on raspi3b and on virt with ramfb. It loads breakout
 this way, reads the screen through QEMU's
@@ -181,7 +202,7 @@ behind the firmware mailbox, which is not done yet.
 ## Not done yet
 
 * No filesystem (no SD card driver): programs come in over the serial line.
-* No sound in the sdl2 words; no USB keyboard or mouse.
+* No sound in the sdl2 words. USB: no split transactions (real Pi 3 B), no Pi 4.
 * Real hardware: no data cache invalidation before the MMU goes on. The
   firmware runs with caches off, so this should not matter, but it is
   unchecked. The Pi 4 GIC addresses (0xFF841000/0xFF842000) are from the
