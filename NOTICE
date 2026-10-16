@@ -15,6 +15,7 @@ Additions and modifications, Copyright 2026 Luginfo10, under the same license:
   - text editors ed and writhdeck (ports/posix/editor.fs, writhdeck.fs, eval_copy.fs), after the author's WrithDeck
   - lugforth-mini, the POSIX build without editors, SDL2 and servers (ports/posix/posix_mini_boot.fs)
   - the line editor (common/lineedit.fs) and the SDL console window with colors (ports/posix/sdl2_console*.fs)
+  - bare-metal AArch64 port for QEMU and the Raspberry Pi 3/4 (ports/rpi/)
 
 Files adapted from upstream carry both the original notice and a line
 "Modifications Copyright 2026 Luginfo10".
@@ -22,3 +23,6 @@ Files adapted from upstream carry both the original notice and a line
 examples/2048.fs, examples/3d.fs, examples/sdl2_3d.fs, examples/inference/inference.fs and examples/inference/weather.fs
 (and their tests) derive from the 2048-game, 3Dforms and INFERENCE projects of Marc Petremann
 (https://github.com/MPETREMANN11/eForth-Windows), GNU General Public License. They are GPL, not Apache 2.0.
+
+ports/rpi/font8x8.h is font8x8 by Daniel Hepper (https://github.com/dhepper/font8x8), after
+Marcel Sondaar and the IBM VGA fonts, in the public domain.

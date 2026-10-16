@@ -57,6 +57,25 @@ in `ports/web/platform.fs`), a "⋮" button for Examples/A-/A+/Help, and home. T
 the Ctrl button on a real soft keyboard (letters may arrive as key events rather than text input), and that
 nothing shows that Ctrl is armed (an indicator would help).
 
+## Bare-metal AArch64 (ports/rpi)
+
+`make -C ports/rpi test` builds out/rpi/{virt/lugforth.elf,pi3/kernel8.img,pi4/kernel8.img} and boots the first two
+under QEMU (`virt`, `raspi3b`), checking answers over the serial line (tools/rpi_qemu_test.py). Needs
+`gcc-aarch64-linux-gnu picolibc-aarch64-linux-gnu qemu-system-arm` (apt, installable in the cloud container).
+No OS, picolibc, PL011 console, MMU identity map (needed: unaligned accesses fault with it off), faults become
+THROW. Not tried on a real Pi; Pi 4 written blind (QEMU 8.2 has no raspi4b). See ports/rpi/README.md.
+Graphics: `sdl2` short words on the mailbox framebuffer (ports/rpi/sdl2.fs, screen.h), keys from the UART;
+`make -C ports/rpi breakout` plays examples/sdl2_breakout.fs in a QEMU raspi3b window (`BOARD=virt`: virt with
+`-device ramfb`, set up through fw_cfg), `make test` checks both by screendump.
+Text (font8x8), images (PNGs built in by tools/rpi_assets.py), keyboard/mouse (virtio-input on virt with
+`-global virtio-mmio.force-legacy=false`, DWC2 USB HID on pi3; tested through QMP input-send-event), sound
+(sound.h mixer, virtio-sound on virt checked from a -audiodev wav file; Pi 3 PWM+DMA written blind), `paste`
+(a whole file over serial, then Ctrl-D: multi-line strings work). `make roguelike` runs examples/sdl2_roguelike.fs.
+QEMU runs a whole bcm2835 DMA chain at once: a looping chain hangs it (even SIGTERM), so never start one blindly.
+Files: storage.h (Pi SDHCI/EMMC polled, virt virtio-blk) + fat.h (FAT12/16/32, MBR or not, LFN read, 8.3 create),
+the standard file words, so include/ls/cat work; autoexec.fs runs at boot. tools/rpi_mkdisk.py makes images (needs
+dosfstools mtools); make test checks them afterwards with mtools and fsck.fat.
+
 ## Ports from eForth Windows (Marc Petremann, GPL) - done 2026-10-13
 
 Source: https://github.com/MPETREMANN11/eForth-Windows (clone it into the scratchpad to read). Its eForth is
