@@ -18,7 +18,10 @@ the serial console: arithmetic, floats, timer, faults, allocation, GPIO,
 and that `bye` makes QEMU exit. On raspi3b it also loads
 examples/sdl2_breakout.fs over the serial line, plays it, and checks the
 screen's pixels (QEMU monitor `screendump`); the same on virt with
--device ramfb.
+-device ramfb. Each board also gets a FAT disk (made with dosfstools and
+mtools: FAT16 and FAT12 on virt's virtio-blk, MBR + FAT32 on raspi3b's SD
+card), used through the file words and checked afterwards with mtools and
+fsck.fat.
 
   tools/rpi_qemu_test.py [out/rpi]        (what `make -C ports/rpi test` runs)
 """
@@ -451,6 +454,89 @@ def check_sound(path):
         all(abs(g - f) / f < 0.03 for g, f in zip(got, want)))
 
 
+# ---- files: a FAT disk made here with dosfstools and mtools, used by the
+# board, then read back and checked (fsck.fat) once QEMU has stopped ----
+DISK_FILES = {
+    'hello.fs': b': hi ." Bonjour du disque" cr ;\nhi\nneeds lib/util.fs\n',
+    'lib/util.fs': b': twice 2 * ;\n." util loaded" cr\n',
+    'un-nom-assez-long.fs': b'." nom long ok" cr\n',
+    'autoexec.fs': b'." autoexec ran" cr\n',
+}
+
+
+def make_disk(path, fat, mbr):
+  """A disk image with DISK_FILES (tools/rpi_mkdisk.py), its mtools spec."""
+  sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+  import rpi_mkdisk
+  spec = rpi_mkdisk.make_disk(path, fat, mbr)
+  tmp = path + '.d'
+  for name, data in DISK_FILES.items():
+    os.makedirs(os.path.dirname(os.path.join(tmp, name)), exist_ok=True)
+    with open(os.path.join(tmp, name), 'wb') as f:
+      f.write(data)
+    rpi_mkdisk.put(spec, os.path.join(tmp, name), name)
+  return spec
+
+
+def test_files(b, what):
+    """The file words on the disk: ls, include and needs (a subdirectory, a
+    long name), a file over several clusters written and read back, rename
+    into a directory, delete, resize, and the errors."""
+    r = b.run('rpi disk? . forth')
+    check('%s: disk mounted' % what, r, r.split()[0] == '-1')
+    r = b.run('ls')
+    names = r.lower().split()
+    check('%s: ls' % what, r, all(n in names for n in ['hello.fs', 'un-nom-assez-long.fs', 'lib/']))
+    r = b.run('include hello.fs  21 twice .')
+    check('%s: include, needs lib/util.fs' % what, r,
+          'Bonjour du disque' in r and 'util loaded' in r and '42' in r.split())
+    r = b.run('include un-nom-assez-long.fs')
+    check('%s: a long name' % what, r, 'nom long ok' in r)
+    b.run('0 value buf  0 value fh  : pattern ( -- ) 20000 0 do i 7 * 255 and buf i + c! loop ;')
+    b.run(': big  20000 allocate throw to buf  pattern  s" big.bin" w/o create-file throw to fh '
+          '20 0 do buf i 1000 * + 1000 fh write-file throw loop  fh close-file throw ;')
+    r = b.run('big')
+    check('%s: write 20000 bytes' % what, r, 'ERROR' not in r)
+    b.run(': same? ( a -- f ) -1 swap 20000 0 do dup i + c@ i 7 * 255 and <> if swap drop 0 swap then loop drop ;')
+    b.run(': back  s" big.bin" r/o open-file throw to fh  fh file-size throw . '
+          '20000 allocate throw dup 20000 fh read-file throw .  fh close-file throw  dup same? .  free throw ;')
+    r = b.run('back')
+    check('%s: read back, size and bytes' % what, r, r.split()[:3] == ['20000', '20000', '-1'])
+    r = b.run('s" big.bin" s" lib/moved.bin" rename-file . s" big.bin" r/o open-file . drop')
+    check('%s: rename into lib, old name gone' % what, r, r.split()[:2] == ['0', '2'])
+    b.run(': note  s" notes.txt" w/o create-file throw to fh  s" ecrit par lugforth" fh write-file throw '
+          ' 5 fh resize-file throw  fh file-size throw .  fh close-file throw ;')
+    r = b.run('note')
+    check('%s: resize-file' % what, r, r.split()[0] == '5')
+    r = b.run('s" tmp.txt" w/o create-file throw close-file . s" tmp.txt" delete-file . '
+              's" tmp.txt" r/o open-file . drop  s" nothing/here.fs" r/o open-file . drop')
+    check('%s: delete, missing file and directory' % what, r, r.split()[:4] == ['0', '0', '2', '2'])
+    r = b.run('s" much-too-long-name.text" w/o create-file . drop')
+    check('%s: a long new name is refused' % what, r, r.split()[0] == '36')
+
+
+def check_disk(path, spec, what):
+    """After QEMU: what the board wrote, as Linux sees it, and fsck.fat."""
+    def mtype(name):
+        p = subprocess.run(['mtype', '-i', spec, '::/' + name], capture_output=True)
+        return p.stdout if p.returncode == 0 else None
+    want = bytes(i * 7 & 255 for i in range(20000))
+    check('%s: lib/moved.bin as written (mtools)' % what, '', mtype('lib/moved.bin') == want)
+    check('%s: notes.txt is "ecrit"' % what, mtype('notes.txt'), mtype('notes.txt') == b'ecrit')
+    gone = [n for n in ['big.bin', 'tmp.txt'] if mtype(n) is not None]
+    check('%s: deleted and renamed names are gone' % what, gone, not gone)
+    listing = subprocess.run(['mdir', '-i', spec, '-b', '::/'], capture_output=True, text=True).stdout
+    check('%s: lower case names stay lower case' % what, listing, '::/notes.txt' in listing)
+    part = path
+    if spec.endswith('@@1M'):
+        part = path + '.part'
+        with open(path, 'rb') as f, open(part, 'wb') as g:
+            f.seek(1 << 20)
+            g.write(f.read())
+    p = subprocess.run(['fsck.fat', '-n', part], capture_output=True, text=True)
+    check('%s: fsck.fat finds nothing wrong' % what, p.stdout[-300:], p.returncode == 0)
+
+
 def test_breakout(b):
   """Loads examples/sdl2_breakout.fs line by line (the line `run` starts
   the game), checks the screen, launches the ball, quits with Esc."""
@@ -482,6 +568,15 @@ def test_breakout(b):
   check('prompt after breakout', r, r.split()[0] == '6')
 
 
+def disk_args(tmp, name, fat, mbr, sd):
+  path = os.path.join(tmp, name)
+  spec = make_disk(path, fat, mbr)
+  if sd:
+    return path, spec, ['-drive', 'if=sd,format=raw,file=%s' % path]
+  return path, spec, ['-drive', 'if=none,id=disk0,format=raw,file=%s' % path,
+                      '-device', 'virtio-blk-device,drive=disk0']
+
+
 def test_screen_only(name, args, tmp):
   """virt with -device ramfb, virtio input and sound: the same screen and
   input tests as on raspi3b, and the sound, recorded in tmp/sound.wav."""
@@ -489,10 +584,14 @@ def test_screen_only(name, args, tmp):
   if os.path.exists(wav):
     os.remove(wav)
   args = args + ['-audiodev', 'wav,id=snd0,path=%s' % wav, '-device', 'virtio-sound-device,audiodev=snd0']
+  disk, spec, dargs = disk_args(tmp, 'fat12.img', 12, False, False)
+  args = args + dargs
   print('%s: qemu %s' % (name, ' '.join(args)))
   b = Board(args, tmp)
   try:
-    b.boot()
+    banner = b.boot()
+    check('virt FAT12: autoexec.fs ran at boot', banner, 'autoexec ran' in banner)
+    test_files(b, 'virt FAT12')
     test_sound_play(b)   # first: the other tests make sounds too
     test_input(b, 'virtio')
     test_lines(b)
@@ -510,14 +609,20 @@ def test_screen_only(name, args, tmp):
     check_sound(wav)
   else:
     check('sound recorded', wav, False)
+  check_disk(disk, spec, 'virt FAT12')
 
 
 def test_board(name, args, has_gpio, tmp):
+  fat, mbr, what = (32, True, 'pi3 SD card, MBR + FAT32') if has_gpio else (16, False, 'virt FAT16')
+  disk, spec, dargs = disk_args(tmp, 'fat%d.img' % fat, fat, mbr, has_gpio)
+  args = args + dargs
   print('%s: qemu %s' % (name, ' '.join(args)))
   b = Board(args, tmp)
   try:
     banner = b.boot()
     check('banner', banner, ('Lugforth (%s)' % name) in banner)
+    check('%s: autoexec.fs ran at boot' % what, banner, 'autoexec ran' in banner)
+    test_files(b, what)
     r = b.run('1 2 + .')
     check('arithmetic', r, r.split()[0] == '3')
     r = b.run('3e 2e f* f.')
@@ -557,6 +662,7 @@ def test_board(name, args, has_gpio, tmp):
     check('session', str(e), False)
   finally:
     b.kill()
+  check_disk(disk, spec, what)
 
 
 def main():
@@ -564,6 +670,7 @@ def main():
   tmp = os.path.join(out, 'test')
   os.makedirs(tmp, exist_ok=True)
   test_board('qemu-virt', ['-M', 'virt', '-cpu', 'cortex-a53', '-m', '128M',
+                           '-global', 'virtio-mmio.force-legacy=false',
                            '-kernel', os.path.join(out, 'virt', 'lugforth.elf')], False, tmp)
   test_screen_only('qemu-virt + ramfb + virtio input',
                    ['-M', 'virt', '-cpu', 'cortex-a53', '-m', '128M', '-device', 'ramfb',

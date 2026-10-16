@@ -151,7 +151,7 @@ forget-keys
 : text-size ( a n -- w h ) text-length 8 * current-font *  8 current-font * ;
 
 ( ---- Images: PNG files built into the kernel ---- )
-\ No filesystem: load-image finds the image by its name, directories
+\ No PNG decoder here: load-image finds the image by its name, directories
 \ ignored, among the ASSETS of ports/rpi/Makefile (converted at build time).
 \ Throws -38 (non-existent file) for any other name.
 : load-image ( a n -- img ) image-load dup 0= if -38 throw then ;

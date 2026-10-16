@@ -355,6 +355,8 @@ extern void _set_tls(void *tls);
 #include "ports/rpi/input.h"
 #include "ports/rpi/usb.h"
 #include "ports/rpi/sound.h"
+#include "ports/rpi/storage.h"
+#include "ports/rpi/fat.h"
 
 static int console_extra_char(void) { snd_pump(); input_poll(); return in_get_char(); }
 #include "ports/rpi/builtins.h"
@@ -370,6 +372,7 @@ int main(int argc, char *argv[]) {
   if (!heap) { uart_puts("lugforth: no memory for the heap\n"); rpi_halt(); }
   input_init();
   snd_init();
+  fs_init();
   forth_init(argc, argv, heap, HEAP_SIZE, boot, sizeof(boot));
   for (;;) { g_sys->rp = forth_run(g_sys->rp); }
   return 1;

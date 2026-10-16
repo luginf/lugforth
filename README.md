@@ -119,14 +119,15 @@ see `examples/varvara/README.md`.
 `virt` and `raspi3b` machines (which run fine on a Linux x86_64 PC), a
 Raspberry Pi 3, and a Pi 4 (that one written blind). The console is the
 serial line. The `sdl2` words are there too: screen, text, images, keyboard
-and mouse, beeps and ABC tunes. `examples/sdl2_breakout.fs` and
+and mouse, beeps and ABC tunes. Files are on the SD card (FAT12/16/32):
+`include`, `ls`, and an `autoexec.fs` run at boot. `examples/sdl2_breakout.fs` and
 `sdl2_roguelike.fs` run unchanged:
 
 ```
 sudo apt install gcc-aarch64-linux-gnu picolibc-aarch64-linux-gnu qemu-system-arm
 make -C ports/rpi run                   # the prompt, under QEMU virt
 make -C ports/rpi roguelike BOARD=virt  # a QEMU window, with sound
-make -C ports/rpi test                  # boots both machines and checks 73 things
+make -C ports/rpi test                  # boots both machines and checks 121 things
 ```
 
 What works where, what is tested and how, and what still needs a real board:

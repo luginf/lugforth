@@ -49,6 +49,7 @@ def main():
   ap.add_argument('--headless', action='store_true', help='no QEMU window')
   ap.add_argument('--audio', default=None,
                   help='QEMU audio driver (pa, pipewire, alsa, sdl, none...); default: pa or pipewire if running')
+  ap.add_argument('--disk', help='a FAT image (tools/rpi_mkdisk.py): the SD card, or virt\'s virtio disk')
   ap.add_argument('files', nargs='*')
   args = ap.parse_args()
 
@@ -61,6 +62,12 @@ def main():
              '-global', 'virtio-mmio.force-legacy=false',
              '-device', 'virtio-keyboard-device', '-device', 'virtio-tablet-device',
              '-kernel', os.path.join(args.out, 'virt', 'lugforth.elf')]
+  if args.disk:
+    if args.board == 'pi3':
+      qemu += ['-drive', 'if=sd,format=raw,file=%s' % args.disk]
+    else:
+      qemu += ['-drive', 'if=none,id=disk0,format=raw,file=%s' % args.disk,
+               '-device', 'virtio-blk-device,drive=disk0']
   audio = args.audio
   if audio is None:
     run = os.environ.get('XDG_RUNTIME_DIR', '/run/user/%d' % os.getuid())

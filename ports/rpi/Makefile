@@ -24,6 +24,8 @@
 #   make breakout     the same, with examples/sdl2_breakout.fs sent and started
 #   make roguelike    the same with examples/sdl2_roguelike.fs (images, tunes)
 #                     (BOARD=virt: on QEMU virt, -device ramfb, with sound)
+#   make disk         out/rpi/disk.img: an SD card image (MBR, FAT32) with the
+#                     examples, for DISK=out/rpi/disk.img (needs dosfstools, mtools)
 #   make test         boots both under QEMU and checks the answers
 
 ROOT := ../..
@@ -41,10 +43,10 @@ CFLAGS := --specs=picolibc.specs -mcpu=cortex-a53 -O2 -Wall -Werror -Wno-missing
   -I $(ROOT) -I $(OUT)
 LDFLAGS := -nostartfiles -T rpi.ld -Wl,--no-warn-rwx-segments
 
-SOURCES := start.S main.c builtins.h screen.h font8x8.h virtio.h input.h usb.h sound.h rpi.ld
+SOURCES := start.S main.c builtins.h screen.h font8x8.h virtio.h input.h usb.h sound.h storage.h fat.h rpi.ld
 # Images built into the kernel for load-image (no filesystem): PNG files.
 ASSETS ?= $(ROOT)/examples/sdl2_tiles.png $(ROOT)/examples/sdl2_tiles_alt.png
-FORTH := rpi_boot.fs allocation.fs platform.fs sdl2.fs autoboot.fs $(wildcard $(ROOT)/common/*.fs)
+FORTH := rpi_boot.fs allocation.fs files.fs platform.fs sdl2.fs autoboot.fs $(wildcard $(ROOT)/common/*.fs)
 
 # virt: RAM at 1G (QEMU's default -m 128M). Pi: loaded at 0x80000 by the
 # firmware, the C heap stops at 512M (every Pi 3 and 4 has that much).
@@ -91,14 +93,20 @@ run-pty: $(OUT)/virt/lugforth.elf
 	$(QEMU) -M virt -cpu cortex-a53 -m 128M -display none -monitor none -serial pty -kernel $<
 
 BOARD ?= pi3
+DISK ?=
+RUN := python3 $(ROOT)/tools/rpi_qemu_run.py --board $(BOARD) --out $(OUT) $(if $(DISK),--disk $(DISK))
 screen: all
-	python3 $(ROOT)/tools/rpi_qemu_run.py --board $(BOARD) --out $(OUT)
+	$(RUN)
 
 breakout: all
-	python3 $(ROOT)/tools/rpi_qemu_run.py --board $(BOARD) --out $(OUT) $(ROOT)/examples/sdl2_breakout.fs
+	$(RUN) $(ROOT)/examples/sdl2_breakout.fs
 
 roguelike: all
-	python3 $(ROOT)/tools/rpi_qemu_run.py --board $(BOARD) --out $(OUT) $(ROOT)/examples/sdl2_roguelike.fs
+	$(RUN) $(ROOT)/examples/sdl2_roguelike.fs
+
+disk:
+	mkdir -p $(OUT)
+	python3 $(ROOT)/tools/rpi_mkdisk.py $(OUT)/disk.img $(wildcard $(ROOT)/examples/*.fs)
 
 test: all
 	python3 $(ROOT)/tools/rpi_qemu_test.py $(OUT)
@@ -107,5 +115,5 @@ clean:
 	rm -rf $(OUT)
 
 .SECONDARY:
-.PHONY: all run run-pi3 run-pty screen breakout roguelike test clean FORCE
+.PHONY: all run run-pi3 run-pty screen breakout roguelike disk test clean FORCE
 FORCE:

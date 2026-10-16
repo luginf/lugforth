@@ -19,7 +19,7 @@ internals definitions
 yield-task start-task
 forth definitions
 
-( Basic I/O: the PL011 UART, see main.c. No filesystem. )
+( Basic I/O: the PL011 UART, see main.c. Files: fat.h, see files.fs. )
 also internals definitions
 : setup-saving-base ;  ( no saved image )
 variable last-key  -1 last-key !
@@ -57,7 +57,7 @@ transfer rpi-builtins
 forth definitions
 
 ( paste: a whole file over the serial line, evaluated as include would )
-\ There is no filesystem: send `paste`, then the text, then Ctrl-D (4). The
+\ Without an SD card: send `paste`, then the text, then Ctrl-D (4). The
 \ text is kept and evaluated at once, so strings and comments may span
 \ lines (r~ ... ~ tunes, for example), which line by line sending breaks.
 \ tools/rpi_qemu_run.py sends files this way.

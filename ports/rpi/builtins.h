@@ -14,8 +14,7 @@
 
 // Peripherals are memory-mapped (UL@ and L! reach them), so only what needs
 // C is here: memory, time, the console, leaving, and the board's addresses
-// for platform.fs. No filesystem, like ports/gba: nothing in the boot chain
-// opens a file.
+// for platform.fs. Files: the FAT of the SD card (or virtio disk), fat.h.
 
 #include <stdlib.h>
 #include <string.h>
@@ -82,6 +81,34 @@
   XV(rpi, "SND-TUNE-STOP", SND_TUNE_STOP, snd_tune_stop()) \
   XV(rpi, "SND-TUNE-PLAYING", SND_TUNE_PLAYING, PUSH snd_tune_playing())
 
+// Files on the SD card or the virtio disk (fat.h): the standard words, with
+// the stack effects of ports/esp32 (positions and sizes in one cell).
+#define RPI_FILES_SUPPORT \
+  X("R/O", R_O, PUSH 0) \
+  X("W/O", W_O, PUSH 1) \
+  X("R/W", R_W, PUSH 2) \
+  Y(BIN, ) \
+  X("OPEN-FILE", OPEN_FILE, cell_t mode = n0; DROP; cell_t len = n0; DROP; \
+    cell_t ior; n0 = fat_open(c0, len, mode, 0, &ior); PUSH ior) \
+  X("CREATE-FILE", CREATE_FILE, cell_t mode = n0; DROP; cell_t len = n0; DROP; \
+    cell_t ior; n0 = fat_open(c0, len, mode, 1, &ior); PUSH ior) \
+  X("CLOSE-FILE", CLOSE_FILE, n0 = fat_close(n0)) \
+  X("FLUSH-FILE", FLUSH_FILE, n0 = fh_check(n0) ? FAT_EBADF : (fat_flush() ? FAT_EIO : 0)) \
+  X("READ-FILE", READ_FILE, cell_t fh = n0; DROP; cell_t len = n0; DROP; \
+    cell_t ior; n0 = fat_read(fh, b0, len, &ior); PUSH ior) \
+  X("WRITE-FILE", WRITE_FILE, cell_t fh = n0; DROP; cell_t len = n0; DROP; \
+    n0 = fat_write(fh, b0, len)) \
+  X("FILE-SIZE", FILE_SIZE, cell_t ior; n0 = fat_size(n0, &ior); PUSH ior) \
+  X("FILE-POSITION", FILE_POSITION, cell_t ior; n0 = fat_tell(n0, &ior); PUSH ior) \
+  X("REPOSITION-FILE", REPOSITION_FILE, cell_t fh = n0; DROP; n0 = fat_seek(fh, n0)) \
+  X("RESIZE-FILE", RESIZE_FILE, cell_t fh = n0; DROP; n0 = fat_resize(fh, n0)) \
+  X("DELETE-FILE", DELETE_FILE, cell_t len = n0; DROP; n0 = fat_delete(c0, len)) \
+  X("RENAME-FILE", RENAME_FILE, n3 = fat_rename(c3, n2, c1, n0); DROPn(3)) \
+  X("OPEN-DIR", OPEN_DIR, cell_t ior; n1 = fat_opendir(c1, n0, &ior); n0 = ior) \
+  X("CLOSE-DIR", CLOSE_DIR, n0 = fat_closedir(n0)) \
+  YV(internals, READDIR, SET fat_readdir(n0)) \
+  XV(rpi, "DISK?", DISK_P, PUSH fs.ok ? -1 : 0)
+
 #define PLATFORM_OPCODE_LIST \
   REQUIRED_MEMORY_SUPPORT \
   REQUIRED_SYSTEM_SUPPORT \
@@ -89,6 +116,7 @@
   RPI_SCREEN_SUPPORT \
   RPI_INPUT_SUPPORT \
   RPI_SOUND_SUPPORT \
+  RPI_FILES_SUPPORT \
   CALLING_OPCODE_LIST \
   FLOATING_POINT_LIST
 

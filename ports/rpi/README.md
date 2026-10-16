@@ -26,10 +26,12 @@ picolibc, used for `malloc`, `math.h` and `setjmp`.
 | Keys from the serial line | tested | tested | to try | written blind |
 | Sound, ABC tunes | virtio-sound, tested | silent (QEMU has no PWM sound) | written blind (PWM + DMA) | not done |
 | GPIO words | none on virt | tested | to try | written blind |
+| Files: SD card or disk, FAT12/16/32 | virtio-blk, FAT16 and FAT12, tested | SD card, MBR + FAT32, tested | to try | written blind (EMMC2) |
+| `include`, `ls`, `cat`, `autoexec.fs` at boot | tested | tested | to try | written blind |
 | `paste` (a whole file over serial) | tested | same code, not run by the test | to try | written blind |
 
 Here "tested" means that `make test` (`tools/rpi_qemu_test.py`) checks it
-on every run, 73 checks in all:
+on every run, 121 checks in all:
 
 * Answers are read on the serial line.
 * The screen is read through QEMU's `screendump`. Lines, text and images
@@ -40,6 +42,12 @@ on every run, 73 checks in all:
   and length of beeps, the fade of a hit, the notes of a tune.
 * `examples/sdl2_breakout.fs` (sent line by line) and
   `examples/sdl2_roguelike.fs` (sent with `paste`) run unchanged.
+* Each machine gets a FAT disk made by `tools/rpi_mkdisk.py`: FAT16 and
+  FAT12 on virt, MBR + FAT32 on raspi3b's SD card. The test runs `include`,
+  `needs` into a subdirectory and a long name. It writes 20000 bytes over
+  several clusters and reads them back, then renames, deletes and resizes.
+  Once QEMU has stopped, the image is read back with `mtools` and checked
+  with `fsck.fat`.
 
 To check on a real Pi 3, for these were never run on one:
 
@@ -51,6 +59,10 @@ To check on a real Pi 3, for these were never run on one:
 * The USB keyboard on a Pi 3 A+. On a Pi 3 B, the ports are behind the
   LAN9514 high speed hub, which needs split transactions (not done).
 * The sound on the headphone jack: PWM clock from PLLD, DMA channel 5.
+* The SD card. The EMMC controller is polled, the CPU moves the data, and
+  the pins 48 to 53 are set to ALT3. The clock comes from the firmware's
+  EMMC clock rate, and the card runs at 25 MHz on one data line. Real cards
+  are slower to start than QEMU's.
 * The other cores parked through the spin table.
 * Real caches: there is no invalidation before the MMU goes on.
 
@@ -100,7 +112,7 @@ The words that exist:
   drawn as `?`.
 * Images: `load-image free-image image-size draw draw-size draw-part
   image-alpha image-tint` (and `sdl2-image`, which does nothing). There is
-  no filesystem, so the images are built into the kernel: the PNG files of
+  no PNG decoder on the board, so the images are built into the kernel: the PNG files of
   `ASSETS` in the Makefile (`examples/sdl2_tiles.png`,
   `examples/sdl2_tiles_alt.png`) are turned into pixels by
   `tools/rpi_assets.py`. That script has its own PNG decoder and needs only
@@ -186,9 +198,41 @@ Sound (`sound.h`) is mixed in C at 44100 Hz:
   440 then 660 Hz for 300 ms with 200 ms of silence between, a `drum-hit`
   that fades, and the notes C E G c of a tune.
 
+## Files: the SD card
+
+The file words work on the FAT of the SD card (QEMU raspi3b: `-drive
+if=sd,format=raw,file=card.img`, a size that is a power of 2) or, on virt,
+of a virtio-blk disk (`-drive if=none,id=d0,format=raw,file=disk.img
+-device virtio-blk-device,drive=d0`). These words are `open-file`,
+`create-file`, `read-file`, `write-file`, `file-size`, `reposition-file`,
+`resize-file`, `delete-file`, `rename-file`, `open-dir` and `read-dir`. So
+`include`, `needs`, `ls` and `cat` work, and `rpi disk?` tells whether a
+disk was found.
+
+```sh
+make -C ports/rpi disk                          # out/rpi/disk.img: the examples
+make -C ports/rpi screen DISK=out/rpi/disk.img  # then: ls  include sdl2_roguelike.fs
+tools/rpi_mkdisk.py card.img prog.fs lib/util.fs=util.fs autoexec.fs
+```
+
+* `autoexec.fs` at the root, if there is one, runs at boot after the
+  banner. With an HDMI screen and a USB keyboard, that makes a Pi that
+  starts on its own program.
+* FAT12, FAT16 and FAT32, on the first partition of an MBR (what an SD
+  card formatted on a PC has) or on a disk without one. Paths start at the
+  root, `/` between directories, case ignored.
+* Long names (VFAT) are read, so they can be found and listed. Names
+  created here are short (8.3) and keep lower case as Linux does; a longer
+  name gives error 36.
+* Each `write-file` is on the card before it returns (data, FAT, size). On
+  FAT32 the FSInfo free count is kept right.
+* Errors are errno numbers: 2 not found, 36 name too long, 28 full...
+* Not done: making and removing directories (`mkdir`), and timestamps
+  (new files are dated 2026-01-01).
+
 ## Sending files: paste
 
-There is no filesystem. Type `paste`, send the text, then Ctrl-D (byte 4).
+Without a card, type `paste`, send the text, then Ctrl-D (byte 4).
 The text is kept and evaluated at once, as `include` would, so strings and
 comments may span lines: `examples/sdl2_roguelike.fs` keeps its tunes in
 `r~ ... ~` over several lines, which line by line sending breaks.
@@ -275,7 +319,7 @@ behind the firmware mailbox, which is not done yet.
 
 ## Not done yet
 
-* No filesystem (no SD card driver): programs come in over the serial line.
+* Files: no `mkdir`, no long names when creating, no timestamps.
 * USB: no split transactions (real Pi 3 B), no Pi 4. Sound on the Pi 3 is
   untried, and there is none on the Pi 4.
 * Real hardware: no data cache invalidation before the MMU goes on. The

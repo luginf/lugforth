@@ -12,5 +12,13 @@
 \ See the License for the specific language governing permissions and
 \ limitations under the License.
 
-( No filesystem to autoboot from: the prompt, on the UART. )
+( autoexec.fs at the root of the SD card, if there is one, runs at boot )
+\ After the banner, before the first prompt. An error in it prints and
+\ leaves the prompt, as an error typed there would.
+internals definitions
+: autoexec
+  s" autoexec.fs" r/o open-file if drop exit then close-file drop
+  s" autoexec.fs" ['] included catch if 2drop ." autoexec.fs: error" cr then ;
+' autoexec boot-prompt !
+forth definitions
 ' ok
