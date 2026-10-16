@@ -17,7 +17,8 @@
 the serial console: arithmetic, floats, timer, faults, allocation, GPIO,
 and that `bye` makes QEMU exit. On raspi3b it also loads
 examples/sdl2_breakout.fs over the serial line, plays it, and checks the
-screen's pixels (QEMU monitor `screendump`).
+screen's pixels (QEMU monitor `screendump`); the same on virt with
+-device ramfb.
 
   tools/rpi_qemu_test.py [out/rpi]        (what `make -C ports/rpi test` runs)
 """
@@ -222,6 +223,22 @@ def test_breakout(b):
   check('prompt after breakout', r, r.split()[0] == '6')
 
 
+def test_screen_only(name, args, tmp):
+  """virt with -device ramfb: the same screen tests as on raspi3b."""
+  print('%s: qemu %s' % (name, ' '.join(args)))
+  b = Board(args, tmp)
+  try:
+    b.boot()
+    test_lines(b)
+    test_breakout(b)
+    code = b.bye()
+    check('bye exits qemu', code, code is not None)
+  except Exception as e:
+    check('session', str(e), False)
+  finally:
+    b.kill()
+
+
 def test_board(name, args, has_gpio, tmp):
   print('%s: qemu %s' % (name, ' '.join(args)))
   b = Board(args, tmp)
@@ -254,7 +271,7 @@ def test_board(name, args, has_gpio, tmp):
       r = b.run('also rpi 21 gpio@ previous')
       check('no gpio on virt', r, 'ERROR' in r)
       r = b.run('sdl2 320 240 screen')
-      check('no screen on virt', r, 'ERROR' in r)
+      check('no screen on virt without ramfb', r, 'ERROR' in r)
     if has_gpio:
       test_lines(b)
       test_breakout(b)
@@ -272,6 +289,9 @@ def main():
   os.makedirs(tmp, exist_ok=True)
   test_board('qemu-virt', ['-M', 'virt', '-cpu', 'cortex-a53', '-m', '128M',
                            '-kernel', os.path.join(out, 'virt', 'lugforth.elf')], False, tmp)
+  test_screen_only('qemu-virt + ramfb',
+                   ['-M', 'virt', '-cpu', 'cortex-a53', '-m', '128M', '-device', 'ramfb',
+                    '-kernel', os.path.join(out, 'virt', 'lugforth.elf')], tmp)
   test_board('pi3', ['-M', 'raspi3b', '-no-reboot',
                      '-kernel', os.path.join(out, 'pi3', 'kernel8.img')], True, tmp)
   print('%s' % ('ALL OK' if failures == 0 else '%d FAILED' % failures))

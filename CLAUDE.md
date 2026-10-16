@@ -65,7 +65,8 @@ under QEMU (`virt`, `raspi3b`), checking answers over the serial line (tools/rpi
 No OS, picolibc, PL011 console, MMU identity map (needed: unaligned accesses fault with it off), faults become
 THROW. Not tried on a real Pi; Pi 4 written blind (QEMU 8.2 has no raspi4b). See ports/rpi/README.md.
 Graphics: `sdl2` short words on the mailbox framebuffer (ports/rpi/sdl2.fs, screen.h), keys from the UART;
-`make -C ports/rpi breakout` plays examples/sdl2_breakout.fs in a QEMU raspi3b window, `make test` checks it by screendump.
+`make -C ports/rpi breakout` plays examples/sdl2_breakout.fs in a QEMU raspi3b window (`BOARD=virt`: virt with
+`-device ramfb`, set up through fw_cfg), `make test` checks both by screendump.
 
 ## Ports from eForth Windows (Marc Petremann, GPL) - done 2026-10-13
 

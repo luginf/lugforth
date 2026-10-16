@@ -18,7 +18,7 @@ QEMU window, sends Forth files over the serial line, then turns this
 terminal into the board's keyboard and console.
 
   tools/rpi_qemu_run.py examples/sdl2_breakout.fs
-  tools/rpi_qemu_run.py --board virt          (no screen, prompt only)
+  tools/rpi_qemu_run.py --board virt examples/sdl2_breakout.fs   (ramfb screen)
 
 Each line is sent once the prompt is back. A line that does not give the
 prompt back within a few seconds (a game loop) ends the sending. Ctrl-]
@@ -51,9 +51,9 @@ def main():
     qemu += ['-M', 'raspi3b', '-no-reboot',
              '-kernel', os.path.join(args.out, 'pi3', 'kernel8.img')]
   else:
-    qemu += ['-M', 'virt', '-cpu', 'cortex-a53', '-m', '128M',
+    qemu += ['-M', 'virt', '-cpu', 'cortex-a53', '-m', '128M', '-device', 'ramfb',
              '-kernel', os.path.join(args.out, 'virt', 'lugforth.elf')]
-  if args.headless or args.board == 'virt':
+  if args.headless:
     qemu += ['-display', 'none']
   qemu += ['-serial', 'stdio', '-monitor', 'none']
   proc = subprocess.Popen(qemu, stdin=subprocess.PIPE, stdout=subprocess.PIPE)

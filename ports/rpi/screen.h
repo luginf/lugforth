@@ -14,7 +14,7 @@
 
 // The screen behind ports/rpi/sdl2.fs: the HDMI framebuffer the Pi firmware
 // hands out through the mailbox (QEMU's raspi3b emulates it and shows it in
-// its window). Drawing goes to a back buffer of width x height logical
+// its window), or QEMU virt's ramfb device (-device ramfb). Drawing goes to a back buffer of width x height logical
 // pixels, $rrggbb words; FB-FLIP copies it to the framebuffer, each pixel
 // as a zoom x zoom square, in the pixel order the firmware chose. Included
 // by main.c, after the UART and the MMU code.
@@ -56,14 +56,10 @@ static int mbox_call(volatile uint32_t *buf) {
 }
 #endif
 
-// 0 on success, -1 if there is no framebuffer (QEMU virt, or a refusal).
-static cell_t fb_open(cell_t w, cell_t h, cell_t zoom) {
-  if (w <= 0 || h <= 0 || zoom <= 0) return -1;
-#ifndef MBOX_BASE
-  return -1;
-#else
+#ifdef MBOX_BASE
+// The Pi: ask the firmware for a pw x ph, 32-bit framebuffer.
+static int fb_hw_open(uint32_t pw, uint32_t ph) {
   static volatile uint32_t m[36] __attribute__((aligned(16)));
-  uint32_t pw = (uint32_t) (w * zoom), ph = (uint32_t) (h * zoom);
   uint32_t i = 0;
   m[i++] = 0;                  // size, below
   m[i++] = 0;                  // request
@@ -78,16 +74,90 @@ static cell_t fb_open(cell_t w, cell_t h, cell_t zoom) {
   m[0] = i * 4;
   if (!mbox_call(m)) return -1;
   if (m[20] != 32 || m[28] == 0) return -1;              // depth, address
-  uint32_t *back = (uint32_t *) realloc(fb_back, (size_t) (w * h) * 4);
-  if (!back) return -1;
-  fb_back = back;
   fb_rgb = m[24];
   fb_mem = (volatile uint32_t *) (uint64_t) (m[28] & 0x3FFFFFFFu);
   fb_pitch = m[33];
+  return 0;
+}
+
+#elif defined(RPI_BOARD_VIRT)
+// QEMU virt with -device ramfb: the framebuffer is ordinary RAM of ours,
+// handed to QEMU by writing its address and format to the fw_cfg file
+// "etc/ramfb". fw_cfg (at 0x09020000 on virt) is big-endian: a 16-bit
+// selector, a data register read byte by byte, and a DMA register that
+// takes the address of a request. No ramfb device: no such file, -1.
+# define FWCFG_BASE 0x09020000UL
+
+static uint16_t fwcfg_file(const char *name, uint32_t *size) {
+  *(volatile uint16_t *) (FWCFG_BASE + 8) = __builtin_bswap16(0x19);  // file directory
+  volatile uint8_t *data = (volatile uint8_t *) FWCFG_BASE;
+  uint32_t count = 0;
+  for (int i = 0; i < 4; i++) count = (count << 8) | *data;
+  for (uint32_t f = 0; f < count; f++) {
+    uint8_t e[64];                      // u32 size, u16 select, u16 reserved, name[56]
+    for (int i = 0; i < 64; i++) e[i] = *data;
+    if (strncmp((const char *) e + 8, name, 56) == 0) {
+      *size = ((uint32_t) e[0] << 24) | (e[1] << 16) | (e[2] << 8) | e[3];
+      return (uint16_t) ((e[4] << 8) | e[5]);
+    }
+  }
+  return 0;
+}
+
+static int fb_hw_open(uint32_t pw, uint32_t ph) {
+  static void *mem;
+  static uint32_t mem_size;
+  struct ramfb_cfg {
+    uint64_t addr; uint32_t fourcc, flags, width, height, stride;
+  } __attribute__((packed));
+  static volatile struct ramfb_cfg cfg __attribute__((aligned(16)));
+  static volatile struct { uint32_t control, length; uint64_t address; } dma
+    __attribute__((aligned(16)));
+  uint32_t size;
+  uint16_t sel = fwcfg_file("etc/ramfb", &size);
+  if (!sel || size != sizeof(struct ramfb_cfg)) return -1;
+  uint32_t need = pw * ph * 4;
+  if (need > mem_size) {
+    void *m = malloc(need);
+    if (!m) return -1;
+    free(mem);
+    mem = m; mem_size = need;
+  }
+  cfg.addr = __builtin_bswap64((uint64_t) mem);
+  cfg.fourcc = __builtin_bswap32(0x34325258);   // 'XR24', XRGB8888: byte 0 is blue
+  cfg.flags = 0;
+  cfg.width = __builtin_bswap32(pw);
+  cfg.height = __builtin_bswap32(ph);
+  cfg.stride = __builtin_bswap32(pw * 4);
+  dma.control = __builtin_bswap32(((uint32_t) sel << 16) | 0x08 | 0x10);  // select, write
+  dma.length = __builtin_bswap32(sizeof(struct ramfb_cfg));
+  dma.address = __builtin_bswap64((uint64_t) &cfg);
+  dcache_clean((const void *) &cfg, sizeof cfg);
+  dcache_clean((const void *) &dma, sizeof dma);
+  *(volatile uint64_t *) (FWCFG_BASE + 16) = __builtin_bswap64((uint64_t) &dma);
+  while (__builtin_bswap32(dma.control) & ~1u) {}  // done: 0, failed: bit 0
+  if (dma.control) return -1;
+  fb_mem = (volatile uint32_t *) mem;
+  fb_pitch = pw * 4;
+  fb_rgb = 0;
+  return 0;
+}
+
+#else
+static int fb_hw_open(uint32_t pw, uint32_t ph) { (void) pw; (void) ph; return -1; }
+#endif
+
+// 0 on success, -1 if there is no framebuffer (virt without ramfb, or a
+// refusal).
+static cell_t fb_open(cell_t w, cell_t h, cell_t zoom) {
+  if (w <= 0 || h <= 0 || zoom <= 0 || w * zoom > 4096 || h * zoom > 4096) return -1;
+  if (fb_hw_open((uint32_t) (w * zoom), (uint32_t) (h * zoom))) return -1;
+  uint32_t *back = (uint32_t *) realloc(fb_back, (size_t) (w * h) * 4);
+  if (!back) return -1;
+  fb_back = back;
   fb_w = (int) w; fb_h = (int) h; fb_zoom = (int) zoom;
   for (int k = 0; k < fb_w * fb_h; k++) fb_back[k] = 0;
   return 0;
-#endif
 }
 
 static void fb_set_color(cell_t rgb, cell_t alpha) {

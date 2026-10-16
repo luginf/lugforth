@@ -10,4 +10,4 @@
 | Raspberry Pi Pico | `ports/pico` | USB serial, `tools/pico_send.py` loads a program |
 | pico-ice | `ports/pico-ice` | RP2040 with an FPGA |
 | Game Boy Advance | `ports/gba` | prototype, with a roguelike |
-| Raspberry Pi 3/4, QEMU | `ports/rpi` | bare-metal AArch64, UART console, `sdl2` words on HDMI; tested under QEMU `virt` and `raspi3b` |
+| Raspberry Pi 3/4, QEMU | `ports/rpi` | bare-metal AArch64, UART console, `sdl2` words on HDMI (QEMU: raspi3b, or virt with ramfb); tested under QEMU `virt` and `raspi3b` |

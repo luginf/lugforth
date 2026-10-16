@@ -22,6 +22,7 @@
 #   make run-pty      QEMU virt on a pty, for tools/pico_send.py -p /dev/pts/N
 #   make screen       QEMU raspi3b with its screen in a window, keys from here
 #   make breakout     the same, with examples/sdl2_breakout.fs sent and started
+#                     (BOARD=virt: the same on QEMU virt, -device ramfb)
 #   make test         boots both under QEMU and checks the answers
 
 ROOT := ../..
@@ -50,9 +51,12 @@ PI4_DEFS := -DRPI_BOARD_PI4 -Wl,--defsym=__load_addr=0x80000 -Wl,--defsym=__ram_
 
 all: $(OUT)/virt/lugforth.elf $(OUT)/pi3/kernel8.img $(OUT)/pi4/kernel8.img
 
-$(OUT)/gen/rpi_boot.h: $(FORTH)
+# Rewritten only when the commit changes, so the banner's revision follows it.
+$(OUT)/gen/REVISION: FORCE
 	mkdir -p $(OUT)/gen
-	printf '%s' '$(REVISION)' > $(OUT)/gen/REVISION
+	printf '%s' '$(REVISION)' | cmp -s - $@ || printf '%s' '$(REVISION)' > $@
+
+$(OUT)/gen/rpi_boot.h: $(FORTH) $(OUT)/gen/REVISION
 	printf '%s' '$(REVISION)' | cut -c1-7 > $(OUT)/gen/REVSHORT
 	python3 $(ROOT)/tools/importation.py -i rpi_boot.fs -o $@ -I $(ROOT) -I $(OUT) \
 	  --name boot --header cpp -DVERSION=$(VERSION) -DSTABLE_VERSION=$(VERSION) \
@@ -79,11 +83,12 @@ run-pi3: $(OUT)/pi3/kernel8.img
 run-pty: $(OUT)/virt/lugforth.elf
 	$(QEMU) -M virt -cpu cortex-a53 -m 128M -display none -monitor none -serial pty -kernel $<
 
-screen: $(OUT)/pi3/kernel8.img
-	python3 $(ROOT)/tools/rpi_qemu_run.py --out $(OUT)
+BOARD ?= pi3
+screen: all
+	python3 $(ROOT)/tools/rpi_qemu_run.py --board $(BOARD) --out $(OUT)
 
-breakout: $(OUT)/pi3/kernel8.img
-	python3 $(ROOT)/tools/rpi_qemu_run.py --out $(OUT) $(ROOT)/examples/sdl2_breakout.fs
+breakout: all
+	python3 $(ROOT)/tools/rpi_qemu_run.py --board $(BOARD) --out $(OUT) $(ROOT)/examples/sdl2_breakout.fs
 
 test: all
 	python3 $(ROOT)/tools/rpi_qemu_test.py $(OUT)
@@ -92,4 +97,5 @@ clean:
 	rm -rf $(OUT)
 
 .SECONDARY:
-.PHONY: all run run-pi3 run-pty screen breakout test clean
+.PHONY: all run run-pi3 run-pty screen breakout test clean FORCE
+FORCE:

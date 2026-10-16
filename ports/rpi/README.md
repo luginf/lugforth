@@ -29,8 +29,9 @@ The vocabulary `sdl2` has the same short words as Linux
 `examples/sdl2_breakout.fs` runs unchanged, sent over the serial line:
 
 ```sh
-make -C ports/rpi breakout   # QEMU raspi3b window; play from this terminal
-make -C ports/rpi screen     # the same window, prompt only
+make -C ports/rpi breakout             # QEMU raspi3b window; play from this terminal
+make -C ports/rpi screen               # the same window, prompt only
+make -C ports/rpi breakout BOARD=virt  # QEMU virt with -device ramfb
 ```
 
 `tools/rpi_qemu_run.py` (what both targets run) sends the file one line at a
@@ -68,7 +69,10 @@ How it works:
 * `flip` copies the back buffer to the screen, each pixel as a zoom x zoom
   square, then cleans the data cache. It takes about 5 ms under QEMU at
   zoom 3.
-* `virt` has no such framebuffer, so `screen` throws -21 there.
+* On `virt`, the screen is QEMU's `ramfb` device (`-device ramfb`). The
+  framebuffer is RAM of ours, and its address, size and XRGB8888 format
+  are written through `fw_cfg` (the file `etc/ramfb`, by DMA). Without
+  `-device ramfb` there is no such file, so `screen` throws -21.
 
 Keys come from the serial terminal, which sends a byte when a key goes down
 (and again for each auto-repeat) but nothing when it goes up. So a key counts
@@ -77,7 +81,8 @@ pauses for the terminal's repeat delay, then moves on. `xset r rate 200 40`
 shortens that pause. A USB keyboard would need a USB host stack (DWC2 on the
 Pi 3).
 
-`make test` loads breakout this way, reads the screen through QEMU's
+`make test` does this on raspi3b and on virt with ramfb. It loads breakout
+this way, reads the screen through QEMU's
 `screendump` (bricks, paddle and ball colors), launches the ball with space,
 and leaves with Esc.
 
