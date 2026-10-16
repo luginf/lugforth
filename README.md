@@ -15,7 +15,7 @@ Documentation site: [luginf.github.io/lugforth](https://luginf.github.io/lugfort
 ```
 common/      shared core (Forth sources and C headers)
 ports/       one directory per platform: posix, web, windows, esp32, pico,
-             pico-ice, gba, android
+             pico-ice, gba, android, rpi (bare metal: QEMU, Raspberry Pi 3/4)
 examples/    example programs and benchmarks
 tools/       build and conversion scripts
 docs/        site/ (documentation website), SKILLS.md, WORDS.md, images/
@@ -112,6 +112,25 @@ F4 reboot, drop a ROM on the window; started without a ROM it shows a usage scre
 (`-c` terminal, `-z` zoom, `-s WxH` screen size, `--no-mouse`, `-q`, tokens for writhdeck-uxn). The upstream opcode test (`opctest.rom`)
 passes. It is about 60 times slower than the C uxn, so it suits ROMs that mostly wait for events;
 see `examples/varvara/README.md`.
+
+## Bare metal: QEMU and the Raspberry Pi
+
+`ports/rpi/` runs lugforth with no operating system on 64-bit ARM: QEMU's
+`virt` and `raspi3b` machines (which run fine on a Linux x86_64 PC), a
+Raspberry Pi 3, and a Pi 4 (that one written blind). The console is the
+serial line. The `sdl2` words are there too: screen, text, images, keyboard
+and mouse, beeps and ABC tunes. `examples/sdl2_breakout.fs` and
+`sdl2_roguelike.fs` run unchanged:
+
+```
+sudo apt install gcc-aarch64-linux-gnu picolibc-aarch64-linux-gnu qemu-system-arm
+make -C ports/rpi run                   # the prompt, under QEMU virt
+make -C ports/rpi roguelike BOARD=virt  # a QEMU window, with sound
+make -C ports/rpi test                  # boots both machines and checks 73 things
+```
+
+What works where, what is tested and how, and what still needs a real board:
+[ports/rpi/README.md](ports/rpi/README.md).
 
 ## Building from Source
 

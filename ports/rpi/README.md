@@ -12,6 +12,48 @@ picolibc, used for `malloc`, `math.h` and `setjmp`.
 | Raspberry Pi 3 | same `pi3/kernel8.img` | not yet on a real board |
 | Raspberry Pi 4 | `out/rpi/pi4/kernel8.img` | written blind: QEMU 8.2 has no `raspi4b` |
 
+## Status
+
+| | QEMU `virt` | QEMU `raspi3b` | real Pi 3 | Pi 4 |
+|---|---|---|---|---|
+| Boot, prompt, floats, timer | tested | tested | to try | written blind |
+| Faults become `THROW` | tested | tested | to try | written blind |
+| Idle CPU (sleeps in `wfi`) | ~10% of a host core | ~12% | to try | written blind |
+| Screen, drawing, lines, flip | `-device ramfb`, tested | mailbox, tested | to try | written blind |
+| Text (8x8 font) | tested | tested | to try | written blind |
+| Images (built-in PNGs) | tested | tested | to try | written blind |
+| Keyboard and mouse | virtio-input, tested | USB (DWC2), tested | Pi 3 A+ only: no split transactions | not done (xHCI) |
+| Keys from the serial line | tested | tested | to try | written blind |
+| Sound, ABC tunes | virtio-sound, tested | silent (QEMU has no PWM sound) | written blind (PWM + DMA) | not done |
+| GPIO words | none on virt | tested | to try | written blind |
+| `paste` (a whole file over serial) | tested | same code, not run by the test | to try | written blind |
+
+Here "tested" means that `make test` (`tools/rpi_qemu_test.py`) checks it
+on every run, 73 checks in all:
+
+* Answers are read on the serial line.
+* The screen is read through QEMU's `screendump`. Lines, text and images
+  are compared pixel by pixel with a reference computed in Python.
+* Keys and the pointer are driven through QMP `input-send-event`: held,
+  released, absolute and relative motion, and typing at the prompt.
+* virt's sound is recorded with `-audiodev wav` and analyzed: frequency
+  and length of beeps, the fade of a hit, the notes of a tune.
+* `examples/sdl2_breakout.fs` (sent line by line) and
+  `examples/sdl2_roguelike.fs` (sent with `paste`) run unchanged.
+
+To check on a real Pi 3, for these were never run on one:
+
+* The serial console. The PL011 UART is muxed onto GPIO 14/15 by the
+  kernel itself, at 115200 baud, assuming the firmware's default 48 MHz
+  UART clock.
+* The screen. The mailbox goes through the 0xC0000000 bus alias, and the
+  data cache is cleaned after each `flip`.
+* The USB keyboard on a Pi 3 A+. On a Pi 3 B, the ports are behind the
+  LAN9514 high speed hub, which needs split transactions (not done).
+* The sound on the headphone jack: PWM clock from PLLD, DMA channel 5.
+* The other cores parked through the spin table.
+* Real caches: there is no invalidation before the MMU goes on.
+
 ## Building and running (Linux x86_64 is fine, QEMU emulates the ARM)
 
 ```sh
