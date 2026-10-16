@@ -23,6 +23,7 @@ screen's pixels (QEMU monitor `screendump`).
 """
 
 import os
+import random
 import socket
 import subprocess
 import sys
@@ -143,6 +144,53 @@ def pixel(screen, x, y):
   return '%02x%02x%02x' % (rgb[i], rgb[i + 1], rgb[i + 2])
 
 
+def bresenham(x1, y1, x2, y2):
+  """The plain loop of ports/web/sdl2.fs, every point."""
+  dx, sx = abs(x2 - x1), 1 if x1 < x2 else -1
+  dy, sy = -abs(y2 - y1), 1 if y1 < y2 else -1
+  err = dx + dy
+  while True:
+    yield x1, y1
+    if x1 == x2 and y1 == y2:
+      return
+    e2 = 2 * err
+    if e2 >= dy:
+      err += dy
+      x1 += sx
+    if e2 <= dx:
+      err += dx
+      y1 += sy
+
+
+def test_lines(b):
+  """Lines on and off a 160x120 screen, zoom 1: the clipped C code must
+  light exactly the visible pixels of the plain loop. Then lines 10^12
+  long, which the plain loop could never finish."""
+  w, h = 160, 120
+  rnd = random.Random(7)
+  lines = [(rnd.randint(-300, 460), rnd.randint(-300, 420),
+            rnd.randint(-300, 460), rnd.randint(-300, 420)) for _ in range(60)]
+  lines += [(-50, 10, 300, 10), (20, -40, 20, 500), (159, 119, 400, 119),
+            (5, 5, 5, 5), (-10, -10, 200, 140), (170, 60, 150, 61),
+            # visible at their last point only, from each side
+            (100, 200, 90, 119), (300, 50, 159, 60), (-90, 30, 0, 40), (70, -80, 60, 0)]
+  b.run('sdl2 1 to zoom %d %d screen black color cls white color' % (w, h))
+  for i in range(0, len(lines), 5):
+    b.run(' '.join('%d %d %d %d line' % l for l in lines[i:i + 5]))
+  b.run('flip')
+  want = set()
+  for l in lines:
+    want |= {(x, y) for x, y in bresenham(*l) if 0 <= x < w and 0 <= y < h}
+  s = b.screen()
+  got = {(x, y) for y in range(h) for x in range(w) if pixel(s, x, y) == 'ffffff'}
+  check('clipped lines: %d pixels as the plain loop' % len(want),
+        sorted(want ^ got)[:5], got == want)
+  r = b.run(': far ticks 0 0 1000000000000 300000000000 line '
+            '-5 -7 70 3000000000000 line ticks swap - . ; far')
+  check('lines 10^12 long (%s ms)' % r.split()[0], r, int(r.split()[0]) < 50)
+  b.run('close-screen previous')
+
+
 def test_breakout(b):
   """Loads examples/sdl2_breakout.fs line by line (the line `run` starts
   the game), checks the screen, launches the ball, quits with Esc."""
@@ -208,6 +256,7 @@ def test_board(name, args, has_gpio, tmp):
       r = b.run('sdl2 320 240 screen')
       check('no screen on virt', r, 'ERROR' in r)
     if has_gpio:
+      test_lines(b)
       test_breakout(b)
     code = b.bye()
     check('bye exits qemu', code, code is not None)

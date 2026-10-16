@@ -120,16 +120,74 @@ static void fb_box(cell_t x, cell_t y, cell_t w, cell_t h) {
   }
 }
 
+// Lines: Bresenham, the all-octant form of ports/web/sdl2.fs, clipped to
+// the screen without changing which pixels it draws. Along the main axis
+// it moves one pixel per step; after k steps it has moved
+//   minor(k) = floor((2*k*small + big) / (2*big))
+// pixels on the other axis (big, small: the two |deltas|). minor(k) only
+// grows, so the visible steps are one interval, found by binary search:
+// a line far off the screen costs a few dozen steps, not its length.
+// Horizontal and vertical lines are boxes. A Python copy of this code drew
+// the same pixels as the plain loop for 120000 random lines, ends on and
+// off a 40x30 screen; tools/rpi_qemu_test.py compares the real screen too.
+static void fb_plot(cell_t x, cell_t y) {
+  uint32_t *p = fb_back + y * fb_w + x;
+  *p = fb_alpha == 255 ? fb_color : fb_blend(*p);
+}
+
+static cell_t line_minor(cell_t k, cell_t big, cell_t small) {
+  return (cell_t) (((__int128) 2 * k * small + big) / ((__int128) 2 * big));
+}
+
+// The steps k in [lo, hi] at which start + dir * f(k) is in [0, n - 1],
+// f non-decreasing: f(k) = k (major) or line_minor (minor).
+static void line_window(cell_t start, cell_t dir, cell_t n, cell_t steps,
+                        int major, cell_t big, cell_t small,
+                        cell_t *lo, cell_t *hi) {
+  __int128 fmin = dir > 0 ? -(__int128) start : (__int128) start - (n - 1);
+  __int128 fmax = dir > 0 ? (__int128) n - 1 - start : (__int128) start;
+  if (major) {
+    if (fmin > *lo) *lo = fmin <= steps ? (cell_t) fmin : steps + 1;
+    if (fmax < *hi) *hi = fmax < 0 ? -1 : (cell_t) fmax;
+    return;
+  }
+  cell_t a = 0, b = steps + 1;          // first k with f(k) >= fmin
+  while (a < b) {
+    cell_t m = a + (b - a) / 2;
+    if (line_minor(m, big, small) >= fmin) b = m; else a = m + 1;
+  }
+  if (a > *lo) *lo = a;
+  a = -1; b = steps;                    // last k with f(k) <= fmax
+  while (a < b) {
+    cell_t m = b - (b - a) / 2;
+    if (line_minor(m, big, small) <= fmax) a = m; else b = m - 1;
+  }
+  if (a < *hi) *hi = a;
+}
+
 static void fb_line(cell_t x1, cell_t y1, cell_t x2, cell_t y2) {
+  if (!fb_back) return;
+  if (y1 == y2) { fb_box(x1 < x2 ? x1 : x2, y1, (x1 < x2 ? x2 - x1 : x1 - x2) + 1, 1); return; }
+  if (x1 == x2) { fb_box(x1, y1 < y2 ? y1 : y2, 1, (y1 < y2 ? y2 - y1 : y1 - y2) + 1); return; }
   cell_t dx = x2 > x1 ? x2 - x1 : x1 - x2, sx = x1 < x2 ? 1 : -1;
-  cell_t dy = y2 > y1 ? y1 - y2 : y2 - y1, sy = y1 < y2 ? 1 : -1;
-  cell_t err = dx + dy;
-  for (;;) {
-    fb_box(x1, y1, 1, 1);
-    if (x1 == x2 && y1 == y2) break;
+  cell_t dy = y2 > y1 ? y1 - y2 : y2 - y1, sy = y1 < y2 ? 1 : -1;   // dy <= 0
+  int xmajor = dx >= -dy;
+  cell_t big = xmajor ? dx : -dy, small = xmajor ? -dy : dx;
+  cell_t lo = 0, hi = big;
+  line_window(x1, sx, fb_w, big, xmajor, big, small, &lo, &hi);
+  line_window(y1, sy, fb_h, big, !xmajor, big, small, &lo, &hi);
+  if (lo > hi) return;
+  // The state of the loop at step lo: err = dx + dy + (x steps)*dy + (y steps)*dx.
+  cell_t m = line_minor(lo, big, small);
+  cell_t xs = xmajor ? lo : m, ys = xmajor ? m : lo;
+  cell_t x = x1 + sx * xs, y = y1 + sy * ys;
+  cell_t err = (cell_t) ((__int128) dx + dy + (__int128) xs * dy + (__int128) ys * dx);
+  for (cell_t k = lo; ; k++) {
+    fb_plot(x, y);
+    if (k == hi) break;
     cell_t e2 = 2 * err;
-    if (e2 >= dy) { err += dy; x1 += sx; }
-    if (e2 <= dx) { err += dx; y1 += sy; }
+    if (e2 >= dy) { err += dy; x += sx; }
+    if (e2 <= dx) { err += dx; y += sy; }
   }
 }
 

@@ -61,6 +61,10 @@ How it works:
   `height*zoom` through the mailbox. QEMU's raspi3b emulates it; on HDMI the
   firmware scales it to the monitor.
 * Drawing goes to a back buffer in C (`screen.h`, the `FB-` words of `rpi`).
+* `line` is the same Bresenham loop as the web port, clipped to the screen
+  without changing its pixels. A closed form gives the position after k
+  steps, and a binary search finds the visible steps, so a line 10^12 pixels
+  long takes under 1 ms. Horizontal and vertical lines are boxes.
 * `flip` copies the back buffer to the screen, each pixel as a zoom x zoom
   square, then cleans the data cache. It takes about 5 ms under QEMU at
   zoom 3.
