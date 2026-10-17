@@ -32,9 +32,13 @@ static uint32_t fb_color;         // pen, $rrggbb
 static int fb_alpha = 255;
 
 static void dcache_clean(const void *p, uint64_t n) {
+#if defined(__aarch64__)
   uint64_t a = (uint64_t) p & ~63UL, end = (uint64_t) p + n;
   for (; a < end; a += 64) __asm__ volatile("dc civac, %0" :: "r"(a) : "memory");
   __asm__ volatile("dsb sy" ::: "memory");
+#else
+  (void) p; (void) n;   // x86 (ports/efi): the framebuffer is coherent
+#endif
 }
 
 #ifdef MBOX_BASE
@@ -143,6 +147,9 @@ static int fb_hw_open(uint32_t pw, uint32_t ph) {
   return 0;
 }
 
+#elif defined(FB_HW_EXTERNAL)
+// The port gives it, after this file (ports/efi: the UEFI GOP framebuffer).
+static int fb_hw_open(uint32_t pw, uint32_t ph);
 #else
 static int fb_hw_open(uint32_t pw, uint32_t ph) { (void) pw; (void) ph; return -1; }
 #endif

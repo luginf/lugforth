@@ -15,7 +15,7 @@ Documentation site: [luginf.github.io/lugforth](https://luginf.github.io/lugfort
 ```
 common/      shared core (Forth sources and C headers)
 ports/       one directory per platform: posix, web, windows, esp32, pico,
-             pico-ice, gba, android, rpi (bare metal: QEMU, Raspberry Pi 3/4)
+             pico-ice, gba, android, rpi (bare metal: QEMU, Raspberry Pi 3/4), efi (bare x86-64 PC)
 examples/    example programs and benchmarks
 tools/       build and conversion scripts
 docs/        site/ (documentation website), SKILLS.md, WORDS.md, images/
@@ -132,6 +132,22 @@ make -C ports/rpi test                  # boots both machines and checks 121 thi
 
 What works where, what is tested and how, and what still needs a real board:
 [ports/rpi/README.md](ports/rpi/README.md).
+
+`ports/efi/` is the same on an x86-64 PC: a UEFI application,
+`EFI/BOOT/BOOTX64.EFI` on a FAT32 USB stick, started by the firmware (Secure
+Boot off, then the one-time boot menu, F12 on a Dell). It uses the
+firmware's screen, keyboard and files: the console on the screen, the
+`sdl2` words, `include` and the editors from the stick. It has no sound and
+no mouse.
+
+```
+sudo apt install gnu-efi ovmf qemu-system-x86 dosfstools mtools
+make -C ports/efi usb     # out/efi/usb.img, to dd onto a stick
+make -C ports/efi run     # the same image under QEMU with OVMF
+make -C ports/efi test    # 54 checks under QEMU
+```
+
+See [ports/efi/README.md](ports/efi/README.md).
 
 ## Building from Source
 

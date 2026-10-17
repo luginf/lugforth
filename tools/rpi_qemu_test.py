@@ -400,7 +400,7 @@ def qtap(b, *names):
   time.sleep(1.5)
 
 
-def test_editors(b):
+def test_editors(b, browser_dir='/lib'):
   """ed and writhdeck on the console (ports/posix/editor.fs, writhdeck.fs, run
   from /lib): text typed on the serial line, Home, End and Delete from the USB
   keyboard, saved on the FAT, read back with cat; writhdeck's file browser
@@ -444,7 +444,7 @@ def test_editors(b):
   b.wait_for(PROMPT, b.pos, 20)
   b.pos = len(b.out)
   r = b.run('pwd')
-  check('writhdeck: the browser went into lib/', r, r.split()[0] == '/lib')
+  check('writhdeck: the browser went into %s/' % browser_dir[1:], r, r.split()[0] == browser_dir)
   b.run('cd /')
 
 
@@ -642,7 +642,7 @@ def make_disk(path, fat, mbr):
   return spec
 
 
-def test_files(b, what):
+def test_files(b, what, long_create=False):
     """The file words on the disk: ls, include and needs (a subdirectory, a
     long name), a file over several clusters written and read back, rename
     into a directory, delete, resize, and the errors."""
@@ -675,8 +675,12 @@ def test_files(b, what):
     r = b.run('s" tmp.txt" w/o create-file throw close-file . s" tmp.txt" delete-file . '
               's" tmp.txt" r/o open-file . drop  s" nothing/here.fs" r/o open-file . drop')
     check('%s: delete, missing file and directory' % what, r, r.split()[:4] == ['0', '0', '2', '2'])
-    r = b.run('s" much-too-long-name.text" w/o create-file . drop')
-    check('%s: a long new name is refused' % what, r, r.split()[0] == '36')
+    if long_create:   # the UEFI firmware's FAT driver makes long names
+        r = b.run('s" much-too-long-name.text" w/o create-file . close-file .')
+        check('%s: a long new name is made' % what, r, r.split()[:2] == ['0', '0'])
+    else:
+        r = b.run('s" much-too-long-name.text" w/o create-file . drop')
+        check('%s: a long new name is refused' % what, r, r.split()[0] == '36')
 
 
 def check_disk(path, spec, what):
