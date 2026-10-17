@@ -81,6 +81,17 @@ Files: storage.h (Pi SDHCI/EMMC polled, virt virtio-blk) + fat.h (FAT12/16/32, M
 the standard file words, so include/ls/cat work; autoexec.fs runs at boot. tools/rpi_mkdisk.py makes images (needs
 dosfstools mtools); make test checks them afterwards with mtools and fsck.fat.
 
+## Bare x86-64 PC, UEFI (ports/efi)
+
+`make -C ports/efi test` builds out/efi/BOOTX64.EFI (gcc + gnu-efi) and boots it under QEMU q35 + OVMF from a USB stick
+image (MBR + FAT32, tools/rpi_mkdisk.py), 54 checks (tools/efi_qemu_test.py, which reuses rpi_qemu_test.py). Needs
+`gnu-efi ovmf qemu-system-x86 dosfstools mtools`. Stays in boot services: GOP screen, ConIn keyboard (no releases: a key
+is held 120 ms after its last press; the test uses `-device usb-kbd`, PS/2 does not repeat), the stick's FAT through
+Simple File System (ports/efi/files.h, same API as fat.h). Reuses ports/rpi screen.h, console.h, input.h, sdl2.fs;
+vocabulary `pc` aliased `rpi`. efi_main is called SysV by gnu-efi's crt0 (NOT EFIAPI: it crashed); own libc in libc.h
+(x87 math), setjmp and fault stubs in start.S (patched copy of the firmware IDT). No sound, no mouse. Not tried on a real
+PC yet; ports/efi/README.md has the Dell Latitude steps (Secure Boot off, F12).
+
 ## Ports from eForth Windows (Marc Petremann, GPL) - done 2026-10-13
 
 Source: https://github.com/MPETREMANN11/eForth-Windows (clone it into the scratchpad to read). Its eForth is
