@@ -86,6 +86,16 @@ USB_FILES := $(OUT)/BOOTX64.EFI=EFI/BOOT/BOOTX64.EFI \
 usb: $(OUT)/BOOTX64.EFI
 	python3 $(ROOT)/tools/rpi_mkdisk.py $(OUT)/usb.img $(USB_FILES)
 
+# The same files as a tree to copy onto an existing FAT32 stick (make stage
+# DEST=/media/me/STICK also works): EFI/BOOT/BOOTX64.EFI, lib/, varvara/...
+DEST ?= /tmp/lugforth
+stage: $(OUT)/BOOTX64.EFI
+	@for f in $(USB_FILES); do \
+	  src=$${f%%=*}; dst=$${f#*=}; [ "$$dst" = "$$f" ] && dst=$$(basename $$src); \
+	  mkdir -p $(DEST)/$$(dirname $$dst); cp $$src $(DEST)/$$dst; \
+	done
+	@echo "stick tree in $(DEST)"
+
 run: usb
 	$(QEMU) -machine q35 -m 512M -drive if=pflash,format=raw,readonly=on,file=$(OVMF) \
 	  -drive if=none,id=stick,format=raw,file=$(OUT)/usb.img -device qemu-xhci -device usb-storage,drive=stick \
@@ -98,5 +108,5 @@ clean:
 	rm -rf $(OUT)
 
 .SECONDARY:
-.PHONY: all usb run test clean FORCE
+.PHONY: all usb stage run test clean FORCE
 FORCE:

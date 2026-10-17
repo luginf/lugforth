@@ -86,6 +86,7 @@ forth definitions internals
    >r >r sourcedirname r> r> path-join 2dup sourcefilename!
    ['] raw-included catch if
       ." Error including: " sourcefilename type cr
+      r> r> sourcefilename!   \ the caller's file name back, or later relative includes resolve against this one
       -38 throw
    then
    sourcefilename& include+

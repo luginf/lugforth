@@ -24,16 +24,27 @@
 #include <stdlib.h>
 #include <math.h>
 
+// Eight bytes at a time (rep movs): the console scrolls by moving the whole
+// framebuffer, and reading video memory byte by byte is very slow on a real GPU.
 void *memcpy(void *d, const void *s, size_t n) {
-  uint8_t *a = d; const uint8_t *b = s;
-  while (n--) *a++ = *b++;
-  return d;
+  void *r = d;
+  size_t q = n >> 3;
+  __asm__ volatile("rep movsq" : "+D"(d), "+S"(s), "+c"(q) : : "memory");
+  n &= 7;
+  __asm__ volatile("rep movsb" : "+D"(d), "+S"(s), "+c"(n) : : "memory");
+  return r;
 }
 
 void *memmove(void *d, const void *s, size_t n) {
   uint8_t *a = d; const uint8_t *b = s;
-  if (a < b) { while (n--) *a++ = *b++; }
-  else { a += n; b += n; while (n--) *--a = *--b; }
+  if (a < b || a >= b + n) return memcpy(d, s, n);
+  a += n; b += n;
+  for (size_t t = n & 7; t; t--) *--a = *--b;
+  size_t q = n >> 3;
+  if (q) {
+    a -= 8; b -= 8;
+    __asm__ volatile("std\n\trep movsq\n\tcld" : "+D"(a), "+S"(b), "+c"(q) : : "memory");
+  }
   return d;
 }
 
