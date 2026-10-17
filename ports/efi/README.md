@@ -35,6 +35,23 @@ Recent Latitudes boot UEFI only. Their firmware looks for
      `.fs` files of `examples/`, `ports/rpi/disk/autoexec.fs`, and
      `ports/posix/{editor,writhdeck,eval_copy}.fs` in `lib/` for `ed` and
      `writhdeck`.
+   * or make a GPT stick by hand. One FAT32 partition of type "EFI System" is
+     enough, there is no need for a second one (this erases the stick; replace
+     `/dev/sdX` after checking with `lsblk`):
+     ```
+     sudo sgdisk --zap-all /dev/sdX
+     sudo sgdisk -n1:1M:0 -t1:ef00 -c1:LUGFORTH /dev/sdX
+     sudo mkfs.fat -F32 -n LUGFORTH /dev/sdX1
+     sudo mount /dev/sdX1 /mnt
+     sudo mkdir -p /mnt/EFI/BOOT
+     sudo cp out/efi/BOOTX64.EFI /mnt/EFI/BOOT/
+     sudo umount /mnt
+     ```
+     If the stick is already GPT with a FAT32 partition that is not of the EFI
+     System type, some firmwares will not boot from it. Change the type
+     without touching the data: `sudo sgdisk -t1:ef00 /dev/sdX` (1 is the
+     partition number). The files lugforth reads (`autoexec.fs`, examples,
+     `lib/`) go on that same partition.
 2. Turn off Secure Boot. `BOOTX64.EFI` is not signed, so the firmware would
    refuse it. Press F2 at power-on to open the BIOS setup, then go to Boot
    Configuration (or Secure Boot) and set Secure Boot to off. Turn it back
