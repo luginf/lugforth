@@ -30,6 +30,7 @@
 \ The clock starts from the day of the build (or the RTC of QEMU virt): set it
 \ with `unix-time!` (rpi vocabulary), and `60 tz!` for UTC+1.
 
+current @   ( kept on the stack to the end: where the definitions of the caller go )
 needs uxn.fs
 needs screen.fs
 needs audio.fs
@@ -218,7 +219,7 @@ create button-keys 224 c, 226 c, 225 c, 227 c, 210 c, 209 c, 208 c, 207 c,   ( b
   flush-out close-screen  0 to audio-dev
   pixels if pixels free drop 0 to pixels then ;
 
-previous previous definitions
+previous previous previous current !
 
 also uxn
 : varvara ( a n -- )   ( run the ROM named a n )

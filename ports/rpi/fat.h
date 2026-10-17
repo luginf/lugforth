@@ -333,9 +333,13 @@ static int dir_find(uint32_t dir, const char *name, int n, struct dir_hit *h) {
   return -1;
 }
 
+// The current directory (CHDIR): its first cluster, 0 for the root, and its path.
+static uint32_t fs_cwd;
+static char fs_cwd_path[256] = "/";
+
 // The directory holding a path's last part, and that part. 0 or an error.
 static int path_parent(const char *p, int n, uint32_t *dir, const char **leaf, int *leaf_n) {
-  uint32_t d = root_dir();
+  uint32_t d = (n > 0 && *p == '/') || !fs_cwd ? root_dir() : fs_cwd;
   for (;;) {
     while (n && *p == '/') { p++; n--; }
     int k = 0;
@@ -660,6 +664,41 @@ static cell_t fat_opendir(const char *p, cell_t n, cell_t *ior) {
     return k + 1;
   }
   *ior = FAT_EMFILE;
+  return 0;
+}
+
+// Makes a directory the current one: relative names are looked for there.
+static cell_t fat_chdir(const char *p, cell_t n) {
+  if (!fs.ok) return FAT_EIO;
+  uint32_t dir;
+  const char *leaf;
+  int ln, e;
+  if ((e = path_parent(p, (int) n, &dir, &leaf, &ln))) return e;
+  if (ln && !(ln == 1 && leaf[0] == '.')) {
+    struct dir_hit h;
+    if (dir_find(dir, leaf, ln, &h)) return FAT_ENOENT;
+    if (!(h.e[11] & 0x10)) return FAT_ENOTDIR;
+    dir = entry_cluster(h.e);
+    if (dir == 0) dir = root_dir();
+  }
+  fs_cwd = dir == root_dir() ? 0 : dir;
+  if (n > 0 && *p == '/') strcpy(fs_cwd_path, "/");
+  while (n > 0) {                                     // the path text follows the names
+    while (n && *p == '/') { p++; n--; }
+    int k = 0;
+    while (k < n && p[k] != '/') k++;
+    size_t len = strlen(fs_cwd_path);
+    if (k == 2 && p[0] == '.' && p[1] == '.') {
+      while (len > 1 && fs_cwd_path[len - 1] != '/') len--;
+      if (len > 1) len--;
+      fs_cwd_path[len] = 0;
+    } else if (k && !(k == 1 && p[0] == '.') && len + k + 2 < sizeof fs_cwd_path) {
+      if (len > 1) fs_cwd_path[len++] = '/';
+      memcpy(fs_cwd_path + len, p, (size_t) k);
+      fs_cwd_path[len + k] = 0;
+    }
+    p += k; n -= k;
+  }
   return 0;
 }
 

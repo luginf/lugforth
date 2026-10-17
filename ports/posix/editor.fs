@@ -25,7 +25,8 @@ create ed-arg 256 allot   0 value ed-arg-n
 defer ed-go ( a n -- )
 
 : ed-src r|
-only forth also internals also ansi also posix also termios
+only forth also internals also ansi
+[defined] posix [if] also posix also termios [then]
 vocabulary editor   also editor definitions
 
 \ What a derived editor (writhdeck) replaces: the view, the moves, the keys
@@ -470,6 +471,7 @@ defer pre-key ( code -- code' )   defer wait-key ( -- code )   defer after-load
   -1 to done ;
 
 ( ---- Settings: editor.ini, in the directory of lugforth.ini ---- )
+[defined] posix [if]
 z" getenv" 1 sysfunc ed-getenv
 z" mkdir" 2 sysfunc ed-mkdir
 0 value inip   0 value inil   0 value fhs
@@ -485,6 +487,13 @@ z" mkdir" 2 sysfunc ed-mkdir
     inip i + c@ [char] / = if  0 inip i + c!  inip 493 ed-mkdir drop  [char] / inip i + c!  then
   loop
   inip 493 ed-mkdir drop ;
+[else]   \ the board: editor.ini in the root of the disk, no directory to make
+0 value inip   0 value inil   0 value fhs
+: inip+ ( a n -- )   dup >r inip inil + swap cmove  r> +to inil ;
+: ed-mkdir ( z mode -- n )   2drop -1 ;
+: ini-dir ( -- )   0 to inil ;
+: mk-dirs ( -- ) ;
+[then]
 : ini-name ( -- a n )   ini-dir s" /editor.ini" inip+  inip inil ;
 : w+ ( a n -- )   fhs write-file drop ;
 : wn ( n -- )   <# #s #> w+ ;
@@ -525,6 +534,7 @@ z" mkdir" 2 sysfunc ed-mkdir
   s" Theme: " { p l }
   p msg l cmove  a msg l + n cmove  l n + to mlen ;
 
+[defined] posix [if]
 0 value saved-tio
 : editor-raw ( -- )
   saved-tio 0= if sizeof(termios) bytes to saved-tio then
@@ -538,6 +548,10 @@ z" mkdir" 2 sysfunc ed-mkdir
 : restore-tty ( -- )
   delay-mode
   stdin isatty if saved-tio termios! then ;
+[else]   \ the board: the console is the terminal, nothing to switch
+: editor-raw ( -- ) ;
+: restore-tty ( -- ) ;
+[then]
 : run-file ( -- )   \ include the saved file, then come back
   flen 0= modified or if s" Save the file first (Ctrl+S)" say exit then
   terminal-restore  normal  show  restore-tty  page
@@ -669,7 +683,7 @@ z" mkdir" 2 sysfunc ed-mkdir
   ['] plain-home is home-key   ['] plain-end is end-key
   ['] same is pre-key   ['] read-key is wait-key   ['] noop is after-load ;
 ed-plain
-only forth also internals definitions
+[defined] posix [if] only forth also internals definitions [else] only forth definitions [then]
 | ;
 
 : ed ( "file" -- )   \ edit a file; no name opens an empty text

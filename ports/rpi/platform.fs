@@ -67,6 +67,30 @@ also rpi
 : console-zoom ( n -- )   con-zoom! ;
 previous
 
+( The current directory of the disk: cd, pwd )
+also rpi
+: cd ( "dir" -- )   bl parse chdir if ." no such directory" cr then ;
+: pwd ( -- )   getcwd type cr ;
+previous
+
+( The editors ed and writhdeck, from the disk: /lib/editor.fs and /lib/writhdeck.fs )
+\ The first use includes the file, which redefines the word, then runs it with
+\ the file name typed. The console is the terminal: 80 columns by 30 rows.
+: form ( -- rows cols ) 30 80 ;
+create lz-buf 300 allot
+: lz-run ( na nn wa wn -- )   \ evaluates "word name"
+  { na nn wa wn }
+  wa lz-buf wn cmove  32 lz-buf wn + c!  na lz-buf wn + 1+ nn cmove
+  lz-buf wn 1+ nn + evaluate ;
+: ed ( "file" -- )   \ edit a file
+  bl parse 200 min { na nn }
+  s" /lib/editor.fs" included
+  na nn s" ed" lz-run ;
+: writhdeck ( "file" -- )   \ edit a text for writing; no name opens the file browser
+  bl parse 200 min { na nn }
+  s" /lib/writhdeck.fs" included
+  na nn s" writhdeck" lz-run ;
+
 ( paste: a whole file over the serial line, evaluated as include would )
 \ Without an SD card: send `paste`, then the text, then Ctrl-D (4). The
 \ text is kept and evaluated at once, so strings and comments may span

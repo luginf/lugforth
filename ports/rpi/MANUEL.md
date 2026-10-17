@@ -115,11 +115,42 @@ dup s" azerty" rot write-file throw
 close-file throw
 ```
 
-### Éditeurs
+### Répertoire courant : `cd` et `pwd`
 
-`ed` et `writhdeck` (en Forth, `ports/posix`) **ne fonctionnent pas encore sur la
-carte** : ils utilisent `termios` et la libc de Linux. Un portage reste à faire.
-En attendant, éditer les fichiers sur l'hôte.
+```forth
+cd varvara        \ entre dans un dossier
+pwd               \ affiche /varvara
+cd ..             \ remonte
+cd /              \ retourne à la racine
+```
+
+Les noms relatifs (`ls`, `include`, `open-file`...) partent du répertoire courant.
+Les mots Forth correspondants : `chdir ( a n -- ior )` et `getcwd ( -- a n )`.
+
+### Éditeurs : `ed` et `writhdeck`
+
+Les deux éditeurs en Forth de Linux tournent sur la carte, dans la console de la
+fenêtre. `make disk` les copie dans `/lib` ; le premier appel les charge.
+
+```forth
+ed notes.txt          \ éditeur simple (coloration Forth), Ctrl+S sauve, Ctrl+Q quitte
+writhdeck             \ éditeur d'écriture : sans nom, le navigateur de fichiers
+writhdeck lettre.txt  \ avec un fichier
+```
+
+Les touches sont celles de l'éditeur sous Linux (voir `writhdeck_MANUAL.md` du projet
+WrithDeck pour la liste) : Origine, Fin, Page préc., Page suiv., Suppr, Ctrl
+et Maj avec les flèches (sélection, mot par mot), Alt+lettre ou Échap puis lettre pour
+le menu de writhdeck (`Échap ?` pour l'aide). Le navigateur entre dans les dossiers
+(Entrée) et remonte avec `../`.
+
+Différences avec Linux, dues à la FAT de la carte :
+
+- un fichier **créé** doit avoir un nom 8.3 (`notes.txt`, `lettre.txt` ; pas
+  `ma_longue_lettre.txt`). Un fichier existant à nom long s'ouvre et se sauve ;
+- pas de sauvegarde `b` du navigateur (elle crée un dossier `backups/`, non géré) ;
+- `editor.ini` (thème, largeur de colonne, objectif de mots) est écrit à la racine ;
+- l'écran fait 80×30 caractères, quelle que soit la taille de la fenêtre.
 
 ## 5. Graphiques : les mots `sdl2`
 
@@ -190,7 +221,7 @@ vrai Pi devrait être nettement plus rapide.
 
 ## 7. Ce qui reste à faire
 
-- Un éditeur de texte (`ed`, `writhdeck`) sur la carte.
+- Créer un dossier (`mkdir`) et les noms longs en écriture sur la FAT.
 - Tester sur un vrai Pi 3 (écran HDMI, clavier USB, jack, carte SD) ; le Pi 4 est
   écrit sans carte pour l'essai.
 - Varvara : déposer un fichier sur la fenêtre (glisser-déposer) n'existe pas.

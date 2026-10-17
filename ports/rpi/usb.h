@@ -157,7 +157,12 @@ static int hid_to_linux(int u) {
     case 0x3C: return 61;          // F3
     case 0x3D: return 62;          // F4
     case 0x45: return 88;          // F12
+    case 0x49: return KEY_INS;
     case 0x4A: return KEY_HOME;
+    case 0x4B: return KEY_PGUP;
+    case 0x4C: return KEY_DEL;
+    case 0x4D: return KEY_END;
+    case 0x4E: return KEY_PGDN;
     case 0x64: return KEY_102ND;   // the key beside the left Shift of an ISO keyboard
     case 0x4F: return KEY_RIGHT;
     case 0x50: return KEY_LEFT;

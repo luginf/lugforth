@@ -317,7 +317,7 @@ def test_console(b):
   scr = b.screen()
   check('console: 1280x960', scr[:2], scr[:2] == (1280, 960))
   check('console: banner drawn', lit(scr, 0, 32), lit(scr, 0, 32) > 200)
-  b.run('40 0 ?do i . loop')
+  b.run(': t40 40 0 do i . loop ; t40')
   b.run('sdl2 320 240 screen $ff0000 color cls flip')
   scr = b.screen()
   check('console: the sdl2 screen replaces it', pixel(scr, 5, 5), pixel(scr, 5, 5) == 'ff0000')
@@ -388,8 +388,64 @@ def test_varvara(b):
   scr2 = b.screen()
   check('xo5.rom: a click changes the board', '', scr2 != scr)
   varvara_quit(b)
-  r = b.run('s" x.txt" r/o open-file nip')
+  r = b.run('s" x.txt" r/o open-file nip .')
   check('varvara file: deleted', r, r.split()[0] != '0')
+
+
+def qtap(b, *names):
+  """Keys held together (a modifier first), then released."""
+  b.qmp([qkey(n, True) for n in names])
+  time.sleep(0.2)
+  b.qmp([qkey(n, False) for n in reversed(names)])
+  time.sleep(1.5)
+
+
+def test_editors(b):
+  """ed and writhdeck on the console (ports/posix/editor.fs, writhdeck.fs, run
+  from /lib): text typed on the serial line, Home, End and Delete from the USB
+  keyboard, saved on the FAT, read back with cat; writhdeck's file browser
+  enters a directory."""
+  b.send(b'ed edtest.txt\r')
+  time.sleep(10)
+  scr = b.screen()
+  lit = sum(1 for x in range(0, 1280, 8) for y in range(930, 960, 4) if pixel(scr, x, y) != '000000')
+  check('ed: status bar drawn (%d lit pixels)' % lit, '', lit > 300)
+  b.send(b'hello rpi')
+  time.sleep(4)
+  qtap(b, 'home')
+  qtap(b, 'y')
+  qtap(b, 'end')
+  qtap(b, 'x')
+  qtap(b, 'home')
+  qtap(b, 'delete')
+  b.send(b'\x13')      # Ctrl+S
+  time.sleep(3)
+  b.send(b'\x11')      # Ctrl+Q
+  b.wait_for(PROMPT, b.pos, 20)
+  b.pos = len(b.out)
+  r = b.run('cat edtest.txt')
+  check('ed: text, keys and save on the FAT', r, r.startswith('hello rpix'))
+  b.send(b'writhdeck wd.txt\r')
+  time.sleep(10)
+  b.send('Bonjour tout le monde'.encode())
+  time.sleep(6)
+  b.send(b'\x13')
+  time.sleep(3)
+  b.send(b'\x11')
+  b.wait_for(PROMPT, b.pos, 20)
+  b.pos = len(b.out)
+  r = b.run('cat wd.txt')
+  check('writhdeck: text saved on the FAT', r, 'Bonjour tout le monde' in r)
+  b.send(b'writhdeck\r')   # the file browser: the second entry is lib/
+  time.sleep(10)
+  qtap(b, 'down')
+  qtap(b, 'ret')
+  b.send(b'q')
+  b.wait_for(PROMPT, b.pos, 20)
+  b.pos = len(b.out)
+  r = b.run('pwd')
+  check('writhdeck: the browser went into lib/', r, r.split()[0] == '/lib')
+  b.run('cd /')
 
 
 def test_input(b, what):
@@ -579,6 +635,10 @@ def make_disk(path, fat, mbr):
   vdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'examples', 'varvara')
   for name in ('uxn.fs', 'screen.fs', 'audio.fs', 'file.fs', 'varvara_rpi.fs', 'boot.rom', 'devtest.rom', 'tone.rom', 'xo5.rom'):
     rpi_mkdisk.put(spec, os.path.join(vdir, name), 'varvara/' + name)
+  # ed and writhdeck (ports/posix) are loaded from /lib by test_editors.
+  pdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ports', 'posix')
+  for name in ('editor.fs', 'writhdeck.fs', 'eval_copy.fs'):
+    rpi_mkdisk.put(spec, os.path.join(pdir, name), 'lib/' + name)
   return spec
 
 
@@ -758,6 +818,7 @@ def test_board(name, args, has_gpio, tmp):
     if has_gpio:
       test_console(b)
       test_varvara(b)
+      test_editors(b)
       test_input(b, 'usb')
       test_lines(b)
       test_text(b)

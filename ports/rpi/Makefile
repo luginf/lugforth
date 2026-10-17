@@ -120,6 +120,8 @@ roguelike: all
 disk:
 	mkdir -p $(OUT)
 	python3 $(ROOT)/tools/rpi_mkdisk.py $(OUT)/disk.img $(wildcard $(ROOT)/examples/*.fs) disk/autoexec.fs=autoexec.fs \
+	  $(ROOT)/ports/posix/editor.fs=lib/editor.fs $(ROOT)/ports/posix/writhdeck.fs=lib/writhdeck.fs \
+	  $(ROOT)/ports/posix/eval_copy.fs=lib/eval_copy.fs \
 	  $(foreach f,$(wildcard $(ROOT)/examples/varvara/*.fs $(ROOT)/examples/varvara/*.rom),$(f)=varvara/$(notdir $(f)))
 
 test: all

@@ -102,6 +102,19 @@ boot. It changes the characters typed at the prompt, not the key codes of
 The sdl2 word `screen` takes the framebuffer over, and `close-screen` gives
 the console back (cleared). Fault messages still go to the UART only.
 
+## ed and writhdeck
+
+`ed` and `writhdeck` (ports/posix/editor.fs, writhdeck.fs) run on the console: `make disk` copies them
+to `/lib`, and the words `ed` and `writhdeck` of platform.fs include them on first use. They are the same
+files as on Linux: `[defined] posix` picks the POSIX code (termios, getenv, mkdir, chdir...) or the board's
+(`form` is 30 rows by 80 columns, `chdir`, `getcwd`, `delete-file`, `rename-file`, `unix-time`, and a
+`readdir` whose names end with `/` for a directory). They need what the console now does: 256-color and
+true-color SGR, underline, OSC titles ignored, and from the keyboard Home, End, PageUp, PageDown, Insert,
+Delete, F1 to F4, Ctrl, Shift and Alt with the arrows (`CSI 1 ; m` as xterm sends them) and Alt+key as
+ESC then the key. `CHDIR` and `GETCWD` (fat.h) give the disk a current directory. Creating a file needs
+an 8.3 name, there is no mkdir (the browser's backup does not work). `make test` types in both, saves
+on the FAT, reads back with `cat` and enters a directory of the browser.
+
 ## Uxn / Varvara
 
 `examples/varvara/varvara_rpi.fs` runs Uxn ROMs on the board, with all the Varvara devices (screen,

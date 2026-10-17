@@ -48,6 +48,11 @@ Still to do, from the original (priority order):
 6. Ctrl+Q in an edited text returns to the browser (now it quits); modal commands `t s w q` of the original.
 7. INI profiles/schemes, i18n.
 Esc followed at once by a letter is read as Alt+letter: the pty tests wait 0.5 s between them.
+Both also run on the bare-metal board (ports/rpi, `ed` / `writhdeck` words, files in /lib): the POSIX-only
+parts are under `[defined] posix [if] ... [else] ... [then]` inside the source strings, keep them that way.
+The editors end with `only forth ...`: a file that is `include`d must save `current @` and put it back
+(`current !`) at its end if the caller may have pushed a vocabulary (`sdl2` at the prompt pushes one), as
+varvara_rpi.fs does: `definitions` after `previous` would otherwise leave the caller defining in `sdl2`.
 
 ## Android (ports/android, not buildable here)
 

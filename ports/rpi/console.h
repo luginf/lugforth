@@ -21,8 +21,11 @@
 // The sdl2 word SCREEN takes the framebuffer over (the console goes quiet);
 // CLOSE-SCREEN gives it back. Included by main.c, after screen.h.
 //
-// Escape sequences understood (what common/lineedit.fs and ansi.fs send):
-// CSI A B C D H f J K m (colors 30-37 40-47 90-97 100-107, 0 1 7 27 39 49).
+// Escape sequences understood (what common/lineedit.fs, ansi.fs, ed and
+// writhdeck send): CSI A B C D H f J K m (colors 30-37 40-47 90-97 100-107 and
+// 38;5;n 48;5;n 38;2;r;g;b 48;2;r;g;b, attributes 0 1 4 7 22 24 27 39 49;
+// italic is shown as plain); CSI with ? (cursor show and hide...) and OSC
+// (window title) are skipped.
 
 #ifndef CON_ZOOM
 # define CON_ZOOM 2                  // the default: 1 is 640x480, 2 is 1280x960
@@ -36,8 +39,9 @@ static int con_zoom = CON_ZOOM;      // CONSOLE-ZOOM changes it
 #define CON_ROWS (CON_H / CON_CH)
 
 static int con_col, con_row, con_shown;      // cursor cell, drawn (XORed) or not
-static int con_fgi = 7, con_bgi = 0, con_bold, con_rev;
-static int con_esc, con_npar, con_par[4];    // 0, 1: after ESC, 2: in a CSI
+static int con_fgi = 7, con_bgi = 0, con_bold, con_rev, con_ul;
+static int64_t con_fgc = -1, con_bgc = -1;    // $rrggbb of a 256-color or true color, or -1
+static int con_esc, con_npar, con_par[8];    // 0, 1: after ESC, 2: in a CSI, 3: in an OSC, 4: ESC in an OSC
 static int con_d0 = 1 << 30, con_d1 = -1;      // pixel rows written, not yet cleaned
 static uint64_t con_synced;
 
@@ -67,11 +71,23 @@ static void con_sync(void) {
   con_synced = ms_ticks();
 }
 
+static uint32_t con_256(int n) {      // xterm's 256 colors: 16 base, a 6x6x6 cube, 24 grays
+  if (n < 16) return con_pal[n < 0 ? 0 : n];
+  if (n < 232) {
+    n -= 16;
+    int r = n / 36, g = n / 6 % 6, b = n % 6;
+    return (uint32_t) (((r ? 55 + 40 * r : 0) << 16) | ((g ? 55 + 40 * g : 0) << 8) | (b ? 55 + 40 * b : 0));
+  }
+  int v = 8 + 10 * (n - 232 > 23 ? 23 : n - 232);
+  return (uint32_t) ((v << 16) | (v << 8) | v);
+}
+
 static void con_colors(uint32_t *fg, uint32_t *bg) {
-  int f = con_fgi + (con_bold && con_fgi < 8 ? 8 : 0), b = con_bgi;
-  if (con_rev) { int t = f; f = b; b = t; }
-  *fg = con_hw(con_pal[f]);
-  *bg = con_hw(con_pal[b]);
+  uint32_t f = con_fgc >= 0 ? (uint32_t) con_fgc : con_pal[con_fgi + (con_bold && con_fgi < 8 ? 8 : 0)];
+  uint32_t b = con_bgc >= 0 ? (uint32_t) con_bgc : con_pal[con_bgi];
+  if (con_rev) { uint32_t t = f; f = b; b = t; }
+  *fg = con_hw(f);
+  *bg = con_hw(b);
 }
 
 static void con_fill(int x, int y, int w, int h, uint32_t c) {
@@ -98,6 +114,7 @@ static void con_glyph(const unsigned char *g) {
   for (int j = 0; j < CON_CH; j++) {
     volatile uint32_t *p = con_px(con_col * CON_CW, con_row * CON_CH + j);
     unsigned bits = g[j / (2 * con_zoom)];
+    if (con_ul && j >= CON_CH - 2 * con_zoom) bits = 0xFF;      // underline: the last two font rows
     for (int i = 0; i < CON_CW; i++) p[i] = (bits >> (i / con_zoom)) & 1 ? fg : bg;
   }
   con_mark(con_row * CON_CH, con_row * CON_CH + CON_CH - 1);
@@ -128,17 +145,19 @@ static int con_arg(int i, int def) { return i < con_npar && con_par[i] > 0 ? con
 static int con_clamp(int v, int hi) { return v < 0 ? 0 : v > hi ? hi : v; }
 
 static void con_sgr(int p) {
-  if (p == 0) { con_fgi = 7; con_bgi = 0; con_bold = con_rev = 0; }
+  if (p == 0) { con_fgi = 7; con_bgi = 0; con_bold = con_rev = con_ul = 0; con_fgc = con_bgc = -1; }
   else if (p == 1) con_bold = 1;
+  else if (p == 4) con_ul = 1;
   else if (p == 7) con_rev = 1;
   else if (p == 22) con_bold = 0;
+  else if (p == 24) con_ul = 0;
   else if (p == 27) con_rev = 0;
-  else if (p >= 30 && p <= 37) con_fgi = p - 30;
-  else if (p == 39) con_fgi = 7;
-  else if (p >= 40 && p <= 47) con_bgi = p - 40;
-  else if (p == 49) con_bgi = 0;
-  else if (p >= 90 && p <= 97) { con_fgi = p - 90 + 8; con_bold = 0; }
-  else if (p >= 100 && p <= 107) con_bgi = p - 100 + 8;
+  else if (p >= 30 && p <= 37) { con_fgi = p - 30; con_fgc = -1; }
+  else if (p == 39) { con_fgi = 7; con_fgc = -1; }
+  else if (p >= 40 && p <= 47) { con_bgi = p - 40; con_bgc = -1; }
+  else if (p == 49) { con_bgi = 0; con_bgc = -1; }
+  else if (p >= 90 && p <= 97) { con_fgi = p - 90 + 8; con_bold = 0; con_fgc = -1; }
+  else if (p >= 100 && p <= 107) { con_bgi = p - 100 + 8; con_bgc = -1; }
 }
 
 static void con_csi(int final) {
@@ -164,7 +183,18 @@ static void con_csi(int final) {
       break;
     case 'm':
       if (!con_npar) con_sgr(0);
-      for (int i = 0; i < con_npar; i++) con_sgr(con_par[i]);
+      for (int i = 0; i < con_npar; i++) {
+        int p = con_par[i];
+        if ((p == 38 || p == 48) && i + 2 < con_npar && con_par[i + 1] == 5) {          // 38;5;n
+          int64_t c = con_256(con_par[i + 2]);
+          if (p == 38) con_fgc = c; else con_bgc = c;
+          i += 2;
+        } else if ((p == 38 || p == 48) && i + 4 < con_npar && con_par[i + 1] == 2) {   // 38;2;r;g;b
+          int64_t c = ((con_par[i + 2] & 255) << 16) | ((con_par[i + 3] & 255) << 8) | (con_par[i + 4] & 255);
+          if (p == 38) con_fgc = c; else con_bgc = c;
+          i += 4;
+        } else con_sgr(p);
+      }
       break;
   }
 }
@@ -177,11 +207,17 @@ static void con_write(const unsigned char *s, cell_t n) {
     unsigned c = *s;
     if (con_esc == 1) {
       s++;
-      if (c == '[') { con_esc = 2; con_npar = 0; con_par[0] = 0; } else con_esc = 0;
+      if (c == '[') { con_esc = 2; con_npar = 0; con_par[0] = 0; }
+      else if (c == ']') con_esc = 3;
+      else con_esc = 0;
+    } else if (con_esc == 3 || con_esc == 4) {          // an OSC ends at BEL or ESC backslash
+      s++;
+      if (c == 7 || (con_esc == 4 && c == '\\')) con_esc = 0;
+      else con_esc = c == 27 ? 4 : 3;
     } else if (con_esc == 2) {
       s++;
       if (c >= '0' && c <= '9') { if (con_par[con_npar] < 10000) con_par[con_npar] = con_par[con_npar] * 10 + (int) c - '0'; }
-      else if (c == ';') { if (con_npar < 3) con_par[++con_npar] = 0; }
+      else if (c == ';') { if (con_npar < 7) con_par[++con_npar] = 0; }
       else if (c >= 0x40 && c <= 0x7E) { con_npar++; con_csi((int) c); con_esc = 0; }
       else if (c < 0x20 || c > 0x7E) con_esc = 0;
     } else if (c < 0x20 || c == 127) {
@@ -210,7 +246,7 @@ static void con_init(void) {
   if (fb_hw_open(CON_W, CON_H)) return;
   con_on = 1;
   con_esc = con_shown = 0;
-  con_fgi = 7; con_bgi = 0; con_bold = con_rev = 0;
+  con_fgi = 7; con_bgi = 0; con_bold = con_rev = con_ul = 0; con_fgc = con_bgc = -1;
   con_col = con_row = 0;
   con_clear(0, 0, CON_COLS - 1, CON_ROWS - 1);
   con_cursor();

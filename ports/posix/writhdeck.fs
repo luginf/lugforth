@@ -26,7 +26,9 @@ needs editor.fs
 defer wd-go ( a n -- )
 
 : wd-src r|
-only forth also internals also ansi also posix also termios also editor definitions
+only forth also internals also ansi
+[defined] posix [if] also posix also termios [then]
+also editor definitions
 
 ( ---- Settings ---- )
 0 value focus-on   0 value hem-on
@@ -464,11 +466,23 @@ only forth also internals also ansi also posix also termios also editor definiti
   drop ;
 
 ( ---- The file browser: `writhdeck` alone, or Ctrl+O from a text ---- )
+[defined] posix [if]
 z" chdir" 1 sysfunc wd-chdir
 z" getcwd" 2 sysfunc wd-getcwd
 z" remove" 1 sysfunc wd-remove
 z" rename" 2 sysfunc wd-rename
 z" time" 1 sysfunc wd-time
+[else]   \ the board: the FAT's own words (rpi vocabulary), names as zero-ended strings
+also rpi
+: zlen ( z -- n ) 0 begin 2dup + c@ while 1+ repeat nip ;
+: wd-chdir ( z -- n ) dup zlen chdir ;
+: wd-getcwd ( a n -- a ) drop { buf }  getcwd 289 min { ca cn }  ca buf cn cmove  0 buf cn + c!  buf ;
+: wd-remove ( z -- n ) dup zlen delete-file ;
+: wd-rename ( z1 z2 -- n ) { z1 z2 }  z1 z1 zlen  z2 z2 zlen  rename-file ;
+: wd-time ( n -- secs ) drop unix-time ;
+: usleep ( us -- n ) 1000 / ms 0 ;
+previous
+[then]
 0 value bpool   0 value bpn   0 value btab   0 value bn   0 value bsel   0 value btop
 0 value bfilt   0 value bfilt-n   0 value bz1   0 value bz2   0 value bcwd
 0 value bdone   0 value bname   0 value bnl   0 value ba   0 value bnn
@@ -511,6 +525,7 @@ z" time" 1 sysfunc wd-time
     bn i 1+ ?do  i m b-before? if i to m then loop
     i m <> if i m b-swap then
   loop ;
+[defined] posix [if]
 : b-scan ( -- )
   0 to bn  0 to bpn  0 { dh }  0 { ent }
   s" .." -1 b-add
@@ -525,6 +540,22 @@ z" time" 1 sysfunc wd-time
   repeat
   drop dh closedir drop
   b-sort ;
+[else]
+: b-scan ( -- )
+  0 to bn  0 to bpn  0 { dh }  0 { ent }
+  s" .." -1 b-add
+  s" ." open-dir if drop exit then  to dh
+  begin dh readdir dup while
+    to ent
+    ent z>s to bnn to ba
+    ba c@ [char] . <> if
+      ba bnn 1- + c@ [char] / = if ba bnn 1- -1 b-add
+      else ba bnn b-match? if ba bnn 0 b-add then then
+    then
+  repeat
+  drop dh close-dir drop
+  b-sort ;
+[then]
 : b-cwd ( -- a n )   bcwd 290 wd-getcwd drop  bcwd dup begin dup c@ while 1+ repeat over - ;
 : b-row ( i -- )
   dup btop - 1+ { i r }
@@ -656,7 +687,7 @@ z" time" 1 sysfunc wd-time
   while 0 0 repeat
   ed-plain ;
 ' wd-main is wd-go
-only forth also internals definitions
+[defined] posix [if] only forth also internals definitions [else] only forth definitions [then]
 | ;
 
 : writhdeck ( "file" -- )   \ edit a text for writing
