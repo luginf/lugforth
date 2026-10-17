@@ -16,12 +16,16 @@
 // builtins.h (open-file, read-file, write-file... open-dir, readdir), so
 // include, needs, ls and cat work. FAT12, FAT16 and FAT32, on the first
 // partition of an MBR or on a disk without one. Paths are from the root,
-// '/' between directories, case ignored. Long names (VFAT) are read: they
-// are found and listed; names created here are short ones (8.3, made upper
-// case), longer names are refused. Every write-file goes to the disk before
+// '/' between directories, case ignored. Long names (VFAT, UTF-16 as UTF-8)
+// are read and written: a name that fits 8.3 in one case is a short entry
+// (shown in lower case if it was typed so), any other name (long, mixed case,
+// accents) gets long-name entries and a short alias BASE~N.EXT. mkdir, rmdir,
+// chdir. Dates come from the clock of the board. Every write-file goes to the disk before
 // returning (the dirty sectors are written and the size updated), so
 // pulling the card after a write loses nothing but what follows.
 // Errors are positive numbers, as errno values (2 not found...).
+
+#include <ctype.h>
 
 #define FAT_ENOENT 2
 #define FAT_EIO 5
@@ -33,6 +37,7 @@
 #define FAT_EMFILE 24
 #define FAT_ENOSPC 28
 #define FAT_ENAMETOOLONG 36
+#define FAT_ENOTEMPTY 39
 
 static struct {
   int ok, type;                     // 12, 16 or 32
@@ -287,7 +292,7 @@ static int short_name(const uint8_t *e, char *out) {
 struct dir_hit { uint32_t index, first; char name[256]; int len; uint8_t e[32]; };
 
 static int dir_next(uint32_t dir, uint32_t *i, struct dir_hit *h) {
-  char lfn[256];
+  uint16_t lfn[256];
   int have_lfn = 0, lfn_len = 0;
   uint32_t first = *i;
   for (;; (*i)++) {
@@ -302,7 +307,7 @@ static int dir_next(uint32_t dir, uint32_t *i, struct dir_hit *h) {
         int pos = (seq - 1) * 13 + k;
         uint16_t u = rd16(e + at[k]);
         if (pos >= 255 || u == 0 || u == 0xFFFF) continue;
-        lfn[pos] = u < 0x80 ? (char) u : '?';
+        lfn[pos] = u;
         if (pos + 1 > lfn_len) lfn_len = pos + 1;
       }
       continue;
@@ -311,8 +316,16 @@ static int dir_next(uint32_t dir, uint32_t *i, struct dir_hit *h) {
     h->index = *i;
     h->first = have_lfn ? first : *i;
     memcpy(h->e, e, 32);
-    if (have_lfn) { memcpy(h->name, lfn, lfn_len); h->len = lfn_len; }
-    else h->len = short_name(e, h->name);
+    if (have_lfn) {                                   // UTF-16 to UTF-8, as far as the name holds
+      int n = 0;
+      for (int k = 0; k < lfn_len && n + 3 < (int) sizeof h->name; k++) {
+        uint16_t u = lfn[k];
+        if (u < 0x80) h->name[n++] = (char) u;
+        else if (u < 0x800) { h->name[n++] = (char) (0xC0 | (u >> 6)); h->name[n++] = (char) (0x80 | (u & 0x3F)); }
+        else { h->name[n++] = (char) (0xE0 | (u >> 12)); h->name[n++] = (char) (0x80 | ((u >> 6) & 0x3F)); h->name[n++] = (char) (0x80 | (u & 0x3F)); }
+      }
+      h->len = n;
+    } else h->len = short_name(e, h->name);
     h->name[h->len] = 0;
     (*i)++;
     return 0;
@@ -376,6 +389,7 @@ static int make_short(const char *s, int n, uint8_t out[11], uint8_t *lower) {
     if (c <= ' ' || strchr("\"*+,./:;<=>?[\\]|", c)) return -1;
     out[in_base ? i : 8 + (i - dot - 1)] = (uint8_t) c;
   }
+  if ((up_base && low_base) || (up_ext && low_ext)) return -2;      // mixed case: only a long name keeps it
   *lower = (uint8_t) ((low_base && !up_base ? 0x08 : 0) | (low_ext && !up_ext ? 0x10 : 0));
   return 0;
 }
@@ -394,15 +408,143 @@ static int entry_where(uint32_t dir, uint32_t index, struct fat_file *f) {
   return dir_locate(dir, index, &f->ent_lba, &f->ent_off, 0);
 }
 
-static int entry_update(struct fat_file *f) {        // size and first cluster
+// The clock of the board as a FAT date and time (1980-01-01 if it is earlier).
+static void fat_now(uint16_t *date, uint16_t *time) {
+  int64_t t = unix_time(), days = t / 86400, sec = t % 86400;
+  int64_t z = days + 719468, era = z / 146097, doe = z - era * 146097;
+  int64_t yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365, y = yoe + era * 400;
+  int64_t doy = doe - (365 * yoe + yoe / 4 - yoe / 100), mp = (5 * doy + 2) / 153;
+  int64_t d = doy - (153 * mp + 2) / 5 + 1, m = mp < 10 ? mp + 3 : mp - 9;
+  if (m <= 2) y++;
+  *date = y < 1980 ? (1 << 5) | 1 : (uint16_t) (((y - 1980) << 9) | (m << 5) | d);
+  *time = (uint16_t) (((sec / 3600) << 11) | ((sec % 3600 / 60) << 5) | (sec % 60 / 2));
+}
+
+static int entry_update(struct fat_file *f) {        // size, first cluster and modification time
   uint8_t *s = cache_get(&c_data, f->ent_lba);
   if (!s) return -1;
   uint8_t *e = s + f->ent_off;
+  uint16_t date, time;
+  fat_now(&date, &time);
   wr32(e + 28, f->size);
   wr16(e + 26, f->first);
   wr16(e + 20, fs.type == 32 ? f->first >> 16 : 0);
-  wr16(e + 22, 0); wr16(e + 24, ((2026 - 1980) << 9) | (1 << 5) | 1);   // 2026-01-01
+  wr16(e + 18, date); wr16(e + 22, time); wr16(e + 24, date);
   c_data.dirty = 1;
+  return 0;
+}
+
+// ---- new directory entries: a short name, or a long name with its alias ----
+static uint8_t lfn_checksum(const uint8_t *sn) {
+  uint8_t sum = 0;
+  for (int i = 0; i < 11; i++) sum = (uint8_t) (((sum & 1) << 7) + (sum >> 1) + sn[i]);
+  return sum;
+}
+
+// A UTF-8 name as UTF-16 units: the count, or -1 for a bad name (too long, a
+// character FAT forbids, a trailing dot or space, bad UTF-8).
+static int utf16_name(const char *p, int n, uint16_t *out) {
+  int k = 0;
+  for (int i = 0; i < n;) {
+    unsigned c = (unsigned char) p[i++], cp;
+    if (c < 0x80) cp = c;
+    else if (c >= 0xC2 && c < 0xE0 && i < n && (p[i] & 0xC0) == 0x80) cp = ((c & 0x1F) << 6) | (p[i++] & 0x3F);
+    else if (c >= 0xE0 && c < 0xF0 && i + 1 < n && (p[i] & 0xC0) == 0x80 && (p[i + 1] & 0xC0) == 0x80) {
+      cp = ((c & 0x0F) << 12) | ((p[i] & 0x3F) << 6) | (p[i + 1] & 0x3F);
+      i += 2;
+    } else return -1;
+    if (cp < 0x20 || (cp < 0x80 && strchr("\"*/:<>?\\|", (int) cp))) return -1;
+    if (k >= 255) return -1;
+    out[k++] = (uint16_t) cp;
+  }
+  if (k == 0 || out[k - 1] == '.' || out[k - 1] == ' ') return -1;
+  return k;
+}
+
+// The short alias of a long name: BASE~N.EXT in capitals, N = tail.
+static void short_alias(const uint16_t *u, int n, int tail, uint8_t sn[11]) {
+  int dot = -1;
+  for (int i = 1; i < n; i++) if (u[i] == '.') dot = i;
+  char num[12];
+  int nl = snprintf(num, sizeof num, "~%d", tail), bl = 0;
+  memset(sn, ' ', 11);
+  for (int i = 0; i < (dot < 0 ? n : dot) && bl < 8 - nl; i++) {
+    unsigned c = u[i];
+    if (c == '.' || c == ' ') continue;
+    sn[bl++] = (uint8_t) (c >= 'a' && c <= 'z' ? c - 32 : (c < 0x80 && (isalnum((int) c) || strchr("$%'-_@~`!(){}^#&", (int) c))) ? c : '_');
+  }
+  memcpy(sn + bl, num, (size_t) nl);
+  if (dot >= 0) {
+    int el = 0;
+    for (int i = dot + 1; i < n && el < 3; i++) {
+      unsigned c = u[i];
+      if (c == ' ') continue;
+      sn[8 + el++] = (uint8_t) (c >= 'a' && c <= 'z' ? c - 32 : (c < 0x80 && (isalnum((int) c) || strchr("$%'-_@~`!(){}^#&", (int) c))) ? c : '_');
+    }
+  }
+}
+
+static int short_taken(uint32_t dir, const uint8_t sn[11]) {
+  uint32_t i = 0;
+  struct dir_hit h;
+  while (dir_next(dir, &i, &h) == 0) if (memcmp(h.e, sn, 11) == 0) return 1;
+  return 0;
+}
+
+// Adds an entry named name (n bytes, UTF-8) to dir, with its attributes and
+// first cluster; *index is where its short entry is. 0 or an error number.
+// The caller has checked that the name is not already there.
+static int dir_add(uint32_t dir, const char *name, int n, uint8_t attr, uint32_t first, uint32_t *index) {
+  uint8_t sn[11], lower = 0;
+  uint16_t u[256];
+  int ucount = utf16_name(name, n, u);
+  if (ucount < 0) return n > 255 ? FAT_ENAMETOOLONG : FAT_EINVAL;
+  int lfn = make_short(name, n, sn, &lower) != 0;
+  int pieces = lfn ? (ucount + 12) / 13 : 0, need = pieces + 1;
+  if (lfn) {
+    int tail = 1;
+    for (;; tail++) {
+      if (tail > 999999) return FAT_ENOSPC;
+      short_alias(u, ucount, tail, sn);
+      if (!short_taken(dir, sn)) break;
+    }
+    lower = 0;
+  }
+  uint32_t start = 0;
+  int run = 0;
+  for (uint32_t i = 0; run < need; i++) {             // a run of free entries, growing the directory
+    uint8_t *e = dir_entry(dir, i, 1);
+    if (!e) return FAT_ENOSPC;
+    if (e[0] == 0 || e[0] == 0xE5) { if (!run++) start = i; } else run = 0;
+  }
+  uint8_t sum = lfn_checksum(sn);
+  for (int j = 0; j < pieces; j++) {                  // the pieces, last one first
+    int seq = pieces - j;
+    uint8_t *e = dir_entry(dir, start + (uint32_t) j, 1);
+    if (!e) return FAT_EIO;
+    memset(e, 0, 32);
+    e[0] = (uint8_t) (seq | (j == 0 ? 0x40 : 0));
+    e[11] = 0x0F; e[13] = sum;
+    static const int at[13] = {1, 3, 5, 7, 9, 14, 16, 18, 20, 22, 24, 28, 30};
+    for (int k = 0; k < 13; k++) {
+      int pos = (seq - 1) * 13 + k;
+      wr16(e + at[k], pos < ucount ? u[pos] : pos == ucount ? 0x0000 : 0xFFFF);
+    }
+    c_data.dirty = 1;
+  }
+  uint8_t *e = dir_entry(dir, start + (uint32_t) pieces, 1);
+  if (!e) return FAT_EIO;
+  uint16_t date, time;
+  fat_now(&date, &time);
+  memset(e, 0, 32);
+  memcpy(e, sn, 11);
+  e[11] = attr; e[12] = lower;
+  wr16(e + 14, time); wr16(e + 16, date); wr16(e + 18, date);
+  wr16(e + 20, fs.type == 32 ? first >> 16 : 0);
+  wr16(e + 22, time); wr16(e + 24, date);
+  wr16(e + 26, first);
+  c_data.dirty = 1;
+  *index = start + (uint32_t) pieces;
   return 0;
 }
 
@@ -455,20 +597,8 @@ static cell_t fat_open(const char *p, cell_t n, cell_t mode, int create, cell_t 
     }
   } else {
     if (!create) { *ior = FAT_ENOENT; return 0; }
-    uint8_t sn[11], lower;
-    if (make_short(leaf, ln, sn, &lower)) { *ior = FAT_ENAMETOOLONG; return 0; }
-    uint32_t i = 0;
-    uint8_t *e;
-    for (;; i++) {                                    // a free entry, growing the directory
-      e = dir_entry(dir, i, 1);
-      if (!e) { *ior = FAT_ENOSPC; return 0; }
-      if (e[0] == 0 || e[0] == 0xE5) break;
-    }
-    memset(e, 0, 32);
-    memcpy(e, sn, 11);
-    e[11] = 0x20;                                     // archive
-    e[12] = lower;
-    c_data.dirty = 1;
+    uint32_t i;
+    if ((*ior = dir_add(dir, leaf, ln, 0x20, 0, &i))) return 0;
     if (entry_where(dir, i, f) || entry_update(f) || fat_flush()) { *ior = FAT_EIO; return 0; }
   }
   f->used = 1; f->mode = (int) mode;
@@ -622,18 +752,12 @@ static cell_t fat_rename(const char *from, cell_t fn, const char *to, cell_t tn)
   if (h.e[11] & 0x10) return FAT_EISDIR;
   if (path_is_open(d1, h.index)) return FAT_EINVAL;
   if (dir_find(d2, l2, n2, &other) == 0) return FAT_EEXIST;
-  uint8_t sn[11], lower;
-  if (make_short(l2, n2, sn, &lower)) return FAT_ENAMETOOLONG;
-  uint8_t *e;
-  uint32_t i = 0;
-  for (;; i++) {
-    e = dir_entry(d2, i, 1);
-    if (!e) return FAT_ENOSPC;
-    if (e[0] == 0 || e[0] == 0xE5) break;
-  }
-  memcpy(e, h.e, 32);
-  memcpy(e, sn, 11);
-  e[12] = lower;
+  uint32_t i;
+  if ((r = dir_add(d2, l2, n2, h.e[11], 0, &i))) return (cell_t) r;
+  uint8_t *e = dir_entry(d2, i, 0);                   // the new entry takes the rest of the old one
+  if (!e) return FAT_EIO;
+  memcpy(e + 13, h.e + 13, 19);
+  e[11] = h.e[11];
   c_data.dirty = 1;
   if (entry_delete(d1, &h) || fat_flush()) return FAT_EIO;
   return 0;
@@ -699,6 +823,61 @@ static cell_t fat_chdir(const char *p, cell_t n) {
     }
     p += k; n -= k;
   }
+  return 0;
+}
+
+// mkdir: a directory, with its . and .. entries.
+static cell_t fat_mkdir(const char *p, cell_t n) {
+  if (!fs.ok) return FAT_EIO;
+  uint32_t dir, i;
+  const char *leaf;
+  int ln;
+  struct dir_hit h;
+  cell_t r = path_parent(p, (int) n, &dir, &leaf, &ln);
+  if (r) return r;
+  if (!ln || (ln == 1 && leaf[0] == '.') || dir_find(dir, leaf, ln, &h) == 0) return FAT_EEXIST;
+  uint32_t cl = fat_alloc(1);
+  if (!cl) return FAT_ENOSPC;
+  if ((r = dir_add(dir, leaf, ln, 0x10, cl, &i))) { fat_free_chain(cl); return r; }
+  uint8_t *s = cache_get(&c_data, cluster_lba(cl));
+  if (!s) return FAT_EIO;
+  uint16_t date, time;
+  fat_now(&date, &time);
+  for (int k = 0; k < 2; k++) {                       // "." is this directory, ".." its parent (0: the root)
+    uint8_t *e = s + 32 * k;
+    uint32_t target = k == 0 ? cl : (dir == root_dir() ? 0 : dir);
+    memset(e, 0, 32);
+    memset(e, ' ', 11);
+    e[0] = '.'; if (k) e[1] = '.';
+    e[11] = 0x10;
+    wr16(e + 14, time); wr16(e + 16, date); wr16(e + 18, date);
+    wr16(e + 20, fs.type == 32 ? target >> 16 : 0);
+    wr16(e + 22, time); wr16(e + 24, date);
+    wr16(e + 26, target);
+  }
+  c_data.dirty = 1;
+  return fat_flush() ? FAT_EIO : 0;
+}
+
+// rmdir: an empty directory (only . and ..), not the current one.
+static cell_t fat_rmdir(const char *p, cell_t n) {
+  if (!fs.ok) return FAT_EIO;
+  uint32_t dir;
+  const char *leaf;
+  int ln;
+  struct dir_hit h;
+  cell_t r = path_parent(p, (int) n, &dir, &leaf, &ln);
+  if (r) return r;
+  if (!ln || dir_find(dir, leaf, ln, &h)) return FAT_ENOENT;
+  if (!(h.e[11] & 0x10)) return FAT_ENOTDIR;
+  uint32_t cl = entry_cluster(h.e), i = 0;
+  if (cl == 0 || cl == fs_cwd) return FAT_EINVAL;
+  struct dir_hit in;
+  while (dir_next(cl, &i, &in) == 0) {
+    if (in.name[0] == '.' && (in.len == 1 || (in.len == 2 && in.name[1] == '.'))) continue;
+    return FAT_ENOTEMPTY;
+  }
+  if (fat_free_chain(cl) || entry_delete(dir, &h) || fat_flush()) return FAT_EIO;
   return 0;
 }
 

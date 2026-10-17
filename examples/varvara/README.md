@@ -137,7 +137,7 @@ s" notes.txt" s" varvara/writhdeck.rom" varvara-open     \ a ROM given a file
 | Console | output to the console and the UART; the UART's keys are its input; `s" text" varvara-arg` gives arguments (`varvara-args-clear`) |
 | Audio | the board's PCM queue (`SND-QUEUE`): virtio-sound on QEMU virt, the headphone jack's PWM on a Pi 3 (written blind, as the rest of the Pi's sound) |
 | Datetime | the clock of the board: UTC. It starts from the RTC of QEMU virt or, on a Pi (no battery), the day of the build; `unix-time!` (vocabulary `rpi`) sets it and `60 tz!` gives UTC+1 |
-| File (x2) | the FAT of the SD card, same behavior as on Linux: the root is the working directory, a name with `..` is refused, a new file needs an 8.3 name (no long names on write) |
+| File (x2) | the FAT of the SD card, same behavior as on Linux: the root is the working directory, a name with `..` is refused, |
 
 Keys: Ctrl is A, Alt is B, Shift is Select, Home is Start, the arrows, and the text typed
 (`azerty` works). F1 changes the zoom, F2 prints the stacks (on the UART), F3 writes

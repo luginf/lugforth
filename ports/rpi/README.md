@@ -112,7 +112,7 @@ files as on Linux: `[defined] posix` picks the POSIX code (termios, getenv, mkdi
 true-color SGR, underline, OSC titles ignored, and from the keyboard Home, End, PageUp, PageDown, Insert,
 Delete, F1 to F4, Ctrl, Shift and Alt with the arrows (`CSI 1 ; m` as xterm sends them) and Alt+key as
 ESC then the key. `CHDIR` and `GETCWD` (fat.h) give the disk a current directory. Creating a file needs
-an 8.3 name, there is no mkdir (the browser's backup does not work). `make test` types in both, saves
+a long name is fine (`mkdir` and long names are done: the browser's backup makes `backups/`). `make test` types in both, saves
 on the FAT, reads back with `cat` and enters a directory of the browser.
 
 ## Uxn / Varvara
@@ -269,14 +269,23 @@ tools/rpi_mkdisk.py card.img prog.fs lib/util.fs=util.fs autoexec.fs
 * FAT12, FAT16 and FAT32, on the first partition of an MBR (what an SD
   card formatted on a PC has) or on a disk without one. Paths start at the
   root, `/` between directories, case ignored.
-* Long names (VFAT) are read, so they can be found and listed. Names
-  created here are short (8.3) and keep lower case as Linux does; a longer
-  name gives error 36.
+* Long names (VFAT) are read and written, in UTF-8: a name that fits 8.3 in
+  one case is a short entry (lower case kept, as Linux does); any other
+  (long, mixed case, accents) gets long-name entries and a short alias
+  `BASE~N.EXT`. Only a name of over 255 characters, or with a character FAT
+  forbids (`\ / : * ? " < > |`, a trailing dot or space), is refused
+  (error 36, 22).
 * Each `write-file` is on the card before it returns (data, FAT, size). On
   FAT32 the FSInfo free count is kept right.
-* Errors are errno numbers: 2 not found, 36 name too long, 28 full...
-* Not done: making and removing directories (`mkdir`), and timestamps
-  (new files are dated 2026-01-01).
+* `mkdir` and `rmdir` (vocabulary `rpi`, `( a n -- ior )`; `md` and `rd` at
+  the prompt) make and remove a directory, with its `.` and `..`; `chdir` and
+  `getcwd` give a current directory. `rmdir` refuses a directory that is not empty (39)
+  or is the current one.
+* Dates come from the clock of the board (the RTC of QEMU virt, else the day
+  of the build, `unix-time!` sets it), as the creation, access and
+  modification time of files and directories.
+* Errors are errno numbers: 2 not found, 17 exists, 22 bad name, 39 not empty,
+  36 name too long, 28 full...
 
 ## Sending files: paste
 
@@ -367,7 +376,7 @@ behind the firmware mailbox, which is not done yet.
 
 ## Not done yet
 
-* Files: no `mkdir`, no long names when creating, no timestamps.
+* Files: no rename of a directory, no `fsck` of a card pulled before a write ended.
 * USB: no split transactions (real Pi 3 B), no Pi 4. Sound on the Pi 3 is
   untried, and there is none on the Pi 4.
 * Real hardware: no data cache invalidation before the MMU goes on. The

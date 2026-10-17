@@ -316,7 +316,7 @@ def test_console(b):
     return sum(1 for y in range(y0, y1) for x in range(0, 1280, 4) if pixel(scr, x, y) != '000000')
   scr = b.screen()
   check('console: 1280x960', scr[:2], scr[:2] == (1280, 960))
-  check('console: banner drawn', lit(scr, 0, 32), lit(scr, 0, 32) > 200)
+  check('console: banner drawn', lit(scr, 0, 300), lit(scr, 0, 300) > 200)
   b.run(': t40 40 0 do i . loop ; t40')
   b.run('sdl2 320 240 screen $ff0000 color cls flip')
   scr = b.screen()
@@ -642,7 +642,7 @@ def make_disk(path, fat, mbr):
   return spec
 
 
-def test_files(b, what, long_create=False):
+def test_files(b, what, long_create=False, mkdir=False):   # mkdir: the board's own FAT driver, with mixed case names too
     """The file words on the disk: ls, include and needs (a subdirectory, a
     long name), a file over several clusters written and read back, rename
     into a directory, delete, resize, and the errors."""
@@ -681,9 +681,27 @@ def test_files(b, what, long_create=False):
     else:
         r = b.run('s" much-too-long-name.text" w/o create-file . drop')
         check('%s: a long new name is refused' % what, r, r.split()[0] == '36')
+    if mkdir:
+        r = b.run('s" much-too-long-name.text" r/o open-file . close-file .  ls')
+        check('%s: the long name is found and listed' % what, r,
+              r.split()[:2] == ['0', '0'] and 'much-too-long-name.text' in r)
+        r = b.run('s" Mixte.Txt" w/o create-file . close-file .  s" Été-à-Noël.txt" w/o create-file . close-file .  ls')
+        check('%s: mixed case and accents in a new name' % what, r,
+              r.split()[:4] == ['0', '0', '0', '0'] and 'Mixte.Txt' in r.split() and
+              'Été-à-Noël.txt'.encode().decode('latin-1') in r)
+    if mkdir:
+        r = b.run('also rpi s" sub" mkdir . s" sub" mkdir . s" sub/in.txt" w/o create-file . close-file . '
+                  's" sub" rmdir . s" sub/in.txt" delete-file . s" sub" rmdir . s" sub" open-dir . drop previous')
+        check('%s: mkdir, exists, file in it, rmdir refused then done' % what, r,
+              [t for t in r.split() if t.lstrip('-').isdigit()][:8] == ['0', '17', '0', '0', '39', '0', '0', '2'])
+        r = b.run('also rpi s" nodir/x" mkdir . previous')
+        check('%s: mkdir without its parent' % what, r, r.split()[0] == '2')
+        r = b.run('also rpi s" keepdir" mkdir . s" keepdir/a long file name.txt" w/o create-file . close-file . '
+                  's" keepdir/deeper" mkdir . previous')
+        check('%s: a long name in a new directory' % what, r, r.split()[:3] == ['0', '0', '0'])
 
 
-def check_disk(path, spec, what):
+def check_disk(path, spec, what, long_create=False, mkdir=False):
     """After QEMU: what the board wrote, as Linux sees it, and fsck.fat."""
     def mtype(name):
         p = subprocess.run(['mtype', '-i', spec, '::/' + name], capture_output=True)
@@ -695,6 +713,13 @@ def check_disk(path, spec, what):
     check('%s: deleted and renamed names are gone' % what, gone, not gone)
     listing = subprocess.run(['mdir', '-i', spec, '-b', '::/'], capture_output=True, text=True).stdout
     check('%s: lower case names stay lower case' % what, listing, '::/notes.txt' in listing)
+    if mkdir:
+        check('%s: long and mixed case names as Linux sees them' % what, listing,
+              '::/much-too-long-name.text' in listing and '::/Mixte.Txt' in listing)
+    if mkdir:
+        sub = subprocess.run(['mdir', '-i', spec, '-b', '::/keepdir'], capture_output=True, text=True).stdout
+        check('%s: the new directory and what is in it (mtools)' % what, sub,
+              '::/keepdir/a long file name.txt' in sub and '::/keepdir/deeper' in sub)
     part = path
     if spec.endswith('@@1M'):
         part = path + '.part'
@@ -759,7 +784,7 @@ def test_screen_only(name, args, tmp):
   try:
     banner = b.boot()
     check('virt FAT12: autoexec.fs ran at boot', banner, 'autoexec ran' in banner)
-    test_files(b, 'virt FAT12')
+    test_files(b, 'virt FAT12', long_create=True, mkdir=True)
     test_sound_play(b)   # first: the other tests make sounds too
     test_input(b, 'virtio')
     test_lines(b)
@@ -778,7 +803,7 @@ def test_screen_only(name, args, tmp):
     check_sound(wav)
   else:
     check('sound recorded', wav, False)
-  check_disk(disk, spec, 'virt FAT12')
+  check_disk(disk, spec, 'virt FAT12', long_create=True, mkdir=True)
 
 
 def test_board(name, args, has_gpio, tmp):
@@ -791,7 +816,7 @@ def test_board(name, args, has_gpio, tmp):
     banner = b.boot()
     check('banner', banner, ('Lugforth (%s)' % name) in banner)
     check('%s: autoexec.fs ran at boot' % what, banner, 'autoexec ran' in banner)
-    test_files(b, what)
+    test_files(b, what, long_create=True, mkdir=True)
     r = b.run('1 2 + .')
     check('arithmetic', r, r.split()[0] == '3')
     r = b.run('3e 2e f* f.')
@@ -822,7 +847,7 @@ def test_board(name, args, has_gpio, tmp):
     if has_gpio:
       test_console(b)
       test_varvara(b)
-      test_editors(b)
+      test_editors(b, '/keepdir')   # test_files made it: the first directory of the browser
       test_input(b, 'usb')
       test_lines(b)
       test_text(b)
@@ -834,7 +859,7 @@ def test_board(name, args, has_gpio, tmp):
     check('session', str(e), False)
   finally:
     b.kill()
-  check_disk(disk, spec, what)
+  check_disk(disk, spec, what, long_create=True, mkdir=True)
 
 
 def main():

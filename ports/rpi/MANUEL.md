@@ -77,8 +77,13 @@ make gui DISK=../../out/rpi/disk.img
 
 Dans la console : `ls` (racine), `ls varvara`, `include 2048.fs`, `cat fichier`...
 
-Limites de la FAT : un fichier **créé** doit avoir un nom 8.3 (pas de nom long) ;
-la lecture des noms longs fonctionne.
+Les noms longs, avec majuscules et accents, se lisent et s'écrivent (`mon_fichier_très_long.txt`).
+Un nom qui tient en 8.3 en une seule casse reste un nom court ; tout autre nom reçoit des
+entrées « noms longs » et un alias court `BASE~1.EXT`, comme sous Windows et Linux.
+
+Dossiers : `md nom` (ou `s" nom" mkdir`, dans le vocabulaire `rpi`) crée un dossier, `rd nom` le
+supprime s'il est vide. Les dates des fichiers viennent de l'horloge de la carte (voir §6,
+Heure).
 
 ### autoexec.fs : ce qui s'exécute au démarrage
 
@@ -146,9 +151,8 @@ le menu de writhdeck (`Échap ?` pour l'aide). Le navigateur entre dans les doss
 
 Différences avec Linux, dues à la FAT de la carte :
 
-- un fichier **créé** doit avoir un nom 8.3 (`notes.txt`, `lettre.txt` ; pas
-  `ma_longue_lettre.txt`). Un fichier existant à nom long s'ouvre et se sauve ;
-- pas de sauvegarde `b` du navigateur (elle crée un dossier `backups/`, non géré) ;
+- la sauvegarde `b` du navigateur crée le dossier `backups/` et un fichier
+  `nom_<secondes Unix>` ;
 - `editor.ini` (thème, largeur de colonne, objectif de mots) est écrit à la racine ;
 - l'écran fait 80×30 caractères, quelle que soit la taille de la fenêtre.
 
@@ -209,7 +213,7 @@ La souris est celle de la fenêtre QEMU (cliquer d'abord dans la fenêtre).
   `also rpi 1800000000 unix-time! previous` règle l'heure (secondes Unix),
   `60 tz!` donne UTC+1 (minutes de décalage).
 - Fichiers : la racine de la carte est le répertoire de travail ; un nom contenant
-  `..` est refusé ; un nouveau fichier doit avoir un nom 8.3.
+  `..` est refusé ; les noms longs sont acceptés.
 - Son : QEMU `virt` (virtio-sound) joue le son. Sur un Pi 3 il passe par la prise
   jack (PWM), écrit sans carte et **non testé**. QEMU raspi3b est muet.
 
@@ -221,7 +225,7 @@ vrai Pi devrait être nettement plus rapide.
 
 ## 7. Ce qui reste à faire
 
-- Créer un dossier (`mkdir`) et les noms longs en écriture sur la FAT.
+- Renommer un dossier ; un `fsck` de la carte après un arrêt brutal.
 - Tester sur un vrai Pi 3 (écran HDMI, clavier USB, jack, carte SD) ; le Pi 4 est
   écrit sans carte pour l'essai.
 - Varvara : déposer un fichier sur la fenêtre (glisser-déposer) n'existe pas.

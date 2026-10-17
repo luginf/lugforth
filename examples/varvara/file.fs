@@ -22,7 +22,7 @@
 \ directory entry at offset 19 of struct dirent. On the bare-metal board of
 \ ports/rpi (no posix vocabulary) the same code runs on the standard file words
 \ of the FAT of the SD card: the working directory is its root, a name with ..
-\ is refused, and a new file needs an 8.3 name.
+\ is refused (long names are fine).
 \
 \   setup-files ( -- )   installs the two devices
 

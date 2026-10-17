@@ -77,7 +77,7 @@ Text (font8x8), images (PNGs built in by tools/rpi_assets.py), keyboard/mouse (v
 (sound.h mixer, virtio-sound on virt checked from a -audiodev wav file; Pi 3 PWM+DMA written blind), `paste`
 (a whole file over serial, then Ctrl-D: multi-line strings work). `make roguelike` runs examples/sdl2_roguelike.fs.
 QEMU runs a whole bcm2835 DMA chain at once: a looping chain hangs it (even SIGTERM), so never start one blindly.
-Files: storage.h (Pi SDHCI/EMMC polled, virt virtio-blk) + fat.h (FAT12/16/32, MBR or not, LFN read, 8.3 create),
+Files: storage.h (Pi SDHCI/EMMC polled, virt virtio-blk) + fat.h (FAT12/16/32, MBR or not, long names read and written, mkdir/rmdir/chdir, dates from the clock),
 the standard file words, so include/ls/cat work; autoexec.fs runs at boot. tools/rpi_mkdisk.py makes images (needs
 dosfstools mtools); make test checks them afterwards with mtools and fsck.fat.
 

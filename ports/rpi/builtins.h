@@ -116,6 +116,8 @@
   X("OPEN-DIR", OPEN_DIR, cell_t ior; n1 = fat_opendir(c1, n0, &ior); n0 = ior) \
   X("CLOSE-DIR", CLOSE_DIR, n0 = fat_closedir(n0)) \
   YV(internals, READDIR, SET fat_readdir(n0)) \
+  XV(rpi, "MKDIR", MKDIR, n1 = fat_mkdir(c1, n0); DROP) \
+  XV(rpi, "RMDIR", RMDIR, n1 = fat_rmdir(c1, n0); DROP) \
   XV(rpi, "CHDIR", CHDIR, n1 = fat_chdir(c1, n0); DROP) \
   XV(rpi, "GETCWD", GETCWD, PUSH fs_cwd_path; PUSH strlen(fs_cwd_path)) \
   XV(rpi, "DISK?", DISK_P, PUSH fs.ok ? -1 : 0)

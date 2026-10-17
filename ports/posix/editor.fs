@@ -490,7 +490,7 @@ z" mkdir" 2 sysfunc ed-mkdir
 [else]   \ the board: editor.ini in the root of the disk, no directory to make
 0 value inip   0 value inil   0 value fhs
 : inip+ ( a n -- )   dup >r inip inil + swap cmove  r> +to inil ;
-: ed-mkdir ( z mode -- n )   2drop -1 ;
+: ed-mkdir ( z mode -- n )   drop [ also rpi ] z>s mkdir [ previous ] ;
 : ini-dir ( -- )   0 to inil ;
 : mk-dirs ( -- ) ;
 [then]
