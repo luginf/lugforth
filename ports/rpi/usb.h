@@ -152,6 +152,9 @@ static int hid_to_linux(int u) {
   if (u >= 0x1E && u <= 0x27) return 2 + (u - 0x1E);       // 1..9 0
   if (u >= 0x28 && u <= 0x38) return from_0x28[u - 0x28];
   switch (u) {
+    case 0x3A: return 59;          // F1
+    case 0x3B: return 60;          // F2
+    case 0x3C: return 61;          // F3
     case 0x3D: return 62;          // F4
     case 0x45: return 88;          // F12
     case 0x4A: return KEY_HOME;

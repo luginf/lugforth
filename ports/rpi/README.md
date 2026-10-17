@@ -104,10 +104,12 @@ the console back (cleared). Fault messages still go to the UART only.
 
 ## Uxn / Varvara
 
-`examples/varvara/varvara_rpi.fs` runs Uxn ROMs on the board (screen, keys, mouse, console;
-no files, no sound): see `examples/varvara/README.md`. It uses `FB-BLIT8`, which draws a
-picture of 8-bit palette indexes on the screen, and the keys Ctrl, Shift, Alt, Home, F4 and
-F12 that `pressed?` now sees (codes 224 to 229), and `INPUT-TEXT` for the characters typed.
+`examples/varvara/varvara_rpi.fs` runs Uxn ROMs on the board, with all the Varvara devices (screen,
+keys, mouse, console, files, sound, date): see `examples/varvara/README.md`. It needs `FB-BLIT8` (a
+picture of 8-bit palette indexes drawn on the screen), `INPUT-TEXT` (the characters typed), `SND-QUEUE`
+and `SND-QUEUED` (a queue of stereo frames played with the mixer's sound), `UNIX-TIME` and `UNIX-TIME!`
+(the clock), and the keys Ctrl, Shift, Alt, Home, F1 to F4 and F12, which `input-down?` sees as the codes
+224 to 232.
 
 ## Graphics: the sdl2 words
 

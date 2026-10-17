@@ -33,6 +33,8 @@
 
 #define RPI_SUPPORT \
   XV(rpi, "US-TICKS", US_TICKS, PUSH us_ticks()) \
+  XV(rpi, "UNIX-TIME", UNIX_TIME, PUSH unix_time()) \
+  XV(rpi, "UNIX-TIME!", UNIX_TIME_SET, unix_time_set(n0); DROP) \
   XV(rpi, "CNTFRQ", CNTFRQ, PUSH timer_freq()) \
   XV(rpi, "UART-BASE", UART_BASE_OP, PUSH UART_BASE) \
   XV(rpi, "GPIO-BASE", GPIO_BASE_OP, PUSH GPIO_BASE) \
@@ -77,6 +79,8 @@
 #define RPI_SOUND_SUPPORT \
   XV(rpi, "SND-BEEP", SND_BEEP, snd_beep(n3, n2, n1, n0); DROPn(4)) \
   XV(rpi, "SND-HIT", SND_HIT, snd_hit(n4, n3, n2, n1, n0); DROPn(5)) \
+  XV(rpi, "SND-QUEUED", SND_QUEUED, PUSH snd_pcm_queued()) \
+  XV(rpi, "SND-QUEUE", SND_QUEUE, snd_pcm_put((const int16_t *) a1, n0); DROPn(2)) \
   XV(rpi, "SND-SILENCE", SND_SILENCE, snd_silence()) \
   XV(rpi, "SND-BUSY", SND_BUSY, PUSH snd_busy()) \
   XV(rpi, "SND-OK", SND_OK, PUSH snd_ok()) \

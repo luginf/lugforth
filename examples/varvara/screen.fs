@@ -189,4 +189,25 @@ $0101010101010101 constant ones
   $ffff and dup 8 rshift $9a dev! $9b dev!
   mouse  0 0 $9a dev! $9b dev!  0 0 $9c dev! $9d dev! ;
 
+( ---- Datetime device ---- )
+\ TM@ ( n -- v ) is the front end's: the fields of C's struct tm, n = 0 sec, 1 min, 2 hour,
+\ 3 day of the month, 4 month (0 to 11), 5 year - 1900, 6 weekday, 7 day of the year, 8 dst.
+
+defer tm@
+: datetime-dei ( p -- b )
+  dup $0f and case
+    $00 of drop 5 tm@ 1900 + 8 rshift endof
+    $01 of drop 5 tm@ 1900 + $ff and endof
+    $02 of drop 4 tm@ endof
+    $03 of drop 3 tm@ endof
+    $04 of drop 2 tm@ endof
+    $05 of drop 1 tm@ endof
+    $06 of drop 0 tm@ endof
+    $07 of drop 6 tm@ endof
+    $08 of drop 7 tm@ 8 rshift endof
+    $09 of drop 7 tm@ $ff and endof
+    $0a of drop 8 tm@ 0<> 1 and endof
+    drop dev@ 0
+  endcase ;
+
 previous definitions

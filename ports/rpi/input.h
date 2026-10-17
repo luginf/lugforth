@@ -118,6 +118,9 @@ static int key_sdl_code(int code) {
     case KEY_LEFTALT: case KEY_RIGHTALT: return 226;
     case KEY_HOME: return 227;
     case 88: return 228;        // F12
+    case 59: return 230;        // F1
+    case 60: return 231;        // F2
+    case 61: return 232;        // F3
     case 62: return 229;        // F4
     case KEY_DOWN: return 209;
     case BTN_LEFT: return 255;

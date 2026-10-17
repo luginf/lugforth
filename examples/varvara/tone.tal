@@ -1,0 +1,15 @@
+( tone.tal: a square wave of 16 samples at pitch 60 (261.6 Hz) for a second, on Audio0 )
+( uxnasm tone.tal tone.rom )
+
+|00 @System &vector $2 &wst $1 &rst $1 &eaddr $2 &ecode $1 &pad $1 &r $2 &g $2 &b $2 &debug $1 &state $1
+|30 @Audio0 &vector $2 &position $2 &output $1 &pad $3 &adsr $2 &length $2 &addr $2 &volume $1 &pitch $1
+
+|0100
+  #00f0 .Audio0/adsr DEO2
+  #0010 .Audio0/length DEO2
+  ;wave .Audio0/addr DEO2
+  #ff .Audio0/volume DEO
+  #3c .Audio0/pitch DEO
+BRK
+
+@wave ffff ffff ffff ffff 0000 0000 0000 0000

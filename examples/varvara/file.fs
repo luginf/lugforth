@@ -19,13 +19,17 @@
 \ per entry ("size name", "---- dir/", "???? name" over 64 KB, "!!!! name" when
 \ it cannot be read). Files outside the working directory are refused (the
 \ result is 0 and a warning goes to stderr). Linux only: it reads the name of a
-\ directory entry at offset 19 of struct dirent.
+\ directory entry at offset 19 of struct dirent. On the bare-metal board of
+\ ports/rpi (no posix vocabulary) the same code runs on the standard file words
+\ of the FAT of the SD card: the working directory is its root, a name with ..
+\ is refused, and a new file needs an 8.3 name.
 \
 \   setup-files ( -- )   installs the two devices
 
 needs uxn.fs
 also uxn definitions
 
+[defined] posix [if]
 also posix
 z" fopen" 2 sysfunc libc-fopen
 z" fclose" 1 sysfunc libc-fclose
@@ -41,6 +45,7 @@ z" unlink" 1 sysfunc libc-unlink
 z" getcwd" 2 sysfunc libc-getcwd
 z" realpath" 2 sysfunc libc-realpath
 previous
+[then]
 
 : dev2! ( v p -- ) over 8 rshift over dev! 1+ dev! ;
 
@@ -61,6 +66,7 @@ create ebuf 4400 allot
 
 : zlen ( z -- n ) 0 begin 2dup + c@ while 1+ repeat nip ;
 : zeq ( z1 z2 -- f ) { a b } begin a c@ b c@ = a c@ 0<> and while 1 +to a 1 +to b repeat a c@ b c@ = ;
+[defined] posix [if]
 also posix
 : err-z ( z -- )
   dup zlen { n } stderr swap n write drop ;
@@ -70,13 +76,14 @@ also posix
   stderr s" file warning: blocked attempt to access " write drop
   err-z  stderr s"  outside of sandbox" write drop  err-nl ;
 previous
+[else]
+: warn ( z -- )
+  flush-out  ." file warning: blocked attempt to access " dup zlen type ."  outside of sandbox" cr ;
+[then]
 
-: f-reset ( c -- )
-  { c }
-  c >f @ ?dup if libc-fclose drop then  0 c >f !
-  c >dir @ ?dup if libc-closedir drop then  0 c >dir !
-  0 c >de !  0 c >st !  0 c >out ! ;
+0 value rd-p   0 value rd-n   0 value rd-c
 
+[defined] posix [if]
 : cwd ( -- ) cwdbuf 4096 libc-getcwd drop ;
 
 : build-path ( z -- )   ( the absolute path of z in pbuf )
@@ -105,6 +112,47 @@ previous
     rpbuf zlen n < if 1 c >out ! then
   else 1 c >out ! then
   c >out @ if c >name warn then ;
+: skip-dotdot? ( -- f )   ( ".." of the directory being listed leads out of the sandbox )
+  rd-c >name real-path if rpbuf cwdbuf zeq else 0 then ;
+: dirent-name ( de -- z ) 19 + ;
+: file-length ( h -- n ) dup 0 2 libc-fseek drop libc-ftell ;
+[else]   ( the FAT: its root is the working directory )
+: open-or-0 ( fh ior -- h ) if drop 0 then ;
+: append-open ( z n -- h )
+  2dup r/w open-file if drop w/o create-file open-or-0
+  else nip nip dup file-size drop over reposition-file drop then ;
+: libc-fopen ( z mode -- h )   ( mode: "rb" "wb" "ab" )
+  c@ over zlen { z m n }
+  m [char] r = if z n r/o open-file open-or-0 exit then
+  m [char] w = if z n w/o create-file open-or-0 exit then
+  z n append-open ;
+: libc-fclose ( h -- n ) close-file ;
+: libc-fread ( buf size len h -- n ) >r nip r> read-file if drop 0 then ;
+: libc-fwrite ( buf size len h -- n ) { buf size len h } buf len h write-file if 0 else len then ;
+: libc-fflush ( h -- n ) flush-file ;
+: file-length ( h -- n ) file-size drop ;
+: libc-opendir ( z -- d ) dup zlen open-dir if drop 0 then ;
+also internals
+: libc-readdir ( d -- de ) readdir ;
+previous
+: libc-closedir ( d -- n ) close-dir ;
+: libc-unlink ( z -- n ) dup zlen delete-file ;
+: dirent-name ( de -- z )   ( the board's readdir ends a directory with a slash: entry adds its own )
+  dup zlen dup 0= if drop exit then  1- over + dup c@ [char] / = if 0 swap c! else drop then ;
+: skip-dotdot? ( -- f ) -1 ;
+: dotdot? ( z -- f )
+  begin dup c@ while
+    dup c@ [char] . = over 1+ c@ [char] . = and if drop -1 exit then 1+
+  repeat drop 0 ;
+: check-sandbox ( c -- )
+  { c }  c >name dotdot? if 1 c >out !  c >name warn then ;
+[then]
+
+: f-reset ( c -- )
+  { c }
+  c >f @ ?dup if libc-fclose drop then  0 c >f !
+  c >dir @ ?dup if libc-closedir drop then  0 c >dir !
+  0 c >de !  0 c >st !  0 c >out ! ;
 
 : f-init ( c addr lim -- )   ( names the file stored in memory at addr )
   { c addr lim }
@@ -130,7 +178,7 @@ previous
     libc-closedir drop  s" ---- " e-str  ba bn e-str  [char] / e-char  10 e-char
   else
     path s" rb" drop libc-fopen ?dup if
-      to ent-f  ent-f 0 2 libc-fseek drop  ent-f libc-ftell ent-f libc-fclose drop
+      to ent-f  ent-f file-length ent-f libc-fclose drop
       dup $10000 < if e-hex4 else drop s" ????" e-str then
       32 e-char  ba bn e-str  10 e-char
     else
@@ -152,16 +200,11 @@ previous
   c >out @ if 0 exit then
   dest len c >name  c >name basename-of  2 entry ;
 
-0 value rd-p   0 value rd-n   0 value rd-c
-: dir-name ( c -- z ) >de @ 19 + ;
+: dir-name ( c -- z ) >de @ dirent-name ;
 : one-entry ( -- n )   ( 0 stop, -1 skipped, else bytes written )
   rd-c dir-name { nm }
   nm s" ." drop zeq if -1 exit then
-  nm s" .." drop zeq if
-    rd-c >name real-path if
-      rpbuf cwdbuf zeq if -1 exit then
-    then
-  then
+  nm s" .." drop zeq if skip-dotdot? if -1 exit then then
   rd-c >name zlen nm zlen + 1+ 4352 < if
     rd-c >name pbuf rd-c >name zlen cmove
     [char] / pbuf rd-c >name zlen + c!

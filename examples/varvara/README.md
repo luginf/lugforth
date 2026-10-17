@@ -11,6 +11,9 @@ lugforth, so that Uxn ROMs run inside lugforth.
 | `launch.fs` | a launcher with options (window or terminal, zoom, screen size, mouse, sound, tokens for writhdeck-uxn), like the `writhdeck-uxn` script |
 | `uxncli.fs` | runs a ROM in the terminal, like `uxncli` |
 | `screen.fs` | the Screen device (two layers, sprites, fills), the Controller and Mouse devices: shared by `varvara.fs` and `varvara_rpi.fs`, which draw and read the keys their own way |
+| `audio.fs` | the Audio devices (four channels mixed in software), shared like `screen.fs` |
+| `devtest.tal`, `tone.tal` (+ `.rom`) | test ROMs of the board port: File, Datetime and Console; a one second tone |
+| `xo5.rom` | a 5x5 tic-tac-toe (4 in a row) from <https://github.com/luginf/uxneries>, kept here as a test ROM |
 | `varvara_rpi.fs` | runs a ROM on the bare-metal board of `ports/rpi` (see below) |
 | `varvara.fs` | runs a ROM in an SDL2 window, like `uxnemu`: Screen, Controller, Mouse, Datetime, Audio, File, Console input |
 | `uxn_tests.fs` | 102 tests: random programs, jumps and calls, System device |
@@ -125,16 +128,24 @@ image as `varvara/`, then `make -C ports/rpi gui DISK=../../out/rpi/disk.img` an
 ```
 include varvara/varvara_rpi.fs
 s" varvara/boot.rom" varvara
+s" notes.txt" s" varvara/writhdeck.rom" varvara-open     \ a ROM given a file
 ```
 
-`1 to varvara-zoom` before `varvara` gives a window of the ROM's own size (default zoom 2).
-Keys: Ctrl is A, Alt is B, Shift is Select, Home is Start, the arrows, and the text typed
-(`azerty` works). F4 loads the ROM again and F12 quits, back to the Forth console. The mouse
-is the QEMU window's. Checked with `boot.rom`, writhdeck-uxn's ROM (typing in it) and a test
-ROM (mouse, keys, console output); `make -C ports/rpi test` runs `boot.rom`.
+| device | on the board |
+|---|---|
+| Screen, Controller, Mouse | the sdl2 words: the pixels are drawn by `FB-BLIT8`; the keyboard and pointer of the window |
+| Console | output to the console and the UART; the UART's keys are its input; `s" text" varvara-arg` gives arguments (`varvara-args-clear`) |
+| Audio | the board's PCM queue (`SND-QUEUE`): virtio-sound on QEMU virt, the headphone jack's PWM on a Pi 3 (written blind, as the rest of the Pi's sound) |
+| Datetime | the clock of the board: UTC. It starts from the RTC of QEMU virt or, on a Pi (no battery), the day of the build; `unix-time!` (vocabulary `rpi`) sets it and `60 tz!` gives UTC+1 |
+| File (x2) | the FAT of the SD card, same behavior as on Linux: the root is the working directory, a name with `..` is refused, a new file needs an 8.3 name (no long names on write) |
 
-Not done on the board: the File devices (a ROM cannot open or save a file: `file.fs` is
-written with libc), Audio (the board has no raw sample queue, only its oscillators),
-Datetime, and the arguments and stdin of the Console device. It is slow under QEMU's
-emulation of a Pi 3 (about half a second to redraw writhdeck's 960x576 screen after a key);
-a real Pi should be faster.
+Keys: Ctrl is A, Alt is B, Shift is Select, Home is Start, the arrows, and the text typed
+(`azerty` works). F1 changes the zoom, F2 prints the stacks (on the UART), F3 writes
+`varvara.bmp`, F4 loads the ROM again and F12 quits, back to the Forth console.
+`1 to varvara-zoom` before `varvara` gives a window of the ROM's own size (default zoom 2).
+
+`make -C ports/rpi test` runs `boot.rom` and `xo5.rom` (a click changes the board), `devtest.rom`
+(files, date, arguments, serial input) and, on virt, `tone.rom` recorded by QEMU (262 Hz).
+It is slow under QEMU's emulation of a Pi 3 (about half a second to redraw writhdeck's
+960x576 screen after a key); a real Pi should be faster. Not done: dropping a file on the
+window, and the sound of a Pi 3 is untested (QEMU has no PWM sound).

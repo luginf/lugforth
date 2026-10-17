@@ -25,6 +25,7 @@
 needs uxn.fs
 needs file.fs
 needs screen.fs
+needs audio.fs
 sdl2
 also uxn definitions
 
@@ -155,112 +156,10 @@ z" localtime" 1 sysfunc libc-localtime
 previous
 create now-t 8 allot
 : tm ( -- a ) now-t libc-time drop now-t libc-localtime ;
-: tm@ ( n -- v ) 4 * tm + sl@ ;
-: datetime-dei ( p -- b )
-  dup $0f and case
-    $00 of drop 5 tm@ 1900 + 8 rshift endof
-    $01 of drop 5 tm@ 1900 + $ff and endof
-    $02 of drop 4 tm@ endof
-    $03 of drop 3 tm@ endof
-    $04 of drop 2 tm@ endof
-    $05 of drop 1 tm@ endof
-    $06 of drop 0 tm@ endof
-    $07 of drop 6 tm@ endof
-    $08 of drop 7 tm@ 8 rshift endof
-    $09 of drop 7 tm@ $ff and endof
-    $0a of drop 8 tm@ 0<> 1 and endof
-    drop dev@ 0
-  endcase ;
-
-( ---- Audio: four sample channels, mixed in software ---- )
-\ Same algorithm as the C uxn: each channel steps through its sample at a pitch
-\ (single cycle for samples up to 256 bytes, else a repeat at the note rate),
-\ shaped by an ADSR envelope, left and right volume in one nibble each. The mix
-\ of the four channels is queued ahead (about 60 ms) by `audio-pump` once a frame.
-
-44100 constant rate
-$4000 rate * 11025 / constant note-period
-rate 15 / constant adsr-step
-2646 constant lead   ( frames kept queued )
-
-create advances
-  $80000 , $879c8 , $8facd , $9837f , $a1451 , $aadc1 ,
-  $b504f , $bfc88 , $cb2ff , $d7450 , $e411f , $f1a1c ,
-
-: fld ( n "name" -- ) create cells , does> @ + ;   ( a field of a channel, in cells )
- 0 fld a-adv    1 fld a-per    2 fld a-cnt    3 fld a-i      4 fld a-len
- 5 fld a-addr   6 fld a-age    7 fld a-a      8 fld a-d      9 fld a-s
-10 fld a-r     11 fld a-vl    12 fld a-vr    13 fld a-rep   14 fld a-done
-create achan 4 16 cells * allot
-: ch ( n -- a ) 16 cells * achan + ;
-
-0 value audio-dev
+: posix-tm@ ( n -- v ) 4 * tm + sl@ ;
+' posix-tm@ is tm@
+( ---- Audio: see audio.fs ---- )
 create aspec 32 allot
-create amix 2048 2* cells allot     ( 2048 frames, left and right )
-create aout 2048 4 * allot          ( the same as signed 16 bits )
-
-: envelope ( c age -- e )
-  { c age }
-  c a-r @ 0= if $888 exit then
-  age c a-a @ < if $888 age * c a-a @ / exit then
-  age c a-d @ < if $444 c a-d @ 2* c a-a @ - age - * c a-d @ c a-a @ - / exit then
-  age c a-s @ < if $444 exit then
-  age c a-r @ < if $444 c a-r @ age - * c a-r @ c a-s @ - / exit then
-  0 c a-adv ! 0 ;
-
-: render-chan ( c n -- )   ( adds n frames of a channel to amix )
-  { c n }
-  c a-adv @ 0= c a-per @ 0= or if exit then
-  n 0 ?do
-    c a-adv @ 0= if leave then
-    c a-adv @ c a-cnt +!
-    c a-cnt @ c a-per @ / c a-i +!
-    c a-cnt @ c a-per @ mod c a-cnt !
-    c a-i @ c a-len @ >= if
-      c a-rep @ if c a-i @ c a-len @ mod c a-i ! else 0 c a-adv ! leave then
-    then
-    c a-addr @ c a-i @ + ram@ $80 -
-    c a-age @ dup 1+ c a-age !  c swap envelope *
-    dup c a-vl @ * $180 / amix i 2* cells + +!
-        c a-vr @ * $180 / amix i 2* 1+ cells + +!
-  loop
-  c a-adv @ 0= if 1 c a-done ! then ;
-
-: audio-start ( n -- )   ( the pitch port of channel n was written )
-  { n }
-  n $10 * $30 + { base }
-  n ch { c }
-  base $f + dev@ $7f and { pitch }
-  base 8 + dev2@ { adsr }
-  base $a + dev2@ c a-len !
-  base $c + dev2@ c a-addr !
-  base $e + dev@ dup 4 rshift c a-vl !  $f and c a-vr !
-  base $f + dev@ $80 and 0= c a-rep !
-  pitch 108 < c a-len @ 0<> and 0= if 0 c a-adv ! exit then
-  advances pitch 12 mod cells + @  8 pitch 12 / -  rshift c a-adv !
-  adsr-step adsr 12 rshift * c a-a !
-  adsr-step adsr 8 rshift $f and * c a-a @ + c a-d !
-  adsr-step adsr 4 rshift $f and * c a-d @ + c a-s !
-  adsr-step adsr $f and * c a-s @ + c a-r !
-  0 c a-age !  0 c a-i !
-  c a-len @ $100 <= if note-period 337 * 2/ c a-len @ / else note-period then c a-per ! ;
-
-: audio-deo ( p -- )
-  dup $f and $f = if 4 rshift 3 - audio-start else drop then ;
-
-: vu ( c i -- n )
-  { c i }  c a-adv @ 0= c a-per @ 0= or if 0 exit then
-  i if c a-vr @ else c a-vl @ then 0= if 0 exit then
-  c c a-age @ envelope  i if c a-vr @ else c a-vl @ then * $800 / 1+ $f min ;
-
-: audio-dei ( p -- b )
-  { p }
-  p $f and { port }  p $f0 and { base }  p 4 rshift 3 - ch { c }
-  audio-dev 0= if base port + dev@ exit then
-  port 4 = if c 0 vu 4 lshift c 1 vu or exit then
-  port 2 = if c a-i @ dup 8 rshift base 2 + dev! base 3 + dev! then
-  base port + dev@ ;
-
 : audio-open ( -- )
   SDL_INIT_AUDIO SDL_InitSubSystem if exit then
   aspec 32 erase
@@ -270,24 +169,10 @@ create aout 2048 4 * allot          ( the same as signed 16 bits )
 
 : audio-close ( -- )
   audio-dev if audio-dev SDL_CloseAudioDevice drop 0 to audio-dev then ;
-
-: audio-active? ( -- f ) 0 4 0 do i ch a-adv @ 0<> or loop ;
-
-: audio-pump ( -- )
-  audio-dev 0= if exit then
-  audio-active? 0= if exit then
-  lead audio-dev SDL_GetQueuedAudioSize $ffffffff and 2 rshift - 2048 min { n }
-  n 1 < if exit then
-  amix n 2* cells erase
-  4 0 do i ch n render-chan loop
-  n 2* 0 do amix i cells + @ 32767 min -32768 max aout i 2* + w! loop
-  audio-dev aout n 4 * SDL_QueueAudio drop
-  4 0 do
-    i ch a-done @ if
-      0 i ch a-done !
-      i $10 * $30 + dev2@ ?dup if eval then
-    then
-  loop ;
+: sdl-audio-queued ( -- n ) audio-dev SDL_GetQueuedAudioSize $ffffffff and 2 rshift ;
+: sdl-audio-queue ( n -- ) >r audio-dev aout r> 4 * SDL_QueueAudio drop ;
+' sdl-audio-queued is audio-queued
+' sdl-audio-queue is audio-queue
 
 ( ---- Main loop ---- )
 

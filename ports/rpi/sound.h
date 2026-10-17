@@ -168,6 +168,38 @@ __attribute__((unused)) static int16_t snd_next(void) {   // unused on the Pi 4 
   return (int16_t) s;
 }
 
+// A queue of stereo frames played by the output, for programs that make their
+// own samples (the varvara port): frames are int16 left, right, 44100 Hz. The
+// mixer's mono sound is added to it.
+#define SND_PCM_FRAMES 16384
+static int16_t snd_pcm[SND_PCM_FRAMES][2];
+static unsigned snd_pcm_head, snd_pcm_tail;
+
+static cell_t snd_pcm_queued(void) { return (cell_t) (snd_pcm_head - snd_pcm_tail); }
+
+static void snd_pcm_put(const int16_t *lr, cell_t frames) {
+  for (cell_t i = 0; i < frames && snd_pcm_head - snd_pcm_tail < SND_PCM_FRAMES; i++, lr += 2) {
+    snd_pcm[snd_pcm_head % SND_PCM_FRAMES][0] = lr[0];
+    snd_pcm[snd_pcm_head % SND_PCM_FRAMES][1] = lr[1];
+    snd_pcm_head++;
+  }
+}
+
+static void snd_clamp_add(int16_t *dst, int32_t v) {
+  v += *dst;
+  *dst = (int16_t) (v > 32767 ? 32767 : v < -32768 ? -32768 : v);
+}
+
+// The next stereo frame: the mixer's sound on both sides, then the queue's.
+__attribute__((unused)) static void snd_next_stereo(int16_t *l, int16_t *r) {
+  *l = *r = snd_next();
+  if (snd_pcm_head != snd_pcm_tail) {
+    snd_clamp_add(l, snd_pcm[snd_pcm_tail % SND_PCM_FRAMES][0]);
+    snd_clamp_add(r, snd_pcm[snd_pcm_tail % SND_PCM_FRAMES][1]);
+    snd_pcm_tail++;
+  }
+}
+
 static int snd_ready;   // an output works
 
 // ---- QEMU virt: virtio-sound ----
@@ -199,8 +231,10 @@ static int snd_control(void *req, uint32_t req_len, void *resp, uint32_t resp_le
 static void snd_fill_slot(int k) {
   struct snd_slot *s = &snd_slots[k];
   for (int f = 0; f < SND_PERIOD; f++) {
-    int16_t v = snd_next();
-    for (int c = 0; c < snd_channels; c++) s->data[f * snd_channels + c] = v;
+    int16_t l, r;
+    snd_next_stereo(&l, &r);
+    if (snd_channels == 2) { s->data[f * 2] = l; s->data[f * 2 + 1] = r; }
+    else s->data[f] = (int16_t) (((int32_t) l + r) / 2);
   }
   uint16_t d = (uint16_t) (3 * k);
   snd_txq.desc[d].addr = (uint64_t) &s->stream; snd_txq.desc[d].len = 4;
@@ -272,8 +306,10 @@ static uint32_t snd_bus(const volatile void *p) { return (uint32_t) (uint64_t) p
 static void snd_fill_half(int h) {
   uint32_t *w = snd_ring + h * SND_HALF * 2;
   for (int f = 0; f < SND_HALF; f++) {
-    uint32_t v = (uint32_t) ((int32_t) snd_next() + 32768) * snd_range / 65536;
-    w[2 * f] = v; w[2 * f + 1] = v;
+    int16_t l, r;
+    snd_next_stereo(&l, &r);
+    w[2 * f] = (uint32_t) ((int32_t) l + 32768) * snd_range / 65536;
+    w[2 * f + 1] = (uint32_t) ((int32_t) r + 32768) * snd_range / 65536;
   }
   dcache_clean(w, SND_HALF * 8);
   snd_cb[h].next = 0;

@@ -29,7 +29,7 @@
 #   make roguelike    the same with examples/sdl2_roguelike.fs (images, tunes)
 #                     (BOARD=virt: on QEMU virt, -device ramfb, with sound)
 #   make disk         out/rpi/disk.img: an SD card image (MBR, FAT32) with the
-#                     examples, for DISK=out/rpi/disk.img (needs dosfstools, mtools)
+#                     examples, varvara/ and disk/autoexec.fs (azerty) as autoexec.fs, for DISK=out/rpi/disk.img (needs dosfstools, mtools)
 #   make test         boots both under QEMU and checks the answers
 
 ROOT := ../..
@@ -119,7 +119,7 @@ roguelike: all
 
 disk:
 	mkdir -p $(OUT)
-	python3 $(ROOT)/tools/rpi_mkdisk.py $(OUT)/disk.img $(wildcard $(ROOT)/examples/*.fs) \
+	python3 $(ROOT)/tools/rpi_mkdisk.py $(OUT)/disk.img $(wildcard $(ROOT)/examples/*.fs) disk/autoexec.fs=autoexec.fs \
 	  $(foreach f,$(wildcard $(ROOT)/examples/varvara/*.fs $(ROOT)/examples/varvara/*.rom),$(f)=varvara/$(notdir $(f)))
 
 test: all

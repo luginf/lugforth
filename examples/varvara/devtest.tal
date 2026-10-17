@@ -1,0 +1,54 @@
+( devtest.tal: File, Datetime and Console devices, for the tests of the rpi port )
+( uxnasm devtest.tal devtest.rom )
+
+|00 @System &vector $2 &wst $1 &rst $1 &eaddr $2 &ecode $1 &pad $1 &r $2 &g $2 &b $2 &debug $1 &state $1
+|10 @Console &vector $2 &read $1 &pad $4 &type $1 &write $1 &error $1
+|a0 @File &vector $2 &success $2 &stat $2 &delete $1 &append $1 &name $2 &length $2 &read $2 &write $2
+|c0 @DateTime &year $2 &month $1 &day $1 &hour $1 &minute $1 &second $1 &dotw $1 &doty $2 &isdst $1
+
+|0100
+  ;on-console .Console/vector DEO2
+  ( write x.txt, read it back, list ".", stat it, delete it, then try to leave the sandbox )
+  ;name .File/name DEO2  #0005 .File/length DEO2  ;text .File/write DEO2
+  ;name .File/name DEO2  #0010 .File/length DEO2  ;buf .File/read DEO2
+  ;buf .File/success DEI2 print
+  #0a .Console/write DEO
+  ;dot .File/name DEO2  #0100 .File/length DEO2  ;buf2 .File/read DEO2
+  ;buf2 .File/success DEI2 print
+  ;name .File/name DEO2  #0100 .File/length DEO2  ;buf2 .File/stat DEO2
+  ;buf2 .File/success DEI2 print
+  ;name .File/name DEO2  #01 .File/delete DEO
+  ;updir .File/name DEO2  #0003 .File/length DEO2 ;text .File/write DEO2
+  .File/success DEI2 SWP print-hex print-hex
+  #0a .Console/write DEO
+  ( the date: year month day hour minute second weekday day-of-year )
+  .DateTime/year DEI2 SWP print-hex print-hex
+  .DateTime/month DEI print-hex  .DateTime/day DEI print-hex
+  .DateTime/hour DEI print-hex  .DateTime/minute DEI print-hex  .DateTime/second DEI print-hex
+  .DateTime/dotw DEI print-hex  .DateTime/doty DEI2 SWP print-hex print-hex
+  #0a .Console/write DEO
+BRK
+
+@on-console ( [type byte] for each byte of the arguments and of stdin )
+  #5b .Console/write DEO
+  .Console/type DEI #30 ADD .Console/write DEO
+  .Console/read DEI .Console/write DEO
+  #5d .Console/write DEO
+BRK
+
+@print ( addr* len* -- )
+  ORAk ?{ POP2 POP2 JMP2r }
+  OVR2 ADD2 SWP2
+  &l LDAk .Console/write DEO INC2 GTH2k ?&l
+  POP2 POP2 JMP2r
+@print-hex ( byte -- )
+  DUP #04 SFT hexdig .Console/write DEO
+  #0f AND hexdig .Console/write DEO JMP2r
+@hexdig ( n -- c ) DUP #0a LTH ?{ #27 ADD } #30 ADD JMP2r
+
+@name "x.txt 00
+@updir "../x.txt 00
+@dot ". 00
+@text "hello
+@buf $20
+@buf2 $200

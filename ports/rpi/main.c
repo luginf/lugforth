@@ -200,6 +200,40 @@ static uint64_t us_ticks(void) {
   return (c / f) * 1000000 + (c % f) * 1000000 / f;
 }
 
+// ---- the date and time: a counter on the timer. The Pi has no battery clock:
+// it starts from the day the kernel was built, and UNIX-TIME! sets it. QEMU
+// virt has a PL031 RTC, read once at the start (the host's UTC time). ----
+static int64_t clock_base;          // Unix seconds when the timer read 0
+
+static int64_t days_from_civil(int64_t y, int m, int d) {
+  y -= m <= 2;
+  int64_t era = y / 400, yoe = y - era * 400;
+  int64_t doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1;
+  return era * 146097 + yoe * 365 + yoe / 4 - yoe / 100 + doy - 719468;
+}
+
+static int64_t build_epoch(void) {              // __DATE__ "Oct 17 2026", __TIME__ "12:34:56"
+  static const char *mon = "JanFebMarAprMayJunJulAugSepOctNovDec";
+  const char *d = __DATE__, *t = __TIME__;
+  int m = 1;
+  for (int i = 0; i < 12; i++) if (!memcmp(d, mon + 3 * i, 3)) m = i + 1;
+  int day = (d[4] == ' ' ? 0 : d[4] - '0') * 10 + (d[5] - '0');
+  int y = (d[7] - '0') * 1000 + (d[8] - '0') * 100 + (d[9] - '0') * 10 + (d[10] - '0');
+  return days_from_civil(y, m, day) * 86400 + ((t[0] - '0') * 10 + (t[1] - '0')) * 3600 +
+         ((t[3] - '0') * 10 + (t[4] - '0')) * 60 + (t[6] - '0') * 10 + (t[7] - '0');
+}
+
+static int64_t unix_time(void) { return clock_base + (int64_t) (ms_ticks() / 1000); }
+static void unix_time_set(cell_t secs) { clock_base = secs - (int64_t) (ms_ticks() / 1000); }
+
+static void clock_init(void) {
+  int64_t t = 0;
+#if defined(RPI_BOARD_VIRT)
+  t = REG(0x09010000UL);                        // PL031 DR
+#endif
+  unix_time_set(t > 1600000000 ? t : build_epoch());
+}
+
 // ---- sleeping while waiting for a key: the virtual timer's interrupt
 // line wakes WFI. Interrupts stay masked (DAIF), nothing is ever taken:
 // WFI wakes on a pending interrupt whatever the mask, and stopping the
@@ -374,6 +408,7 @@ static int console_extra_char(void) { snd_pump(); input_poll(); return in_get_ch
 int main(int argc, char *argv[]) {
   void *heap = malloc(HEAP_SIZE);
   if (!heap) { uart_puts("lugforth: no memory for the heap\n"); rpi_halt(); }
+  clock_init();
   input_init();
   con_init();
   snd_init();

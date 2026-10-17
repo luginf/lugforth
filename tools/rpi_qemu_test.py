@@ -332,6 +332,16 @@ def test_console(b):
   b.run('2 console-zoom 1 2 + .')
 
 
+def varvara_quit(b):
+  b.qmp([qkey('f12', True)])
+  time.sleep(0.3)
+  b.qmp([qkey('f12', False)])
+  b.wait_for(PROMPT, b.pos, 15)
+  b.pos = len(b.out)
+  r = b.run('1 2 + .')
+  check('varvara: F12 gives the prompt back, stack clean', r, r.split()[0] == '3')
+
+
 def test_varvara(b):
   """A Uxn ROM on the board (examples/varvara/varvara_rpi.fs): boot.rom draws
   a yellow square and a text, F12 ends it and the console comes back."""
@@ -344,13 +354,42 @@ def test_varvara(b):
   check('varvara: background', pixel(scr, 5, 5), pixel(scr, 5, 5) == '110033')
   sq = pixel(scr, 104, 168)
   check('varvara: the yellow square', sq, sq == 'ffcc44')
-  b.qmp([qkey('f12', True)])
+  varvara_quit(b)
+  # The File, Datetime and Console devices: devtest.rom writes, reads, lists,
+  # stats and deletes x.txt, tries to leave the sandbox, prints the date
+  # (2027-01-15 09:00:00 UTC+1, a Friday, the 14th day), then echoes its
+  # arguments and what comes on the serial line.
+  b.run('also rpi 1800000000 unix-time! previous 60 tz!')
+  b.run('s" argone" varvara-arg s" argtwo" varvara-arg')
+  b.send(b's" varvara/devtest.rom" varvara\r')
+  time.sleep(5)
+  b.send(b'hi\r')
+  time.sleep(2)
+  out = b.out[b.pos:].replace('\r', '')
+  check('varvara file: read back', out, out.startswith('hello') or '\nhello\n' in out)
+  check('varvara file: listed and stat', out, out.count('0005 x.txt') == 2)
+  check('varvara file: sandbox', out, 'blocked attempt to access ../x.txt outside of sandbox' in out)
+  check('varvara datetime', out, '07eb000f09000005000e' in out)
+  check('varvara console: arguments', out, '[2a][2r][2g][2o][2n][2e][3\n][2a][2r][2g][2t][2w][2o][4\n]' in out)
+  check('varvara console: serial input', out, '[1h][1i]' in out)
+  varvara_quit(b)
+  # xo5.rom (a 5x5 tic-tac-toe, https://github.com/luginf/uxneries): 128x128, drawn
+  b.send(b's" varvara/xo5.rom" varvara\r')
+  time.sleep(6)
+  scr = b.screen()
+  colors = {pixel(scr, x, y) for x in range(0, 256, 4) for y in range(0, 256, 4)}
+  check('xo5.rom: screen 256x256 (128x128, zoom 2)', scr[:2], scr[:2] == (256, 256))
+  check('xo5.rom: drawn (%d colors)' % len(colors), sorted(colors), len(colors) >= 2)
+  b.qmp([{'type': 'abs', 'data': {'axis': 'x', 'value': 6000}}, {'type': 'abs', 'data': {'axis': 'y', 'value': 6000}},
+         qbtn(True)])
   time.sleep(0.3)
-  b.qmp([qkey('f12', False)])
-  b.wait_for(PROMPT, b.pos, 15)
-  b.pos = len(b.out)
-  r = b.run('1 2 + .')
-  check('varvara: F12 gives the prompt back, stack clean', r, r.split()[0] == '3')
+  b.qmp([qbtn(False)])
+  time.sleep(2)
+  scr2 = b.screen()
+  check('xo5.rom: a click changes the board', '', scr2 != scr)
+  varvara_quit(b)
+  r = b.run('s" x.txt" r/o open-file nip')
+  check('varvara file: deleted', r, r.split()[0] != '0')
 
 
 def test_input(b, what):
@@ -446,6 +485,15 @@ def test_sound_play(b):
   paste(b, b'sdl2-abc\nr~ X:1\nL:1/4\nQ:1/4=120\nK:C\nC E G c\n~ abc-play 2500 ms\n')
 
 
+def test_varvara_audio(b):
+  """tone.rom, on virt (virtio-sound): one second at 261.6 Hz, found in the
+  recording by check_sound."""
+  b.run('include varvara/varvara_rpi.fs')
+  b.send(b's" varvara/tone.rom" varvara\r')
+  time.sleep(3)
+  varvara_quit(b)
+
+
 def wav_segments(x, rate):
   """(start, end) sample ranges that are not silent."""
   segs, on, quiet, gap = [], None, 0, int(rate * 0.004)
@@ -497,6 +545,13 @@ def check_sound(path):
   got = [wav_freq(x, t0 + int(rate * (0.5 * k + 0.05)), t0 + int(rate * (0.5 * k + 0.4)), rate) for k in range(4)]
   check('tune C E G c (%s Hz)' % ' '.join('%.0f' % f for f in got), '',
         all(abs(g - f) / f < 0.03 for g, f in zip(got, want)))
+  # varvara's tone.rom: a second of 261.6 Hz, among the later sounds. A loaded
+  # machine chops it (the output runs dry between two frames of the ROM), so
+  # what is checked is the total length of the pieces at that pitch.
+  pieces = [(a, b) for a, b in segs[4:] if abs(wav_freq(x, a, b, rate) - 261.6) < 8]
+  total = sum(b - a for a, b in pieces) / rate
+  check('varvara audio: tone.rom at 262 Hz (%d pieces, %.2f s)' % (len(pieces), total),
+        [(round(a / rate, 2), round((b - a) / rate, 2)) for a, b in segs[4:]], 0.6 < total < 3)
 
 
 # ---- files: a FAT disk made here with dosfstools and mtools, used by the
@@ -522,7 +577,7 @@ def make_disk(path, fat, mbr):
     rpi_mkdisk.put(spec, os.path.join(tmp, name), name)
   # The Varvara port (examples/varvara) is loaded from the disk by test_varvara.
   vdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'examples', 'varvara')
-  for name in ('uxn.fs', 'screen.fs', 'varvara_rpi.fs', 'boot.rom'):
+  for name in ('uxn.fs', 'screen.fs', 'audio.fs', 'file.fs', 'varvara_rpi.fs', 'boot.rom', 'devtest.rom', 'tone.rom', 'xo5.rom'):
     rpi_mkdisk.put(spec, os.path.join(vdir, name), 'varvara/' + name)
   return spec
 
@@ -648,6 +703,7 @@ def test_screen_only(name, args, tmp):
     test_images(b)
     test_breakout(b)
     test_roguelike(b)
+    test_varvara_audio(b)
     code = b.bye()
     check('bye exits qemu', code, code is not None)
   except Exception as e:
