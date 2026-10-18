@@ -126,7 +126,7 @@ name at offset 19 of `struct dirent` (Linux).
 image as `varvara/`, then `make -C ports/rpi gui DISK=../../out/rpi/disk.img` and, at the prompt:
 
 ```
-include varvara/varvara_rpi.fs
+include varvara/varvara.fs      \ or varvara_rpi.fs: on the board varvara.fs loads it
 s" varvara/boot.rom" varvara
 s" notes.txt" s" varvara/writhdeck.rom" varvara-open     \ a ROM given a file
 ```

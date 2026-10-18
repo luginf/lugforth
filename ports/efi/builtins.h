@@ -109,6 +109,8 @@
   X("CLOSE-DIR", CLOSE_DIR, n0 = fat_closedir(n0)) \
   YV(internals, READDIR, SET fat_readdir(n0)) \
   XV(pc, "CHDIR", CHDIR, n1 = fat_chdir(c1, n0); DROP) \
+  XV(pc, "MKDIR", MKDIR, n1 = fat_mkdir(c1, n0); DROP) \
+  XV(pc, "RMDIR", RMDIR, n1 = fat_rmdir(c1, n0); DROP) \
   XV(pc, "GETCWD", GETCWD, PUSH fs_cwd_path; PUSH strlen(fs_cwd_path)) \
   XV(pc, "DISK?", DISK_P, PUSH fs.ok ? -1 : 0)
 

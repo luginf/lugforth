@@ -63,6 +63,8 @@ previous
 also rpi
 : cd ( "dir" -- )   bl parse chdir if ." no such directory" cr then ;
 : pwd ( -- )   getcwd type cr ;
+: md ( "dir" -- )   bl parse mkdir if ." cannot make the directory" cr then ;
+: rd ( "dir" -- )   bl parse rmdir if ." cannot remove the directory (not empty?)" cr then ;
 previous
 
 ( The editors ed and writhdeck, from the disk: /lib/editor.fs and /lib/writhdeck.fs )

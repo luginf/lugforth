@@ -232,6 +232,36 @@ static cell_t fat_delete(const char *p, cell_t n) {
   return h->Delete(h) == EFI_SUCCESS ? 0 : FAT_EIO;    // Delete closes the handle
 }
 
+// mkdir: 0, or an errno-like code (FAT_EEXIST when the name is taken).
+static cell_t fat_mkdir(const char *p, cell_t n) {
+  CHAR16 w[256];
+  if (!fs.ok) return FAT_EIO;
+  if (path_wide(p, n, w, 256) < 0) return FAT_ENAMETOOLONG;
+  EFI_FILE_HANDLE h;
+  EFI_STATUS s = fs_root->Open(fs_root, &h, w, EFI_FILE_MODE_READ, 0);
+  if (s == EFI_SUCCESS) { h->Close(h); return FAT_EEXIST; }
+  s = fs_root->Open(fs_root, &h, w, EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE | EFI_FILE_MODE_CREATE,
+                    EFI_FILE_DIRECTORY);
+  if (s != EFI_SUCCESS) return efi_err(s);
+  h->Close(h);
+  return 0;
+}
+
+// rmdir: an empty directory only.
+static cell_t fat_rmdir(const char *p, cell_t n) {
+  CHAR16 w[256];
+  if (!fs.ok) return FAT_EIO;
+  if (path_wide(p, n, w, 256) < 0) return FAT_ENAMETOOLONG;
+  EFI_FILE_HANDLE h;
+  EFI_STATUS s = fs_root->Open(fs_root, &h, w, EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE, 0);
+  if (s != EFI_SUCCESS) return efi_err(s);
+  EFI_FILE_INFO *info = file_info(h);
+  int isdir = info && (info->Attribute & EFI_FILE_DIRECTORY);
+  free(info);
+  if (!isdir) { h->Close(h); return FAT_ENOTDIR; }
+  return h->Delete(h) == EFI_SUCCESS ? 0 : FAT_EIO;    // not empty: the firmware refuses
+}
+
 // rename-file: the firmware's FAT driver moves a file when the new name is
 // an absolute path.
 static cell_t fat_rename(const char *from, cell_t fn, const char *to, cell_t tn) {

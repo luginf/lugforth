@@ -22,6 +22,9 @@
 \ its 16 entries palette shows fg when it is not 0, so a change of the
 \ System colors costs nothing. VARVARA_ZOOM sets the zoom (default 2).
 
+\ On the bare-metal boards (Pi, PC with UEFI) there is no SDL2: the same name loads varvara_rpi.fs.
+[defined] posix 0= [if]  include varvara_rpi.fs  [else]
+
 needs uxn.fs
 needs file.fs
 needs screen.fs
@@ -256,3 +259,5 @@ create boot-path 512 allot
   3 args-from-argv
   argc 3 < if boot-rom else 2 argv then varvara exit-code terminate ;
 [undefined] launching [if] varvara-main [then]
+
+[then]

@@ -24,10 +24,11 @@ vocabulary sdl2   also rpi also sdl2 definitions
 ( ---- Screen ---- )
 1 value zoom   0 value width   0 value height   0 value screen-open?
 0 value quitting
-: screen ( w h -- )
-  2dup to height to width  zoom fb-open if -21 throw then
+: screen ( w h -- )   \ a zoom too big for the display is lowered until it fits
+  to height to width
+  begin  width height zoom fb-open  while  zoom 1 > 0= if -21 throw then  -1 +to zoom  repeat
   -1 to screen-open?   0 to quitting ;
-: close-screen ( -- )   screen-open? if fb-close then  0 to screen-open? ;
+: close-screen ( -- )   screen-open? if fb-close then  0 to screen-open?  1 to zoom ;
 : title ( a n -- ) 2drop ;
 : fullscreen ( f -- ) drop ;
 : cursor ( f -- ) drop ;
@@ -186,7 +187,8 @@ forget-keys
 : tune-playing? ( -- f ) snd-tune-playing ;
 
 previous previous forth definitions
-: sdl2 ( -- ) also sdl2 ;
+: sdl2 ( -- )   \ once: the search order is short, and every example says sdl2 sdl2-ttf...
+  context @ [ ' sdl2 >body ] literal = if exit then   also sdl2 ;
 : sdl2-ttf ( -- ) sdl2 ;   ( the text words are part of sdl2 here )
 : sdl2-image ( -- ) sdl2 ;   ( the image words too )
 : sdl2-mixer ( -- ) sdl2 ;   ( music volume and soundfont words: no files here )

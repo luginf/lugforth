@@ -223,7 +223,11 @@ create tbuf 80 allot   0 value tlen
 : run ( -- ) begin step quit? until close-screen ;
 
 \ the option --no-anim after the name of the file
-: option? ( a n -- f )   { oa on }  0  argc 2 ?do  oa on i argv compare 0= or  loop ;
+[defined] argc [if]   \ not on the bare-metal boards: no command line there
+: option? ( a n -- f )   { oa on }  0  argc 2 max 2 ?do  oa on i argv compare 0= or  loop ;
+[else]
+: option? ( a n -- f )   2drop 0 ;
+[then]
 \ (an `if` outside a definition does not work here)
 : read-options ( -- )   s" --no-anim" option? if false to anim-on then ;
 read-options
