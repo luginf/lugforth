@@ -87,6 +87,16 @@ dosfstools mtools); make test checks them afterwards with mtools and fsck.fat.
 
 ## Bare x86-64 PC, UEFI (ports/efi)
 
+Decision (2026-10-18): no x86 port without UEFI (own boot, VBE/Multiboot2 framebuffer, PS/2, AHCI/NVMe drivers and
+FAT on them): too much work for a narrow target. If ever wanted, Multiboot2 through GRUB is the shortcut.
+Known limits: OVMF never polls USB mice (no mouse under QEMU, only on hardware: `n mouse-speed`, default 40 = 0.40
+pixel per count); no key releases from UEFI, the firmware repeat starts 500 ms after the press (breakout stutters on the
+keyboard at first). Video memory is write-combining: keep the `sfence` in `dcache_clean` (screen.h). The console syncs
+at most every 100 ms during output (console.h), else when waiting for a key: shorter shows editors' redraws half done.
+`common/lineedit.fs` (history, Tab on words and files) is loaded by both bare-metal boots. Duplication left between
+ports/rpi and ports/efi: the `*_SUPPORT` macros of builtins.h (about 50 identical words), the shared part of platform.fs
+(azerty, console-zoom, keys): could move to ports/baremetal/.
+
 `make -C ports/efi test` builds out/efi/BOOTX64.EFI (gcc + gnu-efi) and boots it under QEMU q35 + OVMF from a USB stick
 image (MBR + FAT32, tools/baremetal_mkdisk.py), 54 checks (tools/efi_qemu_test.py, which reuses baremetal_qemu_test.py). Needs
 `gnu-efi ovmf qemu-system-x86 dosfstools mtools`. Stays in boot services: GOP screen, ConIn keyboard (no releases: a key

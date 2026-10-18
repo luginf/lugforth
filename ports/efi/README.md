@@ -83,6 +83,7 @@ read by position, as on the Pi.
 | Serial line (COM1, when there is one) | tested | most laptops have none |
 | Date and time (`unix-time`, from the battery clock) | tested | to try |
 | Mouse (firmware simple and absolute pointers) | written, not testable under OVMF | to try (a laptop's I2C trackpad may not be exposed) |
+| Line editor: history, Tab (words, file names) | tested | to try |
 | Sound | not done (silent) | not done |
 
 "Tested" means that `make test` (`tools/efi_qemu_test.py`) checks it on
@@ -97,16 +98,26 @@ Limits, by design:
   drivers of our own. The firmware handles USB, the disk and the screen,
   and lugforth runs wherever UEFI runs.
 * UEFI sends key presses but no releases. A key counts as held for 120 ms
-  after its last press. The firmware's key repeat keeps a held key held, so
-  games work, but there is a short gap at first: the repeat delay.
+  after its last press. The firmware's key repeat keeps a held key held, but
+  it starts 500 ms after the first press (measured under OVMF): a held key is
+  seen held for 120 ms, then not for about 380 ms, then continuously. Games
+  that move with a held key stutter at first; a mouse avoids it. Reading the
+  PS/2 controller directly would give real releases (not done).
 * The screen is the firmware's mode. At start, if that mode is smaller than
   1280x960, the smallest one at least that big is chosen. A program's
   `screen` is centered in it, and the rest is black.
 * No sound: the `snd-*` words do nothing.
 * Mouse: `main.c` connects all the firmware's drivers at start (as the shell's
-  `connect -r`) and polls every simple and absolute pointer, relative motion
-  doubled. OVMF only shows its ConSplitter pointers, with no event behind them,
-  so this is not checked by `make test`.
+  `connect -r`) and polls every simple and absolute pointer. A relative device
+  moves 0.40 screen pixel per count; `n mouse-speed` sets it in percent. OVMF
+  never polls the USB mouse or tablet (QEMU keeps the PS/2 mouse as the active
+  one), so there is no mouse under QEMU and `make test` does not check it.
+* The console shows its pixels when it waits for a key, or every 100 ms during
+  a stream of output, so an editor's row by row redraw does not flash.
+* The line editor of the desktop (`common/lineedit.fs`) is loaded: history of
+  64 lines (not kept), cursor keys, Tab completes words and file names.
+* Video memory is usually write-combining: `dcache_clean` (screen.h) issues an
+  `sfence` on x86, else small updates stay unseen until the next key press.
 * The console and `fb_flip` draw in RAM and write only the changed pixels to
   video memory, which is never read (slow on a real GPU). Written after a real
   test showed the cursor crawling in writhdeck and breakout jerky; the gain
