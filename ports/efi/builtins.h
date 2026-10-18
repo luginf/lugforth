@@ -32,6 +32,7 @@
   XV(pc, "US-TICKS", US_TICKS, PUSH us_ticks()) \
   XV(pc, "UNIX-TIME", UNIX_TIME, PUSH unix_time()) \
   XV(pc, "UNIX-TIME!", UNIX_TIME_SET, unix_time_set(n0); DROP) \
+  XV(pc, "MOUSE-SPEED!", MOUSE_SPEED_SET, ptr_gain = n0 < 1 ? 1 : n0 > 1000 ? 1000 : (int) n0; DROP) \
   XV(pc, "CNTFRQ", CNTFRQ, PUSH timer_freq()) \
   XV(pc, "BOARD", BOARD, PUSH BOARD_NAME; PUSH sizeof(BOARD_NAME) - 1) \
   XV(pc, "SCREEN-SIZE", SCREEN_SIZE, PUSH gop_w; PUSH gop_h) \

@@ -343,7 +343,7 @@ static void key_press(int code, int shift, int ctrl, int alt, int altgr) {
 static EFI_SIMPLE_POINTER_PROTOCOL *rel_ptr[PTR_MAX];
 static EFI_ABSOLUTE_POINTER_PROTOCOL *abs_ptr[PTR_MAX];
 static int rel_count, abs_count;
-static int ptr_gain = 2;              // device counts -> screen pixels
+static int ptr_gain = 40;             // device counts -> screen pixels, in percent (MOUSE-SPEED)
 static int64_t ptr_acc[2];
 static int ptr_left, ptr_right;
 
@@ -381,7 +381,7 @@ static void ptr_poll(void) {
     EFI_SIMPLE_POINTER_STATE st;
     int moved = 0;
     while (rel_ptr[i]->GetState(rel_ptr[i], &st) == EFI_SUCCESS) {
-      ptr_acc[0] += (int64_t) st.RelativeMovementX * ptr_gain;
+      ptr_acc[0] += (int64_t) st.RelativeMovementX * ptr_gain;      // in 1/100 pixel
       ptr_acc[1] += (int64_t) st.RelativeMovementY * ptr_gain;
       ptr_buttons(st.LeftButton != 0, st.RightButton != 0);
       moved = 1;
@@ -389,8 +389,8 @@ static void ptr_poll(void) {
     if (moved) {
       int z = fb_zoom ? fb_zoom : 1;
       for (int a = 0; a < 2; a++) {
-        int64_t d = ptr_acc[a] / z * z;
-        if (d) { input_rel(a, d); ptr_acc[a] -= d; }
+        int64_t d = ptr_acc[a] / (100 * z) * z;       // whole logical pixels
+        if (d) { input_rel(a, d); ptr_acc[a] -= d * 100; }
       }
       in_mouse_seen = 1;
     }

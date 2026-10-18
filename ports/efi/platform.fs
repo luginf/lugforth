@@ -59,6 +59,11 @@ also rpi
 : console-zoom ( n -- )   con-zoom! ;
 previous
 
+( Speed of a relative mouse: percent of a screen pixel per count of the device, 40 by default )
+also rpi
+: mouse-speed ( n -- )   mouse-speed! ;
+previous
+
 ( The current directory of the disk: cd, pwd )
 also rpi
 : cd ( "dir" -- )   bl parse chdir if ." no such directory" cr then ;

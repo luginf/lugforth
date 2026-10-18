@@ -256,7 +256,10 @@ static void con_write(const unsigned char *s, cell_t n) {
     }
   }
   con_cursor();
-  if (ms_ticks() - con_synced >= 20) con_sync();   // else when the console waits for a key
+  // Else when the console waits for a key. A redraw made of many writes (an
+  // editor clears and retypes each row) must not show half done: only a long
+  // stream of output is shown while it goes.
+  if (ms_ticks() - con_synced >= 100) con_sync();
 }
 
 // Opens the framebuffer for the console, if there is one.
