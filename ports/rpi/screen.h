@@ -39,7 +39,11 @@ static void dcache_clean(const void *p, uint64_t n) {
   for (; a < end; a += 64) __asm__ volatile("dc civac, %0" :: "r"(a) : "memory");
   __asm__ volatile("dsb sy" ::: "memory");
 #else
-  (void) p; (void) n;   // x86 (ports/efi): the framebuffer is coherent
+  // x86 (ports/efi): the framebuffer is coherent, but video memory is usually
+  // write-combining: a small update stays in the CPU's buffers, unseen, until
+  // something flushes them (the next key press, on a real laptop).
+  (void) p; (void) n;
+  __asm__ volatile("sfence" ::: "memory");
 #endif
 }
 
