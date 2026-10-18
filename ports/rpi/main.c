@@ -396,6 +396,7 @@ extern void _set_tls(void *tls);
 #include "ports/rpi/storage.h"
 #include "ports/rpi/fat.h"
 
+static void input_flush(void) {}   // the PC drains its firmware queue here (efi/main.c)
 static int console_extra_char(void) { snd_pump(); input_poll(); return in_get_char(); }
 #include "ports/rpi/builtins.h"
 

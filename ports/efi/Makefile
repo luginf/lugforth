@@ -41,7 +41,7 @@ LDFLAGS := -nostdlib -znocombreloc -T $(EFILIB)/elf_x86_64_efi.lds -shared -Bsym
   -L $(EFILIB) $(EFILIB)/crt0-efi-x86_64.o
 
 SOURCES := main.c libc.h files.h builtins.h start.S \
-  $(ROOT)/ports/baremetal/screen.h $(ROOT)/ports/baremetal/console.h $(ROOT)/ports/baremetal/input.h $(ROOT)/ports/baremetal/font8x8.h
+  $(ROOT)/ports/baremetal/builtins.h $(ROOT)/ports/baremetal/screen.h $(ROOT)/ports/baremetal/console.h $(ROOT)/ports/baremetal/input.h $(ROOT)/ports/baremetal/font8x8.h
 ASSETS ?= $(ROOT)/examples/sdl2_tiles.png $(ROOT)/examples/sdl2_tiles_alt.png
 FORTH := efi_boot.fs platform.fs $(wildcard $(ROOT)/ports/baremetal/*.fs) $(wildcard $(ROOT)/common/*.fs)
 

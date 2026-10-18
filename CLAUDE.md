@@ -93,9 +93,9 @@ Known limits: OVMF never polls USB mice (no mouse under QEMU, only on hardware: 
 pixel per count); no key releases from UEFI, the firmware repeat starts 500 ms after the press (breakout stutters on the
 keyboard at first). Video memory is write-combining: keep the `sfence` in `dcache_clean` (screen.h). The console syncs
 at most every 100 ms during output (console.h), else when waiting for a key: shorter shows editors' redraws half done.
-`common/lineedit.fs` (history, Tab on words and files) is loaded by both bare-metal boots. Duplication left between
-ports/rpi and ports/efi: the `*_SUPPORT` macros of builtins.h (about 50 identical words), the shared part of platform.fs
-(azerty, console-zoom, keys): could move to ports/baremetal/.
+`common/lineedit.fs` (history, Tab on words and files) is loaded by both bare-metal boots. The screen, input, sound
+and file opcodes are shared in ports/baremetal/builtins.h (`BM_VOC` = rpi or pc, `input_flush` defined by each main.c).
+Duplication left: the common part of the two platform.fs (azerty, console-zoom, keys).
 
 `make -C ports/efi test` builds out/efi/BOOTX64.EFI (gcc + gnu-efi) and boots it under QEMU q35 + OVMF from a USB stick
 image (MBR + FAT32, tools/baremetal_mkdisk.py), 54 checks (tools/efi_qemu_test.py, which reuses baremetal_qemu_test.py). Needs
