@@ -137,6 +137,27 @@ def keyboard(b):
   b.run('previous')
 
 
+def history(b):
+  """The line editor of the desktop (common/lineedit.fs): Up recalls the last line,
+  Tab completes a word."""
+  r = b.run('7 8 * .')
+  check('history: first line', r, r.split()[0] == '56')
+  b.qmp([t.qkey('up', True), t.qkey('up', False), t.qkey('ret', True), t.qkey('ret', False)])
+  b.wait_for(PROMPT, b.pos, 10)
+  i = b.out.rfind(PROMPT)
+  r = b.out[b.pos:i].replace('\r', '')
+  b.pos = i + len(PROMPT)
+  check('history: Up recalls the line', r, '7 8 * .' in r and '56' in r.split())
+  b.send(b'1 2 swa\t')
+  time.sleep(0.5)
+  b.send(b'. .\r')
+  b.wait_for(PROMPT, b.pos, 10)
+  i = b.out.rfind(PROMPT)
+  r = b.out[b.pos:i].replace('\r', '')
+  b.pos = i + len(PROMPT)
+  check('Tab completes swa to swap', r, 'NOT FOUND' not in r and r.split()[-3:] == ['1', '2', 'ok'])
+
+
 def main():
   out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'out', 'efi')
   tmp = os.path.join(out, 'test')
@@ -166,6 +187,7 @@ def main():
     basics(b)
     console(b)
     keyboard(b)
+    history(b)
     b.region = (160, 120)
     t.test_lines(b)
     b.region = (160, 60)

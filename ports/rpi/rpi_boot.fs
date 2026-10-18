@@ -18,6 +18,7 @@ needs ../../common/phase2.fs
 needs ../baremetal/files.fs
 needs ../../common/phase_filetools.fs
 needs platform.fs
+needs ../../common/lineedit.fs
 needs ../../common/abc.fs
 needs ../baremetal/sdl2.fs
 needs ../baremetal/autoboot.fs
