@@ -60,12 +60,22 @@ Static binaries are not possible: Lugforth reaches libc, SDL2 and X11 through
 
 ## Line editing
 
-In a terminal, in the web terminal and in the SDL console of the Android app
-(`common/lineedit.fs`): cursor keys, Home, End, Delete,
-Ctrl-A/E/B/F/D/K/U/L, a history of 64 lines (up, down) and Tab completion of
-words. After `include`, `needs`, `required`, `included`, `s"`, `z"`, `r|` and
-`r~`, Tab completes file names instead (not on the web). Piped input and the
-other ports use the plain `accept`.
+In a terminal, in the web terminal, in the SDL console of the Android app and
+on the bare-metal Pi and PC (`common/lineedit.fs`): cursor keys, Home, End,
+Delete, Ctrl-A/E/B/F/D/K/U/L, a history of 64 lines (up, down, not kept) and
+Tab completion of words. After `include`, `needs`, `required`, `included`,
+`s"`, `z"`, `r|` and `r~`, Tab completes file names instead (not on the web).
+Piped input and the other ports use the plain `accept`.
+
+## Pager
+
+On a terminal (POSIX) and on the bare-metal consoles (`common/pager.fs`), the
+output of a line typed at the prompt stops at each screenful with `-- more --`:
+space shows the next page, Enter one more line, `q` or Esc stops. It is on by
+default; `pager-off` and `pager-on` switch it (put `pager-off` in `autoexec.fs` to
+keep it off). It does not act on a pipe, while a file is included, in a program
+that reads keys, or in the SDL console. Lines wider than the screen are counted
+as one, and a telnet session ending puts the plain `type` back.
 
 ## Text editor
 
