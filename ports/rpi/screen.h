@@ -30,6 +30,8 @@ static uint32_t fb_pitch;         // bytes per framebuffer row
 static int fb_rgb;                // 1: byte 0 is red; 0: byte 0 is blue
 static uint32_t fb_color;         // pen, $rrggbb
 static int fb_alpha = 255;
+static uint32_t *fb_front, *fb_zline;   // see fb_flip
+static int fb_front_ok;                 // fb_front is what the framebuffer holds
 
 static void dcache_clean(const void *p, uint64_t n) {
 #if defined(__aarch64__)
@@ -166,6 +168,7 @@ static cell_t fb_open(cell_t w, cell_t h, cell_t zoom) {
   if (!back) return -1;
   fb_back = back;
   fb_w = (int) w; fb_h = (int) h; fb_zoom = (int) zoom;
+  fb_front_ok = 0;                  // the first flip writes everything
   con_on = 0;                       // the screen is the program's now
   for (int k = 0; k < fb_w * fb_h; k++) fb_back[k] = 0;
   return 0;
@@ -406,19 +409,46 @@ static void fb_blit8(const uint8_t *px, cell_t w, cell_t h, const uint32_t *pal)
   }
 }
 
+// Only the pixels that changed since the last flip are written to the
+// framebuffer (fb_front is what it holds, in its own pixel order): video
+// memory is slow to write on a real GPU, and a game moves little between two
+// frames. Each row's changed span is zoomed into a line in RAM, which is
+// copied to the zoom rows.
 static void fb_flip(void) {
   if (!fb_back) return;
-  for (int y = 0; y < fb_h; y++) {
-    const uint32_t *src = fb_back + y * fb_w;
-    for (int zy = 0; zy < fb_zoom; zy++) {
-      volatile uint32_t *dst = (volatile uint32_t *)
-          ((volatile uint8_t *) fb_mem + (uint64_t) (y * fb_zoom + zy) * fb_pitch);
-      for (int x = 0; x < fb_w; x++) {
-        uint32_t c = src[x];
-        if (fb_rgb) c = ((c & 255) << 16) | (c & 0xFF00) | ((c >> 16) & 255);
-        for (int zx = 0; zx < fb_zoom; zx++) *dst++ = c;
-      }
-    }
+  size_t px = (size_t) fb_w * fb_h;
+  if (!fb_front_ok || !fb_front || !fb_zline) {
+    uint32_t *f = (uint32_t *) realloc(fb_front, px * 4);
+    uint32_t *l = (uint32_t *) realloc(fb_zline, (size_t) fb_w * fb_zoom * 4 + 16);
+    if (!f || !l) return;
+    fb_front = f; fb_zline = l;
+    fb_front_ok = 1;
+    for (size_t k = 0; k < px; k++) fb_front[k] = 0xFF000000u;      // matches no pixel
   }
-  dcache_clean((const void *) fb_mem, (uint64_t) fb_h * fb_zoom * fb_pitch);
+  int y0 = -1, y1 = -1;
+  for (int y = 0; y < fb_h; y++) {
+    const uint32_t *src = fb_back + (size_t) y * fb_w;
+    uint32_t *old = fb_front + (size_t) y * fb_w;
+    int a = 0, b = fb_w - 1;
+    while (a <= b && (src[a] & 0xFFFFFF) == old[a]) a++;
+    if (a > b) continue;
+    while ((src[b] & 0xFFFFFF) == old[b]) b--;
+    if (fb_zoom == 1) { a &= ~1; if (b < fb_w - 1) b |= 1; }       // 8-byte aligned
+    uint32_t *line = fb_zline;
+    for (int x = a; x <= b; x++) {
+      uint32_t c = src[x] & 0xFFFFFF;
+      old[x] = c;
+      if (fb_rgb) c = ((c & 255) << 16) | (c & 0xFF00) | ((c >> 16) & 255);
+      for (int zx = 0; zx < fb_zoom; zx++) *line++ = c;
+    }
+    size_t bytes = (size_t) (b - a + 1) * fb_zoom * 4;
+    for (int zy = 0; zy < fb_zoom; zy++) {
+      uint8_t *dst = (uint8_t *) fb_mem + (uint64_t) (y * fb_zoom + zy) * fb_pitch + (size_t) a * fb_zoom * 4;
+      memcpy(dst, fb_zline, bytes);
+    }
+    if (y0 < 0) y0 = y;
+    y1 = y;
+  }
+  if (y0 >= 0) dcache_clean((const void *) ((volatile uint8_t *) fb_mem + (uint64_t) y0 * fb_zoom * fb_pitch),
+                            (uint64_t) (y1 - y0 + 1) * fb_zoom * fb_pitch);
 }

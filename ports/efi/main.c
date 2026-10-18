@@ -298,10 +298,13 @@ static EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL *kbd_ex;
 static uint64_t key_until[128];       // when each held key is let go
 static uint8_t char_code[128], char_shift[128];
 
+static void ptr_init(void);
+
 static void usb_init(void) {
   EFI_GUID guid = EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL_GUID;
   if (BS->HandleProtocol(ST->ConsoleInHandle, &guid, (void **) &kbd_ex) != EFI_SUCCESS) kbd_ex = 0;
   key_event = kbd_ex ? kbd_ex->WaitForKeyEx : ST->ConIn->WaitForKey;
+  ptr_init();
   for (int code = 63; code > 0; code--) {             // a character -> the key typing it
     unsigned char p = (unsigned char) key_plain[code], s = (unsigned char) key_shift[code];
     if (p && p < 128) { char_code[p] = (uint8_t) code; char_shift[p] = 0; }
@@ -332,7 +335,81 @@ static void key_press(int code, int shift, int ctrl, int alt, int altgr) {
   if (shift) input_key(KEY_LEFTSHIFT, 0);
 }
 
+// ---- the mouse: every pointer the firmware has (a USB mouse; a touchpad or
+// touchscreen when the firmware exposes it, which many laptops' I2C ones are
+// not). Relative motion is accumulated in screen pixels, and handed to
+// input.h in whole logical pixels. ----
+#define PTR_MAX 8
+static EFI_SIMPLE_POINTER_PROTOCOL *rel_ptr[PTR_MAX];
+static EFI_ABSOLUTE_POINTER_PROTOCOL *abs_ptr[PTR_MAX];
+static int rel_count, abs_count;
+static int ptr_gain = 2;              // device counts -> screen pixels
+static int64_t ptr_acc[2];
+static int ptr_left, ptr_right;
+
+static void ptr_init(void) {
+  EFI_GUID rg = EFI_SIMPLE_POINTER_PROTOCOL_GUID, ag = EFI_ABSOLUTE_POINTER_PROTOCOL_GUID;
+  EFI_HANDLE *h;
+  UINTN n;
+  if (BS->LocateHandleBuffer(ByProtocol, &rg, NULL, &n, &h) == EFI_SUCCESS) {
+    for (UINTN i = 0; i < n && rel_count < PTR_MAX; i++) {
+      EFI_SIMPLE_POINTER_PROTOCOL *p;
+      if (BS->HandleProtocol(h[i], &rg, (void **) &p) != EFI_SUCCESS) continue;
+      p->Reset(p, 0);
+      rel_ptr[rel_count++] = p;
+    }
+    BS->FreePool(h);
+  }
+  if (BS->LocateHandleBuffer(ByProtocol, &ag, NULL, &n, &h) == EFI_SUCCESS) {
+    for (UINTN i = 0; i < n && abs_count < PTR_MAX; i++) {
+      EFI_ABSOLUTE_POINTER_PROTOCOL *p;
+      if (BS->HandleProtocol(h[i], &ag, (void **) &p) != EFI_SUCCESS) continue;
+      p->Reset(p, 0);
+      abs_ptr[abs_count++] = p;
+    }
+    BS->FreePool(h);
+  }
+}
+
+static void ptr_buttons(int left, int right) {
+  if (left != ptr_left) { ptr_left = left; input_key(BTN_LEFT, left); }
+  if (right != ptr_right) { ptr_right = right; input_key(BTN_RIGHT, right); }
+}
+
+static void ptr_poll(void) {
+  for (int i = 0; i < rel_count; i++) {
+    EFI_SIMPLE_POINTER_STATE st;
+    int moved = 0;
+    while (rel_ptr[i]->GetState(rel_ptr[i], &st) == EFI_SUCCESS) {
+      ptr_acc[0] += (int64_t) st.RelativeMovementX * ptr_gain;
+      ptr_acc[1] += (int64_t) st.RelativeMovementY * ptr_gain;
+      ptr_buttons(st.LeftButton != 0, st.RightButton != 0);
+      moved = 1;
+    }
+    if (moved) {
+      int z = fb_zoom ? fb_zoom : 1;
+      for (int a = 0; a < 2; a++) {
+        int64_t d = ptr_acc[a] / z * z;
+        if (d) { input_rel(a, d); ptr_acc[a] -= d; }
+      }
+      in_mouse_seen = 1;
+    }
+  }
+  for (int i = 0; i < abs_count; i++) {
+    EFI_ABSOLUTE_POINTER_STATE st;
+    EFI_ABSOLUTE_POINTER_MODE *m = abs_ptr[i]->Mode;
+    while (abs_ptr[i]->GetState(abs_ptr[i], &st) == EFI_SUCCESS) {
+      if (m->AbsoluteMaxX > m->AbsoluteMinX && m->AbsoluteMaxY > m->AbsoluteMinY) {
+        input_abs(0, (int64_t) ((st.CurrentX - m->AbsoluteMinX) * 32767 / (m->AbsoluteMaxX - m->AbsoluteMinX)));
+        input_abs(1, (int64_t) ((st.CurrentY - m->AbsoluteMinY) * 32767 / (m->AbsoluteMaxY - m->AbsoluteMinY)));
+      }
+      ptr_buttons((st.ActiveButtons & 1) != 0, (st.ActiveButtons & 2) != 0);
+    }
+  }
+}
+
 static void usb_poll(void) {
+  ptr_poll();
   uint64_t now = ms_ticks();
   for (int code = 1; code < 128; code++) {             // held keys let go
     if (key_until[code] && now >= key_until[code]) { key_until[code] = 0; input_key(code, 0); }
@@ -409,6 +486,16 @@ static int console_extra_char(void) { input_poll(); return in_get_char(); }
 #include "common/interp.h"
 #include "gen/efi_boot.h"
 
+// The firmware binds some drivers (USB mice and touchpads) only when
+// something asks, as the shell's `connect -r` does.
+static void connect_all(void) {
+  EFI_HANDLE *h;
+  UINTN n;
+  if (BS->LocateHandleBuffer(AllHandles, NULL, NULL, &n, &h) != EFI_SUCCESS) return;
+  for (UINTN i = 0; i < n; i++) BS->ConnectController(h[i], NULL, NULL, TRUE);
+  BS->FreePool(h);
+}
+
 // Called by gnu-efi's crt0 (after its relocation pass) with the System V convention.
 EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab) {
   image_handle = image;
@@ -419,6 +506,7 @@ EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab) {
   com1_init();
   tsc_init();
   clock_init();
+  connect_all();                                       // before the screen: a driver may change it
   gop_init();
   input_init();                                        // the keyboard: usb_init below
   fs_init();

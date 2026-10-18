@@ -44,6 +44,12 @@ static int64_t con_fgc = -1, con_bgc = -1;    // $rrggbb of a 256-color or true 
 static int con_esc, con_npar, con_par[8];    // 0, 1: after ESC, 2: in a CSI, 3: in an OSC, 4: ESC in an OSC
 static int con_d0 = 1 << 30, con_d1 = -1;      // pixel rows written, not yet cleaned
 static uint64_t con_synced;
+// The console is drawn in RAM (con_shadow, CON_W x CON_H) and only the rows
+// that changed since the last sync are copied to the framebuffer (con_front
+// is what it holds): reading video memory, as the XORed cursor did, and
+// rewriting all of it are both very slow on a real GPU.
+static uint32_t *con_shadow, *con_front;
+static int con_force;                          // the framebuffer holds something unknown: copy all
 
 static const uint32_t con_pal[16] = {
   0x000000, 0xAA0000, 0x00AA00, 0xAA5500, 0x0000AA, 0xAA00AA, 0x00AAAA, 0xC0C0C0,
@@ -54,9 +60,7 @@ static uint32_t con_hw(uint32_t c) {
   return fb_rgb ? ((c & 255) << 16) | (c & 0xFF00) | ((c >> 16) & 255) : c;
 }
 
-static volatile uint32_t *con_px(int x, int y) {
-  return (volatile uint32_t *) ((volatile uint8_t *) fb_mem + (uint64_t) y * fb_pitch) + x;
-}
+static uint32_t *con_px(int x, int y) { return con_shadow + (size_t) y * CON_W + x; }
 
 static void con_mark(int y0, int y1) {
   if (y0 < con_d0) con_d0 = y0;
@@ -66,7 +70,22 @@ static void con_mark(int y0, int y1) {
 // Makes the pixels written visible: the GPU / QEMU read memory, not our cache.
 static void con_sync(void) {
   if (!con_on || con_d1 < con_d0) return;
-  dcache_clean((const void *) con_px(0, con_d0), (uint64_t) (con_d1 - con_d0 + 1) * fb_pitch);
+  if (con_d1 >= CON_H) con_d1 = CON_H - 1;
+  for (int y = con_d0; y <= con_d1; y++) {
+    uint32_t *s = con_shadow + (size_t) y * CON_W, *f = con_front + (size_t) y * CON_W;
+    int a = 0, b = CON_W - 1;
+    if (!con_force) {                                   // the span that differs
+      while (a <= b && s[a] == f[a]) a++;
+      if (a > b) continue;
+      while (s[b] == f[b]) b--;
+      a &= ~1; b |= 1;                                  // 8-byte aligned: the Pi's memcpy needs it
+    }
+    memcpy(f + a, s + a, (size_t) (b - a + 1) * 4);
+    memcpy((uint8_t *) fb_mem + (uint64_t) y * fb_pitch + (size_t) a * 4, s + a, (size_t) (b - a + 1) * 4);
+  }
+  dcache_clean((const void *) ((volatile uint8_t *) fb_mem + (uint64_t) con_d0 * fb_pitch),
+               (uint64_t) (con_d1 - con_d0 + 1) * fb_pitch);
+  con_force = 0;
   con_d0 = 1 << 30; con_d1 = -1;
   con_synced = ms_ticks();
 }
@@ -92,7 +111,7 @@ static void con_colors(uint32_t *fg, uint32_t *bg) {
 
 static void con_fill(int x, int y, int w, int h, uint32_t c) {
   for (int j = y; j < y + h; j++) {
-    volatile uint32_t *p = con_px(x, j);
+    uint32_t *p = con_px(x, j);
     for (int i = 0; i < w; i++) p[i] = c;
   }
   con_mark(y, y + h - 1);
@@ -101,7 +120,7 @@ static void con_fill(int x, int y, int w, int h, uint32_t c) {
 static void con_cursor(void) {      // toggles the block at the cursor
   if (con_col >= CON_COLS) return;
   for (int j = 0; j < CON_CH; j++) {
-    volatile uint32_t *p = con_px(con_col * CON_CW, con_row * CON_CH + j);
+    uint32_t *p = con_px(con_col * CON_CW, con_row * CON_CH + j);
     for (int i = 0; i < CON_CW; i++) p[i] ^= 0x00FFFFFF;
   }
   con_mark(con_row * CON_CH, con_row * CON_CH + CON_CH - 1);
@@ -112,7 +131,7 @@ static void con_glyph(const unsigned char *g) {
   uint32_t fg, bg;
   con_colors(&fg, &bg);
   for (int j = 0; j < CON_CH; j++) {
-    volatile uint32_t *p = con_px(con_col * CON_CW, con_row * CON_CH + j);
+    uint32_t *p = con_px(con_col * CON_CW, con_row * CON_CH + j);
     unsigned bits = g[j / (2 * con_zoom)];
     if (con_ul && j >= CON_CH - 2 * con_zoom) bits = 0xFF;      // underline: the last two font rows
     for (int i = 0; i < CON_CW; i++) p[i] = (bits >> (i / con_zoom)) & 1 ? fg : bg;
@@ -124,7 +143,7 @@ static void con_newline(void) {
   con_col = 0;
   if (++con_row < CON_ROWS) return;
   con_row = CON_ROWS - 1;
-  memmove((void *) fb_mem, (const void *) con_px(0, CON_CH), (size_t) (CON_H - CON_CH) * fb_pitch);
+  memmove(con_shadow, con_px(0, CON_CH), (size_t) (CON_H - CON_CH) * CON_W * 4);
   uint32_t fg, bg;
   con_colors(&fg, &bg);
   con_fill(0, CON_H - CON_CH, CON_W, CON_CH, bg);
@@ -244,6 +263,14 @@ static void con_write(const unsigned char *s, cell_t n) {
 static void con_init(void) {
   con_on = 0;
   if (fb_hw_open(CON_W, CON_H)) return;
+  size_t px = (size_t) CON_W * CON_H;
+  uint32_t *sh = (uint32_t *) realloc(con_shadow, px * 4), *fr;
+  if (!sh) return;
+  con_shadow = sh;
+  fr = (uint32_t *) realloc(con_front, px * 4);
+  if (!fr) return;
+  con_front = fr;
+  con_force = 1;
   con_on = 1;
   con_esc = con_shown = 0;
   con_fgi = 7; con_bgi = 0; con_bold = con_rev = con_ul = 0; con_fgc = con_bgc = -1;
