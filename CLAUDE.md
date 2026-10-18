@@ -88,9 +88,9 @@ image (MBR + FAT32, tools/rpi_mkdisk.py), 54 checks (tools/efi_qemu_test.py, whi
 `gnu-efi ovmf qemu-system-x86 dosfstools mtools`. Stays in boot services: GOP screen, ConIn keyboard (no releases: a key
 is held 120 ms after its last press; the test uses `-device usb-kbd`, PS/2 does not repeat), the stick's FAT through
 Simple File System (ports/efi/files.h, same API as fat.h). Reuses ports/rpi screen.h, console.h, input.h, sdl2.fs;
-vocabulary `pc` aliased `rpi`. efi_main is called SysV by gnu-efi's crt0 (NOT EFIAPI: it crashed); own libc in libc.h
-(x87 math), setjmp and fault stubs in start.S (patched copy of the firmware IDT). No sound, no mouse. Not tried on a real
-PC yet; ports/efi/README.md has the Dell Latitude steps (Secure Boot off, F12).
+vocabulary `pc` aliased `rpi`. Console and `fb_flip` (ports/rpi, shared) draw in RAM and write only changed pixels, never read video memory; mouse polled from the firmware pointers (untestable under OVMF, trackpad may not be exposed). Speed on real hardware not measured yet. efi_main is called SysV by gnu-efi's crt0 (NOT EFIAPI: it crashed); own libc in libc.h
+(x87 math), setjmp and fault stubs in start.S (patched copy of the firmware IDT). No sound. Booted from a real USB stick
+(prompt, sdl2_3d, roguelike work); ports/efi/README.md has the Dell Latitude steps (Secure Boot off, F12).
 
 ## Ports from eForth Windows (Marc Petremann, GPL) - done 2026-10-13
 

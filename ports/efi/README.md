@@ -82,7 +82,7 @@ read by position, as on the Pi.
 | `ed`, `writhdeck` | tested | to try |
 | Serial line (COM1, when there is one) | tested | most laptops have none |
 | Date and time (`unix-time`, from the battery clock) | tested | to try |
-| Mouse | not done | not done |
+| Mouse (firmware simple and absolute pointers) | written, not testable under OVMF | to try (a laptop's I2C trackpad may not be exposed) |
 | Sound | not done (silent) | not done |
 
 "Tested" means that `make test` (`tools/efi_qemu_test.py`) checks it on
@@ -102,7 +102,15 @@ Limits, by design:
 * The screen is the firmware's mode. At start, if that mode is smaller than
   1280x960, the smallest one at least that big is chosen. A program's
   `screen` is centered in it, and the rest is black.
-* No sound and no mouse: the `snd-*` words do nothing.
+* No sound: the `snd-*` words do nothing.
+* Mouse: `main.c` connects all the firmware's drivers at start (as the shell's
+  `connect -r`) and polls every simple and absolute pointer, relative motion
+  doubled. OVMF only shows its ConSplitter pointers, with no event behind them,
+  so this is not checked by `make test`.
+* The console and `fb_flip` draw in RAM and write only the changed pixels to
+  video memory, which is never read (slow on a real GPU). Written after a real
+  test showed the cursor crawling in writhdeck and breakout jerky; the gain
+  has not been measured on the PC yet.
 * The x86 exceptions go to a copy of the firmware's IDT. A fault in the
   firmware itself (rather than in Forth) is not caught, and 50 faults in one
   second stop the machine.
