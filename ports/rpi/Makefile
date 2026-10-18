@@ -48,10 +48,10 @@ CFLAGS := -DCON_ZOOM=$(ZOOM) --specs=picolibc.specs -mcpu=cortex-a53 -O2 -Wall -
   -I $(ROOT) -I $(OUT)
 LDFLAGS := -nostartfiles -T rpi.ld -Wl,--no-warn-rwx-segments
 
-SOURCES := start.S main.c builtins.h screen.h font8x8.h virtio.h input.h usb.h sound.h storage.h fat.h rpi.ld
+SOURCES := start.S main.c builtins.h $(addprefix $(ROOT)/ports/baremetal/,screen.h console.h font8x8.h input.h) virtio.h usb.h sound.h storage.h fat.h rpi.ld
 # Images built into the kernel for load-image (no filesystem): PNG files.
 ASSETS ?= $(ROOT)/examples/sdl2_tiles.png $(ROOT)/examples/sdl2_tiles_alt.png
-FORTH := rpi_boot.fs allocation.fs files.fs platform.fs sdl2.fs autoboot.fs $(wildcard $(ROOT)/common/*.fs)
+FORTH := rpi_boot.fs platform.fs $(wildcard $(ROOT)/ports/baremetal/*.fs) $(wildcard $(ROOT)/common/*.fs)
 
 # virt: RAM at 1G (QEMU's default -m 128M). Pi: loaded at 0x80000 by the
 # firmware, the C heap stops at 512M (every Pi 3 and 4 has that much).
@@ -72,20 +72,20 @@ $(OUT)/gen/rpi_boot.h: $(FORTH) $(OUT)/gen/REVISION
 	  --name boot --header cpp -DVERSION=$(VERSION) -DSTABLE_VERSION=$(VERSION) \
 	  -FREVISION=$(OUT)/gen/REVISION -FREVSHORT=$(OUT)/gen/REVSHORT
 
-$(OUT)/gen/rpi_assets.h: $(ASSETS) $(ROOT)/tools/rpi_assets.py
+$(OUT)/gen/baremetal_assets.h: $(ASSETS) $(ROOT)/tools/baremetal_assets.py
 	mkdir -p $(OUT)/gen
-	python3 $(ROOT)/tools/rpi_assets.py -o $@ $(ASSETS)
+	python3 $(ROOT)/tools/baremetal_assets.py -o $@ $(ASSETS)
 
 # Rewritten only when ZOOM changes, so that the kernels are rebuilt then.
 $(OUT)/gen/ZOOM: FORCE
 	mkdir -p $(OUT)/gen
 	printf '%s' '$(ZOOM)' | cmp -s - $@ || printf '%s' '$(ZOOM)' > $@
 
-$(OUT)/virt/lugforth.elf: $(SOURCES) $(OUT)/gen/ZOOM $(OUT)/gen/rpi_boot.h $(OUT)/gen/rpi_assets.h
+$(OUT)/virt/lugforth.elf: $(SOURCES) $(OUT)/gen/ZOOM $(OUT)/gen/rpi_boot.h $(OUT)/gen/baremetal_assets.h
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(VIRT_DEFS) $(LDFLAGS) start.S main.c -o $@ -lm
 
-$(OUT)/%/lugforth.elf: $(SOURCES) $(OUT)/gen/ZOOM $(OUT)/gen/rpi_boot.h $(OUT)/gen/rpi_assets.h
+$(OUT)/%/lugforth.elf: $(SOURCES) $(OUT)/gen/ZOOM $(OUT)/gen/rpi_boot.h $(OUT)/gen/baremetal_assets.h
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(if $(filter pi3,$*),$(PI3_DEFS),$(PI4_DEFS)) $(LDFLAGS) \
 	  start.S main.c -o $@ -lm
@@ -104,7 +104,7 @@ run-pty: $(OUT)/virt/lugforth.elf
 
 BOARD ?= pi3
 DISK ?=
-RUN := python3 $(ROOT)/tools/rpi_qemu_run.py --board $(BOARD) --out $(OUT) $(if $(DISK),--disk $(DISK))
+RUN := python3 $(ROOT)/tools/baremetal_qemu_run.py --board $(BOARD) --out $(OUT) $(if $(DISK),--disk $(DISK))
 screen: all
 	$(RUN)
 
@@ -119,13 +119,13 @@ roguelike: all
 
 disk:
 	mkdir -p $(OUT)
-	python3 $(ROOT)/tools/rpi_mkdisk.py $(OUT)/disk.img $(wildcard $(ROOT)/examples/*.fs) disk/autoexec.fs=autoexec.fs \
+	python3 $(ROOT)/tools/baremetal_mkdisk.py $(OUT)/disk.img $(wildcard $(ROOT)/examples/*.fs) disk/autoexec.fs=autoexec.fs \
 	  $(ROOT)/ports/posix/editor.fs=lib/editor.fs $(ROOT)/ports/posix/writhdeck.fs=lib/writhdeck.fs \
 	  $(ROOT)/ports/posix/eval_copy.fs=lib/eval_copy.fs \
 	  $(foreach f,$(wildcard $(ROOT)/examples/varvara/*.fs $(ROOT)/examples/varvara/*.rom),$(f)=varvara/$(notdir $(f)))
 
 test: all
-	python3 $(ROOT)/tools/rpi_qemu_test.py $(OUT)
+	python3 $(ROOT)/tools/baremetal_qemu_test.py $(OUT)
 
 clean:
 	rm -rf $(OUT)

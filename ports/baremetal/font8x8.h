@@ -1,4 +1,4 @@
-// 8x8 bitmap font for the text word of ports/rpi/sdl2.fs: U+0000-U+007F
+// 8x8 bitmap font for the text word of ports/baremetal/sdl2.fs: U+0000-U+007F
 // and U+00A0-U+00FF, one byte per row, bit 0 the leftmost pixel.
 //
 // font8x8 by Daniel Hepper (https://github.com/dhepper/font8x8, files

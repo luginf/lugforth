@@ -387,10 +387,10 @@ void _exit(int code) { rpi_terminate(code); for (;;) {} }
 extern char __tls_base[];
 extern void _set_tls(void *tls);
 
-#include "ports/rpi/screen.h"
-#include "ports/rpi/console.h"
+#include "ports/baremetal/screen.h"
+#include "ports/baremetal/console.h"
 #include "ports/rpi/virtio.h"
-#include "ports/rpi/input.h"
+#include "ports/baremetal/input.h"
 #include "ports/rpi/usb.h"
 #include "ports/rpi/sound.h"
 #include "ports/rpi/storage.h"

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// The screen behind ports/rpi/sdl2.fs: the HDMI framebuffer the Pi firmware
+// The screen behind ports/baremetal/sdl2.fs: the HDMI framebuffer the Pi firmware
 // hands out through the mailbox (QEMU's raspi3b emulates it and shows it in
 // its window), or QEMU virt's ramfb device (-device ramfb). Drawing goes to a back buffer of width x height logical
 // pixels, $rrggbb words; FB-FLIP copies it to the framebuffer, each pixel
@@ -220,7 +220,7 @@ static void fb_box(cell_t x, cell_t y, cell_t w, cell_t h) {
 // a line far off the screen costs a few dozen steps, not its length.
 // Horizontal and vertical lines are boxes. A Python copy of this code drew
 // the same pixels as the plain loop for 120000 random lines, ends on and
-// off a 40x30 screen; tools/rpi_qemu_test.py compares the real screen too.
+// off a 40x30 screen; tools/baremetal_qemu_test.py compares the real screen too.
 static void fb_plot(cell_t x, cell_t y) {
   uint32_t *p = fb_back + y * fb_w + x;
   *p = fb_alpha == 255 ? fb_color : fb_blend(*p);
@@ -285,7 +285,7 @@ static void fb_line(cell_t x1, cell_t y1, cell_t x2, cell_t y2) {
 // Text in the 8x8 font (font8x8.h), each font pixel a scale x scale square,
 // in the pen color. UTF-8: U+0000-U+007F and U+00A0-U+00FF have glyphs,
 // any other character is drawn as '?'.
-#include "ports/rpi/font8x8.h"
+#include "ports/baremetal/font8x8.h"
 
 static const unsigned char *text_glyph(const unsigned char **s, const unsigned char *end) {
   unsigned c = *(*s)++;
@@ -320,11 +320,11 @@ static void fb_text(cell_t x, cell_t y, const unsigned char *s, cell_t n, cell_t
   }
 }
 
-// Images: the PNG files built into the kernel (tools/rpi_assets.py makes
-// gen/rpi_assets.h from the Makefile's ASSETS), 0xAARRGGBB. A handle is
+// Images: the PNG files built into the kernel (tools/baremetal_assets.py makes
+// gen/baremetal_assets.h from the Makefile's ASSETS), 0xAARRGGBB. A handle is
 // an index in images[] plus 1; each has its own tint and alpha, as an
 // SDL texture has.
-#include "gen/rpi_assets.h"
+#include "gen/baremetal_assets.h"
 
 #define MAX_IMAGES 64
 static struct { const uint32_t *px; int w, h; uint32_t tint; int alpha; } images[MAX_IMAGES];
@@ -339,12 +339,12 @@ static const char *base_name(const char *s, cell_t *n) {
 // A handle, or 0 if no built-in image has that name (directories ignored).
 static cell_t image_load(const char *name, cell_t n) {
   name = base_name(name, &n);
-  for (int a = 0; rpi_assets[a].name; a++) {
-    if ((cell_t) strlen(rpi_assets[a].name) != n || memcmp(rpi_assets[a].name, name, n)) continue;
+  for (int a = 0; baremetal_assets[a].name; a++) {
+    if ((cell_t) strlen(baremetal_assets[a].name) != n || memcmp(baremetal_assets[a].name, name, n)) continue;
     for (int i = 0; i < MAX_IMAGES; i++) {
       if (images[i].px) continue;
-      images[i].px = rpi_assets[a].px;
-      images[i].w = rpi_assets[a].w; images[i].h = rpi_assets[a].h;
+      images[i].px = baremetal_assets[a].px;
+      images[i].w = baremetal_assets[a].w; images[i].h = baremetal_assets[a].h;
       images[i].tint = 0xFFFFFF; images[i].alpha = 255;
       return i + 1;
     }

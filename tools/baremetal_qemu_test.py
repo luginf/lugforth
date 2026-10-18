@@ -23,7 +23,7 @@ mtools: FAT16 and FAT12 on virt's virtio-blk, MBR + FAT32 on raspi3b's SD
 card), used through the file words and checked afterwards with mtools and
 fsck.fat.
 
-  tools/rpi_qemu_test.py [out/rpi]        (what `make -C ports/rpi test` runs)
+  tools/baremetal_qemu_test.py [out/rpi]        (what `make -C ports/rpi test` runs)
 """
 
 import json
@@ -217,10 +217,10 @@ def test_lines(b):
 
 
 def font8x8():
-  """The glyphs of ports/rpi/font8x8.h, by code point."""
+  """The glyphs of ports/baremetal/font8x8.h, by code point."""
   root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
   rows = re.findall(r'\{(0x[^}]*)\},\s*// U\+([0-9A-F]+)',
-                    open(os.path.join(root, 'ports', 'rpi', 'font8x8.h')).read())
+                    open(os.path.join(root, 'ports', 'baremetal', 'font8x8.h')).read())
   return {int(cp, 16): [int(v, 16) for v in vals.split(',')] for vals, cp in rows}
 
 
@@ -256,11 +256,11 @@ def test_text(b):
 
 def test_images(b):
   """Built-in images: draw, draw-size, draw-part, tint and alpha, every pixel
-  against the same arithmetic on the PNG (tools/rpi_assets.py decodes it)."""
+  against the same arithmetic on the PNG (tools/baremetal_assets.py decodes it)."""
   root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
   sys.path.insert(0, os.path.join(root, 'tools'))
-  import rpi_assets
-  iw, ih, px = rpi_assets.decode_png(open(os.path.join(root, 'examples', 'sdl2_tiles.png'), 'rb').read())
+  import baremetal_assets
+  iw, ih, px = baremetal_assets.decode_png(open(os.path.join(root, 'examples', 'sdl2_tiles.png'), 'rb').read())
   w, h, bg = 120, 60, 0x101830
   fb = [[bg] * w for _ in range(h)]
 
@@ -621,24 +621,24 @@ DISK_FILES = {
 
 
 def make_disk(path, fat, mbr):
-  """A disk image with DISK_FILES (tools/rpi_mkdisk.py), its mtools spec."""
+  """A disk image with DISK_FILES (tools/baremetal_mkdisk.py), its mtools spec."""
   sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-  import rpi_mkdisk
-  spec = rpi_mkdisk.make_disk(path, fat, mbr)
+  import baremetal_mkdisk
+  spec = baremetal_mkdisk.make_disk(path, fat, mbr)
   tmp = path + '.d'
   for name, data in DISK_FILES.items():
     os.makedirs(os.path.dirname(os.path.join(tmp, name)), exist_ok=True)
     with open(os.path.join(tmp, name), 'wb') as f:
       f.write(data)
-    rpi_mkdisk.put(spec, os.path.join(tmp, name), name)
+    baremetal_mkdisk.put(spec, os.path.join(tmp, name), name)
   # The Varvara port (examples/varvara) is loaded from the disk by test_varvara.
   vdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'examples', 'varvara')
   for name in ('uxn.fs', 'screen.fs', 'audio.fs', 'file.fs', 'varvara_rpi.fs', 'boot.rom', 'devtest.rom', 'tone.rom', 'xo5.rom'):
-    rpi_mkdisk.put(spec, os.path.join(vdir, name), 'varvara/' + name)
+    baremetal_mkdisk.put(spec, os.path.join(vdir, name), 'varvara/' + name)
   # ed and writhdeck (ports/posix) are loaded from /lib by test_editors.
   pdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ports', 'posix')
   for name in ('editor.fs', 'writhdeck.fs', 'eval_copy.fs'):
-    rpi_mkdisk.put(spec, os.path.join(pdir, name), 'lib/' + name)
+    baremetal_mkdisk.put(spec, os.path.join(pdir, name), 'lib/' + name)
   return spec
 
 

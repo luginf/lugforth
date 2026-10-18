@@ -40,7 +40,7 @@
   XV(rpi, "GPIO-BASE", GPIO_BASE_OP, PUSH GPIO_BASE) \
   XV(rpi, "BOARD", BOARD, PUSH BOARD_NAME; PUSH sizeof(BOARD_NAME) - 1)
 
-// The framebuffer (screen.h), for the sdl2 words of ports/rpi/sdl2.fs.
+// The framebuffer (screen.h), for the sdl2 words of ports/baremetal/sdl2.fs.
 #define RPI_SCREEN_SUPPORT \
   XV(rpi, "FB-OPEN", FB_OPEN, n2 = fb_open(n2, n1, n0); DROPn(2)) \
   XV(rpi, "FB-COLOR", FB_COLOR, fb_set_color(n1, n0); DROPn(2)) \

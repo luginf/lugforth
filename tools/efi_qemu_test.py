@@ -16,7 +16,7 @@
 """Boots ports/efi's BOOTX64.EFI under QEMU (q35, OVMF), from a USB stick
 image made like a real one (MBR, FAT32, EFI/BOOT/BOOTX64.EFI), and checks
 it over the serial line and the screen, with the checks of
-tools/rpi_qemu_test.py where they apply: arithmetic, floats, faults, the
+tools/baremetal_qemu_test.py where they apply: arithmetic, floats, faults, the
 console on the screen, lines, text, images, breakout, the roguelike from
 the stick, the file words (then the image is read back with mtools and
 checked with fsck.fat), the keyboard through QMP, and the editors.
@@ -29,9 +29,9 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import rpi_qemu_test as t   # noqa: E402
-import rpi_mkdisk           # noqa: E402
-from rpi_qemu_test import check, pixel, PROMPT   # noqa: E402
+import baremetal_qemu_test as t   # noqa: E402
+import baremetal_mkdisk           # noqa: E402
+from baremetal_qemu_test import check, pixel, PROMPT   # noqa: E402
 
 t.QEMU = os.environ.get('QEMU_X86', 'qemu-system-x86_64')
 OVMF = os.environ.get('OVMF', '/usr/share/OVMF/OVMF_CODE_4M.fd')
@@ -142,18 +142,18 @@ def main():
   tmp = os.path.join(out, 'test')
   os.makedirs(tmp, exist_ok=True)
   img = os.path.join(tmp, 'usb.img')
-  spec = rpi_mkdisk.make_disk(img, 32, True)
+  spec = baremetal_mkdisk.make_disk(img, 32, True)
   tmpd = img + '.d'
   for name, data in t.DISK_FILES.items():
     os.makedirs(os.path.dirname(os.path.join(tmpd, name)), exist_ok=True)
     with open(os.path.join(tmpd, name), 'wb') as f:
       f.write(data)
-    rpi_mkdisk.put(spec, os.path.join(tmpd, name), name)
+    baremetal_mkdisk.put(spec, os.path.join(tmpd, name), name)
   for src, dest in [('examples/sdl2_roguelike.fs', 'sdl2_roguelike.fs'),
                     ('ports/posix/editor.fs', 'lib/editor.fs'), ('ports/posix/writhdeck.fs', 'lib/writhdeck.fs'),
                     ('ports/posix/eval_copy.fs', 'lib/eval_copy.fs')]:
-    rpi_mkdisk.put(spec, os.path.join(ROOT, src), dest)
-  rpi_mkdisk.put(spec, os.path.join(out, 'BOOTX64.EFI'), 'EFI/BOOT/BOOTX64.EFI')
+    baremetal_mkdisk.put(spec, os.path.join(ROOT, src), dest)
+  baremetal_mkdisk.put(spec, os.path.join(out, 'BOOTX64.EFI'), 'EFI/BOOT/BOOTX64.EFI')
   args = ['-machine', 'q35', '-m', '512M', '-drive', 'if=pflash,format=raw,readonly=on,file=%s' % OVMF,
           '-drive', 'if=none,id=stick,format=raw,file=%s' % img, '-device', 'qemu-xhci',
           '-device', 'usb-storage,drive=stick', '-device', 'usb-kbd']   # OVMF repeats a held USB key

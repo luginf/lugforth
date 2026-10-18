@@ -110,7 +110,7 @@ static const char *const fr_altgr[64] = {
 #define BTN_RIGHT 0x111
 #define BTN_MIDDLE 0x112
 
-// The code pressed? uses (ports/rpi/sdl2.fs): characters in lower case,
+// The code pressed? uses (ports/baremetal/sdl2.fs): characters in lower case,
 // 13 27 9 8 for Enter Esc Tab Backspace, 207..210 for the arrows, 253..255
 // for the mouse buttons. 0: not tracked.
 static int key_sdl_code(int code) {

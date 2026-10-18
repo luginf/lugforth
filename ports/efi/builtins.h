@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // The opcodes of the PC port: the same names and stack effects as
-// ports/rpi/builtins.h (so ports/rpi/sdl2.fs and the programs written for
+// ports/rpi/builtins.h (so ports/baremetal/sdl2.fs and the programs written for
 // the Pi run here), in the vocabulary pc, which platform.fs also names rpi.
 
 #define REQUIRED_MEMORY_SUPPORT \

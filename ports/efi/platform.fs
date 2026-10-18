@@ -19,7 +19,7 @@ internals definitions
 yield-task start-task
 forth definitions
 
-( Basic I/O: the screen console and COM1, see main.c. Files: files.h, see ../rpi/files.fs. )
+( Basic I/O: the screen console and COM1, see main.c. Files: files.h, see ../baremetal/files.fs. )
 also internals definitions
 : setup-saving-base ;  ( no saved image )
 variable last-key  -1 last-key !
@@ -42,7 +42,7 @@ previous
 -1 echo !
 
 ( The machine: the vocabulary pc, also named rpi, so that the sdl2 words of )
-( ports/rpi/sdl2.fs and the programs written for the Pi find their words here )
+( ports/baremetal/sdl2.fs and the programs written for the Pi find their words here )
 vocabulary pc   pc definitions
 transfer pc-builtins
 forth definitions

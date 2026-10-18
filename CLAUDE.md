@@ -62,33 +62,37 @@ in `ports/web/platform.fs`), a "⋮" button for Examples/A-/A+/Help, and home. T
 the Ctrl button on a real soft keyboard (letters may arrive as key events rather than text input), and that
 nothing shows that Ctrl is armed (an indicator would help).
 
-## Bare-metal AArch64 (ports/rpi)
+## Bare-metal AArch64 (ports/rpi) and shared code (ports/baremetal)
+
+`ports/baremetal` holds what the Pi and the PC (ports/efi) share: screen.h (framebuffer, `sdl2` words in C), console.h,
+input.h, font8x8.h, sdl2.fs, files.fs, allocation.fs, autoboot.fs; tools/baremetal_*.py (disk images, assets, QEMU runner/test)
+serve both. Hardware specific files stay in ports/rpi (start.S, usb.h, virtio.h, sound.h, storage.h, fat.h) and ports/efi.
 
 `make -C ports/rpi test` builds out/rpi/{virt/lugforth.elf,pi3/kernel8.img,pi4/kernel8.img} and boots the first two
-under QEMU (`virt`, `raspi3b`), checking answers over the serial line (tools/rpi_qemu_test.py). Needs
+under QEMU (`virt`, `raspi3b`), checking answers over the serial line (tools/baremetal_qemu_test.py). Needs
 `gcc-aarch64-linux-gnu picolibc-aarch64-linux-gnu qemu-system-arm` (apt, installable in the cloud container).
 No OS, picolibc, PL011 console, MMU identity map (needed: unaligned accesses fault with it off), faults become
 THROW. Not tried on a real Pi; Pi 4 written blind (QEMU 8.2 has no raspi4b). See ports/rpi/README.md.
-Graphics: `sdl2` short words on the mailbox framebuffer (ports/rpi/sdl2.fs, screen.h), keys from the UART;
+Graphics: `sdl2` short words on the mailbox framebuffer (ports/baremetal/sdl2.fs, screen.h), keys from the UART;
 `make -C ports/rpi breakout` plays examples/sdl2_breakout.fs in a QEMU raspi3b window (`BOARD=virt`: virt with
 `-device ramfb`, set up through fw_cfg), `make test` checks both by screendump.
-Text (font8x8), images (PNGs built in by tools/rpi_assets.py), keyboard/mouse (virtio-input on virt with
+Text (font8x8), images (PNGs built in by tools/baremetal_assets.py), keyboard/mouse (virtio-input on virt with
 `-global virtio-mmio.force-legacy=false`, DWC2 USB HID on pi3; tested through QMP input-send-event), sound
 (sound.h mixer, virtio-sound on virt checked from a -audiodev wav file; Pi 3 PWM+DMA written blind), `paste`
 (a whole file over serial, then Ctrl-D: multi-line strings work). `make roguelike` runs examples/sdl2_roguelike.fs.
 QEMU runs a whole bcm2835 DMA chain at once: a looping chain hangs it (even SIGTERM), so never start one blindly.
 Files: storage.h (Pi SDHCI/EMMC polled, virt virtio-blk) + fat.h (FAT12/16/32, MBR or not, long names read and written, mkdir/rmdir/chdir, dates from the clock),
-the standard file words, so include/ls/cat work; autoexec.fs runs at boot. tools/rpi_mkdisk.py makes images (needs
+the standard file words, so include/ls/cat work; autoexec.fs runs at boot. tools/baremetal_mkdisk.py makes images (needs
 dosfstools mtools); make test checks them afterwards with mtools and fsck.fat.
 
 ## Bare x86-64 PC, UEFI (ports/efi)
 
 `make -C ports/efi test` builds out/efi/BOOTX64.EFI (gcc + gnu-efi) and boots it under QEMU q35 + OVMF from a USB stick
-image (MBR + FAT32, tools/rpi_mkdisk.py), 54 checks (tools/efi_qemu_test.py, which reuses rpi_qemu_test.py). Needs
+image (MBR + FAT32, tools/baremetal_mkdisk.py), 54 checks (tools/efi_qemu_test.py, which reuses baremetal_qemu_test.py). Needs
 `gnu-efi ovmf qemu-system-x86 dosfstools mtools`. Stays in boot services: GOP screen, ConIn keyboard (no releases: a key
 is held 120 ms after its last press; the test uses `-device usb-kbd`, PS/2 does not repeat), the stick's FAT through
-Simple File System (ports/efi/files.h, same API as fat.h). Reuses ports/rpi screen.h, console.h, input.h, sdl2.fs;
-vocabulary `pc` aliased `rpi`. Console and `fb_flip` (ports/rpi, shared) draw in RAM and write only changed pixels, never read video memory; mouse polled from the firmware pointers (untestable under OVMF, trackpad may not be exposed). Speed on real hardware not measured yet. efi_main is called SysV by gnu-efi's crt0 (NOT EFIAPI: it crashed); own libc in libc.h
+Simple File System (ports/efi/files.h, same API as fat.h). Reuses ports/baremetal (screen.h, console.h, input.h, font8x8.h, sdl2.fs, files.fs...), shared with ports/rpi;
+vocabulary `pc` aliased `rpi`. Console and `fb_flip` (ports/baremetal) draw in RAM and write only changed pixels, never read video memory; mouse polled from the firmware pointers (untestable under OVMF, trackpad may not be exposed). Speed on real hardware not measured yet. efi_main is called SysV by gnu-efi's crt0 (NOT EFIAPI: it crashed); own libc in libc.h
 (x87 math), setjmp and fault stubs in start.S (patched copy of the firmware IDT). No sound. Booted from a real USB stick
 (prompt, sdl2_3d, roguelike work); ports/efi/README.md has the Dell Latitude steps (Secure Boot off, F12).
 

@@ -30,7 +30,7 @@ picolibc, used for `malloc`, `math.h` and `setjmp`.
 | `include`, `ls`, `cat`, `autoexec.fs` at boot | tested | tested | to try | written blind |
 | `paste` (a whole file over serial) | tested | same code, not run by the test | to try | written blind |
 
-Here "tested" means that `make test` (`tools/rpi_qemu_test.py`) checks it
+Here "tested" means that `make test` (`tools/baremetal_qemu_test.py`) checks it
 on every run, 121 checks in all:
 
 * Answers are read on the serial line.
@@ -42,7 +42,7 @@ on every run, 121 checks in all:
   and length of beeps, the fade of a hit, the notes of a tune.
 * `examples/sdl2_breakout.fs` (sent line by line) and
   `examples/sdl2_roguelike.fs` (sent with `paste`) run unchanged.
-* Each machine gets a FAT disk made by `tools/rpi_mkdisk.py`: FAT16 and
+* Each machine gets a FAT disk made by `tools/baremetal_mkdisk.py`: FAT16 and
   FAT12 on virt, MBR + FAT32 on raspi3b's SD card. The test runs `include`,
   `needs` into a subdirectory and a long name. It writes 20000 bytes over
   several clusters and reads them back, then renames, deletes and resizes.
@@ -136,7 +136,7 @@ make -C ports/rpi screen               # the same window, prompt only
 make -C ports/rpi breakout BOARD=virt  # QEMU virt with -device ramfb
 ```
 
-`tools/rpi_qemu_run.py` (what both targets run) sends the file one line at a
+`tools/baremetal_qemu_run.py` (what both targets run) sends the file one line at a
 time, waiting for the prompt each time. The line that does not give the
 prompt back (`run`) starts the game. From then on, the terminal is the
 keyboard: arrows, space, Esc. Ctrl-] quits.
@@ -163,7 +163,7 @@ The words that exist:
   no PNG decoder on the board, so the images are built into the kernel: the PNG files of
   `ASSETS` in the Makefile (`examples/sdl2_tiles.png`,
   `examples/sdl2_tiles_alt.png`) are turned into pixels by
-  `tools/rpi_assets.py`. That script has its own PNG decoder and needs only
+  `tools/baremetal_assets.py`. That script has its own PNG decoder and needs only
   zlib. `load-image` finds them by name, ignoring directories, and throws
   -38 for any other name. Add your own with
   `make ASSETS="a.png b.png"`.
@@ -207,7 +207,7 @@ Keys and mouse (`input.h`, `usb.h`, `virtio.h`):
     virtio-tablet-device`, or `virtio-mouse-device`), over modern
     virtio-mmio, hence `-global virtio-mmio.force-legacy=false` (QEMU's
     default is legacy). The same virtio layer serves the sound.
-  * `make breakout`, `make screen` and `tools/rpi_qemu_run.py` add these
+  * `make breakout`, `make screen` and `tools/baremetal_qemu_run.py` add these
     devices, so the QEMU window's keyboard and mouse work.
   * Not done: split transactions. A full or low speed keyboard behind a high
     speed hub needs them, and the USB ports of a real Pi 3 B are behind one
@@ -260,7 +260,7 @@ disk was found.
 ```sh
 make -C ports/rpi disk                          # out/rpi/disk.img: the examples
 make -C ports/rpi screen DISK=out/rpi/disk.img  # then: ls  include sdl2_roguelike.fs
-tools/rpi_mkdisk.py card.img prog.fs lib/util.fs=util.fs autoexec.fs
+tools/baremetal_mkdisk.py card.img prog.fs lib/util.fs=util.fs autoexec.fs
 ```
 
 * `autoexec.fs` at the root, if there is one, runs at boot after the
@@ -293,7 +293,7 @@ Without a card, type `paste`, send the text, then Ctrl-D (byte 4).
 The text is kept and evaluated at once, as `include` would, so strings and
 comments may span lines: `examples/sdl2_roguelike.fs` keeps its tunes in
 `r~ ... ~` over several lines, which line by line sending breaks.
-`tools/rpi_qemu_run.py` sends files this way (`make roguelike`). Up to
+`tools/baremetal_qemu_run.py` sends files this way (`make roguelike`). Up to
 `paste-max` bytes (256K).
 
 ## Leaving

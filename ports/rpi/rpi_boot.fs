@@ -13,12 +13,12 @@
 \ limitations under the License.
 
 needs ../../common/phase1.fs
-needs allocation.fs
+needs ../baremetal/allocation.fs
 needs ../../common/phase2.fs
-needs files.fs
+needs ../baremetal/files.fs
 needs ../../common/phase_filetools.fs
 needs platform.fs
 needs ../../common/abc.fs
-needs sdl2.fs
-needs autoboot.fs
+needs ../baremetal/sdl2.fs
+needs ../baremetal/autoboot.fs
 needs ../../common/fini.fs

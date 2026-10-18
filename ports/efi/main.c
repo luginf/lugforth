@@ -17,9 +17,9 @@
 // UEFI boot services, which give what a PC needs without a driver of ours:
 // the screen (GOP framebuffer), the keyboard (the laptop's or a USB one),
 // the files of the stick, a timer. The console is the screen, drawn by
-// ports/rpi/console.h, and the COM1 serial port when there is one (QEMU).
+// ports/baremetal/console.h, and the COM1 serial port when there is one (QEMU).
 // The screen, console, keyboard decoding and sdl2 words are those of
-// ports/rpi; this file gives them their UEFI drivers.
+// ports/baremetal; this file gives them their UEFI drivers.
 
 #include <efi.h>
 #include <stdint.h>
@@ -230,7 +230,7 @@ static void faults_install(void) {
 static EFI_GRAPHICS_OUTPUT_PROTOCOL *gop;
 static uint32_t gop_w, gop_h;
 
-#include "ports/rpi/screen.h"
+#include "ports/baremetal/screen.h"
 
 static int fb_hw_open(uint32_t pw, uint32_t ph) {
   if (!gop || pw > gop_w || ph > gop_h) return -1;
@@ -276,7 +276,7 @@ static void gop_init(void) {
 }
 
 #define CON_ZOOM 2
-#include "ports/rpi/console.h"
+#include "ports/baremetal/console.h"
 
 // The console's zoom from the screen: the largest of 1 to 3 that fits.
 static void con_zoom_fit(void) {
@@ -291,7 +291,7 @@ static void con_zoom_fit(void) {
 // state of the sdl2 words. The firmware gives key presses, repeated while
 // held, but no releases: a key counts as held for KEY_HOLD_MS after its
 // last press, as a key typed on a serial terminal. ----
-#include "ports/rpi/input.h"
+#include "ports/baremetal/input.h"
 
 #define KEY_HOLD_MS 120
 static EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL *kbd_ex;

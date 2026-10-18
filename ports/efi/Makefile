@@ -41,9 +41,9 @@ LDFLAGS := -nostdlib -znocombreloc -T $(EFILIB)/elf_x86_64_efi.lds -shared -Bsym
   -L $(EFILIB) $(EFILIB)/crt0-efi-x86_64.o
 
 SOURCES := main.c libc.h files.h builtins.h start.S \
-  $(ROOT)/ports/rpi/screen.h $(ROOT)/ports/rpi/console.h $(ROOT)/ports/rpi/input.h $(ROOT)/ports/rpi/font8x8.h
+  $(ROOT)/ports/baremetal/screen.h $(ROOT)/ports/baremetal/console.h $(ROOT)/ports/baremetal/input.h $(ROOT)/ports/baremetal/font8x8.h
 ASSETS ?= $(ROOT)/examples/sdl2_tiles.png $(ROOT)/examples/sdl2_tiles_alt.png
-FORTH := efi_boot.fs platform.fs $(wildcard $(ROOT)/ports/rpi/*.fs) $(wildcard $(ROOT)/common/*.fs)
+FORTH := efi_boot.fs platform.fs $(wildcard $(ROOT)/ports/baremetal/*.fs) $(wildcard $(ROOT)/common/*.fs)
 
 all: $(OUT)/BOOTX64.EFI
 
@@ -57,11 +57,11 @@ $(OUT)/gen/efi_boot.h: $(FORTH) $(OUT)/gen/REVISION
 	  --name boot --header cpp -DVERSION=$(VERSION) -DSTABLE_VERSION=$(VERSION) \
 	  -FREVISION=$(OUT)/gen/REVISION -FREVSHORT=$(OUT)/gen/REVSHORT
 
-$(OUT)/gen/rpi_assets.h: $(ASSETS) $(ROOT)/tools/rpi_assets.py
+$(OUT)/gen/baremetal_assets.h: $(ASSETS) $(ROOT)/tools/baremetal_assets.py
 	mkdir -p $(OUT)/gen
-	python3 $(ROOT)/tools/rpi_assets.py -o $@ $(ASSETS)
+	python3 $(ROOT)/tools/baremetal_assets.py -o $@ $(ASSETS)
 
-$(OUT)/main.o: $(SOURCES) $(OUT)/gen/efi_boot.h $(OUT)/gen/rpi_assets.h
+$(OUT)/main.o: $(SOURCES) $(OUT)/gen/efi_boot.h $(OUT)/gen/baremetal_assets.h
 	$(CC) $(CFLAGS) -c main.c -o $@
 
 $(OUT)/start.o: start.S
@@ -84,7 +84,7 @@ USB_FILES := $(OUT)/BOOTX64.EFI=EFI/BOOT/BOOTX64.EFI \
   $(foreach f,$(wildcard $(ROOT)/examples/varvara/*.fs $(ROOT)/examples/varvara/*.rom),$(f)=varvara/$(notdir $(f)))
 
 usb: $(OUT)/BOOTX64.EFI
-	python3 $(ROOT)/tools/rpi_mkdisk.py $(OUT)/usb.img $(USB_FILES)
+	python3 $(ROOT)/tools/baremetal_mkdisk.py $(OUT)/usb.img $(USB_FILES)
 
 # The same files as a tree to copy onto an existing FAT32 stick (make stage
 # DEST=/media/me/STICK also works): EFI/BOOT/BOOTX64.EFI, lib/, varvara/...

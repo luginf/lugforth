@@ -97,7 +97,7 @@ create lz-buf 300 allot
 \ Without an SD card: send `paste`, then the text, then Ctrl-D (4). The
 \ text is kept and evaluated at once, so strings and comments may span
 \ lines (r~ ... ~ tunes, for example), which line by line sending breaks.
-\ tools/rpi_qemu_run.py sends files this way.
+\ tools/baremetal_qemu_run.py sends files this way.
 262144 value paste-max
 : paste ( -- )
   paste-max allocate throw 0 { buf n }

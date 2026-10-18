@@ -5,7 +5,7 @@ from a USB stick, with no operating system. It stays in the firmware's boot
 services and uses them for the screen (GOP framebuffer), the keyboard
 (console input), the clock and the files (the FAT of the stick it was
 started from). The kernel (`common/*.h`), the boot chain and most of the
-Forth side are those of `ports/rpi`. That includes `sdl2.fs`, the text
+Forth side are those of `ports/baremetal`. That includes `sdl2.fs`, the text
 console drawn on the screen, `autoexec.fs` and `paste`, so the programs
 written for the Pi run here unchanged. The vocabulary is `pc`, also named
 `rpi`.
@@ -86,7 +86,7 @@ read by position, as on the Pi.
 | Sound | not done (silent) | not done |
 
 "Tested" means that `make test` (`tools/efi_qemu_test.py`) checks it on
-every run. The test reuses the checks of `tools/rpi_qemu_test.py`, with a
+every run. The test reuses the checks of `tools/baremetal_qemu_test.py`, with a
 USB stick image made like the real one. QEMU gets a USB keyboard driven
 through QMP, the screen is read with `screendump`, and the serial line
 gives the answers.

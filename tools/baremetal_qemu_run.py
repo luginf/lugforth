@@ -17,9 +17,9 @@
 QEMU window, sends Forth files over the serial line, then turns this
 terminal into the board's keyboard and console.
 
-  tools/rpi_qemu_run.py examples/sdl2_breakout.fs
-  tools/rpi_qemu_run.py --board virt examples/sdl2_breakout.fs   (ramfb screen)
-  tools/rpi_qemu_run.py --gui                  (the Forth console in the window)
+  tools/baremetal_qemu_run.py examples/sdl2_breakout.fs
+  tools/baremetal_qemu_run.py --board virt examples/sdl2_breakout.fs   (ramfb screen)
+  tools/baremetal_qemu_run.py --gui                  (the Forth console in the window)
 
 The keyboard and mouse of the QEMU window work too (USB on raspi3b,
 virtio on virt): in a game, and at the prompt, whose output stays here.
@@ -52,7 +52,7 @@ def main():
   ap.add_argument('--headless', action='store_true', help='no QEMU window')
   ap.add_argument('--audio', default=None,
                   help='QEMU audio driver (pa, pipewire, alsa, sdl, none...); default: pa or pipewire if running')
-  ap.add_argument('--disk', help='a FAT image (tools/rpi_mkdisk.py): the SD card, or virt\'s virtio disk')
+  ap.add_argument('--disk', help='a FAT image (tools/baremetal_mkdisk.py): the SD card, or virt\'s virtio disk')
   ap.add_argument('files', nargs='*')
   args = ap.parse_args()
 

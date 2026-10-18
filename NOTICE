@@ -25,5 +25,5 @@ examples/2048.fs, examples/3d.fs, examples/sdl2_3d.fs, examples/inference/infere
 (and their tests) derive from the 2048-game, 3Dforms and INFERENCE projects of Marc Petremann
 (https://github.com/MPETREMANN11/eForth-Windows), GNU General Public License. They are GPL, not Apache 2.0.
 
-ports/rpi/font8x8.h is font8x8 by Daniel Hepper (https://github.com/dhepper/font8x8), after
+ports/baremetal/font8x8.h is font8x8 by Daniel Hepper (https://github.com/dhepper/font8x8), after
 Marcel Sondaar and the IBM VGA fonts, in the public domain.

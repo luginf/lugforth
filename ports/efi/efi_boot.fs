@@ -13,12 +13,12 @@
 \ limitations under the License.
 
 needs ../../common/phase1.fs
-needs ../rpi/allocation.fs
+needs ../baremetal/allocation.fs
 needs ../../common/phase2.fs
-needs ../rpi/files.fs
+needs ../baremetal/files.fs
 needs ../../common/phase_filetools.fs
 needs platform.fs
 needs ../../common/abc.fs
-needs ../rpi/sdl2.fs
-needs ../rpi/autoboot.fs
+needs ../baremetal/sdl2.fs
+needs ../baremetal/autoboot.fs
 needs ../../common/fini.fs

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// The bits of a C library the kernel and the shared ports/rpi headers use,
+// The bits of a C library the kernel and the shared ports/baremetal headers use,
 // for a UEFI application, which has none: strings, memory (UEFI pool
 // allocations), and the few math functions of common/floats.h, done with
 // the x87 instructions (80-bit, so as precise as a libm for doubles).
