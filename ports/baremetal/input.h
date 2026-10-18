@@ -73,6 +73,7 @@ static const char key_shift[64] = {
 // codes stay those of the key positions). Linux key codes; UTF-8 strings, 0:
 // the qwerty path (Enter, Backspace, space...). AltGr (right Alt) layer below.
 static int in_azerty, in_altgr, in_alt;
+static int in_dead;          // a dead key was hit: 1 circumflex (^), 2 diaeresis, 0 none
 static const char *const fr_plain[64] = {
   [2] = "&", "\xc3\xa9", "\"", "'", "(", "-", "\xc3\xa8", "_", "\xc3\xa7", "\xc3\xa0", ")", "=",
   [16] = "a", "z", "e", "r", "t", "y", "u", "i", "o", "p", "^", "$",
@@ -88,6 +89,19 @@ static const char *const fr_shift[64] = {
 static const char *const fr_altgr[64] = {
   [3] = "~", "#", "{", "[", "|", "`", "\\", "^", "@", "]", "}",
 };
+
+// Letters that take the accent of a dead key (1 circumflex, 2 diaeresis): the letter, then its UTF-8.
+static const struct { char d, base; const char *out; } fr_dead[] = {
+  {1,'a',"\xc3\xa2"}, {1,'e',"\xc3\xaa"}, {1,'i',"\xc3\xae"}, {1,'o',"\xc3\xb4"}, {1,'u',"\xc3\xbb"},
+  {1,'A',"\xc3\x82"}, {1,'E',"\xc3\x8a"}, {1,'I',"\xc3\x8e"}, {1,'O',"\xc3\x94"}, {1,'U',"\xc3\x9b"},
+  {2,'a',"\xc3\xa4"}, {2,'e',"\xc3\xab"}, {2,'i',"\xc3\xaf"}, {2,'o',"\xc3\xb6"}, {2,'u',"\xc3\xbc"}, {2,'y',"\xc3\xbf"},
+  {2,'A',"\xc3\x84"}, {2,'E',"\xc3\x8b"}, {2,'I',"\xc3\x8f"}, {2,'O',"\xc3\x96"}, {2,'U',"\xc3\x9c"},
+};
+static const char *const fr_dead_alone[2] = { "^", "\xc2\xa8" };
+
+static void in_put_utf8(const char *u) {
+  for (; *u; u++) { in_put_text((unsigned char) *u); in_put_char((unsigned char) *u); }
+}
 
 #define KEY_LEFTCTRL 29
 #define KEY_LEFTSHIFT 42
@@ -176,6 +190,26 @@ __attribute__((unused)) static void input_key(int code, int value) {
     const char *f = code == KEY_102ND ? (in_shift ? ">" : "<") :
                     code > 0 && code < 64 ?
                     (in_altgr ? fr_altgr[code] : in_shift ? fr_shift[code] : fr_plain[code]) : 0;
+    if (in_dead && code == 57 && !in_ctrl && !in_alt) {          // dead key then space: the accent alone
+      in_put_utf8(fr_dead_alone[in_dead - 1]);
+      in_dead = 0;
+      return;
+    }
+    if (f && code == 26 && !in_altgr && !in_ctrl && !in_alt) {   // the dead key ^ (diaeresis with shift)
+      if (in_dead) in_put_utf8(fr_dead_alone[in_dead - 1]);      // twice: the accent itself
+      in_dead = in_shift ? 2 : 1;
+      return;
+    }
+    if (f && in_dead) {
+      int d = in_dead;
+      in_dead = 0;
+      const char *out = 0;
+      if (f[1] == 0 && !in_ctrl && !in_alt)
+        for (unsigned i = 0; i < sizeof fr_dead / sizeof fr_dead[0]; i++)
+          if (fr_dead[i].d == d && fr_dead[i].base == f[0]) out = fr_dead[i].out;
+      if (out) { in_put_utf8(out); return; }
+      in_put_utf8(fr_dead_alone[d - 1]);                         // no such accented letter: both, as typed
+    }
     if (f) {
       if (in_ctrl && f[1] == 0 && (f[0] | 32) >= 'a' && (f[0] | 32) <= 'z') in_put_char((f[0] | 32) - 'a' + 1);
       else {

@@ -187,6 +187,12 @@ def accents(b):
       top = n_top
   check('typed e acute is one glyph with its accent (%d accent pixels)' % top, top, top > 0)
   b.send(b'\x15')
+  p = len(b.out)
+  b.qmp([t.qkey('bracket_left', True), t.qkey('bracket_left', False), t.qkey('e', True), t.qkey('e', False),
+         t.qkey('ret', True), t.qkey('ret', False)])   # the dead key ^ then e
+  b.wait_for(PROMPT, p, 10)
+  b.pos = len(b.out)
+  check('dead key ^ then e gives e circumflex', b.out[p:], '\xc3\xaa' in b.out[p:])
   b.run('azerty')   # typed on an AZERTY layout, this is the word qwerty
 
 

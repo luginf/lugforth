@@ -135,11 +135,11 @@ static void con_sync(void);            // console.h
 static int getchar_timeout_us(cell_t us) {
   uint64_t end = us_ticks() + (uint64_t) us;
   for (;;) {
+    con_sync();      // first: a slow poll or a short timeout must not keep the output hidden until the next key
     int c = console_extra_char();
     if (c >= 0) return c;
     uint64_t now = us_ticks();
     if (now >= end) return -1;
-    con_sync();
     sleep_us(end - now < 10000 ? end - now : 10000);
   }
 }
