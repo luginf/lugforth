@@ -157,6 +157,17 @@ def history(b):
   b.pos = i + len(PROMPT)
   check('Tab completes swa to swap', r, 'NOT FOUND' not in r and r.split()[-3:] == ['1', '2', 'ok'])
 
+  for typed, want in [('include sdl2_rog\t', 'sdl2_roguelike.fs'), ('include lib/edi\t', 'lib/editor.fs'),
+                      ('s" lib/ev\t', 'lib/eval_copy.fs')]:
+    b.send(typed.encode())
+    time.sleep(0.7)
+    with b.lock:
+      shown = b.out[b.pos:]
+    check('Tab completes the file name %r' % typed, shown, want in shown)
+    b.send(b'\x15')
+    time.sleep(0.2)
+    b.run('')
+
 
 def main():
   out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'out', 'efi')

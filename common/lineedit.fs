@@ -15,7 +15,7 @@
 ( Line editor for the terminal: cursor keys, history and Tab completion )
 ( On POSIX it is used only when stdin and stdout are terminals and echo is on, )
 ( or when a console sets le-force, otherwise the plain accept of io.fs reads )
-( the line. File names are completed on POSIX only. Lines longer than the )
+( the line. File names are completed on POSIX and on the boards with read-dir. Lines longer than the )
 ( terminal width are not redrawn correctly. )
 
 only forth also internals definitions
@@ -177,6 +177,10 @@ variable la
   dup 1+ line-pos + line-width > if le-cr 0 to line-pos then
   dup 1+ line-pos + to line-pos   le-type 32 le-emit ;
 
+: le-hidden? ( a n -- f )   \ a dot file, not wanted unless the typed name starts with a dot
+  drop c@ [char] . <>  if 0 exit then
+  pl @ 0= if -1 exit then   pa @ c@ [char] . <> ;
+
 DEFINED? posix [IF]
 ( File names )
 create fname 66 allot   variable fl   variable fdir   variable da   variable dn
@@ -193,9 +197,6 @@ z" getenv" 1 sysfunc le-getenv
     then
   then
   da @ dpath dn @ cmove   dn @ dl ! ;
-: le-hidden? ( a n -- f )   \ a dot file, not wanted unless the typed name starts with a dot
-  drop c@ [char] . <>  if 0 exit then
-  pl @ 0= if -1 exit then   pa @ c@ [char] . <> ;
 : le-entry ( ent -- )
   dup .d_type 4 = fdir !   .d_name z>s
   dup 62 > if 2drop exit then
@@ -208,9 +209,17 @@ z" getenv" 1 sysfunc le-getenv
   le-dpath  dpath dl @ open-dir if drop exit then
   begin dup readdir dup while le-entry repeat drop
   closedir drop ;
+[ELSE] DEFINED? read-dir [IF]
+( File names on a board with its own file system: read-dir gives a name, ending with / for a directory )
+: le-files ( dir-a dir-n -- )
+  dup 0= if 2drop s" ." then
+  open-dir if drop exit then
+  begin dup read-dir dup while
+    2dup le-hidden? if 2drop else dup 62 > if 2drop else sink @ execute then then
+  repeat 2drop close-dir drop ;
 [ELSE]
 : le-files ( dir-a dir-n -- )   2drop ;
-[THEN]
+[THEN] [THEN]
 
 ( Which kind of completion )
 : le-wstart ( -- n )   \ start of the word before the cursor
