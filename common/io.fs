@@ -127,10 +127,13 @@ sp0 'stack-cells @ 2 3 */ cells + constant sp-limit
                       r> >in ! r> #tib ! r> 'tib ! ;
 : evaluate&fill
    begin >in @ #tib @ >= if prompt refill drop then evaluate-buffer again ;
+variable thrown
 : quit
    #tib @ >in !
-   begin ['] evaluate&fill catch
-         if 0 state ! sp0 sp! fp0 fp! rp0 rp! ."  ERROR " cr then
+   begin ['] evaluate&fill catch dup thrown !
+         if 0 state ! sp0 sp! fp0 fp! rp0 rp!
+            thrown @ -28 = 0= if ."  ERROR " cr then   \ -28: stopped from the pager
+         then
    again ;
 variable boot-prompt
 : free. ( nf nu -- ) 2dup swap . ." free + " . ." used = " 2dup + . ." total ("

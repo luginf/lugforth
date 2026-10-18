@@ -89,7 +89,8 @@ in height, then x2). The size is a choice: `make gui ZOOM=1` builds a 640x480 co
 `1 console-zoom` (or 2, 3 for 1920x1440) changes it at the prompt, and the
 line can go into `autoexec.fs`, a block cursor, scrolling, and the ANSI sequences of
 `common/lineedit.fs` and `ansi.fs` (cursor moves, `H J K`, colors with `m`). The prompt
-uses `lineedit.fs`: history of 64 lines (not kept), Tab completes words and file names.
+uses `lineedit.fs`: history of 64 lines (not kept), Tab completes words and file names;
+`pager.fs` stops long output at each screenful of the console (`pager-off` to disable).
 The keys of the window (USB or virtio keyboard) reach `key` as on the serial
 line, so `make gui` needs no terminal. It is the same on a Pi with an HDMI
 screen and a USB keyboard. Without a framebuffer (virt without `-device

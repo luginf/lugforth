@@ -691,6 +691,8 @@ e: test-posix-forth-namespace
   out: sdl2 
   out: x11 
   [THEN]
+  out: pager-on 
+  out: pager-off 
   out: form 
   out: termios 
   check-desktop

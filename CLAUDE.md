@@ -93,7 +93,10 @@ Known limits: OVMF never polls USB mice (no mouse under QEMU, only on hardware: 
 pixel per count); no key releases from UEFI, the firmware repeat starts 500 ms after the press (breakout stutters on the
 keyboard at first). Video memory is write-combining: keep the `sfence` in `dcache_clean` (screen.h). The console syncs
 at most every 100 ms during output (console.h), else when waiting for a key: shorter shows editors' redraws half done.
-`common/lineedit.fs` (history, Tab on words and files) is loaded by both bare-metal boots. The screen, input, sound
+`common/lineedit.fs` (history, Tab on words and files) and `common/pager.fs` (stops output at each screenful, space/Enter/q,
+`pager-off`) are loaded by both bare-metal boots and the posix ones. The pager wraps `type`, `key`, `key?`, `prompt`; it acts only
+while `'tib` is the console buffer (not in an included file), on a tty (posix) or when `con-rows` is not 0; `q` is `-28 throw`,
+silent in `quit` (`ls` and `cat` close their handle on a throw). tools/pager_pty_test.py checks the posix side. The screen, input, sound
 and file opcodes are shared in ports/baremetal/builtins.h (`BM_VOC` = rpi or pc, `input_flush` defined by each main.c).
 Duplication left: the common part of the two platform.fs (azerty, console-zoom, keys).
 

@@ -62,7 +62,7 @@ transfer{
   tib-setup input-limit sp-limit ?stack edit-accept
   [SKIP] [SKIP]' raw-ok boot-prompt free.
   $place zplace BUILTIN_MARK
-  nest-depth handler +evaluate1 do-notfound interpret0
+  nest-depth handler thrown +evaluate1 do-notfound interpret0
 }transfer
 
 ( Move branching opcodes to separate vocabulary. )

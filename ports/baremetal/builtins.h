@@ -50,6 +50,7 @@
   XV(BM_VOC, "INPUT-TEXT", INPUT_TEXT, PUSH in_get_text()) \
   XV(BM_VOC, "INPUT-WHEEL", INPUT_WHEEL, PUSH in_wheel) \
   XV(BM_VOC, "CON-ZOOM!", CON_ZOOM_SET, con_set_zoom(n0); DROP) \
+  XV(BM_VOC, "CON-ROWS", CON_ROWS_OP, PUSH con_on ? CON_ROWS : 0) \
   XV(BM_VOC, "KEYBOARD!", KEYBOARD_SET, in_azerty = n0 != 0; DROP) \
   XV(BM_VOC, "UART-KEY", UART_KEY, PUSH uart_getc_nowait())
 

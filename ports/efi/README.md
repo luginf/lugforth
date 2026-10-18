@@ -116,6 +116,9 @@ Limits, by design:
   a stream of output, so an editor's row by row redraw does not flash.
 * The line editor of the desktop (`common/lineedit.fs`) is loaded: history of
   64 lines (not kept), cursor keys, Tab completes words and file names.
+* `common/pager.fs` stops the output of a typed line at each screenful of the
+  console (space: page, Enter: line, `q`: stop; `pager-off` / `pager-on`).
+  Not while a file is included, and the count restarts at each key read.
 * A UTF-8 character written one byte at a time (typed accents) is kept by
   `con_write` until complete.
 * Video memory is usually write-combining: `dcache_clean` (screen.h) issues an

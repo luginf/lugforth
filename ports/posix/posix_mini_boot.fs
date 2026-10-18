@@ -21,6 +21,7 @@ needs ../../common/phase_filetools.fs
 needs ../../common/phase_desktop.fs
 needs termios.fs
 needs ../../common/lineedit.fs
+needs ../../common/pager.fs
 needs sockets.fs
 needs autoboot.fs
 needs ../../common/fini.fs

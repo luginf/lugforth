@@ -41,26 +41,36 @@ internals definitions
 
 : cremit ( ch -- ) dup nl = if drop cr else emit then ;
 : crtype ( a n -- ) for aft dup c@ cremit 1+ then next drop ;
+: cat-loop ( fh -- )
+  { fh }
+  begin
+    here 80 fh read-file throw
+    dup 0= if drop exit then
+    here swap crtype
+  again
+;
+: close-throw ( n ior -- )   swap ?dup if nip then throw ;   \ the first error, else the second
 
 forth definitions internals
 
 : cat ( "path" -- )
   bl parse r/o bin open-file throw { fh }
-  begin
-    here 80 fh read-file throw
-    dup 0= if drop fh close-file throw exit then
-    here swap crtype
-  again
+  fh ['] cat-loop catch   fh close-file close-throw
 ;
 
 DEFINED? read-dir [IF]
+internals definitions
+: ls-loop ( dh -- )
+  { dh }
+  begin
+    dh read-dir dup 0= if 2drop exit then type cr
+  again
+;
+forth definitions internals
 : ls ( "path" -- )
   bl parse dup 0= if 2drop s" ." then
-  open-dir throw { dh } begin
-    dh read-dir dup 0= if
-      2drop dh close-dir throw exit
-    then type cr
-  again
+  open-dir throw { dh }
+  dh ['] ls-loop catch   dh close-dir close-throw
 ;
 [THEN]
 

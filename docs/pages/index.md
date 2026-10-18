@@ -35,7 +35,8 @@ Advance. See <a href="ports.html">ports</a>.</div>
 * SDL2 bindings: windows, drawing, input, images, text, sound, ABC music, also
   on the web with the same words.
 * A terminal line editor: history, cursor keys, Tab completion of words and
-  file names.
+  file names. A pager (`common/pager.fs`) stops long output at each screenful
+  on a terminal and on the bare-metal consoles: space, Enter, `q`; `pager-off`.
 * New ports: Android, Game Boy Advance, Raspberry Pi Pico.
 * Examples: games (Breakout, roguelike, 2048 with animation), turning 3D wireframes, a rule based inference engine, benchmarks, a txt2tags converter.
 

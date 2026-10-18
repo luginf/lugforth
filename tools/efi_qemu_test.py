@@ -190,6 +190,31 @@ def accents(b):
   b.run('azerty')   # typed on an AZERTY layout, this is the word qwerty
 
 
+def pager(b):
+  """common/pager.fs: a long listing stops at each screenful of the console."""
+  more = '-- more --'
+  b.run(': pgt 100 0 do i . cr loop ;')
+  b.send(b'pgt\r')
+  b.wait_for(more, b.pos, 10)
+  check('pager: a long listing stops at the end of the screen', more, True)
+  p = len(b.out)
+  b.send(b' ')
+  b.wait_for(more, p, 10)
+  check('pager: space shows another page, which stops again', more, True)
+  b.send(b'q')
+  b.wait_for(PROMPT, p, 10)
+  b.pos = len(b.out)
+  r = b.run('1 2 + .')
+  check('pager: q gives the prompt back', r, r.split()[0] == '3')
+  b.run('pager-off')
+  p = len(b.out)
+  b.send(b'pgt\r')
+  b.wait_for(PROMPT, p, 10)
+  check('pager-off: no pause', b.out[p:], more not in b.out[p:])
+  b.pos = len(b.out)
+  b.run('pager-on')
+
+
 def main():
   out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'out', 'efi')
   tmp = os.path.join(out, 'test')
@@ -221,6 +246,7 @@ def main():
     keyboard(b)
     history(b)
     accents(b)
+    pager(b)
     b.region = (160, 120)
     t.test_lines(b)
     b.region = (160, 60)
