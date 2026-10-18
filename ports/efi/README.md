@@ -116,6 +116,8 @@ Limits, by design:
   a stream of output, so an editor's row by row redraw does not flash.
 * The line editor of the desktop (`common/lineedit.fs`) is loaded: history of
   64 lines (not kept), cursor keys, Tab completes words and file names.
+* A UTF-8 character written one byte at a time (typed accents) is kept by
+  `con_write` until complete.
 * Video memory is usually write-combining: `dcache_clean` (screen.h) issues an
   `sfence` on x86, else small updates stay unseen until the next key press.
 * The console and `fb_flip` draw in RAM and write only the changed pixels to

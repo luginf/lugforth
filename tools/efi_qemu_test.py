@@ -169,6 +169,27 @@ def history(b):
     b.run('')
 
 
+def accents(b):
+  """An accented letter typed one UTF-8 byte at a time (AZERTY key 2 gives e acute)
+  is drawn as one glyph: the accent in the top rows of its cell."""
+  b.region = (1280, 960)
+  b.run('azerty')
+  b.run('page')
+  b.qmp([t.qkey('2', True), t.qkey('2', False)])
+  time.sleep(0.8)
+  scr = b.screen()
+  top = 0
+  for row in range(0, 6):
+    y0 = row * 32
+    n_top = sum(1 for y in range(y0, y0 + 8) for x in range(4 * 16, 5 * 16) if pixel(scr, x, y) != '000000')
+    n_body = sum(1 for y in range(y0 + 12, y0 + 28) for x in range(4 * 16, 5 * 16) if pixel(scr, x, y) != '000000')
+    if n_top and n_body:
+      top = n_top
+  check('typed e acute is one glyph with its accent (%d accent pixels)' % top, top, top > 0)
+  b.send(b'\x15')
+  b.run('azerty')   # typed on an AZERTY layout, this is the word qwerty
+
+
 def main():
   out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'out', 'efi')
   tmp = os.path.join(out, 'test')
@@ -199,6 +220,7 @@ def main():
     console(b)
     keyboard(b)
     history(b)
+    accents(b)
     b.region = (160, 120)
     t.test_lines(b)
     b.region = (160, 60)

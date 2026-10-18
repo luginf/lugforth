@@ -218,10 +218,34 @@ static void con_csi(int final) {
   }
 }
 
+// A UTF-8 character may arrive in pieces (the line editor and the keys give
+// one byte at a time): the bytes of an unfinished one wait for the next call.
+static unsigned char con_part[4];
+static int con_nparts;
+
+static int con_utf8_len(unsigned c) { return c >= 0xF0 ? 4 : c >= 0xE0 ? 3 : c >= 0xC0 ? 2 : 1; }
+
+static void con_put(const unsigned char *g) {
+  if (con_col >= CON_COLS) con_newline();
+  con_glyph(g);
+  con_col++;
+}
+
 static void con_write(const unsigned char *s, cell_t n) {
   if (!con_on) return;
   if (con_shown) con_cursor();
   const unsigned char *end = s + n;
+  if (con_nparts) {
+    int need = con_utf8_len(con_part[0]);
+    while (con_nparts < need && s < end && (*s & 0xC0) == 0x80) con_part[con_nparts++] = *s++;
+    if (con_nparts < need && s >= end) {
+      s = end;                                         // still unfinished
+    } else {
+      const unsigned char *p = con_part;
+      con_put(text_glyph(&p, con_part + con_nparts));
+      con_nparts = 0;
+    }
+  }
   while (s < end) {
     unsigned c = *s;
     if (con_esc == 1) {
@@ -248,11 +272,14 @@ static void con_write(const unsigned char *s, cell_t n) {
         case 8: case 127: if (con_col > 0) con_col--; break;
         case 9: con_col = (con_col + 8) & ~7; if (con_col >= CON_COLS) con_newline(); break;
       }
+    } else if (c >= 0xC0 && end - s < con_utf8_len(c)) {
+      const unsigned char *t = s + 1;                  // cut short: keep it for the next call
+      while (t < end && (*t & 0xC0) == 0x80) t++;
+      if (t < end) { con_put(text_glyph(&s, end)); continue; }
+      con_nparts = 0;
+      while (s < end) con_part[con_nparts++] = *s++;
     } else {
-      const unsigned char *g = text_glyph(&s, end);
-      if (con_col >= CON_COLS) con_newline();
-      con_glyph(g);
-      con_col++;
+      con_put(text_glyph(&s, end));
     }
   }
   con_cursor();
