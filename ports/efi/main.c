@@ -450,9 +450,14 @@ static void usb_poll(void) {
 
 // A screen opened: the keys hit before (the prompt's typing, the Esc that
 // ended the last game, which the firmware's serial terminal may give late)
-// are not the new program's.
+// are not the new program's. Nor are the keys still counted as held: UEFI
+// gives no releases, so the last ones typed (the Enter, the spaces of the
+// line that started the program) would stay held KEY_HOLD_MS more.
 static void input_flush(void) {
   usb_poll();
+  for (int code = 1; code < 128; code++) {
+    if (key_until[code]) { key_until[code] = 0; input_key(code, 0); }
+  }
   memset(in_hit, 0, sizeof in_hit);
   memset(in_snap, 0, sizeof in_snap);
   in_last_key = 0;

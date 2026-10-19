@@ -101,7 +101,7 @@ and file opcodes are shared in ports/baremetal/builtins.h (`BM_VOC` = rpi or pc,
 Duplication left: the common part of the two platform.fs (azerty, console-zoom, keys).
 
 `make -C ports/efi test` builds out/efi/BOOTX64.EFI (gcc + gnu-efi) and boots it under QEMU q35 + OVMF from a USB stick
-image (MBR + FAT32, tools/baremetal_mkdisk.py), 54 checks (tools/efi_qemu_test.py, which reuses baremetal_qemu_test.py). Needs
+image (MBR + FAT32, tools/baremetal_mkdisk.py), 74 checks (tools/efi_qemu_test.py, which reuses baremetal_qemu_test.py). Needs
 `gnu-efi ovmf qemu-system-x86 dosfstools mtools`. Stays in boot services: GOP screen, ConIn keyboard (no releases: a key
 is held 120 ms after its last press; the test uses `-device usb-kbd`, PS/2 does not repeat), the stick's FAT through
 Simple File System (ports/efi/files.h, same API as fat.h). Reuses ports/baremetal (screen.h, console.h, input.h, font8x8.h, sdl2.fs, files.fs...), shared with ports/rpi;
@@ -127,6 +127,17 @@ Ideas left: more inference examples from his docs
 (`INFERENCE/docs/*.odt`), `3Dmodelisation`/`dumpTool` extras, other upstream projects (lotto, 6809, flog, BMP, HTTP).
 Verified in a real X window (display :0) for sdl2_2048: see docs/SKILLS.md, last bullets. Gotchas met: `include` is relative to the including file; `if` at top level does not work (wrap in a word);
 `<# #s #>` takes ONE number here; `.r`, `random` ( n -- r ) are in `ansi_compat.fs`, `ms-ticks 1 or rand-seed !` seeds it.
+
+## Games after r3forth (examples/sdl2_tetris.fs, sdl2_snake.fs, sdl2_minesweeper.fs) - done 2026-10-19
+
+r3forth (https://github.com/phreda4/r3, Pablo Reda, MIT, credited in NOTICE) has its own syntax (`cond? ( ... )`,
+`:word`, fixed point 48.16): its code does not load here, the games are rewritten keeping its ideas. Digits from the
+3x5 bitmap of breakout, no fonts. `games_tests.fs` (in `make test-ports`) loads them with `tetris-no-run` etc.
+defined, which skips the game loop (`[defined] x [if] [else] ... [then]` at the end of each file).
+tools/efi_qemu_test.py plays them from the stick (screendump checks). Not seen on the Pi under QEMU (same sdl2.fs).
+`color` resets the alpha to 255: set `alpha` after `color`. Edges of keys: `just` keeps the last state per key.
+Other r3 candidates: bdash (Boulder Dash, own sprites needed), sokoban (levels of unclear license), raycaster,
+term demos (fire, matrix, torus), util/penner.r3 easing, lib/sdl2poly.r3 polygon fill.
 
 ## Open question: control structures outside a definition
 
