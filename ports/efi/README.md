@@ -18,7 +18,7 @@ sudo apt install gnu-efi ovmf qemu-system-x86 dosfstools mtools
 make -C ports/efi          # out/efi/BOOTX64.EFI
 make -C ports/efi usb      # out/efi/usb.img: MBR + FAT32, EFI/BOOT/BOOTX64.EFI and the examples
 make -C ports/efi run      # QEMU (q35, OVMF) on that image: a window, the serial line here
-make -C ports/efi test     # boots it under QEMU and checks 54 things
+make -C ports/efi test     # boots it under QEMU and checks 74 things
 ```
 
 ## Booting it from a USB stick (a Dell Latitude, for example)
@@ -76,7 +76,7 @@ read by position, as on the Pi.
 | Faults (#GP, #PF, divide...) become `THROW` | tested | to try |
 | Idle CPU: sleeps in `WaitForEvent` | not measured | to try |
 | Console on the screen (GOP, at least 1280x960, zoom 1 to 3 by size) | tested | to try |
-| Screen words, lines, text, images, breakout, roguelike | tested | to try |
+| Screen words, lines, text, images, breakout, roguelike, tetris, snake, minesweeper | tested | to try |
 | Keyboard (firmware console input), typing and held keys | USB keyboard, tested | to try |
 | Files on the stick: `include`, `ls`, long names, write, rename, delete | tested, checked with mtools and fsck.fat | to try |
 | `ed`, `writhdeck` | tested | to try |

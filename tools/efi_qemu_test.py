@@ -221,6 +221,57 @@ def pager(b):
   b.run('pager-on')
 
 
+def games(b):
+  """The games after r3forth, from the stick: each one drawn, a key acts on it,
+  Esc gives the prompt back."""
+  def count(scr, colors, step=3):
+    return sum(1 for y in range(0, scr[1], step) for x in range(0, scr[0], step) if pixel(scr, x, y) in colors)
+  def start(name, region):
+    b.region = region
+    b.send(('include %s\r' % name).encode())
+    time.sleep(4)
+  def key(k):
+    b.qmp([t.qkey(k, True)])
+    time.sleep(0.15)
+    b.qmp([t.qkey(k, False)])
+    time.sleep(0.6)
+  def leave(name):
+    b.send(b'\x1b')
+    b.wait_for(PROMPT, b.pos, 15)
+    b.pos = len(b.out)
+    r = b.run('2 3 + .')
+    check('%s: the prompt after Esc' % name, r, r.split()[0] == '5')
+
+  pieces = {'00d8e0', 'e8d000', 'a040e0', '30c030', 'e03030', '3060f0', 'f08020'}
+  def floor_cells(scr):   # the cells of the bottom row filled (their middle: the ghost is an outline)
+    return sum(1 for c in range(10) if pixel(scr, (8 + c * 11 + 5) * 3 + 1, (10 + 19 * 11 + 5) * 3 + 1) in pieces)
+  start('sdl2_tetris.fs', (600, 720))
+  scr = b.screen()
+  check('tetris: the well drawn', pixel(scr, 60 * 3, 120 * 3), pixel(scr, 60 * 3, 120 * 3) == '0c0c14')
+  before = floor_cells(scr)
+  key('spc')
+  scr = b.screen()
+  after = floor_cells(scr)
+  check('tetris: space drops the piece to the floor (%d -> %d)' % (before, after), '', before == 0 and after >= 2)
+  leave('tetris')
+
+  start('sdl2_snake.fs', (960, 720))
+  scr = b.screen()
+  n_head, n_body, n_fruit = count(scr, {'f0f040'}, 1), count(scr, {'30b040', '40c850'}), count(scr, {'e03030'}, 1)
+  check('snake: head, body and fruit drawn (%d %d %d)' % (n_head, n_body, n_fruit), '', n_head and n_body and n_fruit)
+  leave('snake')
+
+  start('sdl2_minesweeper.fs', (1104, 660))
+  scr = b.screen()
+  closed = count(scr, {'a8a8b0'})
+  check('minesweeper: the board drawn, all closed (%d)' % closed, '', closed > 1000 and count(scr, {'d0d0d8'}) == 0)
+  key('spc')
+  scr = b.screen()
+  opened = count(scr, {'d0d0d8'})
+  check('minesweeper: space opens cells (%d)' % opened, '', opened > 100)
+  leave('minesweeper')
+
+
 def main():
   out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'out', 'efi')
   tmp = os.path.join(out, 'test')
@@ -234,6 +285,8 @@ def main():
       f.write(data)
     baremetal_mkdisk.put(spec, os.path.join(tmpd, name), name)
   for src, dest in [('examples/sdl2_roguelike.fs', 'sdl2_roguelike.fs'),
+                    ('examples/sdl2_tetris.fs', 'sdl2_tetris.fs'), ('examples/sdl2_snake.fs', 'sdl2_snake.fs'),
+                    ('examples/sdl2_minesweeper.fs', 'sdl2_minesweeper.fs'),
                     ('ports/posix/editor.fs', 'lib/editor.fs'), ('ports/posix/writhdeck.fs', 'lib/writhdeck.fs'),
                     ('ports/posix/eval_copy.fs', 'lib/eval_copy.fs')]:
     baremetal_mkdisk.put(spec, os.path.join(ROOT, src), dest)
@@ -261,6 +314,7 @@ def main():
     t.test_images(b)
     b.region = (960, 720)
     t.test_breakout(b)
+    games(b)
     b.region = (960, 624)
     b.send(b'include sdl2_roguelike.fs\r')   # the game: the prompt comes back after Esc
   except Exception as e:

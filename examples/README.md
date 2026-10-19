@@ -2,7 +2,7 @@
 
 Games and demos (SDL2 words, see `ports/posix/SDL2.md`): `sdl2_demo.fs`,
 `sdl2_breakout.fs`, `sdl2_drums.fs`, `fm/sdl2_fm.fs` (FM synthesizer with MIDI input, also in the browser; see `fm/README.md`), `sdl2_pianoroll.fs`, `sdl2_roguelike.fs`, `sdl2_3d.fs` (turning wireframe cube, pyramid and octahedron),
-`pinball/pinball.fs`.
+`pinball/pinball.fs`, and three games after r3forth (below).
 Run one with `lugforth examples/sdl2_breakout.fs`, or `include` it from the prompt.
 
 ## Benchmarks: lugforth vs C vs uxn
@@ -63,6 +63,26 @@ lugforth examples/txt2tags.fs examples/txt2tags_demo.t2t > demo.html
 or `include examples/txt2tags.fs` then `s" doc.t2t" t2t-file`. The header
 comment lists the supported syntax.
 
+## Games after r3forth
+
+[r3forth](https://github.com/phreda4/r3) by Pablo Reda (MIT license) is a Forth of the ColorForth family
+with its own syntax (`:word`, `#var`, conditionals followed by `( )` blocks, fixed point numbers), so its
+games are not loaded as they are but written again in lugforth, keeping their ideas. Only libSDL2 is
+needed: no font or image files, the digits come from a 3x5 bitmap. They also run on the bare-metal
+boards (`ports/rpi`, `ports/efi`: `include sdl2_tetris.fs` from the card or the stick).
+
+* `sdl2_tetris.fs`: the seven pieces, wall kicks, a ghost piece, the next piece, levels; r3's score table
+  (40, 100, 300, 1200 times the level). Left/right, up or x turns, down drops faster, space drops at once,
+  p pauses, r after the end.
+* `sdl2_snake.fs`: through the edges as in r3, one more cell for each fruit and a little faster, and the
+  end when it bites itself (r3's has none). Arrows or wasd, p, r after the end.
+* `sdl2_minesweeper.fs`: r3's three levels (1, 2, 3: 9x9 and 10 mines, 16x16 and 40, 30x16 and 99) and its
+  list rather than recursion to open the empty cells; the first cell is never a mine, a click on a number
+  opens around it when its flags are all there. Mouse (left opens, right flags) or keyboard (arrows,
+  space opens, f flags), so it plays on the PC under UEFI where the mouse may be missing.
+
+`games_tests.fs` tests their logic without opening a window (`make test-ports`).
+
 ## Ports from eForth Windows
 
 [eForth Windows](https://github.com/MPETREMANN11/eForth-Windows) by Marc Petremann is a
@@ -78,4 +98,4 @@ ueForth for Windows, so its code loads in lugforth almost as is (`value`/`to`, `
   engine loop `infer` (new): `include examples/inference/inference.fs`, `include examples/inference/weather.fs`,
   `also facts  -1 to rain  -1 to cold  infer  .facts`.
 
-`make test-ports` runs `2048_tests.fs`, `3d_tests.fs` and `inference/inference_tests.fs` and `inference/lamp_diagnosis_tests.fs`.
+`make test-ports` runs `2048_tests.fs`, `3d_tests.fs`, `inference/inference_tests.fs`, `inference/lamp_diagnosis_tests.fs` and `games_tests.fs`.

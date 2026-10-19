@@ -154,7 +154,7 @@ no mouse.
 sudo apt install gnu-efi ovmf qemu-system-x86 dosfstools mtools
 make -C ports/efi usb     # out/efi/usb.img, to dd onto a stick
 make -C ports/efi run     # the same image under QEMU with OVMF
-make -C ports/efi test    # 54 checks under QEMU
+make -C ports/efi test    # 74 checks under QEMU
 ```
 
 See [ports/efi/README.md](ports/efi/README.md).
