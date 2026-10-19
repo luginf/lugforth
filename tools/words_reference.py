@@ -93,7 +93,7 @@ def run_posix(vocab):
     return parts[-2].split() if len(parts) >= 4 else None
 
 def version():
-    out = subprocess.run([ROOT + 'out/posix/lugforth'], input='bye\n', capture_output=True,
+    out = subprocess.run([ROOT + 'out/posix/lugforth'], input='info bye\n', capture_output=True,
                          text=True, timeout=30).stdout
     m = re.search(r'Lugforth v\S+ - rev \S+', out)
     return m.group(0) if m else 'Lugforth'

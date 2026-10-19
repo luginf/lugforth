@@ -139,6 +139,11 @@ tools/efi_qemu_test.py plays them from the stick (screendump checks). Not seen o
 Other r3 candidates: bdash (Boulder Dash, own sprites needed), sokoban (levels of unclear license), raycaster,
 term demos (fire, matrix, torus), util/penner.r3 easing, lib/sdl2poly.r3 polygon fill.
 
+## Other projects to credit or borrow from
+
+Check a project online before naming it in the README ("Inspiration"), NOTICE or a list of ideas. Bifurcan, once
+suggested as a Forth for Uxn, is a Tal program (a clock), not a Forth.
+
 ## Open question: control structures outside a definition
 
 Decision pending (the maintainer is thinking about it), nothing is implemented yet.

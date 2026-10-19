@@ -57,6 +57,8 @@ e: check-highlevel-floats
 ;e
 
 e: check-boot
+  out: help 
+  out: info 
   out: quit 
   out: evaluate 
   out: refill 
