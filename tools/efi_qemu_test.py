@@ -79,6 +79,45 @@ def basics(b):
   check('date from the battery clock', r, int(r.split()[0]) > 1700000000)
 
 
+def volumes(b):
+  """A second stick: volumes lists both, mount switches the disk of the file words."""
+  r = b.run('volumes')
+  check('volumes lists two FAT volumes', r, r.count(' MB') == 2 and '* 0' in r)
+  r = b.run('1 mount ls')
+  check('1 mount: ls shows the second stick', r, 'second.txt' in r and 'EFI/' not in r)
+  r = b.run('cat second.txt')
+  check('1 mount: cat reads its file', r, 'from stick two' in r)
+  r = b.run('volumes')
+  check('volumes marks the one in use', r, '* 1' in r)
+  r = b.run('0 mount ls')
+  check('0 mount: back on the boot stick', r, 'EFI/' in r and 'second.txt' not in r)
+  r = b.run('9 mount')
+  check('mount of a missing volume says so', r, 'no such volume' in r)
+  b.run('variable hf  s" sdl2_snake.fs" r/o open-file drop hf !')
+  r = b.run('1 mount pc volume-now . forth')
+  check('mount refused while a file is open', r, 'close the open files first' in r and r.split()[-2] == '0')
+  b.run('hf @ close-file drop')
+  r = b.run('1 mount pc volume-now . forth 0 mount')
+  check('mount accepted once it is closed', r, r.split()[-2] == '1')
+
+
+def hotplug(b, img3):
+  """A third stick plugged in while the system runs: volumes finds it after a rescan."""
+  b.screen()                                            # opens the monitor
+  b.monitor.send(('drive_add 0 if=none,id=stick3,format=raw,file=%s\n' % img3).encode())
+  time.sleep(0.5)
+  b.monitor.send(b'device_add usb-storage,drive=stick3,id=dev3\n')
+  time.sleep(3)
+  r = b.run('volumes')
+  if r.count(' MB') < 3:
+    time.sleep(5)
+    r = b.run('volumes')
+  check('a stick plugged after the start is listed', r, r.count(' MB') == 3)
+  r = b.run('2 mount ls')
+  check('2 mount: its file is there', r, 'third.txt' in r)
+  b.run('0 mount')
+
+
 def console(b):
   """The console on the GOP screen, 1280x960 centered: the banner lit, the
   sdl2 screen over it, back after close-screen."""
@@ -193,7 +232,97 @@ def accents(b):
   b.wait_for(PROMPT, p, 10)
   b.pos = len(b.out)
   check('dead key ^ then e gives e circumflex', b.out[p:], '\xc3\xaa' in b.out[p:])
+  p = len(b.out)
+  b.qmp([t.qkey('alt_r', True), t.qkey('comma', True), t.qkey('comma', False), t.qkey('dot', True),
+         t.qkey('dot', False), t.qkey('alt_r', False), t.qkey('ret', True), t.qkey('ret', False)])   # AltGr+; AltGr+:
+  b.wait_for(PROMPT, p, 10)
+  b.pos = len(b.out)
+  check('AZERTY: AltGr+; and AltGr+: give < and >', b.out[p:], '<>' in b.out[p:])
   b.run('azerty')   # typed on an AZERTY layout, this is the word qwerty
+
+
+def sound_ini(b):
+  """sound-off / sound-on: the HD Audio controller stopped or started again, the choice kept in lugforth.ini."""
+  b.run('also rpi')
+  r = b.run('sound-off snd-ok .')
+  check('sound-off: no sound (snd-ok 0)', r, r.split()[0] == '0')
+  r = b.run('cat lugforth.ini')
+  check('sound-off writes lugforth.ini', r, 'sound = off' in r)
+  r = b.run('sound snd-ok .')
+  check('sound: the controller starts again (snd-ok -1)', r, r.split()[0] == '-1')
+  r = b.run('cat lugforth.ini')
+  check('sound-on writes lugforth.ini', r, 'sound = on' in r)
+  b.run('previous')
+
+
+def terminals(b):
+  """Alt+F1..F4 and term: a second Forth with a screen of its own. The first keeps
+  running while the second has the screen; bye closes the second."""
+  import hashlib
+  b.region = (1280, 960)
+
+  def shot():
+    time.sleep(1.5)
+    return hashlib.md5(b.screen()[2]).hexdigest()
+
+  def alt(name):
+    b.qmp([t.qkey('alt', True), t.qkey(name, True), t.qkey(name, False), t.qkey('alt', False)])
+
+  def ans(line):
+    return b.run(line).replace(' ok', '').strip()
+
+  def prompt():                              # the prompt of the terminal that has the screen
+    p = len(b.out)
+    b.send(b'\r')
+    b.wait_for(PROMPT, p, 30)
+    b.pos = len(b.out)
+
+  b.run('page')
+  b.run('variable v  42 v !  variable cnt')
+  b.run(': spin ( ms -- ) 0 cnt ! ms-ticks + begin 1 cnt +! pause dup ms-ticks < until drop ;')
+  b.run('page')
+  b.run('.( first terminal) cr')
+  one = shot()
+  p = len(b.out)
+  b.send(b'3000 spin\r')                       # terminal 1 is busy for 3 s
+  time.sleep(0.3)
+  alt('f2')
+  b.wait_for('terminal 2', p, 60)
+  b.wait_for(PROMPT, p, 30)
+  b.pos = len(b.out)
+  r = ans('terminal . terminals .')
+  check('Alt+F2 opens a second terminal', r, r == '2 2')
+  two = shot()
+  check('the second terminal has a screen of its own', two, two != one)
+  r = b.run('v @ .')
+  check('its dictionary is its own', r, 'NOT FOUND' in r)
+  b.run('variable w  7 w !')
+  r = b.run('-8 @ .')
+  check('a fault in it is caught, the prompt comes back', r, 'fault' in r)
+  b.run('graphic  red color  0 0 600 400 line')
+  gfx = shot()
+  check('it can draw (graphic)', gfx, gfx != two)
+  time.sleep(3)                                # terminal 1 finishes meanwhile
+  alt('f1')
+  time.sleep(1)
+  prompt()
+  r = ans('terminal . v @ .')
+  check('Alt+F1 is back in the first, its variable kept', r, r == '1 42')
+  r = ans('cnt @ 100 > .')
+  check('it ran while the second had the screen', r, r == '-1')
+  back = shot()
+  check('the drawing of the second is not on the first one screen', back, back != gfx)
+  b.send(b'2 term\r')
+  time.sleep(2.5)
+  prompt()
+  r = ans('terminal . w @ .')
+  check('term 2 is back in the second, its variable kept', r, r == '2 7')
+  b.send(b'bye\r')
+  time.sleep(2.5)
+  prompt()
+  r = ans('terminal . terminals . v @ .')
+  check('bye in the second terminal closes it, the first is back', r, r == '1 1 42')
+  b.run('page')
 
 
 def pager(b):
@@ -241,6 +370,46 @@ def games(b):
     b.pos = len(b.out)
     r = b.run('2 3 + .')
     check('%s: the prompt after Esc' % name, r, r.split()[0] == '5')
+
+  r = b.run('sdl2 s" t140 o4 l8 c d e c  e4 g4 r4 >c2" play  sine wave@ . square wave@ . depth .')
+  check('play and the waves by name', r, r.split()[:3] == ['4', '0', '0'])
+  r = b.run('3 wave wave@ . 2 to wave wave@ . 0 wave 4000 beep-volume beep-volume@ . 3000 beep-volume s" c4&c8 n49 p v8 o3 g" play depth .')
+  check('wave and beep-volume are settings, play understands MML', r, r.split()[:4] == ['3', '2', '4000', '0'])
+  # graphics under the console: no SCREEN, the drawing words show at once
+  def shot():   # the console shows a change when it waits for a key: under QEMU's software CPU, give it time
+    time.sleep(1.5)
+    return b.screen()
+  old_region = b.region
+  b.region = (640, 480)
+  b.run('1 console-zoom')
+  b.run('graphic')
+  b.run('red color 100 300 200 100 box')
+  b.run('$00ff00 color 0 0 639 479 line')
+  b.run('3 ink 400 50 100 100 box')
+  scr = shot()
+  check('graphic: a box drawn at the prompt', pixel(scr, 150, 350), pixel(scr, 150, 350) == 'ff0000')
+  check('graphic: a line', pixel(scr, 320, 240), pixel(scr, 320, 240) == '00ff00')
+  check('graphic: ink 3 is yellow', pixel(scr, 450, 100), pixel(scr, 450, 100) == 'ffff00')
+  check('graphic: the empty background stays black', pixel(scr, 600, 400), pixel(scr, 600, 400) == '000000')
+  b.run('page')
+  scr = shot()
+  check('graphic: page clears the text, not the drawing', pixel(scr, 150, 350), pixel(scr, 150, 350) == 'ff0000')
+  b.run('cls')
+  scr = shot()
+  check('graphic: cls clears the drawing', pixel(scr, 150, 350), pixel(scr, 150, 350) == '000000')
+  b.run('2 console-zoom')
+  b.region = (1280, 960)
+  b.run('white color 10 10 20 20 box')
+  scr = shot()
+  check('graphic: stays with the console zoom', pixel(scr, 30, 30), pixel(scr, 30, 30) == 'ffffff')
+  b.run('1280 960 graphic-size')
+  b.run('blue color 1000 800 100 100 box')
+  b.run('cyan color 0 0 1279 959 line')
+  scr = shot()
+  check('graphic-size: a layer as large as the screen', pixel(scr, 1050, 850), pixel(scr, 1050, 850) == '0000ff')
+  check('graphic-size: the line reaches the corner', pixel(scr, 1279, 959), pixel(scr, 1279, 959) == '00ffff')
+  b.run('page')
+  b.region = old_region
 
   pieces = {'00d8e0', 'e8d000', 'a040e0', '30c030', 'e03030', '3060f0', 'f08020'}
   def floor_cells(scr):   # the cells of the bottom row filled (their middle: the ghost is an outline)
@@ -291,9 +460,24 @@ def main():
                     ('ports/posix/eval_copy.fs', 'lib/eval_copy.fs')]:
     baremetal_mkdisk.put(spec, os.path.join(ROOT, src), dest)
   baremetal_mkdisk.put(spec, os.path.join(out, 'BOOTX64.EFI'), 'EFI/BOOT/BOOTX64.EFI')
+  img2 = os.path.join(tmp, 'usb2.img')                 # a second stick, to switch to
+  spec2 = baremetal_mkdisk.make_disk(img2, 32, True)
+  with open(img2 + '.txt', 'wb') as f:
+    f.write(b'from stick two\n')
+  baremetal_mkdisk.put(spec2, img2 + '.txt', 'second.txt')
+  img3 = os.path.join(tmp, 'usb3.img')                 # a third one, plugged while the system runs
+  spec3 = baremetal_mkdisk.make_disk(img3, 32, True)
+  with open(img3 + '.txt', 'wb') as f:
+    f.write(b'third\n')
+  baremetal_mkdisk.put(spec3, img3 + '.txt', 'third.txt')
+  wav = os.path.join(tmp, 'sound.wav')
+  if os.path.exists(wav):
+    os.remove(wav)
   args = ['-machine', 'q35', '-m', '512M', '-drive', 'if=pflash,format=raw,readonly=on,file=%s' % OVMF,
           '-drive', 'if=none,id=stick,format=raw,file=%s' % img, '-device', 'qemu-xhci',
-          '-device', 'usb-storage,drive=stick', '-device', 'usb-kbd']   # OVMF repeats a held USB key
+          '-device', 'usb-storage,drive=stick', '-device', 'usb-kbd',
+          '-drive', 'if=none,id=stick2,format=raw,file=%s' % img2, '-device', 'usb-storage,drive=stick2',   # OVMF repeats a held USB key
+          '-audiodev', 'wav,id=snd0,path=%s' % wav, '-device', 'intel-hda', '-device', 'hda-duplex,audiodev=snd0']
   print('pc-efi: qemu %s' % ' '.join(args))
   b = EfiBoard(args, tmp)
   try:
@@ -301,11 +485,15 @@ def main():
     check('banner', banner, 'Lugforth (pc-efi)' in banner)
     check('autoexec.fs ran at boot', banner, 'autoexec ran' in banner)
     basics(b)
+    t.test_sound_play(b)   # first: the other tests make sounds too
+    volumes(b)
+    hotplug(b, img3)
     console(b)
     keyboard(b)
     history(b)
     accents(b)
     pager(b)
+    terminals(b)
     b.region = (160, 120)
     t.test_lines(b)
     b.region = (160, 60)
@@ -329,6 +517,7 @@ def main():
     b.wait_for(PROMPT, b.pos, 10)
     b.pos = len(b.out)
     b.run('tune-stop')
+    sound_ini(b)
     b.region = (1280, 960)
     t.test_files(b, 'USB stick FAT32 (UEFI)', long_create=True)
     t.test_editors(b, '/EFI')   # the browser sorts: EFI/ comes first on the stick
@@ -338,6 +527,7 @@ def main():
     check('session', str(e), False)
   finally:
     b.kill()
+  t.check_sound(wav)   # the Intel HD Audio driver (hda.h), recorded by QEMU
   t.check_disk(img, spec, 'USB stick FAT32 (UEFI)')
   print('%s' % ('ALL OK' if t.failures == 0 else '%d FAILED' % t.failures))
   sys.exit(1 if t.failures else 0)

@@ -68,11 +68,38 @@ static void con_mark(int y0, int y1) {
 }
 
 // Makes the pixels written visible: the GPU / QEMU read memory, not our cache.
+// Under the text, the graphics layer of screen.h (fb_gfx): a cell pixel that is 0,
+// the default background, shows the drawing there instead.
+static uint32_t con_line[640 * 3];
+static int con_xmap[640 * 3], con_map_w, con_map_zoom;
+static void con_compose(int y, const uint32_t *sh) {
+  if (con_map_w != fb_w || con_map_zoom != con_zoom) {       // screen x -> layer x
+    for (int x = 0; x < CON_W; x++) con_xmap[x] = (int) ((int64_t) x * fb_w / CON_W);
+    con_map_w = fb_w; con_map_zoom = con_zoom;
+  }
+  const uint32_t *g = fb_back + (size_t) ((int64_t) y * fb_h / CON_H) * fb_w;
+  uint32_t last = 0xFFFFFFFFu, d = 0;
+  for (int x = 0; x < CON_W; x++) {
+    uint32_t c = sh[x];
+    if (!c) {
+      uint32_t p = g[con_xmap[x]] & 0xFFFFFF;
+      if (p != last) { last = p; d = con_hw(p); }
+      c = d;
+    }
+    con_line[x] = c;
+  }
+}
+
 static void con_sync(void) {
-  if (!con_on || con_d1 < con_d0) return;
+  if (!con_on || !TERM_FOCUSED()) return;
+  int gfx = fb_gfx && fb_w && fb_back;
+  if (gfx && fb_gfx_dirty) { con_d0 = 0; con_d1 = CON_H - 1; }
+  fb_gfx_dirty = 0;
+  if (con_d1 < con_d0) return;
   if (con_d1 >= CON_H) con_d1 = CON_H - 1;
   for (int y = con_d0; y <= con_d1; y++) {
     uint32_t *s = con_shadow + (size_t) y * CON_W, *f = con_front + (size_t) y * CON_W;
+    if (gfx) { con_compose(y, s); s = con_line; }
     int a = 0, b = CON_W - 1;
     if (!con_force) {                                   // the span that differs
       while (a <= b && s[a] == f[a]) a++;

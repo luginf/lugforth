@@ -19,7 +19,7 @@ UXNCLI    ?= uxncli
 UXNEMU    ?= uxnemu
 SMOKE_TIMEOUT ?= 5
 
-SDL2_EXAMPLES := sdl2_demo.fs sdl2_breakout.fs sdl2_drums.fs fm/sdl2_fm.fs sdl2_pianoroll.fs sdl2_roguelike.fs sdl2_3d.fs sdl2_2048.fs sdl2_tetris.fs sdl2_snake.fs sdl2_minesweeper.fs pinball/pinball.fs pinball/play_raid.fs pinball/play_night.fs varvara/varvara.fs varvara/launch.fs
+SDL2_EXAMPLES := sdl2_demo.fs sdl2_breakout.fs sdl2_drums.fs fm/sdl2_fm.fs sdl2_pianoroll.fs sdl2_roguelike.fs sdl2_3d.fs sdl2_2048.fs sdl2_tetris.fs sdl2_snake.fs sdl2_minesweeper.fs sdl2_turtle.fs pinball/pinball.fs pinball/play_raid.fs pinball/play_night.fs varvara/varvara.fs varvara/launch.fs
 
 .PHONY: help bench test-ports \
         bench-sieve bench-sieve-c bench-sieve-fs bench-sieve-uxn \
@@ -106,9 +106,9 @@ view: view-lines view-lines-c view-lines-uxn
 # the logic of the ports from eForth Windows (2048, 3d, inference) and of the games
 # after r3forth (tetris, snake, minesweeper): each test prints PASS
 test-ports:
-	@for t in 2048_tests.fs 3d_tests.fs inference/inference_tests.fs inference/lamp_diagnosis_tests.fs games_tests.fs; do \
+	@for t in 2048_tests.fs 3d_tests.fs inference/inference_tests.fs inference/lamp_diagnosis_tests.fs games_tests.fs turtle_tests.fs; do \
 	  printf "%-20s " "$$t"; \
-	  out=$$(cd .. && SDL_AUDIODRIVER=dummy $(LUGFORTH:../%=%) examples/$$t 2>&1 | tail -1); echo "$$out"; \
+	  out=$$(cd .. && SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy $(LUGFORTH:../%=%) examples/$$t 2>&1 | tail -1); echo "$$out"; \
 	  case "$$out" in PASS*) ;; *) exit 1;; esac; \
 	done
 

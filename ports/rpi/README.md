@@ -90,6 +90,9 @@ in height, then x2). The size is a choice: `make gui ZOOM=1` builds a 640x480 co
 line can go into `autoexec.fs`, a block cursor, scrolling, and the ANSI sequences of
 `common/lineedit.fs` and `ansi.fs` (cursor moves, `H J K`, colors with `m`). The prompt
 uses `lineedit.fs`: history of 64 lines (not kept), Tab completes words and file names;
+Several terminals as on the PC (`Alt+F1` to `Alt+F4`, `n term`, see ports/baremetal/term_run.h): written blind, no aarch64 toolchain to
+build it here; the logic is the PC's, checked under QEMU there.
+
 `pager.fs` stops long output at each screenful of the console (`pager-off` to disable).
 The keys of the window (USB or virtio keyboard) reach `key` as on the serial
 line, so `make gui` needs no terminal. It is the same on a Pi with an HDMI
@@ -103,6 +106,12 @@ boot. It changes the characters typed at the prompt, not the key codes of
 
 The sdl2 word `screen` takes the framebuffer over, and `close-screen` gives
 the console back (cleared). Fault messages still go to the UART only.
+
+`graphic` (then `0 0 100 100 line`, `red color 10 10 50 30 box`, `5 ink ...`) draws under the console
+without `screen`: the drawing is a 640x480 layer (`GFX-OPEN`, `fb_gfx` in screen.h) that console.h shows
+through the cells with the default background, and shows at once. `cls` clears it, `page` clears the
+text. `w h graphic-size` (up to 1920x1440) sets the resolution of the layer, stretched over the whole
+console screen (`GFX-SIZE`); the default is 640x480. The layer ends at `screen`.
 
 ## ed and writhdeck
 

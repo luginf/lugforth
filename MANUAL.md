@@ -563,6 +563,42 @@ Settings are kept in `~/.local/share/lugforth/lugforth.ini` (`LUGFORTH_HOME` cha
 | `font=` | a TrueType file |
 | `fullscreen=` | the key, `Alt+Enter` by default |
 
+## Drawing at the prompt
+
+Type `graphic` once, then draw as in BASIC on an 8 bit micro: the drawing shows at once, under the
+text, with no `screen` and no `flip`.
+
+    graphic
+    0 0 100 100 line
+    red color  200 100 50 30 box
+    5 ink  320 240 60 circle          \ a color by number
+    cls                               \ clears the drawing, `page` clears the text
+
+The drawing area is 640x480 by default, whatever the console size; `w h graphic-size` changes it (the
+bigger, the finer: `1280 960 graphic-size` on a console of 1280x960 gives one drawing pixel per screen pixel,
+and on the desktop `1024 640 graphic-size` fills a window of that size); `dot`, `line`, `box`, `frame`, `disc`, `circle`
+(and `text` on the boards) are those of the `sdl2` words. `ink` takes 0 black, 1 red, 2 green, 3 yellow, 4 blue,
+5 magenta, 6 cyan, 7 white, 8 to 15 gray, orange, pink, brown, purple and light colors; `$rrggbb color`
+and `r g b rgb` give any other. Works in the console window (`lugforth --gui`, and the Android app) and on
+the Pi and the PC screens. A program that opens its own `screen` replaces the layer. In a terminal there is
+no window: `graphic` says so.
+
+## Sound at the prompt
+
+After `sdl2` (nothing to open, no window needed on Linux, the sound comes out of the speakers):
+
+    440 300 beep                          \ a note: frequency in Hz, length in ms
+    sine                                  \ the shape: square triangle saw noise sine
+    s" t140 o4 l8 c d e c  e4 g4 r4 >c2" play
+
+`play` takes notes written in MML (Music Macro Language, the `PLAY` of MSX and GW-BASIC): letters `c d e f g a b`,
+`#` sharp, `-` flat, a length after the note (4 quarter, 8 eighth, a dot lengthens by half), `r` or `p` a rest,
+`o4` the octave (`<` and `>` go down and up; `o4 c` is the middle C), `l8` the default length, `t120` the
+tempo, `n49` a note by number (n49 is the middle C, n0 a rest), `&` ties two notes of the same pitch
+(`c4&c8`), `v8` the volume (0 to 15), `w1` the wave. The full table is in `ports/posix/SDL2.md`.
+`wave`, `beep-volume` and `pitch-drop` take their value from the stack, as `color` does: `1 wave`, `5000 beep-volume`
+(read them back with `wave@`, `beep-volume@`, `pitch-drop@`; `to wave` still works). `silence` stops. Tunes in ABC notation: `sdl2-abc`, `abc-play`.
+
 ## Mini build
 
 `lugforth-mini` (in the tarball, also alone) is the POSIX build without the editors, SDL2, X11, the
@@ -611,8 +647,10 @@ Code: `ports/posix/editor.fs`, compiled on first use; tests: `ports/posix/editor
 
 `.fs`, `.fth` and `.4th` files are highlighted (comments, strings, words of the language, numbers, the
 name after `:`) in a terminal with colors. Themes: `default`, `colorforth` (red definitions, green
-words), `light`, `solarized`, `mono`. Theme, width and goal are kept in `editor.ini` beside
-`lugforth.ini`: `theme=`, `width=`, `goal=`, `wrap=`.
+words), `light`, `solarized`, `mono`. The theme is kept in `editor.ini` beside `lugforth.ini`, in the
+format of WrithDeck's ini files (see [writhdeck.ini](#writhdeckini)); the keys it also holds
+(`limit_width`, `word_goal`, `wrap`) are those of `writhdeck`, which reads them once if it has no
+`writhdeck.ini` yet. On the boards (Pi, PC) it is in the root of the disk.
 
 ## writhdeck
 
@@ -630,7 +668,7 @@ Esc menu:
 | `f` | focus: dims all paragraphs but the current one, the line stays in the middle |
 | `h` | Hemingway: no deleting or moving back |
 | `t` | timer, stopwatch or countdown |
-| `o` | outline of the headings |
+| `o` | outline (TOC, table of contents) of the headings |
 | `v` | word occurrences, most used first |
 | `s` | statistics |
 | `r` | replace all |
@@ -643,6 +681,46 @@ Esc menu:
 
 Ctrl+Y redoes. Ctrl+O saves and goes back to the file browser, where `writhdeck` alone starts: Enter
 opens, `n` new, `/` filter, `r` rename, `d` delete, `b` backup.
+
+### writhdeck.ini
+
+The settings are in `writhdeck.ini`, in the format of [WrithDeck](https://github.com/luginf/writhdeck)
+(the Tcl program): `key = value` lines, `[editor]`, `[behaviour]` and `[misc]` headings (ignored when
+reading), `#` or `%` for comments (alone on a line, or after a blank), `yes`/`no` for booleans. Only
+the keys this editor uses are written. The file is read each time a text is opened and rewritten
+when a setting changes in the Esc menu. It is **not** the Tcl program's file
+(`~/Documents/writhdeck/writhdeck.ini`): it lives beside `lugforth.ini` (`~/.local/share/lugforth`,
+or `LUGFORTH_HOME`), and in the root of the disk on the Pi and PC. As in WrithDeck, a file named
+`writhdec.ini`, `writhd.ini`, `wrid.ini` or `writhdeck.ini` in the current folder wins (first found,
+in that order). Without any, the `editor.ini` of older versions is read once.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `scheme` | `default` | `default`, `colorforth`, `light`, `solarized`, `mono` (this editor's own, not the Tcl ones) |
+| `limit_width` | `72` | columns of the centered text column (30 to 300) |
+| `wrap` | `yes` | soft wrapped lines in that column (this editor only) |
+| `hemingway_mode` | `no` | start in Hemingway mode |
+| `word_goal` | `500` | daily goal in words, `0` for none |
+| `bar` | `yes` | status bar; `no` hides it, a message still shows there |
+| `help_bar` | `Esc: menu` | text of the `help_bar` token when there is no message |
+| `status_left`, `status_center`, `status_right` | see below | the tokens of each zone of the status bar |
+| `autosave_enabled` | `no` | autosave (the Tcl default is `yes`) |
+| `autosave_interval` | `1` | minutes between two autosaves (1 to 60) |
+
+The status bar has three zones, each a list of tokens separated by blanks. The default is
+`status_left = filename dirty words session goal timer modes help_bar`, the two others empty.
+`filename` `dirty` `words` `goal` `timer` `help_bar` and `space` are WrithDeck's tokens. `session`
+(words written since the text was opened) and `modes` (`[focus]`, `[hem]`, `[auto]`) are this
+editor's; other tokens of WrithDeck (`ln`, `col`, `chars`, `clock`...) are not implemented, and any
+unknown word is shown as it is. To hide the goal, take `goal` out of the list, or set `word_goal = 0`.
+A message (`Wrap on`, `Autosaved`...) shows in the place of `help_bar`, or after the right zone if there is
+none. Example, name on the left, words in the middle, the goal on the right:
+
+```
+status_left   = filename dirty
+status_center = words
+status_right  = goal help_bar
+```
 
 ## Examples
 
@@ -681,6 +759,21 @@ example headless.
 The upstream opcode test (`opctest.rom`) passes. It is about 60 times slower than the C uxn, so it
 suits ROMs that mostly wait for events. See `examples/varvara/README.md`.
 
+## Several terminals (Alt+F1 to Alt+F4)
+
+On the bare-metal ports (rpi and efi, not the desktop) `Alt+F2` opens a second terminal: another Forth,
+with its own dictionary, stacks and screen, while the first one goes on running. `Alt+F1` is back in
+the first, `Alt+F3` and `Alt+F4` open a third and a fourth. `n term` does the same from the keyboard (Alt+Fn may
+be taken by the host or the firmware), `terminal` tells the number of this one and `terminals` how many are open.
+`bye` in a terminal other than the first closes it (in the first it powers off).
+
+So a program can run in one terminal while the manual (`cat MANUAL.md`) or an editor is open in another. The
+terminals take turns at each `pause` (waiting for a key, `ms` and the frame wait of the games do it): a
+computation that never pauses holds the others. A program that has the screen keeps it while another terminal
+is shown and gets it back, drawn again, on return. The keyboard, the mouse and the serial line are those of
+the terminal shown; files and sound are shared. A terminal after the first has a heap of 32 MB, and does not
+run `autoexec.fs`.
+
 ## Bare metal
 
 ### Raspberry Pi and QEMU (`ports/rpi`)
@@ -703,15 +796,18 @@ What works where, what is tested, what needs a real board: [ports/rpi/README.md]
 ### x86-64 PC, UEFI (`ports/efi`)
 
 A UEFI application, `EFI/BOOT/BOOTX64.EFI` on a FAT32 USB stick, started by the firmware (Secure Boot
-off, then the one-time boot menu, F12 on a Dell). It uses the firmware's screen, keyboard and files:
-console on the screen, the `sdl2` words, `include` and the editors from the stick. No sound, no mouse.
+off, then the one-time boot menu of the firmware, F12 on many PCs). It uses the firmware's screen, keyboard and files:
+console on the screen, the `sdl2` words, `include` and the editors from the stick. Sound through Intel HD Audio (tried under QEMU only), no mouse.
 
 ```
 sudo apt install gnu-efi ovmf qemu-system-x86 dosfstools mtools
 make -C ports/efi usb     # out/efi/usb.img, to dd onto a stick
 make -C ports/efi run     # the same image under QEMU with OVMF
-make -C ports/efi test    # 74 checks under QEMU
+make -C ports/efi test    # 117 checks under QEMU
 ```
+
+Several sticks: `volumes` lists the FAT volumes (`*` marks the one in use), `n mount` makes one the disk of
+`include`, `ls`, `cd`; a stick plugged after the start is found. See the README of the port.
 
 See [ports/efi/README.md](ports/efi/README.md).
 

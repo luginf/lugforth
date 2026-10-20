@@ -183,6 +183,12 @@ $ff8000 constant orange   $800080 constant purple
 $ff80c0 constant pink     $804000 constant brown
 $808080 constant gray
 
+create ink-table
+  $000000 , $ff0000 , $00c000 , $ffff00 , $0000ff , $ff00ff , $00ffff , $ffffff ,
+  $808080 , $ff8000 , $ff80c0 , $804000 , $800080 , $80ff80 , $8080ff , $c0c0c0 ,
+: ink ( n -- )   ( a color by number: 0 black 1 red 2 green 3 yellow 4 blue 5 magenta 6 cyan 7 white )
+  15 and cells ink-table + @ color ;
+
 : cls ( -- ) renderer SDL_RenderClear drop ;
 : dot ( x y -- ) renderer -rot SDL_RenderDrawPoint drop ;
 : line ( x1 y1 x2 y2 -- )
@@ -308,8 +314,12 @@ create scans 512 allot   scans 512 erase   ( keys by SDL scancode, whatever the 
 
 ( ---- Beeps: square, triangle, saw and noise waves through a queue ---- )
 44100 constant sample-rate
-0 value wave       ( 0 square, 1 triangle, 2 saw, 3 noise )
-3000 value beep-volume  ( 0 to 32767 )
+: setting ( n "name" -- )   ( a setting: `3000 beep-volume` sets it, `to beep-volume` too; name@ reads it )
+  create , does> ! ;
+0 setting wave       ( 0 square, 1 triangle, 2 saw, 3 noise, 4 sine: `1 wave`, or the words square triangle saw noise sine )
+3000 setting beep-volume  ( 0 to 32767 )
+: wave@ ( -- n ) [ ' wave >body ] literal @ ;
+: beep-volume@ ( -- n ) [ ' beep-volume >body ] literal @ ;
 create audio-spec 32 allot
 
 ( Voices of the hits, see below. Fields, in cells: phase, frequency, samples left,
@@ -337,17 +347,22 @@ create voices #voices voice-size * allot
 : noise-sample ( -- n ) seed 1103515245 * 12345 + $7fffffff and to seed
                         seed 16 rshift 32767 and ;
 
+create sine-tab 256 cells allot
+: make-sine ( -- )
+  256 0 do i s>f 256e f/ 2e f* 3.14159265e f* fsin 32767e f* f>s  sine-tab i cells + ! loop ;
+make-sine
 : wave-sample ( phase -- n )    ( phase is 0 to 65535, result -32768 to 32767 )
-  wave 1 = if dup 32768 < if 2* else 65535 swap - 2* then 32768 - exit then
-  wave 2 = if 32768 - exit then
-  wave 3 = if drop noise-sample 16384 - 2* exit then
+  wave@ 1 = if dup 32768 < if 2* else 65535 swap - 2* then 32768 - exit then
+  wave@ 2 = if 32768 - exit then
+  wave@ 3 = if drop noise-sample 16384 - 2* exit then
+  wave@ 4 = if 8 rshift cells sine-tab + @ exit then
   32768 < if 32767 else -32767 then
 ;
 
 : fill-beep { freq n buf }
   0 { phase }
   n 0 ?do
-    phase wave-sample beep-volume * 15 arshift
+    phase wave-sample beep-volume@ * 15 arshift
     i n 441 - > if n i - * 441 / then
     buf i 2* + w!
     freq 65536 * sample-rate / +to phase   phase $ffff and to phase
@@ -358,17 +373,77 @@ create voices #voices voice-size * allot
   audio-open? 0= if 2drop exit then
   sample-rate * 1000 / { n }  { freq }
   n 2* allocate throw { buf }
-  freq n buf fill-beep
+  freq 0= if buf n 2* erase else freq n buf fill-beep then
   audio-dev buf n 2* SDL_QueueAudio drop
   buf free drop
 ;
+
+( ---- Waves by name, and play: notes typed fast ---- )
+: square 0 wave ;   : triangle 1 wave ;   : saw 2 wave ;   : noise 3 wave ;   : sine 4 wave ;
+\ s" t140 o4 l8 c d e c  e4 g4 r4 >c2" play     queues the notes, like beep. Letters c d e f g a b,
+\ # or + sharp, - flat, then a length (4 is a quarter, 8 an eighth, a dot lengthens by half);
+\ r rest; o4 octave, < and > one down or up; l8 default length; t120 tempo (quarters a minute);
+\ w1 the wave; p a rest too; n49 a note by number (n0 a rest, n49 is the middle C); c4&c8 ties two notes of
+\ the same pitch; v8 the volume 0 to 15. Spaces are free. The settings stay from one play to the next.
+create semis 262 , 277 , 294 , 311 , 330 , 349 , 370 , 392 , 415 , 440 , 466 , 494 ,   ( octave 4 )
+create letters 9 c, 11 c, 0 c, 2 c, 4 c, 5 c, 7 c,                                      ( a b c d e f g )
+4 value p-oct   4 value p-len   120 value p-tempo   0 value p-a   0 value p-n
+defer p-out   ' beep is p-out
+: p-peek ( -- c ) p-n 0> if p-a c@ else 0 then ;
+: p-next ( -- ) 1 +to p-a  -1 +to p-n ;
+: p-num ( -- n f )   ( the digits at the cursor, and whether there were any )
+  0 0 { n any }
+  begin p-peek dup [char] 0 >= swap [char] 9 <= and while
+    n 10 * p-peek [char] 0 - + to n  -1 to any  p-next
+  repeat n any ;
+: p-acc ( -- n )   ( # + sharps and - flats after a letter )
+  0 begin
+    p-peek dup [char] # = over [char] + = or if drop 1+ p-next 0
+    else [char] - = if 1- p-next 0 else -1 then then
+  until ;
+: p-dur ( -- ms )   ( a length and its dots )
+  p-num 0= if drop p-len then
+  240000 p-tempo / swap /
+  begin p-peek [char] . = while 3 2 */ p-next repeat ;
+: p-freq ( semitones from c4 -- hz )
+  120 + 12 /mod 10 - swap cells semis + @ swap
+  dup 0< if negate rshift else lshift then ;
+0 value p-pf   0 value p-pm   0 value p-tie   ( the note waiting, and a & before the next one )
+: p-flush ( -- ) p-pm if p-pf p-pm p-out 0 to p-pm then ;
+: p-emit ( freq ms -- )   ( a note tied with & to one of the same pitch is made longer )
+  { f m }
+  p-tie p-pm 0<> and  f p-pf = and if m +to p-pm 0 to p-tie exit then
+  0 to p-tie  p-flush  m to p-pm  f to p-pf ;
+: p-note ( c -- )
+  [char] a - letters + c@  p-acc +  p-oct 4 - 12 * +  p-freq  p-dur p-emit ;
+: p-rest ( -- ) 0 p-dur p-emit ;
+: p-number ( -- )   ( n<k>: the note k semitones above the C of octave 0, n0 is a rest )
+  p-num 0= if drop exit then
+  dup 0= if drop p-rest exit then
+  49 - p-freq p-dur p-emit ;
+: p-step ( -- )
+  p-peek p-next 32 or
+  dup [char] a >= over [char] g <= and if p-note exit then
+  dup [char] r = over [char] p = or if drop p-rest exit then
+  dup [char] n = if drop p-number exit then
+  dup [char] & = if drop -1 to p-tie exit then
+  dup [char] v = if drop p-num if 0 max 15 min 400 * beep-volume else drop then exit then
+  dup [char] o = if drop p-num if 0 max 8 min to p-oct else drop then exit then
+  dup [char] l = if drop p-num if 1 max to p-len else drop then exit then
+  dup [char] t = if drop p-num if 20 max to p-tempo else drop then exit then
+  dup [char] w = if drop p-num if wave else drop then exit then
+  dup [char] < = if drop p-oct 0> if -1 +to p-oct then exit then
+  dup [char] > = if drop p-oct 8 < if 1 +to p-oct then exit then
+  drop ;
+: play ( a n -- ) to p-n to p-a  begin p-n 0> while p-step repeat p-flush ;
 
 ( ---- Hits: percussive sounds that overlap, mixed by software ---- )
 \ A beep waits for the ones before it. A hit starts at once and plays over the
 \ others (8 at a time, the oldest is cut), fading out linearly, and its pitch can
 \ fall while it plays. The mix is queued a few milliseconds ahead by flip, delay
 \ and drum-hit itself, so call flip or delay regularly.
-0 value pitch-drop   ( percent the pitch falls during a hit, 0 to 100 )
+0 setting pitch-drop   ( percent the pitch falls during a hit, 0 to 100 )
+: pitch-drop@ ( -- n ) [ ' pitch-drop >body ] literal @ ;
 2205 value latency   ( samples kept queued, 50 ms; a synth can lower it )
 0 value render-hook   ( optional xt, n -- : adds n more samples to mix )
 0 value active-hook   ( optional xt, -- f : true while render-hook has sound to give )
@@ -390,7 +465,7 @@ create mixed 4096 2* allot
   v @ { phase }   v 1 cells + @ { freq }   v 2 cells + @ { left }
   v 3 cells + @ { total }   v 5 cells + @ { drop% }   v 6 cells + @ { vol }
   left n min { m }
-  wave { keep }   v 4 cells + @ to wave
+  wave@ { keep }   v 4 cells + @ wave
   m 0 ?do
     phase wave-sample vol * 15 arshift
     left i - 256 * total / *  8 arshift
@@ -398,7 +473,7 @@ create mixed 4096 2* allot
     freq drop% total left - i + total pitch-at  65536 * sample-rate / +to phase
     phase $ffff and to phase
   loop
-  keep to wave
+  keep wave
   phase v !   left m - v 2 cells + !
 ;
 : render { n buf }   ( mixes the voices into n samples of buf )
@@ -421,7 +496,7 @@ create mixed 4096 2* allot
   sample-rate * 1000 / { n }  { freq }
   voice-free voice { v }
   0 v !   freq v 1 cells + !   n v 2 cells + !   n v 3 cells + !
-  wave v 4 cells + !   pitch-drop v 5 cells + !   beep-volume v 6 cells + !
+  wave@ v 4 cells + !   pitch-drop@ v 5 cells + !   beep-volume@ v 6 cells + !
 ;
 : drum-hit ( freq ms -- )
   audio-open

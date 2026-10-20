@@ -105,13 +105,13 @@ Word lists: [alphabetical index](#alphabetical-index).
 |------|-------|--------------|
 | `beep` | `( freq ms -- )` | Queue a tone of freq Hz lasting ms milliseconds. Tones play one after the other, so a series of `beep` is a melody. Silent if no audio device could be opened. |
 | `drum-hit` | `( freq ms -- )` | Play a percussive sound now, over whatever else is playing: it fades out linearly and its pitch can fall (`pitch-drop`). Up to 8 at a time, a ninth cuts the oldest. Uses `wave` and `beep-volume`. The mix is queued about 50 ms ahead by `drum-hit`, `flip` and `delay`, so call `flip` or `delay` regularly. A `beep` waits for the queue while a hit does not, so do not expect them to line up. |
-| `pitch-drop` | `( -- n )` | Value, default 0. Percent by which the pitch of the next hits falls while they play, 0 to 100. Noise has no pitch. |
+| `pitch-drop` | `( n -- )` | Setting (`pitch-drop@` reads it), default 0. Percent by which the pitch of the next hits falls while they play, 0 to 100. Noise has no pitch. |
 | `silence` | `( -- )` | Drop all queued beeps and stop all hits. |
 | `latency` | `( -- n )` | Value, default 2205. Samples kept queued by `flip`, `delay` and `drum-hit` (50 ms); lower it for a more reactive instrument. |
 | `render-hook` `active-hook` | `( -- xt )` | Values, 0 by default. Extra sources for the mix of `pump`: `render-hook` is run as `( n -- )` and adds n samples to the cell array `mix`, `active-hook` as `( -- f )` tells that it has sound to give. `sdl2-fm` uses them. |
 | `beeping?` | `( -- f )` | True while queued beeps or hits remain. |
-| `wave` | `( -- n )` | Value. Shape of the next beeps: 0 square, 1 triangle, 2 saw, 3 noise. |
-| `beep-volume` | `( -- n )` | Value, default 3000. Beep amplitude, 0 to 32767. |
+| `wave` | `( n -- )` | Setting. Shape of the next beeps: 0 square, 1 triangle, 2 saw, 3 noise, 4 sine (`wave@` reads it; `to wave` works too). |
+| `beep-volume` | `( n -- )` | Setting (`beep-volume@` reads it), default 3000. Beep amplitude, 0 to 32767. |
 | `audio-open` | `( -- )` | Open the beep audio device now instead of at the first `beep`. |
 | `audio-open?` | `( -- f )` | True when the beep audio device is open. |
 | `sample-rate` | `( -- n )` | Constant 44100. Beep sample rate. |

@@ -16,7 +16,11 @@
 \ After the banner, before the first prompt. An error in it prints and
 \ leaves the prompt, as an error typed there would.
 internals definitions
+also rpi
+: first-terminal? ( -- n )   term-cur ;
+previous
 : autoexec
+  first-terminal? ?dup if  ." terminal " 1+ . ." (Alt+F1: the first)" cr exit then
   s" autoexec.fs" r/o open-file if drop exit then close-file drop
   s" autoexec.fs" ['] included catch if 2drop ." autoexec.fs: error" cr then ;
 ' autoexec boot-prompt !

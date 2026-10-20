@@ -26,10 +26,10 @@
 
 #define REQUIRED_SYSTEM_SUPPORT \
   X("MS-TICKS", MS_TICKS, PUSH ms_ticks()) \
-  XV(internals, "RAW-YIELD", RAW_YIELD, snd_pump()) \
-  XV(internals, "RAW-TERMINATE", RAW_TERMINATE, rpi_terminate(n0); DROP) \
+  XV(internals, "RAW-YIELD", RAW_YIELD, snd_pump(); term_poll()) \
+  XV(internals, "RAW-TERMINATE", RAW_TERMINATE, if (term_bye()) { DROP; PARK; return rp; } rpi_terminate(n0); DROP) \
   YV(internals, getchar_timeout_us, n0 = getchar_timeout_us(n0)) \
-  XV(internals, "RAW-TYPE", RAW_TYPE, uart_write(b1, n0); con_write(b1, n0); DROPn(2))
+  XV(internals, "RAW-TYPE", RAW_TYPE, if (TERM_FOCUSED()) uart_write(b1, n0); con_write(b1, n0); DROPn(2))
 
 #define RPI_SUPPORT \
   XV(rpi, "US-TICKS", US_TICKS, PUSH us_ticks()) \

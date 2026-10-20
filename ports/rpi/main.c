@@ -22,6 +22,7 @@
 #include <setjmp.h>
 #include <stdint.h>
 
+#include "ports/baremetal/term.h"
 #include "common/tier0_opcodes.h"
 #include "common/tier1_opcodes.h"
 #include "common/tier2_opcodes.h"
@@ -279,6 +280,7 @@ static int console_extra_char(void);   // a keyboard's, input.h
 static void con_sync(void);            // the screen console, console.h
 
 static int getchar_timeout_us(cell_t us) {
+  if (!TERM_FOCUSED()) return -1;                  // the keyboard is the focused terminal's
   uint64_t end = us_ticks() + (uint64_t) us;
   for (;;) {
     con_sync();      // first: a slow poll or a short timeout must not keep the output hidden until the next key
@@ -397,7 +399,7 @@ extern void _set_tls(void *tls);
 #include "ports/rpi/fat.h"
 
 static void input_flush(void) {}   // the PC drains its firmware queue here (efi/main.c)
-static int console_extra_char(void) { snd_pump(); input_poll(); return in_get_char(); }
+static int console_extra_char(void) { snd_pump(); if (!TERM_FOCUSED()) return -1; input_poll(); return in_get_char(); }
 #include "ports/rpi/builtins.h"
 
 #include "common/bits.h"
@@ -405,6 +407,7 @@ static int console_extra_char(void) { snd_pump(); input_poll(); return in_get_ch
 #include "common/calling.h"
 #include "common/interp.h"
 #include "gen/rpi_boot.h"
+#include "ports/baremetal/term_run.h"
 
 int main(int argc, char *argv[]) {
   void *heap = malloc(HEAP_SIZE);
@@ -415,7 +418,8 @@ int main(int argc, char *argv[]) {
   snd_init();
   fs_init();
   forth_init(argc, argv, heap, HEAP_SIZE, boot, sizeof(boot));
-  for (;;) { g_sys->rp = forth_run(g_sys->rp); }
+  term_boot();
+  for (;;) { g_sys->rp = forth_run(g_sys->rp); term_next(); }
   return 1;
 }
 

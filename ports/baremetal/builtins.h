@@ -28,6 +28,8 @@
   XV(BM_VOC, "FB-FLIP", FB_FLIP, fb_flip()) \
   XV(BM_VOC, "FB-BLIT8", FB_BLIT8, fb_blit8(b3, n2, n1, (const uint32_t *) a0); DROPn(4)) \
   XV(BM_VOC, "FB-CLOSE", FB_CLOSE, fb_close()) \
+  XV(BM_VOC, "GFX-OPEN", GFX_OPEN, gfx_ensure()) \
+  XV(BM_VOC, "GFX-SIZE", GFX_SIZE, gfx_size(n1, n0); DROPn(2)) \
   XV(BM_VOC, "FB-TEXT", FB_TEXT, fb_text(n4, n3, b2, n1, n0); DROPn(5)) \
   XV(BM_VOC, "TEXT-LENGTH", TEXT_LENGTH, n1 = text_length(b1, n0); DROP) \
   XV(BM_VOC, "IMAGE-LOAD", IMAGE_LOAD, n1 = image_load(c1, n0); DROP) \
@@ -52,7 +54,10 @@
   XV(BM_VOC, "CON-ZOOM!", CON_ZOOM_SET, con_set_zoom(n0); DROP) \
   XV(BM_VOC, "CON-ROWS", CON_ROWS_OP, PUSH con_on ? CON_ROWS : 0) \
   XV(BM_VOC, "KEYBOARD!", KEYBOARD_SET, in_azerty = n0 != 0; DROP) \
-  XV(BM_VOC, "UART-KEY", UART_KEY, PUSH uart_getc_nowait())
+  XV(BM_VOC, "UART-KEY", UART_KEY, PUSH uart_getc_nowait()) \
+  XV(BM_VOC, "TERM-CUR", TERM_CUR, PUSH term_cur) \
+  XV(BM_VOC, "TERM-COUNT", TERM_COUNT, PUSH term_nlive) \
+  XV(BM_VOC, "TERM-REQUEST", TERM_REQUEST, term_request((int) n0); DROP)
 
 // Sound (sound.h), for beep, drum-hit and the tunes of sdl2-abc.
 #define BM_SOUND_SUPPORT \

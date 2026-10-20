@@ -31,6 +31,7 @@ static EFI_RUNTIME_SERVICES *RT;
 static EFI_HANDLE image_handle;
 
 #include "ports/efi/libc.h"
+#include "ports/baremetal/term.h"
 
 #include "common/tier0_opcodes.h"
 #include "common/tier1_opcodes.h"
@@ -133,6 +134,7 @@ static int console_extra_char(void);   // the keyboard's, through input.h
 static void con_sync(void);            // console.h
 
 static int getchar_timeout_us(cell_t us) {
+  if (!TERM_FOCUSED()) return -1;                  // the keyboard is the focused terminal's
   uint64_t end = us_ticks() + (uint64_t) us;
   for (;;) {
     con_sync();      // first: a slow poll or a short timeout must not keep the output hidden until the next key
@@ -234,6 +236,7 @@ static uint32_t gop_w, gop_h;
 
 static int fb_hw_open(uint32_t pw, uint32_t ph) {
   if (!gop || pw > gop_w || ph > gop_h) return -1;
+  if (!TERM_FOCUSED()) return 0;                          // the screen is the focused terminal's
   EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *info = gop->Mode->Info;
   uint32_t pitch = info->PixelsPerScanLine * 4;
   volatile uint8_t *base = (volatile uint8_t *) gop->Mode->FrameBufferBase;
@@ -466,22 +469,10 @@ static void input_flush(void) {
 // ---- files: the UEFI file system of the device we were started from ----
 #include "ports/efi/files.h"
 
-// ---- sound: none on the PC yet (the words stay silent) ----
-static void snd_pump(void) {}
-static void snd_beep(cell_t f, cell_t ms, cell_t w, cell_t v) { (void) f; (void) ms; (void) w; (void) v; }
-static void snd_hit(cell_t f, cell_t ms, cell_t w, cell_t v, cell_t d) { (void) f; (void) ms; (void) w; (void) v; (void) d; }
-static void snd_silence(void) {}
-static cell_t snd_busy(void) { return 0; }
-static cell_t snd_ok(void) { return 0; }
-static cell_t snd_pcm_queued(void) { return 0; }
-static void snd_pcm_put(const int16_t *s, cell_t n) { (void) s; (void) n; }
-static void snd_tune_clear(void) {}
-static void snd_tune_add(cell_t k, cell_t at, cell_t ms) { (void) k; (void) at; (void) ms; }
-static void snd_tune_run(cell_t l, cell_t t, cell_t w, cell_t v) { (void) l; (void) t; (void) w; (void) v; }
-static void snd_tune_stop(void) {}
-static cell_t snd_tune_playing(void) { return 0; }
+// ---- sound: Intel HD Audio (hda.h), over the shared mixer ----
+#include "ports/efi/hda.h"
 
-static int console_extra_char(void) { input_poll(); return in_get_char(); }
+static int console_extra_char(void) { snd_pump(); if (!TERM_FOCUSED()) return -1; input_poll(); return in_get_char(); }
 
 #include "ports/efi/builtins.h"
 
@@ -490,6 +481,7 @@ static int console_extra_char(void) { input_poll(); return in_get_char(); }
 #include "common/calling.h"
 #include "common/interp.h"
 #include "gen/efi_boot.h"
+#include "ports/baremetal/term_run.h"
 
 // The firmware binds some drivers (USB mice and touchpads) only when
 // something asks, as the shell's `connect -r` does.
@@ -522,6 +514,7 @@ EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab) {
   static char arg0[] = "lugforth";
   static char *argv[] = { arg0, 0 };
   forth_init(1, argv, heap, HEAP_SIZE, boot, sizeof(boot));
-  for (;;) { g_sys->rp = forth_run(g_sys->rp); }
+  term_boot();
+  for (;;) { g_sys->rp = forth_run(g_sys->rp); term_next(); }
   return EFI_SUCCESS;
 }

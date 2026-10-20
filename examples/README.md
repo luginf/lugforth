@@ -2,7 +2,7 @@
 
 Games and demos (SDL2 words, see `ports/posix/SDL2.md`): `sdl2_demo.fs`,
 `sdl2_breakout.fs`, `sdl2_drums.fs`, `fm/sdl2_fm.fs` (FM synthesizer with MIDI input, also in the browser; see `fm/README.md`), `sdl2_pianoroll.fs`, `sdl2_roguelike.fs`, `sdl2_3d.fs` (turning wireframe cube, pyramid and octahedron),
-`pinball/pinball.fs`, and three games after r3forth (below).
+`pinball/pinball.fs`, three games after r3forth (below), and `sdl2_turtle.fs` (Logo turtle graphics, words of forthtoise from [Forth is Fun](https://gitlab.com/garvalf/forth-is-fun), English and French). Run it: the window shows the drawing, you type lines in the terminal (`100 forward 90 right`, loops allowed), then `go` draws at once, `speed 100` and `play` draw stroke by stroke, `list`, `undo`, `new`, `demo`, `help`.
 Run one with `lugforth examples/sdl2_breakout.fs`, or `include` it from the prompt.
 
 ## Benchmarks: lugforth vs C vs uxn

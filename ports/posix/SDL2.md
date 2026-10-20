@@ -43,7 +43,8 @@ Screen: `screen ( w h -- )`, `close-screen`, `zoom` (value, set before `screen`)
 
 Colors: `color ( $rrggbb -- )`, `rgb ( r g b -- )`, `rgba ( r g b a -- )`,
 `alpha ( a -- )`, and named colors `black white red green blue yellow cyan
-magenta orange purple pink brown gray` (`red color`).
+magenta orange purple pink brown gray` (`red color`), and `ink ( n -- )`, a color by
+number from 0 to 15 (0 black, 1 red, 2 green, 3 yellow, 4 blue, 5 magenta, 6 cyan, 7 white...).
 
 Drawing: `cls`, `dot ( x y -- )`, `line ( x1 y1 x2 y2 -- )`, `box ( x y w h -- )`,
 `frame ( x y w h -- )`, `hline ( x y w -- )`, `disc ( cx cy r -- )`,
@@ -61,8 +62,32 @@ key-down key-space key-enter key-esc key-tab key-backspace`,
 for a piano or WASD style row of keys that must not move on an AZERTY keyboard.
 
 Beeps (no library beyond libSDL2): `beep ( freq ms -- )` queues a tone,
-so several `beep` in a row play as a melody. `wave` picks the shape
-(0 square, 1 triangle, 2 saw, 3 noise), `beep-volume`, `silence`, `beeping?`.
+so several `beep` in a row play as a melody. `wave` sets the shape
+(0 square, 1 triangle, 2 saw, 3 noise, 4 sine), as `color` sets the color: `1 wave`, or the words
+`square triangle saw noise sine`. `beep-volume ( n -- )` and `pitch-drop ( n -- )` work the same way; read
+a setting back with `wave@`, `beep-volume@`, `pitch-drop@`. `to wave` still works. Also `silence`, `beeping?`.
+
+`play ( a n -- )` queues notes written in MML (Music Macro Language, the `PLAY` of the BASICs of MSX, GW-BASIC
+and QBasic): `s" t140 o4 l8 c d e c  e4 g4 r4 >c2" play`.
+
+| Command | Meaning |
+|---|---|
+| `c d e f g a b` | a note; `#` or `+` after it sharpens, `-` flattens |
+| a number after a note | its length: 4 quarter, 8 eighth, 1 whole; a dot adds half (`c4.`) |
+| `r` or `p` | a rest (same length syntax) |
+| `o4` | the octave, 0 to 8; `o4 c` is the middle C (262 Hz) |
+| `<` `>` | one octave down, up |
+| `l8` | the default length |
+| `t120` | the tempo, in quarters a minute |
+| `n49` | a note by number: n1 is the lowest C (octave 0), n49 is the middle C; n0 is a rest |
+| `&` | ties a note to the next one of the same pitch: `c4&c8` |
+| `v8` | the volume, 0 to 15 (it sets `beep-volume`) |
+| `w1` | the wave, as `1 to wave` (not part of the usual MML) |
+
+Spaces are free; the settings stay from one `play` to the next. Differences from the dialects: the octave
+numbering is the MSX one (`o4 c` is the middle C; check a tune written for another dialect, they differ); no chords, no several voices, no
+`m` modes (legato, staccato) and no `x` (play a string variable). It works at the prompt after `sdl2` (the console
+window, the boards, the web page).
 
 Hits: `drum-hit ( freq ms -- )` starts at once and plays over other sounds (8 at a
 time), fading out; `pitch-drop` (percent) makes the pitch fall, enough for a
@@ -131,6 +156,10 @@ supported: repeats, several voices, tempo changes. At most 1024 notes. The web
 build has the same words with a simple synthesizer.
 
 ## Console window (`sdl2_console.fs`)
+
+In the console window, `graphic` makes the drawing words work at the prompt (`0 0 100 100 line`):
+a 640x480 texture receives them, drawn under the text, centered, in proportion; `cls` clears it, `flip`
+redraws the window. `w h graphic-size` sets the size of the texture (16 to 4096), kept in proportion in the window. A program that calls `screen` ends it. The pen is saved and restored around each redraw.
 
 `lugforth --gui [file.fs]` opens a console window (`type` and `key` go to an SDL window). The
 code is part of the binary: `gui-load` loads it, then `desktop console` starts it (Android

@@ -45,6 +45,68 @@ also editor definitions
   wrap-on if colw cols 2 - min 20 max else cols then to ww
   wrap-on if cols ww - 2/ else 0 then to pad ;
 
+( ---- Settings: writhdeck.ini, in the format of WrithDeck, the Tcl program ---- )
+0 value hem-cfg   0 value auto-cfg   1 value auto-min   -1 value bar-on
+0 value msg-shown   0 value help-seen   0 value fresh
+create zl 128 allot   create zc 128 allot   create zr 128 allot   create hbar 128 allot
+: zset ( a n z -- )   >r 120 min dup r@ ! r> cell+ swap cmove ;
+: zget ( z -- a n )   dup cell+ swap @ ;
+: wd-defaults ( -- )
+  s" filename dirty words session goal timer modes help_bar" zl zset
+  s" " zc zset   s" " zr zset   s" Esc: menu" hbar zset   -1 to bar-on ;
+wd-defaults
+: wd-defname ( -- a n )   s" writhdeck.ini" ;
+: wd-ini-kv ( ka kn va vn -- )
+  { ka kn va vn }
+  ka kn s" hemingway_mode" compare 0= if va vn yes? dup to hem-cfg to hem-on exit then
+  ka kn s" autosave_enabled" compare 0= if va vn yes? dup to auto-cfg to autosave exit then
+  ka kn s" autosave_interval" compare 0= if va vn to-number 1 max 60 min to auto-min exit then
+  ka kn s" bar" compare 0= if va vn yes? to bar-on exit then
+  ka kn s" help_bar" compare 0= if va vn hbar zset exit then
+  ka kn s" status_left" compare 0= if va vn zl zset exit then
+  ka kn s" status_center" compare 0= if va vn zc zset exit then
+  ka kn s" status_right" compare 0= if va vn zr zset exit then
+  ka kn va vn ed-ini-kv ;
+: wd-ini-body ( -- )
+  s" = WrithDeck configuration =" wl
+  s" % The format of WrithDeck (Tcl), only the keys that this writhdeck uses." wl
+  s" % It is not the file of the Tcl program (in ~/Documents/writhdeck)." wl
+  eol+  s" = editor =" wl  s" [editor]" wl
+  s" % scheme: default colorforth light solarized mono (the schemes of this editor)" wl
+  s" scheme" key= theme theme-name wl
+  eol+  s" = behaviour =" wl  s" [behaviour]" wl
+  s" % limit_width: columns of the centered column of text" wl
+  s" limit_width" key= colw wn eol+
+  s" % wrap: soft wrapped lines in that column (this editor only)" wl
+  s" wrap" key= wrap-on wyes eol+
+  s" % hemingway_mode: no deleting or moving back" wl
+  s" hemingway_mode" key= hem-cfg wyes eol+
+  s" % word_goal: daily target of words, 0 for none" wl
+  s" word_goal" key= goal wn eol+
+  s" % bar: show the status bar (a message still shows in it)" wl
+  s" bar" key= bar-on wyes eol+
+  s" % help_bar: text of the help_bar token when there is no message" wl
+  s" help_bar" key= hbar zget wl
+  s" % status bar zones. Tokens: filename dirty words session goal timer modes help_bar space" wl
+  s" % session (words written) and modes ([focus] [hem] [auto]) are of this editor only; other text is shown as is" wl
+  s" status_left" key= zl zget wl
+  s" status_center" key= zc zget wl
+  s" status_right" key= zr zget wl
+  eol+  s" = misc =" wl  s" [misc]" wl
+  s" autosave_enabled" key= auto-cfg wyes eol+
+  s" autosave_interval" key= auto-min wn eol+ ;
+: ini-from ( a n -- flag )   \ the file in the current folder, else in the settings folder
+  2dup ini-read if inic! -1 exit then
+  ini-in-dir 2dup ini-read if inic! -1 exit then
+  2drop 0 ;
+: wd-ini-load ( -- )
+  ini-init  0 to inicn  wd-defaults
+  s" writhdec.ini" ini-from if exit then
+  s" writhd.ini" ini-from if exit then
+  s" wrid.ini" ini-from if exit then
+  s" writhdeck.ini" ini-from if exit then
+  s" editor.ini" ini-in-dir ini-read drop ;   \ the settings of older versions, kept in writhdeck.ini from now on
+
 ( ---- Visual lines: a paragraph is cut into segments of at most ww columns ---- )
 0 value sq   0 value sc   0 value sbrk   0 value sp   0 value sch
 : seg ( p -- e next )   \ the end of the visual line starting at p, and where the next starts
@@ -122,7 +184,7 @@ also editor definitions
       -1 to alerted  7 emit  s" Time is up" say
     then
   then
-  autosave if modified if flen if now-ms last-auto - 60000 > if
+  autosave if modified if flen if now-ms last-auto - auto-min 60000 * > if
     ['] save-file catch if s" Autosave failed" say else s" Autosaved" say then
     now-ms to last-auto
   then then then then
@@ -243,20 +305,61 @@ also editor definitions
 : wd-draw     wrap-on if wrap-draw else plain-draw then ;
 
 ( ---- The status bar ---- )
+: gap ( n -- )   fresh if drop else 0 ?do s"  " stype loop then 0 to fresh ;
+: t-name ( -- )   1 gap  flen 0= if s" (new)" else name-tail then stype ;
+: t-dirty ( -- )   modified if 0 gap s" *" stype then ;
+: t-words ( -- )   2 gap s" W " stype word-count num-type ;
+: t-session ( -- )   1 gap s" +" stype word-count words0 - num-type ;
+: t-goal ( -- )
+  goal if 1 gap s" /" stype goal num-type s"  " stype word-count 100 * goal / num-type s" %" stype then ;
+: t-timer ( -- )   timer-mode if 2 gap timer-secs mmss then ;
+: t-modes ( -- )
+  focus-on if 1 gap s" [focus]" stype then
+  hem-on if 1 gap s" [hem]" stype then
+  autosave if 1 gap s" [auto]" stype then ;
+: t-help ( -- )   2 gap  mlen if msg mlen stype else hbar zget stype then  -1 to msg-shown ;
+: tok ( a n -- )
+  2dup s" filename" compare 0= if 2drop t-name exit then
+  2dup s" dirty" compare 0= if 2drop t-dirty exit then
+  2dup s" words" compare 0= if 2drop t-words exit then
+  2dup s" session" compare 0= if 2drop t-session exit then
+  2dup s" goal" compare 0= if 2drop t-goal exit then
+  2dup s" timer" compare 0= if 2drop t-timer exit then
+  2dup s" modes" compare 0= if 2drop t-modes exit then
+  2dup s" help_bar" compare 0= if 2drop t-help exit then
+  2dup s" space" compare 0= if 2drop 1 gap exit then
+  1 gap stype ;
+: zone-run ( z -- )
+  zget { a n }  0 { s }  0 { e }
+  begin s n < while
+    s begin dup n < if a over + c@ 32 = else 0 then while 1+ repeat to s
+    s n < if
+      s begin dup n < if a over + c@ 32 <> else 0 then while 1+ repeat to e
+      a s +  e s -  tok
+      e to s
+    then
+  repeat ;
+: run-l ( -- )   0 to fresh  zl zone-run ;
+: run-c ( -- )   -1 to fresh  zc zone-run ;
+: run-r ( -- )   -1 to fresh  zr zone-run
+  mlen help-seen 0= and if 2 gap msg mlen stype then ;
+: measure ( xt -- w )   -1 to dry  0 to outcol  execute  outcol  0 to dry ;
+: pad-to ( col -- )   cols min outcol - 0 max dup +to outcol 0 ?do 32 emit loop ;
 : wd-status ( -- )
-  0 text-rows at-xy  esc ." [7m"  0 to outcol
-  s"  " stype  flen 0= if s" (new)" else name-tail then stype
-  modified if s" *" stype then
-  s"   W " stype word-count num-type
-  s"  +" stype word-count words0 - num-type
-  goal if s"  /" stype goal num-type  s"  " stype word-count 100 * goal / num-type s" %" stype then
-  timer-mode if s"   " stype timer-secs mmss then
-  focus-on if s"  [focus]" stype then
-  hem-on if s"  [hem]" stype then
-  autosave if s"  [auto]" stype then
-  s"   " stype
-  mlen if msg mlen stype else s" Esc: menu" stype then
-  cols outcol - 0 max 0 ?do 32 emit loop
+  0 text-rows at-xy
+  bar-on 0= if
+    mlen 0= if normal esc ." [K" exit then
+    esc ." [7m"  0 to outcol  s"  " stype msg mlen stype  cols pad-to  normal exit
+  then
+  0 to msg-shown
+  ['] run-l measure drop   ['] run-c measure drop   ['] run-r measure drop
+  msg-shown to help-seen
+  ['] run-c measure { cw }   ['] run-r measure { rw }
+  esc ." [7m"  0 to outcol
+  run-l
+  cw if cols cw - 2/ outcol 1+ max pad-to run-c then
+  rw if cols rw - outcol 1+ max pad-to run-r then
+  cols pad-to
   normal ;
 
 ( ---- Overlays ---- )
@@ -675,7 +778,8 @@ previous
   ['] wd-scan is hl-scan   ['] wrap-want is set-want
   ['] wrap-up is up-key   ['] wrap-down is down-key
   ['] wrap-home is home-key   ['] wrap-end is end-key
-  ['] wd-pre is pre-key   ['] wd-wait is wait-key   ['] wd-after-load is after-load ;
+  ['] wd-pre is pre-key   ['] wd-wait is wait-key   ['] wd-after-load is after-load
+  ['] wd-ini-kv is ini-kv   ['] wd-ini-body is ini-body   ['] wd-defname is ini-defname   ['] wd-ini-load is ini-load ;
 : wd-main ( a n -- )
   wd-install
   begin

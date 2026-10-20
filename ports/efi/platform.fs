@@ -72,6 +72,25 @@ also rpi
 : rd ( "dir" -- )   bl parse rmdir if ." cannot remove the directory (not empty?)" cr then ;
 previous
 
+( Several disks: the FAT volumes the firmware shows, a stick plugged after the start included )
+\ `volumes` lists them (* is the one in use), `mount n` makes one the disk of include, ls, cd...
+\ ed and writhdeck are read from /lib of the disk in use the first time: run them before
+\ mounting another stick, or have /lib/editor.fs and /lib/writhdeck.fs on it too.
+also rpi
+create vol-buf 40 allot
+: volumes ( -- )
+  volume-count { n }  volume-now { now }
+  n 0= if ." no volume" cr exit then
+  n 0 ?do
+    i now = if ." * " else ."   " then
+    i .  i vol-buf 32 volume-label vol-buf swap type
+    ."   " i volume-size . ." MB" cr
+  loop ;
+: mount ( n -- )
+  volume-mount dup 0= if drop exit then
+  -2 = if ." close the open files first" else ." no such volume, see volumes" then cr ;
+previous
+
 ( The editors ed and writhdeck, from the disk: /lib/editor.fs and /lib/writhdeck.fs )
 \ The first use includes the file, which redefines the word, then runs it with
 \ the file name typed. The console is the terminal: 80 columns by 30 rows.

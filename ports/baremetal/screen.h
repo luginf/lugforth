@@ -69,6 +69,7 @@ static int mbox_call(volatile uint32_t *buf) {
 #ifdef MBOX_BASE
 // The Pi: ask the firmware for a pw x ph, 32-bit framebuffer.
 static int fb_hw_open(uint32_t pw, uint32_t ph) {
+  if (!TERM_FOCUSED()) return 0;           // the screen is the focused terminal's (term.h)
   static volatile uint32_t m[36] __attribute__((aligned(16)));
   uint32_t i = 0;
   m[i++] = 0;                  // size, below
@@ -115,6 +116,7 @@ static uint16_t fwcfg_file(const char *name, uint32_t *size) {
 }
 
 static int fb_hw_open(uint32_t pw, uint32_t ph) {
+  if (!TERM_FOCUSED()) return 0;
   static void *mem;
   static uint32_t mem_size;
   struct ramfb_cfg {
@@ -164,6 +166,28 @@ static int fb_hw_open(uint32_t pw, uint32_t ph) { (void) pw; (void) ph; return -
 // refusal).
 static int con_on;               // console.h
 static void con_init(void);
+static void con_sync(void);
+
+// The graphics layer under the console: the drawing words work at the prompt
+// without SCREEN. fb_back then holds GFX_W x GFX_H logical pixels (fb_gfx is
+// 1) that console.h shows through the cells with the default (black)
+// background, each pixel con_zoom times larger. A drawing word makes it on its
+// first use; FB-OPEN and FB-CLOSE end it.
+#define GFX_W 640
+#define GFX_H 480
+static int fb_gfx, fb_gfx_dirty;
+// The layer of w x h logical pixels (cleared), the whole screen of the console under it.
+static void gfx_size(cell_t w, cell_t h) {
+  if (fb_w && !fb_gfx) return;                 // a program's screen is open
+  if (!con_on || w < 16 || h < 16 || w > 1920 || h > 1440) return;
+  uint32_t *b = (uint32_t *) realloc(fb_back, (size_t) w * h * 4);
+  if (!b) return;
+  fb_back = b;
+  for (cell_t k = 0; k < w * h; k++) fb_back[k] = 0;
+  fb_w = (int) w; fb_h = (int) h; fb_zoom = 1;
+  fb_gfx = 1; fb_gfx_dirty = 1;
+}
+static void gfx_ensure(void) { if (!fb_w) gfx_size(GFX_W, GFX_H); }
 
 static cell_t fb_open(cell_t w, cell_t h, cell_t zoom) {
   if (w <= 0 || h <= 0 || zoom <= 0 || w * zoom > 4096 || h * zoom > 4096) return -1;
@@ -172,6 +196,7 @@ static cell_t fb_open(cell_t w, cell_t h, cell_t zoom) {
   if (!back) return -1;
   fb_back = back;
   fb_w = (int) w; fb_h = (int) h; fb_zoom = (int) zoom;
+  fb_gfx = 0;
   fb_front_ok = 0;                  // the first flip writes everything
   con_on = 0;                       // the screen is the program's now
   for (int k = 0; k < fb_w * fb_h; k++) fb_back[k] = 0;
@@ -179,7 +204,7 @@ static cell_t fb_open(cell_t w, cell_t h, cell_t zoom) {
 }
 
 // CLOSE-SCREEN: the text console comes back.
-static void fb_close(void) { fb_w = fb_h = 0; con_init(); }
+static void fb_close(void) { fb_w = fb_h = 0; fb_gfx = 0; con_init(); }
 
 static void fb_set_color(cell_t rgb, cell_t alpha) {
   fb_color = (uint32_t) rgb & 0xFFFFFF;
@@ -195,7 +220,9 @@ static uint32_t fb_blend(uint32_t d) {
 }
 
 static void fb_box(cell_t x, cell_t y, cell_t w, cell_t h) {
+  gfx_ensure();
   if (!fb_back) return;
+  fb_gfx_dirty = fb_gfx;
   cell_t x2 = x + w, y2 = y + h;
   if (x < 0) x = 0;
   if (y < 0) y = 0;
@@ -257,7 +284,9 @@ static void line_window(cell_t start, cell_t dir, cell_t n, cell_t steps,
 }
 
 static void fb_line(cell_t x1, cell_t y1, cell_t x2, cell_t y2) {
+  gfx_ensure();
   if (!fb_back) return;
+  fb_gfx_dirty = fb_gfx;
   if (y1 == y2) { fb_box(x1 < x2 ? x1 : x2, y1, (x1 < x2 ? x2 - x1 : x1 - x2) + 1, 1); return; }
   if (x1 == x2) { fb_box(x1, y1 < y2 ? y1 : y2, 1, (y1 < y2 ? y2 - y1 : y1 - y2) + 1); return; }
   cell_t dx = x2 > x1 ? x2 - x1 : x1 - x2, sx = x1 < x2 ? 1 : -1;
@@ -366,7 +395,9 @@ static void image_alpha(cell_t img, cell_t a) {
 // pixel, colors times the tint, alpha times the image alpha.
 static void image_draw(cell_t img, cell_t sx, cell_t sy, cell_t sw, cell_t sh,
                        cell_t x, cell_t y, cell_t w, cell_t h) {
+  gfx_ensure();
   if (!fb_back || !image_ok(img) || w <= 0 || h <= 0 || sw <= 0 || sh <= 0) return;
+  fb_gfx_dirty = fb_gfx;
   const uint32_t *px = images[img - 1].px;
   int iw = images[img - 1].w, ih = images[img - 1].h;
   uint32_t t = images[img - 1].tint, ia = (uint32_t) images[img - 1].alpha;
@@ -396,6 +427,7 @@ static void image_draw(cell_t img, cell_t sx, cell_t sy, cell_t sw, cell_t sh,
 }
 
 static cell_t fb_pixel(cell_t x, cell_t y) {
+  gfx_ensure();
   if (!fb_back || x < 0 || y < 0 || x >= fb_w || y >= fb_h) return 0;
   return fb_back[y * fb_w + x];
 }
@@ -403,7 +435,9 @@ static cell_t fb_pixel(cell_t x, cell_t y) {
 // Draws a w x h picture of 8-bit palette indexes (low 4 bits used) onto the
 // back buffer from its top left corner, with 16 $rrggbb colors: the varvara port.
 static void fb_blit8(const uint8_t *px, cell_t w, cell_t h, const uint32_t *pal) {
+  gfx_ensure();
   if (!fb_back) return;
+  fb_gfx_dirty = fb_gfx;
   if (w > fb_w) w = fb_w;
   if (h > fb_h) h = fb_h;
   for (cell_t y = 0; y < h; y++) {
@@ -419,7 +453,8 @@ static void fb_blit8(const uint8_t *px, cell_t w, cell_t h, const uint32_t *pal)
 // frames. Each row's changed span is zoomed into a line in RAM, which is
 // copied to the zoom rows.
 static void fb_flip(void) {
-  if (!fb_back) return;
+  if (!fb_back || !TERM_FOCUSED()) return;
+  if (fb_gfx) { fb_gfx_dirty = 1; con_sync(); return; }
   size_t px = (size_t) fb_w * fb_h;
   if (!fb_front_ok || !fb_front || !fb_zline) {
     uint32_t *f = (uint32_t *) realloc(fb_front, px * 4);

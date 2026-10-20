@@ -41,9 +41,9 @@ LDFLAGS := -nostdlib -znocombreloc -T $(EFILIB)/elf_x86_64_efi.lds -shared -Bsym
   -L $(EFILIB) $(EFILIB)/crt0-efi-x86_64.o
 
 SOURCES := main.c libc.h files.h builtins.h start.S \
-  $(ROOT)/ports/baremetal/builtins.h $(ROOT)/ports/baremetal/screen.h $(ROOT)/ports/baremetal/console.h $(ROOT)/ports/baremetal/input.h $(ROOT)/ports/baremetal/font8x8.h
+  $(ROOT)/ports/baremetal/builtins.h $(ROOT)/ports/baremetal/screen.h $(ROOT)/ports/baremetal/console.h $(ROOT)/ports/baremetal/input.h $(ROOT)/ports/baremetal/font8x8.h $(ROOT)/ports/baremetal/mixer.h hda.h $(ROOT)/ports/baremetal/term.h $(ROOT)/ports/baremetal/term_run.h
 ASSETS ?= $(ROOT)/examples/sdl2_tiles.png $(ROOT)/examples/sdl2_tiles_alt.png
-FORTH := efi_boot.fs platform.fs $(wildcard $(ROOT)/ports/baremetal/*.fs) $(wildcard $(ROOT)/common/*.fs)
+FORTH := efi_boot.fs platform.fs sound_ini.fs $(wildcard $(ROOT)/ports/baremetal/*.fs) $(wildcard $(ROOT)/common/*.fs)
 
 all: $(OUT)/BOOTX64.EFI
 
@@ -81,6 +81,7 @@ USB_FILES := $(OUT)/BOOTX64.EFI=EFI/BOOT/BOOTX64.EFI \
   $(wildcard $(ROOT)/examples/*.fs) $(ROOT)/ports/rpi/disk/autoexec.fs=autoexec.fs \
   $(ROOT)/ports/posix/editor.fs=lib/editor.fs $(ROOT)/ports/posix/writhdeck.fs=lib/writhdeck.fs \
   $(ROOT)/ports/posix/eval_copy.fs=lib/eval_copy.fs \
+  $(ROOT)/MANUAL.md=MANUAL.md \
   $(foreach f,$(wildcard $(ROOT)/examples/varvara/*.fs $(ROOT)/examples/varvara/*.rom),$(f)=varvara/$(notdir $(f)))
 
 usb: $(OUT)/BOOTX64.EFI
@@ -96,10 +97,14 @@ stage: $(OUT)/BOOTX64.EFI
 	done
 	@echo "stick tree in $(DEST)"
 
+# The sound goes to the host through AUDIODEV (pa, pipewire, alsa, sdl...):
+# make run AUDIODEV=alsa
+AUDIODEV ?= pa
 run: usb
 	$(QEMU) -machine q35 -m 512M -drive if=pflash,format=raw,readonly=on,file=$(OVMF) \
 	  -drive if=none,id=stick,format=raw,file=$(OUT)/usb.img -device qemu-xhci -device usb-storage,drive=stick \
-	  -device usb-kbd -serial mon:stdio
+	  -device usb-kbd -audiodev $(AUDIODEV),id=snd0 -device intel-hda -device hda-duplex,audiodev=snd0 \
+	  -serial mon:stdio
 
 test: all
 	python3 $(ROOT)/tools/efi_qemu_test.py $(OUT)
@@ -107,6 +112,5 @@ test: all
 clean:
 	rm -rf $(OUT)
 
-.SECONDARY:
 .PHONY: all usb stage run test clean FORCE
 FORCE:

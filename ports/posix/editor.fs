@@ -339,7 +339,7 @@ defer pre-key ( code -- code' )   defer wait-key ( -- code )   defer after-load
   240 ;
 
 ( ---- The screen ---- )
-0 value outcol   0 value cur-attr   0 value dcol   0 value dp   0 value ch
+0 value dry   0 value outcol   0 value cur-attr   0 value dcol   0 value dp   0 value ch
 0 value stop   0 value shown   0 value rp   0 value crow   0 value ccol
 0 value s-lo   0 value s-hi
 
@@ -386,7 +386,7 @@ defer pre-key ( code -- code' )   defer wait-key ( -- code )   defer after-load
   rp len > if clear-to-eol exit then
   rp draw-line
   rp eol dup len = if drop len 1+ else 1+ then to rp ;
-: stype ( a n -- )   cols outcol - 0 max min dup +to outcol type ;
+: stype ( a n -- )   cols outcol - 0 max min dup +to outcol dry if 2drop else type then ;
 : num-type ( n -- )   <# #s #> stype ;
 : name-tail ( -- a n )   flen 40 min >r fname flen + r@ - r> ;
 : plain-status ( -- )
@@ -470,7 +470,9 @@ defer pre-key ( code -- code' )   defer wait-key ( -- code )   defer after-load
   then
   -1 to done ;
 
-( ---- Settings: editor.ini, in the directory of lugforth.ini ---- )
+( ---- Settings: an ini file in the format of WrithDeck, in the directory of lugforth.ini ---- )
+( `key = value`, `[section]` lines ignored, `#` and `%` comments, yes/no booleans. )
+( ed reads and writes editor.ini; writhdeck.fs does the same with writhdeck.ini. )
 [defined] posix [if]
 z" getenv" 1 sysfunc ed-getenv
 z" mkdir" 2 sysfunc ed-mkdir
@@ -487,47 +489,93 @@ z" mkdir" 2 sysfunc ed-mkdir
     inip i + c@ [char] / = if  0 inip i + c!  inip 493 ed-mkdir drop  [char] / inip i + c!  then
   loop
   inip 493 ed-mkdir drop ;
-[else]   \ the board: editor.ini in the root of the disk, no directory to make
+[else]   \ the board: the ini files are in the root of the disk, no directory to make
 0 value inip   0 value inil   0 value fhs
 : inip+ ( a n -- )   dup >r inip inil + swap cmove  r> +to inil ;
 : ed-mkdir ( z mode -- n )   drop [ also rpi ] z>s mkdir [ previous ] ;
 : ini-dir ( -- )   0 to inil ;
 : mk-dirs ( -- ) ;
 [then]
-: ini-name ( -- a n )   ini-dir s" /editor.ini" inip+  inip inil ;
+defer ini-kv ( ka kn va vn -- )     \ one `key = value` of the file
+defer ini-body ( -- )               \ writes the file, with w+ wn eol+
+defer ini-defname ( -- a n )        \ the name of the file when none was found
+defer ini-load   defer ini-save
+0 value inic   0 value inicn       \ the file the settings came from, kept to write it back
+: ini-init ( -- )   inip 0= if 400 bytes to inip then ;
+: inic! ( a n -- )   inic 0= if 400 bytes to inic then  dup to inicn  inic swap cmove ;
+: ini-in-dir ( a n -- a' n' )   ini-dir s" /" inip+ inip+  inip inil ;
+: ini-target ( -- a n )   inicn if inic inicn exit then  ini-defname ini-in-dir ;
+: trim ( a n -- a' n' )   \ without the blanks around
+  begin dup 0> if over c@ 33 < else 0 then while 1 /string repeat
+  begin dup 0> if 2dup + 1- c@ 33 < else 0 then while 1- repeat ;
+: no-comment ( a n -- a n' )   \ cut at a blank followed by # or %
+  dup 2 < if exit then
+  { a n }  n  n 1- 0 ?do
+    a i + c@ 33 <  a i + 1+ c@ dup [char] # = swap [char] % = or  and if drop i leave then
+  loop  a swap ;
+: ini-line ( a n -- )
+  trim { a n }  -1 { eq }  0 { c }
+  n 0= if exit then
+  a c@ to c
+  c [char] # = c [char] % = or c [char] [ = or c [char] = = or if exit then
+  n 0 ?do a i + c@ [char] = = if i to eq leave then loop
+  eq 0< if exit then
+  a eq trim
+  a eq 1+ + n eq - 1- trim no-comment trim
+  ini-kv ;
+: ini-text ( b n -- )
+  { b n }  0 { s }  0 { e }
+  begin s n < while
+    s begin dup n < if b over + c@ 10 <> else 0 then while 1+ repeat to e
+    b s +  e s -  ini-line
+    e 1+ to s
+  repeat ;
+: ini-read ( a n -- flag )   \ reads the file; false when it cannot be opened
+  r/o open-file if drop 0 exit then  { fh }
+  fh file-size throw { sz }
+  sz 1+ bytes { b }
+  b sz fh read-file throw { got }
+  fh close-file drop
+  b got ini-text  b free drop  -1 ;
 : w+ ( a n -- )   fhs write-file drop ;
 : wn ( n -- )   <# #s #> w+ ;
 : eol+ ( -- )   10 onebyte c!  onebyte 1 w+ ;
-: ini-save ( -- )
-  inip 0= if exit then
-  ini-dir mk-dirs  ini-name w/o create-file if drop exit then  to fhs
-  s" theme=" w+  theme theme-name w+  eol+
-  s" width=" w+  colw wn  eol+
-  s" goal=" w+  goal wn  eol+
-  s" wrap=" w+  wrap-on if 1 else 0 then wn  eol+
-  fhs close-file drop ;
-: ini-kv ( ka kn va vn -- )
+: wl ( a n -- )   w+ eol+ ;
+: key= ( a n -- )   w+ s"  = " w+ ;
+: wyes ( f -- )   if s" yes" else s" no" then w+ ;
+: yes? ( a n -- f )
+  2dup s" yes" compare 0= if 2drop -1 exit then
+  2dup s" 1" compare 0= if 2drop -1 exit then
+  2dup s" true" compare 0= if 2drop -1 exit then
+  s" on" compare 0= ;
+: ed-defname ( -- a n )   s" editor.ini" ;
+: ed-ini-kv ( ka kn va vn -- )
   { ka kn va vn }
-  ka kn s" theme" compare 0= if va vn theme-find dup 0< if drop else to theme then exit then
-  ka kn s" width" compare 0= if va vn to-number 30 max 300 min to colw exit then
-  ka kn s" goal" compare 0= if va vn to-number to goal exit then
-  ka kn s" wrap" compare 0= if va vn to-number 0<> to wrap-on then ;
-0 value ls   0 value le   0 value eq
-: ini-load ( -- )
-  inip 0= if 400 bytes to inip then
-  ini-name r/o open-file if drop exit then  { fh }
-  fh file-size throw { n }
-  n 1+ bytes { b }
-  b n fh read-file throw { got }
-  fh close-file drop
-  0 to ls
-  begin ls got < while
-    ls begin dup got < if b over + c@ 10 <> else 0 then while 1+ repeat to le
-    ls begin dup le < if b over + c@ [char] = <> else 0 then while 1+ repeat to eq
-    eq le < if  b ls +  eq ls -  b eq + 1+  le eq - 1-  ini-kv  then
-    le 1+ to ls
-  repeat
-  b free drop ;
+  ka kn s" theme" compare 0=  ka kn s" scheme" compare 0=  or if va vn theme-find dup 0< if drop else to theme then exit then
+  ka kn s" width" compare 0=  ka kn s" limit_width" compare 0=  or if va vn to-number 30 max 300 min to colw exit then
+  ka kn s" goal" compare 0=  ka kn s" word_goal" compare 0=  or if va vn to-number to goal exit then
+  ka kn s" wrap" compare 0= if va vn yes? to wrap-on then ;
+: ed-ini-body ( -- )
+  s" = ed configuration =" wl
+  s" % The format of WrithDeck (writhdeck.ini); writhdeck keeps its own settings in writhdeck.ini." wl
+  eol+  s" = editor =" wl  s" [editor]" wl
+  s" % scheme: default colorforth light solarized mono" wl
+  s" scheme" key= theme theme-name wl
+  eol+  s" = behaviour =" wl  s" [behaviour]" wl
+  s" limit_width" key= colw wn eol+
+  s" word_goal" key= goal wn eol+
+  s" wrap" key= wrap-on wyes eol+ ;
+: ed-ini-load ( -- )
+  ini-init  0 to inicn
+  ed-defname ini-in-dir 2dup ini-read if inic! else 2drop then ;
+: ed-ini-save ( -- )
+  ini-init
+  inicn 0= if ini-dir mk-dirs then
+  ini-target w/o create-file if drop exit then  to fhs
+  ini-body
+  fhs close-file drop ;
+' ed-ini-kv is ini-kv   ' ed-ini-body is ini-body   ' ed-defname is ini-defname
+' ed-ini-load is ini-load   ' ed-ini-save is ini-save
 : next-theme ( -- )
   theme 1+ n-themes mod to theme  ini-save
   theme theme-name { a n }
@@ -681,7 +729,8 @@ z" mkdir" 2 sysfunc ed-mkdir
   ['] forth-scan is hl-scan   ['] plain-want is set-want
   ['] plain-up is up-key   ['] plain-down is down-key
   ['] plain-home is home-key   ['] plain-end is end-key
-  ['] same is pre-key   ['] read-key is wait-key   ['] noop is after-load ;
+  ['] same is pre-key   ['] read-key is wait-key   ['] noop is after-load
+  ['] ed-ini-kv is ini-kv   ['] ed-ini-body is ini-body   ['] ed-defname is ini-defname   ['] ed-ini-load is ini-load ;
 ed-plain
 [defined] posix [if] only forth also internals definitions [else] only forth definitions [then]
 | ;

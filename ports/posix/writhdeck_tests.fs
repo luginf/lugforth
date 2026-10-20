@@ -75,4 +75,24 @@ x" fresh   500 cells bytes to toc-pos   toc-collect
   wo-n 6 =assert   0 wo-cnt 3 =assert   1 wo-cnt 2 =assert
   0 wo-e @ 0 =assert   wo-tab free drop ;
 
+\ writhdeck.ini written, then read back (not in the settings folder of the user)
+: test-wd-ini
+  s" x" fresh   ini-init
+  s" filename words" zl zset   s" modes" zc zset   s" goal help_bar" zr zset   s" hi there" hbar zset
+  3 to theme   44 to colw   123 to goal   0 to wrap-on   -1 to hem-cfg   -1 to auto-cfg   5 to auto-min   0 to bar-on
+  s" out/tests/wd_ini_test.ini" w/o create-file throw to fhs
+  wd-ini-body   fhs close-file drop
+  wd-defaults   0 to theme   72 to colw   500 to goal   -1 to wrap-on   0 to hem-cfg   0 to auto-cfg   1 to auto-min
+  ['] wd-ini-kv is ini-kv
+  s" out/tests/wd_ini_test.ini" ini-read assert
+  ['] ed-ini-kv is ini-kv
+  theme 3 =assert   colw 44 =assert   goal 123 =assert   wrap-on 0 =assert
+  hem-cfg assert   auto-cfg assert   auto-min 5 =assert   bar-on 0 =assert
+  zl zget s" filename words" compare 0 =assert
+  zc zget s" modes" compare 0 =assert
+  zr zget s" goal help_bar" compare 0 =assert
+  hbar zget s" hi there" compare 0 =assert
+  0 to theme   72 to colw   500 to goal   -1 to wrap-on   0 to hem-cfg   0 to hem-on   0 to auto-cfg   0 to autosave   1 to auto-min
+  wd-defaults ;
+
 run-tests

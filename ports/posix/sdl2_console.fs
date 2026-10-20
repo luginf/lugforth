@@ -47,6 +47,7 @@ z" SDL_GetModState" 0 sdl SDL_GetModState ( -- n )
 z" SDL_SetClipboardText" 1 sdl SDL_SetClipboardText ( z -- n )
 z" SDL_GetClipboardText" 0 sdl SDL_GetClipboardText ( -- z )
 z" SDL_free" 1 sdl SDL_free ( a -- void )
+z" SDL_SetRenderTarget" 2 sdl SDL_SetRenderTarget ( a a -- n )
 z" getenv" 1 sysfunc c-getenv ( z -- z )
 $0303 constant SDL_TEXTINPUT
 
@@ -883,8 +884,33 @@ defer font-pick ( k -- )   ' drop is font-pick
   cell-b bg-col <> if cell-b color px py con-cw con-ch box then
   ca $200000 and if cell-f color px py con-ch + 2 - con-cw 1 box then
   cc 32 > cc 127 < and if cc 32 - px py glyph-at then ;
-: con-draw ( -- )
-  bg-col color cls
+( ---- Graphics under the text: after `graphic`, the drawing words work at the prompt ---- )
+\ A texture of 640x480 receives the drawing (the renderer targets it while the program runs);
+\ the console draws it first, stretched to the window, then the text over it: the cells
+\ with the default background let it show. cls clears it, flip draws the window at once.
+0 value gfx-tex
+create gp 4 cells allot
+: pen-save ( -- ) pen-r gp !  pen-g gp 8 + !  pen-b gp 16 + !  pen-a gp 24 + ! ;
+: pen-back ( -- ) gp @ gp 8 + @ gp 16 + @ gp 24 + @ rgba ;
+: gfx-bind ( -- ) renderer gfx-tex SDL_SetRenderTarget drop ;
+: gfx-clear ( -- )
+  pen-save  0 0 0 0 rgba  renderer SDL_RenderClear drop  pen-back ;
+: gfx-off ( -- )
+  gfx-tex if
+    renderer 0 SDL_SetRenderTarget drop
+    gfx-tex SDL_DestroyTexture drop  0 to gfx-tex
+  then ;
+0 value gw   0 value gh   0 value av   640 value gtw   480 value gth
+: gfx-show ( -- )   ( the layer, under the text: its 0 0 is the top left of the text area )
+  gfx-tex if
+    oh top-px - margin 2* - to av   ow margin 2* - to gw   gw gth * gtw / to gh
+    gh av > if av to gh  av gtw * gth / to gw then   ( kept in proportion )
+    margin top-px margin +  gw gh rect rect-at!
+    renderer gfx-tex 0 rect SDL_RenderCopy drop
+  then ;
+
+: con-draw0 ( -- )
+  bg-col color cls  gfx-show
   fg-col rgb-split glyph-tint
   vis view-top { v top }
   top to view-t   -1 to tint-a
@@ -899,6 +925,29 @@ defer font-pick ( k -- )   ' drop is font-pick
   menu-on if bar-open if draw-bar then draw-hb draw-drop draw-picker draw-help then
   renderer SDL_RenderPresent drop
   0 to dirty ;
+
+: con-draw ( -- )
+  gfx-tex if
+    pen-save  renderer 0 SDL_SetRenderTarget drop
+    con-draw0
+    gfx-bind  pen-back
+  else con-draw0 then ;
+
+: graphic-on ( -- )   ( 0 0 100 100 line, drawn at once in the console window )
+  con-renderer 0= renderer con-renderer <> or if
+    s" graphic needs the console window: lugforth --gui" type cr exit then
+  gfx-tex 0= if
+    renderer SDL_PIXELFORMAT_ARGB8888 2 gtw gth SDL_CreateTexture to gfx-tex
+    gfx-tex 0= if sdl-error type cr exit then
+    gfx-tex SDL_BLENDMODE_BLEND SDL_SetTextureBlendMode drop
+    gfx-bind  gfx-clear
+  then
+  gtw to width  gth to height  fg-col color  -1 to dirty ;
+: graphic-size ( w h -- )   ( the drawing area, in pixels: 640 480 by default, up to 4096 )
+  4096 min 16 max to gth  4096 min 16 max to gtw
+  gfx-off  graphic-on ;
+: cls ( -- ) gfx-tex if gfx-clear else cls then ;
+: flip ( -- ) gfx-tex if con-draw else flip then ;
 
 ( ---- Keys and mouse ---- )
 : q-csi ( c -- )   27 q-push [char] [ q-push q-push ;
@@ -1030,6 +1079,7 @@ previous
 0 value last-blink
 : con-key ( -- c )
   con-ensure
+  gfx-tex if -1 to dirty then
   begin
     con-pump
     q-any? if 0 to back q-pop exit then
@@ -1049,7 +1099,7 @@ previous
   ['] con-type is type   ['] con-key is key   ['] con-key? is key? ;
 
 ( A program opening its own screen does not want the keyboard )
-: screen ( w h -- ) SDL_StopTextInput drop screen ;
+: screen ( w h -- ) gfx-off SDL_StopTextInput drop screen ;
 
 ( ---- The desktop: menu bar, and a TrueType font when there is one ---- )
 ( The font code is loaded when asked: it needs SDL_ttf, which a machine may lack. )
@@ -1059,6 +1109,11 @@ previous
   ['] ttf-code catch if sdl-error 2drop then ;
 : ini-apply ( -- )   hrel if ini-size to user-size then ;
 : desktop ( -- )   -1 to menu-on  0 to bar-open  ini-load  smooth-font  ini-apply ;
+
+also forth definitions
+: graphic ( -- )   \ the drawing words at the prompt, in the console window (sdl2 is loaded too)
+  sdl2  s" graphic-on" evaluate ;
+previous sdl2 definitions
 
 previous
 | ;

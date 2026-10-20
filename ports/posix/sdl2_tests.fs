@@ -215,7 +215,7 @@ create hit-buf 4096 2* allot
   2 to wave  440 100 start-voice
   voices-active 1 =assert
   1000 hit-buf render
-  wave 2 =assert
+  wave@ 2 =assert
   hit-buf 1000 peak dup 2900 >assert 3001 <assert
   reset-hits
 ;
@@ -282,6 +282,44 @@ create hit-buf 4096 2* allot
   then
   close-screen
 ;
+
+( ---- play: the notes it asks for ---- )
+create got 64 cells allot   0 value ngot
+: log-note ( freq ms -- ) ngot 2* cells got + 2!  1 +to ngot ;   ( 2! stores ms then freq )
+: note@ ( i -- freq ms ) 2* cells got + 2@ ;
+: song ( a n -- ) 0 to ngot  ['] log-note is p-out  4 to p-oct  4 to p-len  120 to p-tempo
+  play  ['] beep is p-out ;
+: test-play-notes
+  s" c d e" song
+  ngot 3 =assert   0 note@ 500 =assert 262 =assert   2 note@ drop 330 =assert ;
+: test-play-length
+  s" l8 c4 c c." song
+  0 note@ 500 =assert drop   1 note@ 250 =assert drop   2 note@ 375 =assert drop ;
+: test-play-octave-accidentals
+  s" o5 c o4 c# > c < < c f- >" song
+  0 note@ drop 524 =assert   1 note@ drop 277 =assert   2 note@ drop 524 =assert
+  3 note@ drop 131 =assert   4 note@ drop 165 =assert ;
+: test-play-rest-tempo
+  s" t240 r c r2" song
+  0 note@ 250 =assert 0 =assert   1 note@ 250 =assert 262 =assert   2 note@ 500 =assert 0 =assert ;
+: test-play-wave
+  s" w2 c" song  wave@ 2 =assert  sine wave@ 4 =assert  square wave@ 0 =assert
+  1 wave wave@ 1 =assert  3 to wave wave@ 3 =assert  0 wave ;
+: test-play-compat
+  s" c p4 n49 n0 n61" song
+  ngot 5 =assert   0 note@ drop 262 =assert   1 note@ 500 =assert 0 =assert
+  2 note@ drop 262 =assert   3 note@ drop 0 =assert   4 note@ drop 524 =assert ;
+: test-play-tie
+  s" c4&c8 c4 d4&e4" song
+  ngot 4 =assert   0 note@ 750 =assert 262 =assert   1 note@ 500 =assert 262 =assert
+  2 note@ 500 =assert 294 =assert   3 note@ 500 =assert 330 =assert ;
+: test-play-volume
+  beep-volume@ { keep }  s" v0 c" song  beep-volume@ 0 =assert  s" v15" song  beep-volume@ 6000 =assert
+  keep beep-volume ;
+: test-sine
+  4 wave
+  0 wave-sample 0 =assert   16384 wave-sample 32767 =assert   49152 wave-sample -32767 =assert
+  0 to wave ;
 
 forth definitions
 sdl2

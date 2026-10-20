@@ -31,6 +31,7 @@
 
 static struct { int ok; } fs;
 static EFI_FILE_HANDLE fs_root;
+static EFI_HANDLE vol_cur_h;                  // the volume fs_root is on (the one we booted from, at first)
 static char fs_cwd_path[256] = "/";
 
 static void fs_init(void) {
@@ -41,6 +42,7 @@ static void fs_init(void) {
   if (BS->HandleProtocol(image_handle, &li_guid, (void **) &li) != EFI_SUCCESS) return;
   if (BS->HandleProtocol(li->DeviceHandle, &sfs_guid, (void **) &sfs) != EFI_SUCCESS) return;
   if (sfs->OpenVolume(sfs, &fs_root) != EFI_SUCCESS) return;
+  vol_cur_h = li->DeviceHandle;
   fs.ok = 1;
 }
 
@@ -347,5 +349,91 @@ static cell_t fat_chdir(const char *p, cell_t n) {
   if (ior) return -1;
   fat_closedir(dh);
   memcpy(fs_cwd_path, a, strlen(a) + 1);
+  return 0;
+}
+
+// ---- several volumes: the sticks and disks the firmware shows as FAT file systems ----
+// `volumes` lists them, `mount n` makes one the disk of every file word (and of cd, ls...).
+// The list is made again each time (after a connect_all, so that a stick plugged after the
+// start is found, if the firmware sees it).
+#define VOL_MAX 16
+static void connect_all(void);
+static EFI_HANDLE vol_h[VOL_MAX];
+static int vol_n;
+
+static cell_t vol_count(void) {
+  EFI_GUID g = EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID;
+  EFI_HANDLE *h;
+  UINTN n;
+  connect_all();
+  vol_n = 0;
+  if (BS->LocateHandleBuffer(ByProtocol, &g, NULL, &n, &h) != EFI_SUCCESS) return 0;
+  for (UINTN i = 0; i < n && vol_n < VOL_MAX; i++) vol_h[vol_n++] = h[i];
+  BS->FreePool(h);
+  return vol_n;
+}
+
+// The index of the volume in use, or -1 (not in the list: taken out?).
+static cell_t vol_now(void) {
+  for (int i = 0; i < vol_n; i++) if (vol_h[i] == vol_cur_h) return i;
+  return -1;
+}
+
+static EFI_FILE_HANDLE vol_root(cell_t i) {            // to Close, or 0
+  EFI_GUID g = EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID;
+  EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *sfs;
+  EFI_FILE_HANDLE r;
+  if (i < 0 || i >= vol_n) return 0;
+  if (BS->HandleProtocol(vol_h[i], &g, (void **) &sfs) != EFI_SUCCESS) return 0;
+  if (sfs->OpenVolume(sfs, &r) != EFI_SUCCESS) return 0;
+  return r;
+}
+
+static EFI_FILE_SYSTEM_INFO *vol_info(EFI_FILE_HANDLE r) {   // malloc'ed, or 0
+  EFI_GUID id = EFI_FILE_SYSTEM_INFO_ID;
+  UINTN size = 0;
+  EFI_FILE_SYSTEM_INFO *info;
+  if (r->GetInfo(r, &id, &size, NULL) != EFI_BUFFER_TOO_SMALL) return 0;
+  info = malloc(size);
+  if (info && r->GetInfo(r, &id, &size, info) != EFI_SUCCESS) { free(info); info = 0; }
+  return info;
+}
+
+// The label of volume i, in ASCII, at most max bytes: how many.
+static cell_t vol_label(cell_t i, char *out, cell_t max) {
+  EFI_FILE_HANDLE r = vol_root(i);
+  cell_t o = 0;
+  if (!r) return 0;
+  EFI_FILE_SYSTEM_INFO *info = vol_info(r);
+  if (info) {
+    for (CHAR16 *c = info->VolumeLabel; *c && o < max; c++) out[o++] = (*c >= 32 && *c < 127) ? (char) *c : '?';
+    free(info);
+  }
+  r->Close(r);
+  return o;
+}
+
+static cell_t vol_size_mb(cell_t i) {
+  EFI_FILE_HANDLE r = vol_root(i);
+  cell_t mb = 0;
+  if (!r) return 0;
+  EFI_FILE_SYSTEM_INFO *info = vol_info(r);
+  if (info) { mb = (cell_t) (info->VolumeSize / 1048576); free(info); }
+  r->Close(r);
+  return mb;
+}
+
+// mount: 0, -1 (no such volume) or -2 (files are open: they would stay on the old volume,
+// where a stick pulled out before they are closed loses their last writes). The old volume is
+// flushed before it is left. The current directory goes back to the root.
+static cell_t vol_mount(cell_t i) {
+  for (int k = 0; k < FAT_FILES; k++) if (files[k].h) return -2;
+  EFI_FILE_HANDLE r = vol_root(i);
+  if (!r) return -1;
+  if (fs.ok && fs_root) { fs_root->Flush(fs_root); fs_root->Close(fs_root); }
+  fs_root = r;
+  vol_cur_h = vol_h[i];
+  fs.ok = 1;
+  fs_cwd_path[0] = '/'; fs_cwd_path[1] = 0;
   return 0;
 }

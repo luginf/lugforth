@@ -23,12 +23,12 @@ vocabulary sdl2   also rpi also sdl2 definitions
 
 ( ---- Screen ---- )
 1 value zoom   0 value width   0 value height   0 value screen-open?
-0 value quitting
+0 value quitting   0 value gfx-mode   ( -1: the drawing words work under the console )
 : screen ( w h -- )   \ a zoom too big for the display is lowered until it fits
   to height to width
   begin  width height zoom fb-open  while  zoom 1 > 0= if -21 throw then  -1 +to zoom  repeat
-  -1 to screen-open?   0 to quitting ;
-: close-screen ( -- )   screen-open? if fb-close then  0 to screen-open?  1 to zoom ;
+  -1 to screen-open?   0 to quitting   0 to gfx-mode ;
+: close-screen ( -- )   screen-open? if fb-close then  0 to screen-open?  1 to zoom  0 to gfx-mode ;
 : title ( a n -- ) 2drop ;
 : fullscreen ( f -- ) drop ;
 : cursor ( f -- ) drop ;
@@ -53,8 +53,19 @@ $ff80c0 constant pink     $804000 constant brown
 $808080 constant gray
 
 ( ---- Drawing ---- )
+\ At the prompt, no SCREEN needed: after `graphic` a drawing word shows at once under the
+\ text of the console (a layer of 640x480; the console keeps its own size). `cls` clears
+\ it, `page` clears the text.
+: gfx-on ( -- ) gfx-open  640 to width  480 to height  -1 to gfx-mode ;
+: graphic-size ( w h -- )   ( the drawing area, up to 1920x1440; the console screen is 640x480 times console-zoom )
+  gfx-on  2dup gfx-size  to height to width ;
 : box ( x y w h -- ) fb-box ;
-: cls ( -- ) pen-a >r 255 alpha  0 0 width height fb-box  r> alpha ;
+: gfx-cls ( -- )   ( at the prompt: back to black, whatever the pen )
+  pen-r pen-g pen-b pen-a { r g b a }
+  0 0 0 255 rgba  0 0 width height fb-box  r g b a rgba ;
+: cls ( -- )
+  gfx-mode if gfx-cls exit then
+  pen-a >r 255 alpha  0 0 width height fb-box  r> alpha ;
 : dot ( x y -- ) 1 1 fb-box ;
 : hline ( x y w -- ) 1 fb-box ;
 : line ( x1 y1 x2 y2 -- ) fb-line ;
@@ -79,6 +90,13 @@ $808080 constant gray
     cx i + cy x + dot  cx i - cy x + dot  cx i + cy x - dot  cx i - cy x - dot
   loop ;
 : pixel@ ( x y -- $rrggbb ) fb-pixel ;
+
+( ---- Colors by number: the sixteen of an 8 bit micro ---- )
+create ink-table
+  $000000 , $ff0000 , $00c000 , $ffff00 , $0000ff , $ff00ff , $00ffff , $ffffff ,
+  $808080 , $ff8000 , $ff80c0 , $804000 , $800080 , $80ff80 , $8080ff , $c0c0c0 ,
+: ink ( n -- )   ( 0 black 1 red 2 green 3 yellow 4 blue 5 magenta 6 cyan 7 white, 8 to 15 others )
+  15 and cells ink-table + @ color ;
 
 ( ---- Timing ---- )
 : ticks ( -- ms ) ms-ticks ;
@@ -168,11 +186,75 @@ forget-keys
 ( ---- Sound: beeps and hits, as on Linux ---- )
 \ Mixed in C (ports/rpi/sound.h) and played by virtio-sound on QEMU virt, the
 \ headphone jack on a Pi 3. Silent without one (audio-open? is false).
-0 value wave   3000 value beep-volume   0 value pitch-drop
+: setting ( n "name" -- )   ( a setting: `3000 beep-volume` sets it, `to beep-volume` too; name@ reads it )
+  create , does> ! ;
+0 setting wave   3000 setting beep-volume   0 setting pitch-drop
+: wave@ ( -- n ) [ ' wave >body ] literal @ ;
+: beep-volume@ ( -- n ) [ ' beep-volume >body ] literal @ ;
+: pitch-drop@ ( -- n ) [ ' pitch-drop >body ] literal @ ;
 2205 value latency   ( no effect here: the output keeps its own queue )
 44100 constant sample-rate
-: beep ( freq ms -- ) wave beep-volume snd-beep ;
-: drum-hit ( freq ms -- ) wave beep-volume pitch-drop snd-hit ;
+: beep ( freq ms -- ) wave@ beep-volume@ snd-beep ;
+
+( ---- Waves by name, and play: notes typed fast ---- )
+: square 0 wave ;   : triangle 1 wave ;   : saw 2 wave ;   : noise 3 wave ;   : sine 4 wave ;
+\ s" t140 o4 l8 c d e c  e4 g4 r4 >c2" play     queues the notes, like beep. Letters c d e f g a b,
+\ # or + sharp, - flat, then a length (4 is a quarter, 8 an eighth, a dot lengthens by half);
+\ r rest; o4 octave, < and > one down or up; l8 default length; t120 tempo (quarters a minute);
+\ w1 the wave; p a rest too; n49 a note by number (n0 a rest, n49 is the middle C); c4&c8 ties two notes of
+\ the same pitch; v8 the volume 0 to 15. Spaces are free. The settings stay from one play to the next.
+create semis 262 , 277 , 294 , 311 , 330 , 349 , 370 , 392 , 415 , 440 , 466 , 494 ,   ( octave 4 )
+create letters 9 c, 11 c, 0 c, 2 c, 4 c, 5 c, 7 c,                                      ( a b c d e f g )
+4 value p-oct   4 value p-len   120 value p-tempo   0 value p-a   0 value p-n
+defer p-out   ' beep is p-out
+: p-peek ( -- c ) p-n 0> if p-a c@ else 0 then ;
+: p-next ( -- ) 1 +to p-a  -1 +to p-n ;
+: p-num ( -- n f )   ( the digits at the cursor, and whether there were any )
+  0 0 { n any }
+  begin p-peek dup [char] 0 >= swap [char] 9 <= and while
+    n 10 * p-peek [char] 0 - + to n  -1 to any  p-next
+  repeat n any ;
+: p-acc ( -- n )   ( # + sharps and - flats after a letter )
+  0 begin
+    p-peek dup [char] # = over [char] + = or if drop 1+ p-next 0
+    else [char] - = if 1- p-next 0 else -1 then then
+  until ;
+: p-dur ( -- ms )   ( a length and its dots )
+  p-num 0= if drop p-len then
+  240000 p-tempo / swap /
+  begin p-peek [char] . = while 3 2 */ p-next repeat ;
+: p-freq ( semitones from c4 -- hz )
+  120 + 12 /mod 10 - swap cells semis + @ swap
+  dup 0< if negate rshift else lshift then ;
+0 value p-pf   0 value p-pm   0 value p-tie   ( the note waiting, and a & before the next one )
+: p-flush ( -- ) p-pm if p-pf p-pm p-out 0 to p-pm then ;
+: p-emit ( freq ms -- )   ( a note tied with & to one of the same pitch is made longer )
+  { f m }
+  p-tie p-pm 0<> and  f p-pf = and if m +to p-pm 0 to p-tie exit then
+  0 to p-tie  p-flush  m to p-pm  f to p-pf ;
+: p-note ( c -- )
+  [char] a - letters + c@  p-acc +  p-oct 4 - 12 * +  p-freq  p-dur p-emit ;
+: p-rest ( -- ) 0 p-dur p-emit ;
+: p-number ( -- )   ( n<k>: the note k semitones above the C of octave 0, n0 is a rest )
+  p-num 0= if drop exit then
+  dup 0= if drop p-rest exit then
+  49 - p-freq p-dur p-emit ;
+: p-step ( -- )
+  p-peek p-next 32 or
+  dup [char] a >= over [char] g <= and if p-note exit then
+  dup [char] r = over [char] p = or if drop p-rest exit then
+  dup [char] n = if drop p-number exit then
+  dup [char] & = if drop -1 to p-tie exit then
+  dup [char] v = if drop p-num if 0 max 15 min 400 * beep-volume else drop then exit then
+  dup [char] o = if drop p-num if 0 max 8 min to p-oct else drop then exit then
+  dup [char] l = if drop p-num if 1 max to p-len else drop then exit then
+  dup [char] t = if drop p-num if 20 max to p-tempo else drop then exit then
+  dup [char] w = if drop p-num if wave else drop then exit then
+  dup [char] < = if drop p-oct 0> if -1 +to p-oct then exit then
+  dup [char] > = if drop p-oct 8 < if 1 +to p-oct then exit then
+  drop ;
+: play ( a n -- ) to p-n to p-a  begin p-n 0> while p-step repeat p-flush ;
+: drum-hit ( freq ms -- ) wave@ beep-volume@ pitch-drop@ snd-hit ;
 : silence ( -- ) snd-silence ;
 : beeping? ( -- f ) snd-busy ;
 : audio-open ( -- ) ;
@@ -189,6 +271,8 @@ forget-keys
 previous previous forth definitions
 : sdl2 ( -- )   \ once: the search order is short, and every example says sdl2 sdl2-ttf...
   context @ [ ' sdl2 >body ] literal = if exit then   also sdl2 ;
+: graphic ( -- )   \ the drawing words at the prompt: 0 0 100 100 line
+  sdl2  s" gfx-on" evaluate ;
 : sdl2-ttf ( -- ) sdl2 ;   ( the text words are part of sdl2 here )
 : sdl2-image ( -- ) sdl2 ;   ( the image words too )
 : sdl2-mixer ( -- ) sdl2 ;   ( music volume and soundfont words: no files here )
@@ -207,7 +291,7 @@ also abc-int also rpi
 : tune-send ( loop -- )
   snd-tune-clear
   n-notes 0 ?do  i nk@  i nt@ ticks>ms  i nd@ ticks>ms  snd-tune-add  loop
-  tune-ms  wave 1 = wave 0 = or if 1 else wave then  tune-level  snd-tune-run ;
+  tune-ms  wave@ 1 = wave@ 0 = or if 1 else wave@ then  tune-level  snd-tune-run ;
 : tune-play ( -- ) 0 tune-send ;
 : tune-loop ( -- ) -1 tune-send ;
 : abc-play ( a n -- ) abc tune-play ;

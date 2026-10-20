@@ -83,7 +83,7 @@ r~
       src.buffer = S.noise; src.loop = true;
     } else {
       src = ac.createOscillator();
-      src.type = w === 1 ? 'triangle' : (w === 2 ? 'sawtooth' : 'square');
+      src.type = w === 1 ? 'triangle' : (w === 2 ? 'sawtooth' : (w === 4 ? 'sine' : 'square'));
       src.frequency.setValueAtTime(freq, t);
     }
     return src;
@@ -452,7 +452,11 @@ JSWORD: wheel { -- n }
 ~
 
 ( ---- Beeps are scheduled one after the other, hits play over each other ---- )
-0 value wave   3000 value beep-volume
+: setting ( n "name" -- )   ( a setting: `3000 beep-volume` sets it, `to beep-volume` too; name@ reads it )
+  create , does> ! ;
+0 setting wave   3000 setting beep-volume
+: wave@ ( -- n ) [ ' wave >body ] literal @ ;
+: beep-volume@ ( -- n ) [ ' beep-volume >body ] literal @ ;
 JSWORD: js-beep { freq ms w vol }
   var S = context.sdl;
   S.ensureAudio();
@@ -463,8 +467,9 @@ JSWORD: js-beep { freq ms w vol }
   if (t - ac.currentTime > 2) { return; }
   var d = ms / 1000;
   var g = ac.createGain();
-  g.gain.setValueAtTime(vol / 32768, t);
-  g.gain.setValueAtTime(vol / 32768, t + Math.max(0, d - 0.01));
+  var level = (freq > 0 ? vol : 0) / 32768;
+  g.gain.setValueAtTime(level, t);
+  g.gain.setValueAtTime(level, t + Math.max(0, d - 0.01));
   g.gain.linearRampToValueAtTime(0, t + d);
   g.connect(ac.destination);
   var src = S.makeSource(w, freq, t);
@@ -473,8 +478,68 @@ JSWORD: js-beep { freq ms w vol }
   src.start(t); src.stop(t + d);
   S.beepEnd = t + d;
 ~
-: beep ( freq ms -- ) wave beep-volume js-beep ;
-0 value pitch-drop
+: beep ( freq ms -- ) wave@ beep-volume@ js-beep ;
+
+( ---- Waves by name, and play: notes typed fast ---- )
+: square 0 wave ;   : triangle 1 wave ;   : saw 2 wave ;   : noise 3 wave ;   : sine 4 wave ;
+\ s" t140 o4 l8 c d e c  e4 g4 r4 >c2" play     queues the notes, like beep. Letters c d e f g a b,
+\ # or + sharp, - flat, then a length (4 is a quarter, 8 an eighth, a dot lengthens by half);
+\ r rest; o4 octave, < and > one down or up; l8 default length; t120 tempo (quarters a minute);
+\ w1 the wave; p a rest too; n49 a note by number (n0 a rest, n49 is the middle C); c4&c8 ties two notes of
+\ the same pitch; v8 the volume 0 to 15. Spaces are free. The settings stay from one play to the next.
+create semis 262 , 277 , 294 , 311 , 330 , 349 , 370 , 392 , 415 , 440 , 466 , 494 ,   ( octave 4 )
+create letters 9 c, 11 c, 0 c, 2 c, 4 c, 5 c, 7 c,                                      ( a b c d e f g )
+4 value p-oct   4 value p-len   120 value p-tempo   0 value p-a   0 value p-n
+defer p-out   ' beep is p-out
+: p-peek ( -- c ) p-n 0> if p-a c@ else 0 then ;
+: p-next ( -- ) 1 +to p-a  -1 +to p-n ;
+: p-num ( -- n f )   ( the digits at the cursor, and whether there were any )
+  0 0 { n any }
+  begin p-peek dup [char] 0 >= swap [char] 9 <= and while
+    n 10 * p-peek [char] 0 - + to n  -1 to any  p-next
+  repeat n any ;
+: p-acc ( -- n )   ( # + sharps and - flats after a letter )
+  0 begin
+    p-peek dup [char] # = over [char] + = or if drop 1+ p-next 0
+    else [char] - = if 1- p-next 0 else -1 then then
+  until ;
+: p-dur ( -- ms )   ( a length and its dots )
+  p-num 0= if drop p-len then
+  240000 p-tempo / swap /
+  begin p-peek [char] . = while 3 2 */ p-next repeat ;
+: p-freq ( semitones from c4 -- hz )
+  120 + 12 /mod 10 - swap cells semis + @ swap
+  dup 0< if negate rshift else lshift then ;
+0 value p-pf   0 value p-pm   0 value p-tie   ( the note waiting, and a & before the next one )
+: p-flush ( -- ) p-pm if p-pf p-pm p-out 0 to p-pm then ;
+: p-emit ( freq ms -- )   ( a note tied with & to one of the same pitch is made longer )
+  { f m }
+  p-tie p-pm 0<> and  f p-pf = and if m +to p-pm 0 to p-tie exit then
+  0 to p-tie  p-flush  m to p-pm  f to p-pf ;
+: p-note ( c -- )
+  [char] a - letters + c@  p-acc +  p-oct 4 - 12 * +  p-freq  p-dur p-emit ;
+: p-rest ( -- ) 0 p-dur p-emit ;
+: p-number ( -- )   ( n<k>: the note k semitones above the C of octave 0, n0 is a rest )
+  p-num 0= if drop exit then
+  dup 0= if drop p-rest exit then
+  49 - p-freq p-dur p-emit ;
+: p-step ( -- )
+  p-peek p-next 32 or
+  dup [char] a >= over [char] g <= and if p-note exit then
+  dup [char] r = over [char] p = or if drop p-rest exit then
+  dup [char] n = if drop p-number exit then
+  dup [char] & = if drop -1 to p-tie exit then
+  dup [char] v = if drop p-num if 0 max 15 min 400 * beep-volume else drop then exit then
+  dup [char] o = if drop p-num if 0 max 8 min to p-oct else drop then exit then
+  dup [char] l = if drop p-num if 1 max to p-len else drop then exit then
+  dup [char] t = if drop p-num if 20 max to p-tempo else drop then exit then
+  dup [char] w = if drop p-num if wave else drop then exit then
+  dup [char] < = if drop p-oct 0> if -1 +to p-oct then exit then
+  dup [char] > = if drop p-oct 8 < if 1 +to p-oct then exit then
+  drop ;
+: play ( a n -- ) to p-n to p-a  begin p-n 0> while p-step repeat p-flush ;
+0 setting pitch-drop
+: pitch-drop@ ( -- n ) [ ' pitch-drop >body ] literal @ ;
 2205 value latency   ( no effect in a browser: WebAudio schedules the sound itself )
 JSWORD: js-hit { freq ms w vol fall }
   var S = context.sdl;
@@ -498,7 +563,7 @@ JSWORD: js-hit { freq ms w vol fall }
   src.start(t); src.stop(t + d);
   S.hitEnd = Math.max(S.hitEnd, t + d);
 ~
-: drum-hit ( freq ms -- ) wave beep-volume pitch-drop js-hit ;
+: drum-hit ( freq ms -- ) wave@ beep-volume@ pitch-drop@ js-hit ;
 JSWORD: silence { }
   context.sdl.silence();
 ~

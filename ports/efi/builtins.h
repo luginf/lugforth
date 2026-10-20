@@ -24,10 +24,10 @@
 
 #define REQUIRED_SYSTEM_SUPPORT \
   X("MS-TICKS", MS_TICKS, PUSH ms_ticks()) \
-  XV(internals, "RAW-YIELD", RAW_YIELD, snd_pump()) \
-  XV(internals, "RAW-TERMINATE", RAW_TERMINATE, efi_terminate(n0); DROP) \
+  XV(internals, "RAW-YIELD", RAW_YIELD, snd_pump(); term_poll()) \
+  XV(internals, "RAW-TERMINATE", RAW_TERMINATE, if (term_bye()) { DROP; PARK; return rp; } efi_terminate(n0); DROP) \
   YV(internals, getchar_timeout_us, n0 = getchar_timeout_us(n0)) \
-  XV(internals, "RAW-TYPE", RAW_TYPE, uart_write(b1, n0); con_write(b1, n0); DROPn(2))
+  XV(internals, "RAW-TYPE", RAW_TYPE, if (TERM_FOCUSED()) uart_write(b1, n0); con_write(b1, n0); DROPn(2))
 
 #define PC_SUPPORT \
   XV(pc, "US-TICKS", US_TICKS, PUSH us_ticks()) \
@@ -37,6 +37,12 @@
   XV(pc, "CNTFRQ", CNTFRQ, PUSH timer_freq()) \
   XV(pc, "BOARD", BOARD, PUSH BOARD_NAME; PUSH sizeof(BOARD_NAME) - 1) \
   XV(pc, "SCREEN-SIZE", SCREEN_SIZE, PUSH gop_w; PUSH gop_h) \
+  XV(pc, "VOLUME-COUNT", VOLUME_COUNT, PUSH vol_count()) \
+  XV(pc, "VOLUME-NOW", VOLUME_NOW, PUSH vol_now()) \
+  XV(pc, "VOLUME-LABEL", VOLUME_LABEL, n2 = vol_label(n2, c1, n0); DROPn(2)) \
+  XV(pc, "VOLUME-SIZE", VOLUME_SIZE, n0 = vol_size_mb(n0)) \
+  XV(pc, "VOLUME-MOUNT", VOLUME_MOUNT, n0 = vol_mount(n0)) \
+  XV(pc, "SND-ENABLE", SND_ENABLE, snd_enable(n0); DROP) \
   XV(pc, "INB", INB_OP, n0 = inb((uint16_t) n0)) \
   XV(pc, "OUTB", OUTB_OP, outb((uint16_t) n0, (uint8_t) n1); DROPn(2))
 

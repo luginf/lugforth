@@ -122,4 +122,24 @@ ccc" fresh
   s" theme" s" bogus" ini-kv   theme 3 =assert
   0 to theme   72 to colw ;
 
+: test-ini-text
+  s" = ed configuration =
+[editor]
+% a comment
+scheme = solarized   % inline comment
+  limit_width =  50
+# another
+word_goal=7
+wrap = no
+junk without equal
+" ini-text
+  theme 3 =assert   colw 50 =assert   goal 7 =assert   wrap-on 0 =assert
+  0 to theme   72 to colw   500 to goal   -1 to wrap-on ;
+
+: test-ini-trim
+  s"   a b  " trim s" a b" compare 0 =assert
+  s" value % note" no-comment s" value" compare 0 =assert
+  s" 50%" no-comment s" 50%" compare 0 =assert
+  s" yes" yes? assert   s" 1" yes? assert   s" no" yes? 0 =assert ;
+
 run-tests

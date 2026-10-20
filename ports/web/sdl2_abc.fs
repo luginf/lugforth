@@ -103,7 +103,7 @@ JSWORD: tune-playing? { -- f }
 : tune-send ( loop -- )
   js-tune-clear
   n-notes 0 ?do  i nk@  i nt@ ticks>ms  i nd@ ticks>ms  js-tune-add  loop
-  tune-ms  wave 1 = wave 0 = or if 1 else wave then  tune-level  js-tune-run ;
+  tune-ms  wave@ 1 = wave@ 0 = or if 1 else wave@ then  tune-level  js-tune-run ;
 : tune-play ( -- ) 0 tune-send ;
 : tune-loop ( -- ) -1 tune-send ;
 : abc-play ( a n -- ) abc tune-play ;

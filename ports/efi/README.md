@@ -17,14 +17,15 @@ in QEMU, and `dosfstools` and `mtools` for the stick image:
 sudo apt install gnu-efi ovmf qemu-system-x86 dosfstools mtools
 make -C ports/efi          # out/efi/BOOTX64.EFI
 make -C ports/efi usb      # out/efi/usb.img: MBR + FAT32, EFI/BOOT/BOOTX64.EFI and the examples
-make -C ports/efi run      # QEMU (q35, OVMF) on that image: a window, the serial line here
-make -C ports/efi test     # boots it under QEMU and checks 74 things
+make -C ports/efi stage    # the same files as a tree in /tmp/lugforth, or in DEST=/media/me/STICK, for a stick you already have
+make -C ports/efi run      # QEMU (q35, OVMF) on that image: a window, the serial line here, sound (AUDIODEV=pa)
+make -C ports/efi test     # boots it under QEMU and checks 117 things
 ```
 
-## Booting it from a USB stick (a Dell Latitude, for example)
+## Booting it from a USB stick
 
-Recent Latitudes boot UEFI only. Their firmware looks for
-`\EFI\BOOT\BOOTX64.EFI` on a FAT32 partition, which is what the stick holds.
+Any recent x86-64 PC that boots in UEFI mode can do it (legacy BIOS only machines cannot). The
+firmware looks for `\EFI\BOOT\BOOTX64.EFI` on a FAT32 partition, which is what the stick holds.
 
 1. Make the stick. Either:
    * write the image to the whole stick (this erases it; check the device
@@ -53,11 +54,11 @@ Recent Latitudes boot UEFI only. Their firmware looks for
      partition number). The files lugforth reads (`autoexec.fs`, examples,
      `lib/`) go on that same partition.
 2. Turn off Secure Boot. `BOOTX64.EFI` is not signed, so the firmware would
-   refuse it. Press F2 at power-on to open the BIOS setup, then go to Boot
-   Configuration (or Secure Boot) and set Secure Boot to off. Turn it back
+   refuse it. Open the firmware setup at power-on (the key depends on the maker:
+   F2, Del, F10 or Esc), find Secure Boot (under Boot or Security) and set it to off. Turn it back
    on when you are done with lugforth.
-3. Plug in the stick, power on, press F12 for the one-time boot menu, and
-   choose the USB stick under UEFI Boot. If it is not listed, check in the
+3. Plug in the stick, power on, press the key of the one-time boot menu (often F12, also F11,
+   F9 or Esc) and choose the USB stick, the entry marked UEFI. If it is not listed, check in the
    setup that USB boot is enabled. On some models it is "Enable USB Boot
    Support" or "Thunderbolt Boot Support", for a stick plugged into a USB-C
    dock.
@@ -67,6 +68,24 @@ Recent Latitudes boot UEFI only. Their firmware looks for
 The firmware's keyboard layout is QWERTY US. On a French keyboard, type
 `azerty` (`autoexec.fs` from `ports/rpi/disk` does it at boot). The keys are
 read by position, as on the Pi.
+
+## Changing stick during the session
+
+The program is in memory once started, so the boot stick is not needed to keep running, but the
+file words use the stick it was started from until told otherwise:
+
+```
+volumes        \ 0  LUGFORTH  14 MB   (the * marks the one in use)
+1 mount        \ include, ls, cd, cat... now read the second one, in its root
+0 mount        \ back to the boot stick
+```
+
+`volumes` looks again each time (it asks the firmware to connect the drivers), so a stick plugged
+after the start shows up: tested under QEMU with a hot-plugged USB disk, not yet on real hardware. `ed` and
+`writhdeck` are read from `/lib` of the disk in use the first time: run them before mounting another
+stick, or have `/lib/editor.fs` and `/lib/writhdeck.fs` on it too. Do not pull the stick in use
+without `mount`ing another one first. `mount` refuses ("close the open files first") while a file
+is open, and flushes the volume it leaves.
 
 ## Status
 
@@ -84,7 +103,7 @@ read by position, as on the Pi.
 | Date and time (`unix-time`, from the battery clock) | tested | to try |
 | Mouse (firmware simple and absolute pointers) | written, not testable under OVMF | to try (a laptop's I2C trackpad may not be exposed) |
 | Line editor: history, Tab (words, file names) | tested | to try |
-| Sound | not done (silent) | not done |
+| Sound (`hda.h`: Intel HD Audio, `beep`, `play`, `drum-hit`, ABC tunes) | tested, recorded by QEMU (`intel-hda`) | to try (codecs differ) |
 
 "Tested" means that `make test` (`tools/efi_qemu_test.py`) checks it on
 every run. The test reuses the checks of `tools/baremetal_qemu_test.py`, with a
@@ -106,7 +125,24 @@ Limits, by design:
 * The screen is the firmware's mode. At start, if that mode is smaller than
   1280x960, the smallest one at least that big is chosen. A program's
   `screen` is centered in it, and the rest is black.
-* No sound: the `snd-*` words do nothing.
+* The key `<` `>` of an ISO keyboard (left of W) gives nothing at all under OVMF (the firmware drops it):
+  in `azerty` mode, `AltGr+;` types `<` and `AltGr+:` types `>`.
+* Terminals: `Alt+F1` to `Alt+F4` or `n term` (see the manual), tested here (10 checks, with a game keeping the
+  screen); the firmware reports Alt+Fn as it should under OVMF, a real PC not tried.
+* Slow on a PC: `include speed.fs` (examples/speed.fs, copied to the stick) prints the clock, the time of 100 `key?`
+  polls, of 2000 characters and of 30 lines, and whether the sound started; the 3 s wait is to be timed by the watch.
+* Sound: a minimal Intel HD Audio driver (`hda.h`) over the mixer shared with the Pi
+  (`ports/baremetal/mixer.h`). It takes the first controller on the PCI bus and the first
+  codec, follows every connected output pin (line out, speaker, headphones) down to a DAC,
+  and plays 44100 Hz stereo from a ring that `RAW-YIELD` and the wait for a key keep filled.
+  The controller is started at the first sound word (or `snd-ok`), not at boot, and gives up after 0.4 s if the
+  codec does not answer. Under QEMU: `make run` adds `-device intel-hda -device hda-duplex` (host side with
+  `AUDIODEV`, default `pa`: `make run AUDIODEV=alsa`). On a real PC it is not tried: codecs
+  differ (pin choice, amplifier ranges), and some controllers need quirks (snoop bits).
+  `snd-ok` tells whether a controller answered. Without one the words stay silent.
+  `sound-off` stops the controller (a PC whose codec makes white noise or crackles) and writes `sound = off`
+  in `lugforth.ini` at the root of the stick, read at boot before `autoexec.fs`; `sound` (or `sound-on`)
+  starts it again and writes `sound = on`. `ports/efi/sound_ini.fs`.
 * Mouse: `main.c` connects all the firmware's drivers at start (as the shell's
   `connect -r`) and polls every simple and absolute pointer. A relative device
   moves 0.40 screen pixel per count; `n mouse-speed` sets it in percent. OVMF

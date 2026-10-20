@@ -48,6 +48,12 @@ Still to do, from the original (priority order):
 6. Ctrl+Q in an edited text returns to the browser (now it quits); modal commands `t s w q` of the original.
 7. INI profiles/schemes, i18n.
 Esc followed at once by a letter is read as Alt+letter: the pty tests wait 0.5 s between them.
+Settings: `ed` keeps `editor.ini`, `writhdeck` `writhdeck.ini`, both in the ini format of WrithDeck (Tcl): `key = value`,
+`%`/`#` comments, `[sections]` ignored, parser `ini-text` in editor.fs, `ini-kv` / `ini-body` / `ini-defname` / `ini-load` are
+deferred and `wd-install` / `ed-plain` swap them. Never the Tcl program's own `~/Documents/writhdeck/writhdeck.ini`
+(its `[keys]`, `[schemes]`, `[profiles]` would be lost). Status bar zones `status_left/center/right` with tokens (`session`,
+`modes` are ours); `dry` makes `stype` only count, to measure a zone. Tests: `test-wd-ini` writes to out/tests, not to the user's home.
+Not run on the boards (no aarch64 or gnu-efi toolchain here).
 Both also run on the bare-metal board (ports/rpi, `ed` / `writhdeck` words, files in /lib): the POSIX-only
 parts are under `[defined] posix [if] ... [else] ... [then]` inside the source strings, keep them that way.
 The editors end with `only forth ...`: a file that is `include`d must save `current @` and put it back
@@ -101,13 +107,16 @@ and file opcodes are shared in ports/baremetal/builtins.h (`BM_VOC` = rpi or pc,
 Duplication left: the common part of the two platform.fs (azerty, console-zoom, keys).
 
 `make -C ports/efi test` builds out/efi/BOOTX64.EFI (gcc + gnu-efi) and boots it under QEMU q35 + OVMF from a USB stick
-image (MBR + FAT32, tools/baremetal_mkdisk.py), 74 checks (tools/efi_qemu_test.py, which reuses baremetal_qemu_test.py). Needs
+image (MBR + FAT32, tools/baremetal_mkdisk.py), 117 checks (tools/efi_qemu_test.py, which reuses baremetal_qemu_test.py). Needs
 `gnu-efi ovmf qemu-system-x86 dosfstools mtools`. Stays in boot services: GOP screen, ConIn keyboard (no releases: a key
 is held 120 ms after its last press; the test uses `-device usb-kbd`, PS/2 does not repeat), the stick's FAT through
 Simple File System (ports/efi/files.h, same API as fat.h). Reuses ports/baremetal (screen.h, console.h, input.h, font8x8.h, sdl2.fs, files.fs...), shared with ports/rpi;
 vocabulary `pc` aliased `rpi`. Console and `fb_flip` (ports/baremetal) draw in RAM and write only changed pixels, never read video memory; mouse polled from the firmware pointers (untestable under OVMF, trackpad may not be exposed). Speed on real hardware not measured yet. efi_main is called SysV by gnu-efi's crt0 (NOT EFIAPI: it crashed); own libc in libc.h
-(x87 math), setjmp and fault stubs in start.S (patched copy of the firmware IDT). No sound. Booted from a real USB stick
-(prompt, sdl2_3d, roguelike work); ports/efi/README.md has the Dell Latitude steps (Secure Boot off, F12).
+(x87 math), setjmp and fault stubs in start.S (patched copy of the firmware IDT). Sound: minimal Intel HD Audio driver (ports/efi/hda.h, mixer shared in ports/baremetal/mixer.h with rpi/sound.h), checked by the test through `-audiodev wav` with QEMU intel-hda + hda-duplex (`make run` has them too, AUDIODEV=pa); `sound-off` / `sound` keep the choice in lugforth.ini (ports/efi/sound_ini.fs); not tried on a real PC. Booted from a real USB stick
+(prompt, sdl2_3d, roguelike work); ports/efi/README.md has the steps (Secure Boot off, one-time boot menu).
+`volumes` / `n mount` (files.h, platform.fs) switch the FAT volume of the file words (refused while a file is open, the old volume flushed): tested with a second stick and a hot-plugged
+one under QEMU, not on hardware. The efi test builds here with gnu-efi and ovmf unpacked from `apt download` (no root):
+`make EFIINC=<root>/usr/include/efi EFILIB=<root>/usr/lib OVMF=<root>/usr/share/OVMF/OVMF_CODE_4M.fd test`. The dead key test is flaky.
 
 ## Ports from eForth Windows (Marc Petremann, GPL) - done 2026-10-13
 
@@ -143,6 +152,57 @@ term demos (fire, matrix, torus), util/penner.r3 easing, lib/sdl2poly.r3 polygon
 
 Check a project online before naming it in the README ("Inspiration"), NOTICE or a list of ideas. Bifurcan, once
 suggested as a Forth for Uxn, is a Tal program (a clock), not a Forth.
+
+Forth is Fun (https://gitlab.com/garvalf/forth-is-fun, Eric Forgeot, MIT/Apache): `examples/sdl2_turtle.fs` is written after its
+forthtoise.fs (same word names, English and French; strokes kept in a list and redrawn each frame), tests in `turtle_tests.fs`
+(`make -C examples test-ports`). Running it starts a shell (`logo`): lines typed in the terminal are kept as a program, `go` / `play` run it (compiled as a word `logo-prog`, since do/if outside a definition fail; `safe-eval` restores the source after a throw, `evaluate` does not). The shell loop was checked in a pty under Xvfb, not automated. Still to borrow: bresenham, the CYOA (choose your own adventure, also in French), glitch patterns.
+Trap met: `fdup f>s s>f f< if` left a wrong value here; round with `fdup f0< if 0.5e f- else 0.5e f+ then f>s`.
+
+## Drawing at the prompt (`graphic`) - done 2026-10-20
+
+`graphic` (loads sdl2 too) makes `0 0 100 100 line`, `red color ... box`, `n ink`, `cls` work at the console
+prompt, drawn under the text, as BASIC on a MO5. Baremetal (ports/baremetal, rpi + efi): `gfx_ensure` in screen.h makes a 640x480
+layer in `fb_back` (`fb_gfx`), every drawing C function calls it; `con_sync` (console.h) shows it through cell pixels that are 0
+(default background, scaled by `con_zoom`); `fb_flip` then only syncs; `fb_open` / `fb_close` end it. Forth: `gfx-on`, `graphic`,
+`gfx-mode`, `graphic-size` (GFX-SIZE, `gfx_size` in screen.h; `con_compose` maps screen pixels to layer pixels) and a `cls` that clears to black in sdl2.fs. Posix console (sdl2_console.fs): a target texture `gfx-tex`, `con-draw`
+renders it between the background and the cells (pen saved around the redraw), `cls` and `flip` are redefined, `con-key` marks the
+window dirty so a drawing made between two keys shows. Tested: efi QEMU test (9 checks), the posix console by hand under Xvfb
+(xdotool; `python3 tools/gui_graphic_test.py out/posix/lugforth` automates it), not rpi (no aarch64 toolchain), not the Android app. Not in the web console (ports/web).
+
+## `play` and waves by name - done 2026-10-20
+
+`play ( a n -- )` (MML, MSX octave numbering, with p n & v w; parser `p-step` and friends, output through the deferred `p-out`, default `beep`) is
+written in the three sdl2.fs: ports/posix (tests in sdl2_tests.fs), ports/baremetal, ports/web: keep the copies equal.
+`wave`, `beep-volume`, `pitch-drop` are settings (`: setting` = `create , does> !`: `1 wave` and `1 to wave` both store; read with `wave@` etc.), like `color` takes its value; `square triangle saw noise sine` set `wave`. Sine is wave 4 (table in sdl2.fs posix,
+`snd_wave` in ports/rpi/sound.h, 'sine' oscillator on the web). A rest is a beep of frequency 0 (silent). Not heard on the
+boards or in the browser, only the parsing is tested (posix).
+
+## Ideas left, after DurexForth (to decide later)
+
+DurexForth (https://github.com/jkotlinski/durexforth, C64; manual https://jkotlinski.github.io/durexforth/, read 2026-10-20, license not checked
+before borrowing code: write our own) suggests, for `graphic` and `play`:
+- drawing: `paint ( x y -- )` flood fill, `plot`, `peek`, `pen` in inverse (XOR) mode, `line` from the last point;
+- turtle (examples/sdl2_turtle.fs): `back`, `turtle@` / `turtle!` (save and restore the state, for recursive fractals), `moveto ( x y deg -- )`;
+- sound: an ADSR envelope on `beep` (notes are flat and click at both ends), SID-like `voice! note! cutoff! filter!`;
+- `play` with several voices (DurexForth's `play-mml` takes one string per SID voice; ours has one voice);
+- the other settings (`zoom`, `width`, `height`, `key-hold`) are still values with `to`, unlike `color`, `wave`, `beep-volume`.
+
+## Terminals (Alt+F1..F4) on rpi and efi - done 2026-10-20
+
+`ports/baremetal/term.h` (early: `term_cur`, `term_foc`, `TERM_FOCUSED()`) and `term_run.h` (late: the scheduler). Each terminal is another
+`forth_init` on its own heap (32 MB after the first; all the interpreter state is in `g_sys` and that heap) and has its own screen
+state, swapped by `term_save`/`term_load` (the `TERM_FIELDS` list: console cursor/colors/`con_shadow`, `fb_back`, `fb_w`..., `images`).
+`forth_run` returns to the main loop at each `pause`, where `term_next()` picks the next terminal (cooperative: a loop that never pauses
+holds the others). Shared and written by the focused terminal only: `con_front`, `fb_front`, `fb_mem` (`con_sync`, `fb_flip`,
+`fb_hw_open` return when not focused), the keyboard (`getchar_timeout_us`, `console_extra_char`, `input_snapshot`...), the serial output
+(`RAW-TYPE`). A focus switch redraws the whole screen (`term_present`). Alt+Fn is caught in `input_key` (input.h, shared);
+`term_poll` (in `RAW-YIELD`) reads the keyboard at each pause so a program that never reads keys can still be left. Words: `term`,
+`terminal`, `terminals` (ports/baremetal/terms.fs, 1-based). `bye` outside the first closes the terminal (`term_bye`). `autoexec.fs`
+runs in the first only. Traps: the opcode macro `X` clashes with an X-macro list (use `F`); `also rpi` inside a colon definition
+compiles, it does not search (use a helper defined after a top level `also rpi`); a word the interpreter does not find does not abort
+the rest of the line (`v @` with an unknown `v` faults on the garbage left). Tested: efi test `terminals()` (10 checks) and by hand with a
+game left and found again; rpi not built (no aarch64 toolchain). Not done: a status indicator of the terminal number on the screen,
+sharing `cwd`, closing the first while others live, F5+ terminals.
 
 ## Open question: control structures outside a definition
 

@@ -48,7 +48,7 @@ CFLAGS := -DCON_ZOOM=$(ZOOM) --specs=picolibc.specs -mcpu=cortex-a53 -O2 -Wall -
   -I $(ROOT) -I $(OUT)
 LDFLAGS := -nostartfiles -T rpi.ld -Wl,--no-warn-rwx-segments
 
-SOURCES := start.S main.c builtins.h $(addprefix $(ROOT)/ports/baremetal/,builtins.h screen.h console.h font8x8.h input.h) virtio.h usb.h sound.h storage.h fat.h rpi.ld
+SOURCES := start.S main.c builtins.h $(addprefix $(ROOT)/ports/baremetal/,builtins.h screen.h console.h font8x8.h input.h mixer.h term.h term_run.h) virtio.h usb.h sound.h storage.h fat.h rpi.ld
 # Images built into the kernel for load-image (no filesystem): PNG files.
 ASSETS ?= $(ROOT)/examples/sdl2_tiles.png $(ROOT)/examples/sdl2_tiles_alt.png
 FORTH := rpi_boot.fs platform.fs $(wildcard $(ROOT)/ports/baremetal/*.fs) $(wildcard $(ROOT)/common/*.fs)
@@ -130,6 +130,6 @@ test: all
 clean:
 	rm -rf $(OUT)
 
-.SECONDARY:
+.SECONDARY: $(OUT)/pi3/lugforth.elf $(OUT)/pi4/lugforth.elf
 .PHONY: all run run-pi3 run-pty screen gui breakout roguelike disk test clean FORCE
 FORCE:

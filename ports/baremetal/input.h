@@ -46,6 +46,7 @@ static void in_put_text(int c) {
 }
 
 static int in_get_text(void) {
+  if (!TERM_FOCUSED()) return -1;
   if (in_text_head == in_text_tail) return -1;
   return in_text[in_text_tail++ % sizeof in_text];
 }
@@ -88,6 +89,7 @@ static const char *const fr_shift[64] = {
 };
 static const char *const fr_altgr[64] = {
   [3] = "~", "#", "{", "[", "|", "`", "\\", "^", "@", "]", "}",
+  [51] = "<", ">",     // the key left of W is not seen by every firmware: AltGr+; and AltGr+: as well
 };
 
 // Letters that take the accent of a dead key (1 circumflex, 2 diaeresis): the letter, then its UTF-8.
@@ -156,6 +158,7 @@ __attribute__((unused)) static void input_key(int code, int value) {
   if (code == KEY_LEFTCTRL || code == KEY_RIGHTCTRL) in_ctrl = value != 0;
   if (code == KEY_RIGHTALT) in_altgr = value != 0;
   if (code == KEY_LEFTALT) in_alt = value != 0;
+  if (in_alt && value == 1 && code >= 59 && code <= 62) { term_request(code - 59); return; }   // Alt+F1 to F4: a terminal (term.h)
   int k = key_sdl_code(code);
   if (k) {
     if (value == 1) { in_down[k] = 1; in_hit[k] = 1; if (k < 224) in_last_key = k; }
@@ -330,11 +333,12 @@ static void input_poll(void) {
 // events: the keys held or pressed since the last call, the wheel since.
 // The characters typed meanwhile were game keys, not console input: dropped.
 static void input_snapshot(void) {
+  if (!TERM_FOCUSED()) return;        // the keyboard is the focused terminal's
   input_poll();
   in_chars_tail = in_chars_head;
   for (int k = 0; k < 256; k++) { in_snap[k] = in_down[k] | in_hit[k]; in_hit[k] = 0; }
   in_wheel = in_wheel_acc; in_wheel_acc = 0;
 }
 
-static cell_t input_last_key(void) { int k = in_last_key; in_last_key = 0; return k; }
-static cell_t input_down(cell_t k) { return in_snap[k & 255] ? -1 : 0; }
+static cell_t input_last_key(void) { if (!TERM_FOCUSED()) return 0; int k = in_last_key; in_last_key = 0; return k; }
+static cell_t input_down(cell_t k) { return TERM_FOCUSED() && in_snap[k & 255] ? -1 : 0; }
