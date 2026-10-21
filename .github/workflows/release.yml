@@ -287,10 +287,59 @@ jobs:
           name: android
           path: dist/*
 
+  # The PC (UEFI) and Raspberry Pi bare-metal images. They are not built or tried on a real
+  # machine by the maintainer for every release, so a failure here must not stop the release.
+  efi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gnu-efi dosfstools mtools python3 ninja-build
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          make -C ports/efi usb
+          VERSION=$(git describe --tags --always)
+          mkdir -p dist
+          cp out/efi/BOOTX64.EFI "dist/lugforth-$VERSION-efi-BOOTX64.EFI"
+          gzip -9 -c out/efi/usb.img > "dist/lugforth-$VERSION-efi-usb.img.gz"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: efi
+          path: dist/*
+
+  rpi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu picolibc-aarch64-linux-gnu python3 ninja-build
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          make -C ports/rpi all
+          VERSION=$(git describe --tags --always)
+          mkdir -p dist "rpi-$VERSION"
+          cp -r out/rpi/pi3 out/rpi/pi4 "rpi-$VERSION/"
+          cp ports/rpi/README.md "rpi-$VERSION/"
+          tar czf "dist/lugforth-$VERSION-rpi.tar.gz" "rpi-$VERSION"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rpi
+          path: dist/*
+
   # The macOS binary builds but does not work yet (the start loops, see the
   # "Where does the start hang?" step), so it is not published.
   release:
-    needs: [linux, windows, android]
+    needs: [linux, windows, android, efi, rpi]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
@@ -306,6 +355,16 @@ jobs:
         continue-on-error: true
         with:
           name: android
+          path: dist
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: efi
+          path: dist
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: rpi
           path: dist
       - name: Publish
         uses: softprops/action-gh-release@v2
