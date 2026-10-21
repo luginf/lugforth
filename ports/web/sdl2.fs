@@ -452,7 +452,7 @@ JSWORD: wheel { -- n }
 ~
 
 ( ---- Beeps are scheduled one after the other, hits play over each other ---- )
-: setting ( n "name" -- )   ( a setting: `3000 beep-volume` sets it, `to beep-volume` too; name@ reads it )
+: setting ( n "name" -- )   ( a setting: 3000 beep-volume sets it, to beep-volume too; name@ reads it )
   create , does> ! ;
 0 setting wave   3000 setting beep-volume
 : wave@ ( -- n ) [ ' wave >body ] literal @ ;
