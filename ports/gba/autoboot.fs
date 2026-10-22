@@ -14,7 +14,7 @@
 
 \ Unlike pico-ice (a USB-serial REPL, so autoboot.fs is still a TODO there),
 \ this platform has no input at all yet (see platform.fs), so whatever runs
-\ here *is* the whole program: the tile sheet (examples/sdl2_tiles.png,
+\ here *is* the whole program: the tile sheet (examples/games/sdl2_tiles.png,
 \ converted by convert_tiles.py into tiles_data.h) drawn in a row, to check
 \ gba-dot/draw-tile/VRAM addressing by eye, in lieu of a real emulator.
 

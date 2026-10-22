@@ -12,7 +12,8 @@ Linux (tarball, AppImage) and Windows builds on the
 The <a href="demo/terminal.html">web version</a>, with
 <a href="demo/sdl2_breakout.html">Breakout</a>,
 <a href="demo/sdl2_drums.html">drums</a>, a
-<a href="demo/sdl2_roguelike.html">roguelike</a> and a
+<a href="demo/sdl2_roguelike.html">roguelike</a>, a 3D maze with the
+<a href="demo/sdl2_raycaster.html">raycaster</a> (steered with the mouse) and a
 <a href="demo/sdl2_pinball.html">pinball</a> (touch buttons on phones).
 Any game file also runs with <code>terminal.html?run=sdl2_roguelike.fs</code>.
 Drawing from HTML buttons: <a href="demo/button.html">Forth word called by a button</a>,

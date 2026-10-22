@@ -12,7 +12,7 @@
 \ See the License for the specific language governing permissions and
 \ limitations under the License.
 
-\ A GBA port of examples/sdl2_roguelike.fs. The game logic (room/corridor
+\ A GBA port of examples/games/sdl2_roguelike.fs. The game logic (room/corridor
 \ generation, turn-based combat, monster AI, potions/stairs, line of sight)
 \ is untouched Forth, copied straight from there. Everything that touched
 \ SDL2 -- drawing, input, sound -- is rewritten against ports/gba/platform.fs's

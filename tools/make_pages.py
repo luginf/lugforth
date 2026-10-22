@@ -139,7 +139,8 @@ def main():
     for name in ('terminal.html', 'lugforth.js', 'sdl2_breakout.html', 'sdl2_breakout.fs',
                  'sdl2_drums.html', 'sdl2_drums.fs', 'sdl2_fm.html', 'sdl2_fm.fs',
                  'fm_midi_parser.fs', 'fm_engine_web.fs', 'sdl2_roguelike.html',
-                 'sdl2_roguelike.fs', 'sdl2_tiles.png', 'sdl2_pinball.html',
+                 'sdl2_roguelike.fs', 'sdl2_tiles.png', 'sdl2_raycaster.html', 'sdl2_raycaster.fs',
+                 'sdl2_pinball.html',
                  'pinball_common.fs', 'pinball_raid.fs', 'pinball_night.fs',
                  'pinball_menu.fs'):
       if os.path.exists(demo + name):

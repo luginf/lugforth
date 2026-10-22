@@ -24,7 +24,7 @@ sudo apt install dosfstools mtools        # pour fabriquer l'image de la carte S
 | `make run` | QEMU `virt`, console dans le terminal (Ctrl-A puis X pour quitter) |
 | `make run-pi3` | QEMU raspi3b, console dans le terminal |
 | `make screen` | fenêtre pour les graphiques, console dans le terminal |
-| `make breakout` | idem, avec le jeu `examples/sdl2_breakout.fs` |
+| `make breakout` | idem, avec le jeu `examples/games/sdl2_breakout.fs` |
 | `make test` | démarre les cartes sous QEMU et vérifie tout (écran, clavier, fichiers, son, Varvara) |
 
 Pour quitter la fenêtre de `make gui` : fermer la fenêtre QEMU.
@@ -72,7 +72,7 @@ make gui DISK=../../out/rpi/disk.img
 `make disk` fabrique une image (partition MBR, FAT32, 64 Mo) avec :
 
 - les exemples `examples/*.fs` à la racine ;
-- le dossier `examples/varvara/` (programmes et ROM Uxn) sous `varvara/` ;
+- le dossier `examples/system/varvara/` (programmes et ROM Uxn) sous `varvara/` ;
 - `disk/autoexec.fs` sous le nom `autoexec.fs` (voir ci-dessous).
 
 Dans la console : `ls` (racine), `ls varvara`, `include 2048.fs`, `cat fichier`...
@@ -100,8 +100,8 @@ l'hôte) puis refaire `make disk`. On peut y mettre ce qu'on veut, par exemple :
 ```forth
 azerty
 1 console-zoom
-include varvara/varvara_rpi.fs
-s" varvara/xo5.rom" varvara
+include system/varvara/varvara_rpi.fs
+s" system/varvara/xo5.rom" varvara
 ```
 
 Sans refaire toute l'image, on peut aussi remplacer le fichier directement :
@@ -159,7 +159,7 @@ Différences avec Linux, dues à la FAT de la carte :
 ## 5. Graphiques : les mots `sdl2`
 
 Les mêmes mots courts que sous Linux et sur le web (`screen`, `color`, `box`,
-`line`, `text`, `flip`, `events`, `pressed?`, `beep`...). `examples/sdl2_breakout.fs`
+`line`, `text`, `flip`, `events`, `pressed?`, `beep`...). `examples/games/sdl2_breakout.fs`
 tourne sans changement.
 
 ```forth
@@ -172,15 +172,15 @@ Détails (images intégrées au noyau, police 8×8, sons, ABC) : `README.md`.
 ## 6. Varvara : lancer des ROM Uxn
 
 Varvara/Uxn est une petite machine virtuelle ([100r.co](https://100r.co/site/uxn.html)).
-Ici elle est écrite en Forth (`examples/varvara/`) et tourne sur la carte avec tous
+Ici elle est écrite en Forth (`examples/system/varvara/`) et tourne sur la carte avec tous
 ses périphériques : écran, clavier, souris, console, fichiers, son, date.
 
 Avec la carte SD de `make disk` :
 
 ```forth
-include varvara/varvara_rpi.fs
-s" varvara/boot.rom" varvara              \ la ROM de démonstration
-s" varvara/xo5.rom" varvara               \ un morpion 5x5 : cliquer dans la grille
+include system/varvara/varvara_rpi.fs
+s" system/varvara/boot.rom" varvara              \ la ROM de démonstration
+s" system/varvara/xo5.rom" varvara               \ un morpion 5x5 : cliquer dans la grille
 s" notes.txt" s" ma.rom" varvara-open     \ une ROM à qui l'on donne un fichier
 ```
 

@@ -14,7 +14,8 @@
 # limitations under the License.
 
 SetVersions(
-    version='7.0.10.0',
+    version='7.0.11.3',
+    date='2026-10-22',
     stable='7.0.9.0')
 
 Include('ports/posix')

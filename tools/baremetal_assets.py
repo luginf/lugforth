@@ -16,7 +16,7 @@
 """Turns PNG files into a C header of images for ports/rpi, which has no
 filesystem: load-image finds them there by name.
 
-  tools/baremetal_assets.py -o out/rpi/gen/baremetal_assets.h examples/sdl2_tiles.png ...
+  tools/baremetal_assets.py -o out/rpi/gen/baremetal_assets.h examples/games/sdl2_tiles.png ...
 
 Each image becomes 0xAARRGGBB words. The PNG decoder is here (zlib only,
 no PIL needed): 8-bit gray, gray+alpha, RGB, RGBA, and palettes of 1, 2,

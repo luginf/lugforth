@@ -42,7 +42,10 @@ LDFLAGS := -nostdlib -znocombreloc -T $(EFILIB)/elf_x86_64_efi.lds -shared -Bsym
 
 SOURCES := main.c libc.h files.h builtins.h start.S \
   $(ROOT)/ports/baremetal/builtins.h $(ROOT)/ports/baremetal/screen.h $(ROOT)/ports/baremetal/console.h $(ROOT)/ports/baremetal/input.h $(ROOT)/ports/baremetal/font8x8.h $(ROOT)/ports/baremetal/mixer.h hda.h $(ROOT)/ports/baremetal/term.h $(ROOT)/ports/baremetal/term_run.h
-ASSETS ?= $(ROOT)/examples/sdl2_tiles.png $(ROOT)/examples/sdl2_tiles_alt.png
+# The examples keep their folders on the disk (games/, graphics/, music/, utils/, system/varvara/)
+EXAMPLE_FILES := $(foreach c,games graphics music utils,$(foreach f,$(wildcard $(ROOT)/examples/$(c)/*.fs),$(f)=$(c)/$(notdir $(f))))
+
+ASSETS ?= $(ROOT)/examples/games/sdl2_tiles.png $(ROOT)/examples/games/sdl2_tiles_alt.png
 FORTH := efi_boot.fs platform.fs sound_ini.fs $(wildcard $(ROOT)/ports/baremetal/*.fs) $(wildcard $(ROOT)/common/*.fs)
 
 all: $(OUT)/BOOTX64.EFI
@@ -78,11 +81,11 @@ $(OUT)/BOOTX64.EFI: $(OUT)/lugforth.so
 # The USB stick: the application where the firmware looks for it, and the
 # files the console uses (the examples, the editors, varvara).
 USB_FILES := $(OUT)/BOOTX64.EFI=EFI/BOOT/BOOTX64.EFI \
-  $(wildcard $(ROOT)/examples/*.fs) $(ROOT)/ports/rpi/disk/autoexec.fs=autoexec.fs \
+  $(EXAMPLE_FILES) $(ROOT)/ports/rpi/disk/autoexec.fs=autoexec.fs \
   $(ROOT)/ports/posix/editor.fs=lib/editor.fs $(ROOT)/ports/posix/writhdeck.fs=lib/writhdeck.fs \
   $(ROOT)/ports/posix/eval_copy.fs=lib/eval_copy.fs \
   $(ROOT)/MANUAL.md=MANUAL.md $(ROOT)/ports/efi/disk/drivers.fs=drivers.fs \
-  $(foreach f,$(wildcard $(ROOT)/examples/varvara/*.fs $(ROOT)/examples/varvara/*.rom),$(f)=varvara/$(notdir $(f)))
+  $(foreach f,$(wildcard $(ROOT)/examples/system/varvara/*.fs $(ROOT)/examples/system/varvara/*.rom),$(f)=system/varvara/$(notdir $(f)))
 
 usb: $(OUT)/BOOTX64.EFI
 	python3 $(ROOT)/tools/baremetal_mkdisk.py $(OUT)/usb.img $(USB_FILES)

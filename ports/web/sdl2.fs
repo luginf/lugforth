@@ -15,7 +15,7 @@
 ( Lazy load the sdl2 short words for the Web: canvas, keys, mouse, beeps )
 \
 \ Same words and stack effects as ports/posix/sdl2.fs, so a game written with
-\ the short words (see examples/sdl2_breakout.fs) runs unchanged in both.
+\ the short words (see examples/games/sdl2_breakout.fs) runs unchanged in both.
 \ Only the short words exist here, not the raw SDL_ names nor sdl2-image,
 \ sdl2-ttf and sdl2-mixer. See ports/web/SDL2.md.
 \ NOTE: the block below is a string, so it must not contain a vertical bar,
@@ -36,7 +36,8 @@ r~
     down: new Uint8Array(256), hit: new Uint8Array(256), snap: new Uint8Array(256),
     sdown: new Uint8Array(512), shit: new Uint8Array(512), ssnap: new Uint8Array(512),
     mx: 0, my: 0, wheel: 0, pwheel: 0, lastKey: 0, quit: 0, frame: false,
-    ac: null, beepEnd: 0, hitEnd: 0, nodes: [], noise: null, cursorHidden: false
+    ac: null, beepEnd: 0, hitEnd: 0, nodes: [], noise: null, cursorHidden: false,
+    layer: false, spacer: null   // layer: the drawing above the text of the terminal (graphic)
   };
   S.setColor = function(r, g, b, a) {
     S.r = r & 255; S.g = g & 255; S.b = b & 255; S.a = a & 255;
@@ -45,9 +46,40 @@ r~
   };
   S.layout = function() {
     if (!S.open) { return; }
+    if (S.layer) {
+      var sl = Math.min(window.innerWidth / S.w, window.innerHeight * 0.5 / S.h);
+      S.canvas.style.width = (S.w * sl) + 'px';
+      S.canvas.style.height = (S.h * sl) + 'px';
+      S.canvas.style.imageRendering = sl < 1 ? 'auto' : 'pixelated';   // smooth when reduced: thin lines stay whole
+      if (S.spacer) { S.spacer.style.height = (S.h * sl) + 'px'; }
+      return;
+    }
     var s = Math.min(S.zoom, window.innerWidth / S.w, window.innerHeight / S.h);
     S.canvas.style.width = (S.w * s) + 'px';
     S.canvas.style.height = (S.h * s) + 'px';
+  };
+  S.openLayer = function(w, h) {   // the drawing words at the prompt (graphic), above the text
+    if (S.open) { S.close(); }
+    S.w = w; S.h = h; S.zoom = 1; S.layer = true;
+    var c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.style.cssText = 'position:fixed;left:0;top:0;z-index:5;display:block;' +
+        'image-rendering:pixelated;background:#000;pointer-events:none;';
+    document.body.appendChild(c);
+    var pad = document.createElement('div');
+    pad.style.cssText = 'width:1px;';
+    document.body.insertBefore(pad, document.body.firstChild);
+    S.spacer = pad; S.overlay = c; S.canvas = c; S.ctx = c.getContext('2d');
+    S.open = true; S.quit = 0; S.mx = 0; S.my = 0; S.frame = false;
+    S.setColor(0, 0, 0, 255);
+    S.ctx.fillRect(0, 0, w, h);
+    S.setColor(255, 255, 255, 255);
+    S.layout();
+    window.scrollTo(0, document.body.scrollHeight);
+  };
+  S.need = function() {   // a drawing word typed with no screen open: open the layer
+    if (!S.open) { S.openLayer(640, 480); }
+    return S.open;
   };
   S.ensureAudio = function() {
     if (S.ac) {
@@ -147,6 +179,8 @@ r~
   };
   S.close = function() {
     if (S.overlay && S.overlay.parentNode) { S.overlay.parentNode.removeChild(S.overlay); }
+    if (S.spacer && S.spacer.parentNode) { S.spacer.parentNode.removeChild(S.spacer); }
+    S.spacer = null; S.layer = false;
     S.silence();
     S.open = false; S.overlay = null; S.canvas = null; S.ctx = null;
     S.down.fill(0); S.hit.fill(0); S.snap.fill(0);
@@ -179,12 +213,12 @@ r~
     return SCAN[c] === undefined ? 0 : SCAN[c];
   }
   function ours(e) {
-    return S.open && !e.ctrlKey && !e.metaKey && !e.altKey && !/^F[0-9]+$/.test(e.key);
+    return S.open && !S.layer && !e.ctrlKey && !e.metaKey && !e.altKey && !/^F[0-9]+$/.test(e.key);
   }
   if (!globalObj.write) {
     window.addEventListener('keydown', function(e) {
+      S.ensureAudio();   // a key press lets the page play sounds, also at the prompt
       if (!S.open) { return; }
-      S.ensureAudio();
       if (!ours(e)) { return; }
       var c = keyCode(e);
       if (c) {
@@ -211,6 +245,7 @@ r~
       e.preventDefault(); e.stopImmediatePropagation();
     }, true);
     window.addEventListener('blur', function() { S.down.fill(0); S.sdown.fill(0); });
+    document.addEventListener('pointerdown', function() { S.ensureAudio(); }, true);
     window.addEventListener('resize', function() { S.layout(); });
   }
 })();
@@ -218,6 +253,14 @@ r~
 
 ( ---- Screen ---- )
 1 value zoom   0 value width   0 value height
+
+( The drawing words at the prompt, as in the console window: graphic shows a drawing area
+  above the text of the terminal, which stays usable: 10 10 150 140 line, red color, cls )
+JSWORD: js-layer { w h }
+  context.sdl.openLayer(w, h);
+~
+: graphic-size ( w h -- ) 2dup to height to width js-layer ;
+: graphic-on ( -- ) 640 480 graphic-size ;
 
 JSWORD: js-screen { w h z }
   var S = context.sdl;
@@ -310,7 +353,7 @@ $808080 constant gray
 ( ---- Drawing ---- )
 JSWORD: cls { }
   var S = context.sdl;
-  if (!S.open) { return; }
+  if (!S.need()) { return; }
   S.ctx.save();
   S.ctx.globalCompositeOperation = 'copy';
   S.ctx.fillRect(0, 0, S.w, S.h);
@@ -318,11 +361,11 @@ JSWORD: cls { }
 ~
 JSWORD: dot { x y }
   var S = context.sdl;
-  if (S.open) { S.ctx.fillRect(x, y, 1, 1); }
+  if (S.need()) { S.ctx.fillRect(x, y, 1, 1); }
 ~
 JSWORD: line { x1 y1 x2 y2 }
   var S = context.sdl;
-  if (!S.open) { return; }
+  if (!S.need()) { return; }
   var dx = Math.abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
   var dy = -Math.abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
   var err = dx + dy;
@@ -336,11 +379,11 @@ JSWORD: line { x1 y1 x2 y2 }
 ~
 JSWORD: box { x y w h }
   var S = context.sdl;
-  if (S.open) { S.ctx.fillRect(x, y, w, h); }
+  if (S.need()) { S.ctx.fillRect(x, y, w, h); }
 ~
 JSWORD: frame { x y w h }
   var S = context.sdl;
-  if (!S.open) { return; }
+  if (!S.need()) { return; }
   if (w <= 0) { return; }
   if (h <= 0) { return; }
   var c = S.ctx;
@@ -353,11 +396,11 @@ JSWORD: frame { x y w h }
 ~
 JSWORD: hline { x y w }
   var S = context.sdl;
-  if (S.open) { S.ctx.fillRect(x, y, w, 1); }
+  if (S.need()) { S.ctx.fillRect(x, y, w, 1); }
 ~
 JSWORD: disc { cx cy r }
   var S = context.sdl;
-  if (!S.open) { return; }
+  if (!S.need()) { return; }
   var x = r;
   for (var i = 0; i <= r; ++i) {
     while (x * x + i * i > r * r) { --x; }
@@ -367,7 +410,7 @@ JSWORD: disc { cx cy r }
 ~
 JSWORD: circle { cx cy r }
   var S = context.sdl;
-  if (!S.open) { return; }
+  if (!S.need()) { return; }
   var c = S.ctx;
   var x = r;
   function dots(a, b) {
@@ -636,5 +679,35 @@ JSWORD: image-tint { img c }
 previous previous previous
 sdl2 definitions
 | evaluate ;
+: graphic ( -- )   ( the drawing words at the prompt: 10 10 150 140 line )
+  sdl2  s" graphic-on" evaluate ;
+( Typed at the prompt before graphic, a drawing word opens the drawing area first: 10 10 150 140 line )
+( The sdl2 words, once loaded, are found before these ones. )
+: line graphic s" line" evaluate ;
+: box graphic s" box" evaluate ;
+: dot graphic s" dot" evaluate ;
+: hline graphic s" hline" evaluate ;
+: frame graphic s" frame" evaluate ;
+: disc graphic s" disc" evaluate ;
+: circle graphic s" circle" evaluate ;
+: cls graphic s" cls" evaluate ;
+: color graphic s" color" evaluate ;
+: rgb graphic s" rgb" evaluate ;
+: rgba graphic s" rgba" evaluate ;
+: alpha graphic s" alpha" evaluate ;
+: ink graphic s" ink" evaluate ;
+: black graphic s" black" evaluate ;
+: white graphic s" white" evaluate ;
+: red graphic s" red" evaluate ;
+: green graphic s" green" evaluate ;
+: blue graphic s" blue" evaluate ;
+: yellow graphic s" yellow" evaluate ;
+: cyan graphic s" cyan" evaluate ;
+: magenta graphic s" magenta" evaluate ;
+: orange graphic s" orange" evaluate ;
+: purple graphic s" purple" evaluate ;
+: pink graphic s" pink" evaluate ;
+: brown graphic s" brown" evaluate ;
+: gray graphic s" gray" evaluate ;
 : sdl2-image ( -- ) sdl2 ;   ( the image words are part of sdl2 here )
 : sdl2-mixer ( -- ) sdl2 ;   ( music and soundfont words, see sdl2-abc for tunes )

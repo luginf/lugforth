@@ -139,13 +139,14 @@ variable boot-prompt
 : free. ( nf nu -- ) 2dup swap . ." free + " . ." used = " 2dup + . ." total ("
                      over + 100 -rot */ n. ." % free)" ;
 : info ( -- ) ." Lugforth v{{VERSION}} - rev {{REVISION}}" cr
+             ." Date: {{DATE}}" cr
              ." Forth dictionary: " remaining used free. cr
              ." 3 x Forth stacks: " 'stack-cells @ cells . ." bytes each" cr
              ." words: list the words   see NAME: decompile   include FILE: load a file" cr
              ." bye: quit   docs: luginf.github.io/lugforth" cr ;
 : help info ;
 : raw-ok   ."  v{{VERSION}}" cr
-           ." :; ===========>/>" cr
+           ." =:;============>>>" cr
            ." type 'info' for help" cr
            boot-prompt @ if boot-prompt @ execute then
            quit ;

@@ -1,0 +1,80 @@
+( Copyright 2026 Luginfo10
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+      http://www.apache.org/licenses/LICENSE-2.0
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License. )
+
+( The uxntal twin of bench_sieve.fs / bench_sieve.c: same algorithm (sieve of
+  Eratosthenes), same LIMIT (32768) and REPEATS (200), so the three are
+  comparable. The sieve array sits at 0x8000-0xffff (32768 bytes, the whole
+  top half of uxn's one 64K memory), addressed directly by the candidate
+  number i (address = 0x8000 + i); this is also why LIMIT stops at 32768 and
+  not 65536, to leave the low half free for the code. i*i is only computed
+  for i <= 181 (floor(sqrt(32768))): past that a 16-bit MUL2 would overflow
+  and wrap, and there is nothing left to mark anyway. Prints the prime count
+  in hex; expected 0DB8 (3512 decimal).
+    uxnasm examples/bench/bench_sieve.tal bench_sieve.rom && uxncli bench_sieve.rom )
+
+|00 @vars &count $2 &i $2 &j $2 &reps $2
+
+|10 @Console [ &vector $2 &read $1 &pad $5 &write $1 &error $1 ]
+
+|0100
+@reset
+	#00c8 .vars/reps STZ2   ( reps = 200 )
+	&rep-loop
+		;clear-sieve JSR2
+		;run-sieve JSR2
+		.vars/reps LDZ2 #0001 SUB2 DUP2 .vars/reps STZ2
+		#0000 NEQ2 ;&rep-loop JCN2
+	;print-result JSR2
+BRK
+
+@clear-sieve ( -- )
+	#8000 .vars/j STZ2
+	&loop
+		#00 .vars/j LDZ2 STA
+		.vars/j LDZ2 INC2 DUP2 .vars/j STZ2
+		#0000 NEQ2 ;&loop JCN2   ( 0x8000 increments wrap to 0 after exactly 32768 steps )
+JMP2r
+
+@run-sieve ( -- )
+	#0000 .vars/count STZ2
+	#0002 .vars/i STZ2
+	&loop
+		.vars/i LDZ2 #8000 EQU2 ;&done JCN2
+		#8000 .vars/i LDZ2 ADD2 LDA #00 NEQ ;&next JCN2
+			( i is prime )
+			.vars/count LDZ2 #0001 ADD2 .vars/count STZ2
+			.vars/i LDZ2 #00b5 GTH2 ;&next JCN2   ( i > 181: i*i would overflow, and nothing to mark )
+				.vars/i LDZ2 DUP2 MUL2 .vars/j STZ2   ( j = i*i, safe: i <= 181 )
+				&mark-loop
+					.vars/j LDZ2 #8000 LTH2 #00 EQU ;&next JCN2
+					#01 #8000 .vars/j LDZ2 ADD2 STA
+					.vars/j LDZ2 .vars/i LDZ2 ADD2 .vars/j STZ2
+					;&mark-loop JMP2
+		&next
+		.vars/i LDZ2 #0001 ADD2 .vars/i STZ2
+		;&loop JMP2
+	&done
+JMP2r
+
+( ---- console output ---- )
+@emit ( c -- ) .Console/write DEO JMP2r
+@emit-nib ( n -- ) DUP #0a LTH ;&d JCN2 #0a SUB #41 ADD ;emit JSR2 JMP2r &d #30 ADD ;emit JSR2 JMP2r
+@emit-hexb ( b -- ) DUP #04 SFT ;emit-nib JSR2 #0f AND ;emit-nib JSR2 JMP2r
+@emit-str ( ptr* -- )
+	&loop DUP2 LDA #00 EQU ;&done JCN2 DUP2 LDA ;emit JSR2 INC2 ;&loop JMP2 &done POP2 JMP2r
+
+@print-result ( -- )
+	;s-result ;emit-str JSR2
+	.vars/count LDZ2 SWP ;emit-hexb JSR2 ;emit-hexb JSR2
+	#0a ;emit JSR2
+JMP2r
+
+@s-result "primes: 20 $1

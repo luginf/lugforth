@@ -43,7 +43,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with `ninja posix`). You
 prompt:
 
 ```
-Lugforth v7.0.10.0
+Lugforth v7.0.11.3
 :; ===========>/>
 type 'info' for help
  ok
@@ -493,7 +493,7 @@ Forth passes behavior around:
 Lugforth Lugforth Lugforth  ok
 ```
 
-**Where next.** Games with graphics and sound use the SDL2 words: read `examples/sdl2_snake.fs`, the
+**Where next.** Games with graphics and sound use the SDL2 words: read `examples/games/sdl2_snake.fs`, the
 shortest, then `sdl2_tetris.fs` and `sdl2_breakout.fs` ([Examples](#examples)). `ed` and `writhdeck`
 are written in Forth too, in `ports/posix/`: reading them shows the same words at a larger scale. For the
 rest of the language, [docs/WORDS.md](docs/WORDS.md) lists every word with a short description. To go
@@ -748,9 +748,9 @@ example headless.
 
 ## Varvara: running Uxn ROMs
 
-`examples/varvara/` is a [Uxn/Varvara](https://100r.co/site/uxn.html) virtual machine written in Lugforth.
+`examples/system/varvara/` is a [Uxn/Varvara](https://100r.co/site/uxn.html) virtual machine written in Lugforth.
 
-* `lugforth examples/varvara/varvara.fs program.rom` runs a ROM in an SDL2 window, like `uxnemu`
+* `lugforth examples/system/varvara/varvara.fs program.rom` runs a ROM in an SDL2 window, like `uxnemu`
   (Screen, Controller, Mouse, Datetime, Audio, File, Console input). F1 zoom, F3 screenshot, F4 reboot;
   a ROM can be dropped on the window. Without a ROM it shows a usage screen.
 * `uxncli.fs` runs a ROM in the terminal, like `uxncli`.
@@ -758,7 +758,7 @@ example headless.
   `-q`, and tokens for writhdeck-uxn.
 
 The upstream opcode test (`opctest.rom`) passes. It is about 60 times slower than the C uxn, so it
-suits ROMs that mostly wait for events. See `examples/varvara/README.md`.
+suits ROMs that mostly wait for events. See `examples/system/varvara/README.md`.
 
 ## Several terminals (Alt+F1 to Alt+F4)
 
@@ -782,7 +782,7 @@ run `autoexec.fs`.
 Lugforth runs with no operating system on 64-bit ARM: QEMU `virt` and `raspi3b` (which run on a Linux
 x86_64 PC), a Raspberry Pi 3, and a Pi 4 (written blind). The console is the serial line. The `sdl2`
 words are there: screen, text, images, keyboard and mouse, beeps and ABC tunes. Files are on the SD
-card (FAT12/16/32): `include`, `ls`, and an `autoexec.fs` run at boot. `examples/sdl2_breakout.fs` and
+card (FAT12/16/32): `include`, `ls`, and an `autoexec.fs` run at boot. `examples/games/sdl2_breakout.fs` and
 `sdl2_roguelike.fs` run unchanged.
 
 ```

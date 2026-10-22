@@ -16,7 +16,7 @@
 """Boots the bare-metal ports/rpi images under QEMU and talks to them over
 the serial console: arithmetic, floats, timer, faults, allocation, GPIO,
 and that `bye` makes QEMU exit. On raspi3b it also loads
-examples/sdl2_breakout.fs over the serial line, plays it, and checks the
+examples/games/sdl2_breakout.fs over the serial line, plays it, and checks the
 screen's pixels (QEMU monitor `screendump`); the same on virt with
 -device ramfb. Each board also gets a FAT disk (made with dosfstools and
 mtools: FAT16 and FAT12 on virt's virtio-blk, MBR + FAT32 on raspi3b's SD
@@ -260,7 +260,7 @@ def test_images(b):
   root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
   sys.path.insert(0, os.path.join(root, 'tools'))
   import baremetal_assets
-  iw, ih, px = baremetal_assets.decode_png(open(os.path.join(root, 'examples', 'sdl2_tiles.png'), 'rb').read())
+  iw, ih, px = baremetal_assets.decode_png(open(os.path.join(root, 'examples', 'games', 'sdl2_tiles.png'), 'rb').read())
   w, h, bg = 120, 60, 0x101830
   fb = [[bg] * w for _ in range(h)]
 
@@ -287,7 +287,7 @@ def test_images(b):
   draw(16, 0, 8, 8, 100, 40, 24, 24, 0xff8040, 255)          # draw-part, tinted
   draw(8, 0, 8, 8, 10, 40, 16, 16, 0xffffff, 128)            # half transparent
   b.run('sdl2 1 to zoom %d %d screen $101830 color cls' % (w, h))
-  r = b.run('s" examples/sdl2_tiles.png" load-image value img  img image-size . .')
+  r = b.run('s" examples/games/sdl2_tiles.png" load-image value img  img image-size . .')
   check('image-size', r, r.split()[:2] == [str(ih), str(iw)])
   b.run('img 2 2 draw  img -10 14 %d %d draw-size' % (2 * iw, 3 * ih))
   b.run('img $ff8040 image-tint  img 16 0 8 8 100 40 24 24 draw-part  img $ffffff image-tint')
@@ -343,11 +343,11 @@ def varvara_quit(b):
 
 
 def test_varvara(b):
-  """A Uxn ROM on the board (examples/varvara/varvara_rpi.fs): boot.rom draws
+  """A Uxn ROM on the board (examples/system/varvara/varvara_rpi.fs): boot.rom draws
   a yellow square and a text, F12 ends it and the console comes back."""
-  r = b.run('include varvara/varvara_rpi.fs')
+  r = b.run('include system/varvara/varvara_rpi.fs')
   check('varvara: loads', r, 'ERROR' not in r and 'rror' not in r)
-  b.send(b's" varvara/boot.rom" varvara\r')
+  b.send(b's" system/varvara/boot.rom" varvara\r')
   time.sleep(6)
   scr = b.screen()
   check('varvara: screen 672x256 (336x128, zoom 2)', scr[:2], scr[:2] == (672, 256))
@@ -361,7 +361,7 @@ def test_varvara(b):
   # arguments and what comes on the serial line.
   b.run('also rpi 1800000000 unix-time! previous 60 tz!')
   b.run('s" argone" varvara-arg s" argtwo" varvara-arg')
-  b.send(b's" varvara/devtest.rom" varvara\r')
+  b.send(b's" system/varvara/devtest.rom" varvara\r')
   time.sleep(5)
   b.send(b'hi\r')
   time.sleep(2)
@@ -374,7 +374,7 @@ def test_varvara(b):
   check('varvara console: serial input', out, '[1h][1i]' in out)
   varvara_quit(b)
   # xo5.rom (a 5x5 tic-tac-toe, https://github.com/luginf/uxneries): 128x128, drawn
-  b.send(b's" varvara/xo5.rom" varvara\r')
+  b.send(b's" system/varvara/xo5.rom" varvara\r')
   time.sleep(6)
   scr = b.screen()
   colors = {pixel(scr, x, y) for x in range(0, 256, 4) for y in range(0, 256, 4)}
@@ -510,12 +510,12 @@ def paste(b, text, wait_prompt=True):
 
 
 def test_roguelike(b):
-  """examples/sdl2_roguelike.fs (images, tints, mouse, ABC tunes in r~
+  """examples/games/sdl2_roguelike.fs (images, tints, mouse, ABC tunes in r~
   strings over several lines) sent with paste: it draws and plays."""
   root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
   t0 = time.time()
   start = len(b.out)
-  paste(b, open(os.path.join(root, 'examples', 'sdl2_roguelike.fs'), 'rb').read(), False)
+  paste(b, open(os.path.join(root, 'examples', 'games', 'sdl2_roguelike.fs'), 'rb').read(), False)
   b.wait_for('esc: quit', b.pos, 60)
   check('roguelike received by paste (%.1f s)' % (time.time() - t0), '', True)
   time.sleep(1.5)
@@ -544,8 +544,8 @@ def test_sound_play(b):
 def test_varvara_audio(b):
   """tone.rom, on virt (virtio-sound): one second at 261.6 Hz, found in the
   recording by check_sound."""
-  b.run('include varvara/varvara_rpi.fs')
-  b.send(b's" varvara/tone.rom" varvara\r')
+  b.run('include system/varvara/varvara_rpi.fs')
+  b.send(b's" system/varvara/tone.rom" varvara\r')
   time.sleep(3)
   varvara_quit(b)
 
@@ -631,10 +631,10 @@ def make_disk(path, fat, mbr):
     with open(os.path.join(tmp, name), 'wb') as f:
       f.write(data)
     baremetal_mkdisk.put(spec, os.path.join(tmp, name), name)
-  # The Varvara port (examples/varvara) is loaded from the disk by test_varvara.
-  vdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'examples', 'varvara')
+  # The Varvara port (examples/system/varvara) is loaded from the disk by test_varvara.
+  vdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'examples', 'system', 'varvara')
   for name in ('uxn.fs', 'screen.fs', 'audio.fs', 'file.fs', 'varvara_rpi.fs', 'boot.rom', 'devtest.rom', 'tone.rom', 'xo5.rom'):
-    baremetal_mkdisk.put(spec, os.path.join(vdir, name), 'varvara/' + name)
+    baremetal_mkdisk.put(spec, os.path.join(vdir, name), 'system/varvara/' + name)
   # ed and writhdeck (ports/posix) are loaded from /lib by test_editors.
   pdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ports', 'posix')
   for name in ('editor.fs', 'writhdeck.fs', 'eval_copy.fs'):
@@ -731,10 +731,10 @@ def check_disk(path, spec, what, long_create=False, mkdir=False):
 
 
 def test_breakout(b):
-  """Loads examples/sdl2_breakout.fs line by line (the line `run` starts
+  """Loads examples/games/sdl2_breakout.fs line by line (the line `run` starts
   the game), checks the screen, launches the ball, quits with Esc."""
   root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-  lines = open(os.path.join(root, 'examples', 'sdl2_breakout.fs')).read().split('\n')
+  lines = open(os.path.join(root, 'examples', 'games', 'sdl2_breakout.fs')).read().split('\n')
   start = lines.index('run')
   errors = ''
   for line in lines[:start]:

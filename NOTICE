@@ -21,11 +21,11 @@ Additions and modifications, Copyright 2026 Luginfo10, under the same license:
 Files adapted from upstream carry both the original notice and a line
 "Modifications Copyright 2026 Luginfo10".
 
-examples/2048.fs, examples/3d.fs, examples/sdl2_3d.fs, examples/inference/inference.fs and examples/inference/weather.fs
+examples/games/2048.fs, examples/graphics/3d.fs, examples/graphics/sdl2_3d.fs, examples/utils/inference/inference.fs and examples/utils/inference/weather.fs
 (and their tests) derive from the 2048-game, 3Dforms and INFERENCE projects of Marc Petremann
 (https://github.com/MPETREMANN11/eForth-Windows), GNU General Public License. They are GPL, not Apache 2.0.
 
-examples/sdl2_turtle.fs is written after forthtoise.fs of Eric Forgeot (https://gitlab.com/garvalf/forth-is-fun),
+examples/graphics/sdl2_turtle.fs is written after forthtoise.fs of Eric Forgeot (https://gitlab.com/garvalf/forth-is-fun),
 MIT license, which itself builds on gforth-turtle (Robert Coffey) and WAForth (Remko Troncon); it keeps the
 names of the words, the code is new and under the Apache License 2.0 like the rest.
 
@@ -47,7 +47,30 @@ names of the words, the code is new and under the Apache License 2.0 like the re
   CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
   IN THE SOFTWARE.
 
-examples/sdl2_tetris.fs, examples/sdl2_snake.fs and examples/sdl2_minesweeper.fs are written after
+examples/games/sdl2_raycaster.fs is written after the raycasting demo of JS-Forth (https://github.com/CCurl/JS-Forth),
+by Chris Curl, under the MIT license below; the new code is under the Apache License 2.0 like the rest.
+
+  MIT License
+
+  Copyright (c) 2026 Chris Curl
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+  THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+  CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+  IN THE SOFTWARE.
+
+examples/games/sdl2_tetris.fs, examples/games/sdl2_snake.fs and examples/games/sdl2_minesweeper.fs are written after
 tetris.r3, snake.r3 and minesweeper.r3 of r3forth (https://github.com/phreda4/r3), by Pablo Hugo
 Reda, under the MIT license below; the new code is under the Apache License 2.0 like the rest.
 

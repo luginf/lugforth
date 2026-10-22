@@ -20,11 +20,12 @@ limitations under the License.
 <title>Lugforth Breakout</title>
 <!--
   Breakout written once with the sdl2 short words: the very same file,
-  examples/sdl2_breakout.fs, also runs on Linux with SDL2.
+  examples/games/sdl2_breakout.fs, also runs on Linux with SDL2.
   Left/right arrows or mouse or touch move the paddle. Space or click
   launches the ball. Esc quits.
-  The Forth file is fetched with XMLHttpRequest, so serve this directory
-  over http, for example: python3 -m http.server
+  The Forth file is fetched with XMLHttpRequest, so serve it over http
+  from out/web, where ninja web copies this page, its .fs files and lugforth.js:
+  ninja web && cd out/web && python3 -m http.server
 -->
 <style>
   body { background: #101830; color: #fff; font-family: sans-serif; }

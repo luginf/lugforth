@@ -157,7 +157,7 @@ Limits, by design:
   in `azerty` mode, `AltGr+;` types `<` and `AltGr+:` types `>`.
 * Terminals: `Alt+F1` to `Alt+F4` or `n term` (see the manual), tested here (10 checks, with a game keeping the
   screen); the firmware reports Alt+Fn as it should under OVMF, a real PC not tried.
-* Slow on a PC: `include speed.fs` (examples/speed.fs, copied to the stick) prints the clock, the time of 100 `key?`
+* Slow on a PC: `include speed.fs` (examples/bench/speed.fs, copied to the stick) prints the clock, the time of 100 `key?`
   polls, of 2000 characters and of 30 lines, and whether the sound started; the 3 s wait is to be timed by the watch.
 * Sound: a minimal Intel HD Audio driver (`hda.h`) over the mixer shared with the Pi
   (`ports/baremetal/mixer.h`). It takes the first controller on the PCI bus and the first

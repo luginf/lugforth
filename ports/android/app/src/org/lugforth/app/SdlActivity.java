@@ -81,12 +81,19 @@ public class SdlActivity extends SDLActivity implements MenuBar.Target {
     onNativeKeyUp(code);
   }
 
-  // The .fs files of the examples folder, sorted
+  // The .fs files of the folders of the examples folder (games/, graphics/...), as
+  // "folder/name.fs", sorted
   @Override public String[] examples() {
-    String[] l = new File(home, "examples").list(new java.io.FilenameFilter() {
-      @Override public boolean accept(File d, String n) { return n.endsWith(".fs"); }
-    });
-    if (l == null) l = new String[0];
+    java.util.ArrayList<String> out = new java.util.ArrayList<String>();
+    File[] dirs = new File(home, "examples").listFiles();
+    if (dirs != null) for (File d : dirs) {
+      if (!d.isDirectory()) continue;
+      String[] l = d.list(new java.io.FilenameFilter() {
+        @Override public boolean accept(File dd, String n) { return n.endsWith(".fs"); }
+      });
+      if (l != null) for (String n : l) out.add(d.getName() + "/" + n);
+    }
+    String[] l = out.toArray(new String[0]);
     java.util.Arrays.sort(l);
     return l;
   }
@@ -108,7 +115,7 @@ public class SdlActivity extends SDLActivity implements MenuBar.Target {
         + "Menu keys: Tab completes a word or a file name, arrows move in the line and through the history, "
         + "Ctrl then a letter types a control code (Ctrl, S saves in ed). The \u22ee button lists the examples (a tap includes one), the text size and this help. A keyboard has F11 and F12 "
         + "for the text size.\n\n"
-        + "Try:\n  1 2 + .\n  words\n  ls\n  include sdl2_breakout.fs\n\n"
+        + "Try:\n  1 2 + .\n  words\n  ls\n  include games/sdl2_breakout.fs\n\n"
         + "The examples are in\n" + new File(home, "examples").getPath() + "\n"
         + "Files you add there are kept. Edit them with any editor and "
         + "include them.\n\n"

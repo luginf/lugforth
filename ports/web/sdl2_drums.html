@@ -20,13 +20,14 @@ limitations under the License.
 <title>Lugforth Drum machine</title>
 <!--
   Drum machine written once with the sdl2 short words: the very same file,
-  examples/sdl2_drums.fs, also runs on Linux with SDL2.
+  examples/music/sdl2_drums.fs, also runs on Linux with SDL2.
   Everything can be done with the mouse: click or drag on the grid to switch
   steps, buttons for play/stop, tempo (left click 1 bpm, right click 5), clear
   and quit, colored pads to play the drums. Keys: space, up/down, 1 2 3 4, c, Esc. The sound starts after
   your first key press or click.
-  The Forth file is fetched with XMLHttpRequest, so serve this directory
-  over http, for example: python3 -m http.server
+  The Forth file is fetched with XMLHttpRequest, so serve it over http
+  from out/web, where ninja web copies this page, its .fs files and lugforth.js:
+  ninja web && cd out/web && python3 -m http.server
 -->
 <style>
   body { background: #101830; color: #fff; font-family: sans-serif; }

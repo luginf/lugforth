@@ -20,15 +20,16 @@ limitations under the License.
 <title>Lugforth Night Raid</title>
 <!--
   Night Raid, a pinball in the style of Night Mission Pinball, written once
-  with the sdl2 short words: the very same file, examples/pinball/,
+  with the sdl2 short words: the very same file, examples/games/pinball/,
   also runs on Linux with SDL2.
   Keys: z / m or the arrows for the flippers, down held then let go
   for the plunger, space or n to nudge, Enter to start, g e b for the settings.
   On a touch screen (or with ?touch in the address) buttons are shown: the
   two flippers at the bottom, LAUNCH (hold then let go), START and NUDGE.
   Each button follows its own finger, so both flippers can be held at once.
-  The Forth file is fetched with XMLHttpRequest, so serve this directory
-  over http, for example: python3 -m http.server
+  The Forth file is fetched with XMLHttpRequest, so serve it over http
+  from out/web, where ninja web copies this page, its .fs files and lugforth.js:
+  ninja web && cd out/web && python3 -m http.server
 -->
 <style>
   body { background: #000; color: #fff; font-family: sans-serif; }

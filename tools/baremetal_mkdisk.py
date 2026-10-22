@@ -18,7 +18,7 @@ QEMU raspi3b (an MBR and a FAT32 partition at 1 MiB, 64 MiB, a power of
 2 as QEMU wants) or a disk for QEMU virt's virtio-blk. Needs dosfstools
 and mtools (apt install dosfstools mtools).
 
-  tools/baremetal_mkdisk.py out/rpi/disk.img examples/sdl2_breakout.fs ...
+  tools/baremetal_mkdisk.py out/rpi/disk.img examples/games/sdl2_breakout.fs ...
   tools/baremetal_mkdisk.py --fat 16 --no-mbr disk.img dir/file.fs=file.fs
 
 A file goes to the root under its own name; SRC=DEST puts it elsewhere

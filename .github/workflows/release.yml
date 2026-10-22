@@ -84,7 +84,7 @@ jobs:
           # examples (AppRun copies them to ~/.local/share/lugforth/examples on first run)
           mkdir -p appimage-examples
           cp -R examples/. appimage-examples/
-          (cd appimage-examples && rm -rf bench_* *.c *.tal *.rom* Makefile *.py *xtensa* espnow.fs)
+          (cd appimage-examples && rm -rf bench Makefile system/*xtensa* system/espnow.fs games/*.py)
           bash tools/make_appimage.sh \
             --examples appimage-examples \
             --gui \

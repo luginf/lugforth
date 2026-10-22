@@ -38,14 +38,14 @@ For the roguelike, use `gba_roguelike_boot.fs` and write `roguelike.gba`.
 
 ## Tiles
 
-`python3 ports/gba/convert_tiles.py` turns `examples/sdl2_tiles.png` into
+`python3 ports/gba/convert_tiles.py` turns `examples/games/sdl2_tiles.png` into
 `tiles_data.h`: plain RGB15 pixels (mode 3 has no palette), 64 per 8x8 tile;
 `$ffff` marks a transparent pixel. `platform.fs` has `draw-tile ( tile x y -- )`
 and `tile-pixel ( tile px py -- color )`.
 
 ## Roguelike
 
-`roguelike.fs` is `examples/sdl2_roguelike.fs` ported, without music: the same
+`roguelike.fs` is `examples/games/sdl2_roguelike.fs` ported, without music: the same
 game logic, a scrolling 30x18 viewport over the 40x24 map, d-pad and A/B/START
 for input. Drawing goes through two C opcodes (`GBA-BLIT-TILE`,
 `GBA-FILL-RECT`), because a per-pixel Forth loop took about 20 seconds per

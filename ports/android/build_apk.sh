@@ -68,8 +68,8 @@ for f in terminal.html lugforth.js sdl2_breakout.html sdl2_breakout.fs \
   cp out/web/$f $W/assets/web/
 done
 cp -R examples/. $W/assets/examples/
-(cd $W/assets/examples && rm -rf bench_* *.c *.tal *.rom* Makefile *.py *xtensa* espnow.fs \
-   *.sf2 *.mid sdl2_pianoroll* sdl2_roguelike.fs sdl2_tiles*.png)
+(cd $W/assets/examples && rm -rf bench Makefile system/*xtensa* system/espnow.fs \
+   music/*.sf2 music/*.mid music/sdl2_pianoroll* games/sdl2_roguelike.fs games/sdl2_tiles*.png games/*.py)
 cp ports/android/app/assets/forth/main.fs $W/assets/forth/
 # the font of the console (DejaVu Sans Mono, free license); without it the bitmap font stays
 DEJAVU=/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf

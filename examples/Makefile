@@ -19,7 +19,7 @@ UXNCLI    ?= uxncli
 UXNEMU    ?= uxnemu
 SMOKE_TIMEOUT ?= 5
 
-SDL2_EXAMPLES := sdl2_demo.fs sdl2_breakout.fs sdl2_drums.fs fm/sdl2_fm.fs sdl2_pianoroll.fs sdl2_roguelike.fs sdl2_3d.fs sdl2_2048.fs sdl2_tetris.fs sdl2_snake.fs sdl2_minesweeper.fs sdl2_mastermind.fs sdl2_turtle.fs pinball/pinball.fs pinball/play_raid.fs pinball/play_night.fs varvara/varvara.fs varvara/launch.fs
+SDL2_EXAMPLES := graphics/sdl2_demo.fs games/sdl2_breakout.fs music/sdl2_drums.fs music/fm/sdl2_fm.fs music/sdl2_pianoroll.fs games/sdl2_roguelike.fs graphics/sdl2_3d.fs games/sdl2_2048.fs games/sdl2_tetris.fs games/sdl2_snake.fs games/sdl2_minesweeper.fs games/sdl2_mastermind.fs games/sdl2_raycaster.fs graphics/sdl2_turtle.fs games/pinball/pinball.fs games/pinball/play_raid.fs games/pinball/play_night.fs system/varvara/varvara.fs system/varvara/launch.fs
 
 .PHONY: help bench test-ports \
         bench-sieve bench-sieve-c bench-sieve-fs bench-sieve-uxn \
@@ -43,21 +43,21 @@ help:
 
 bench-sieve: bench-sieve-c bench-sieve-fs bench-sieve-uxn
 
-bench_sieve: bench_sieve.c
+bench/bench_sieve: bench/bench_sieve.c
 	$(CC) $(CFLAGS) -o $@ $<
 
-bench-sieve-c: bench_sieve
+bench-sieve-c: bench/bench_sieve
 	@echo "--- C ---"
-	@./bench_sieve
+	@./bench/bench_sieve
 
 bench-sieve-fs:
 	@echo "--- lugforth ---"
-	@$(LUGFORTH) bench_sieve.fs
+	@$(LUGFORTH) bench/bench_sieve.fs
 
-bench_sieve.rom: bench_sieve.tal
+bench/bench_sieve.rom: bench/bench_sieve.tal
 	$(UXNASM) $< $@
 
-bench-sieve-uxn: bench_sieve.rom
+bench-sieve-uxn: bench/bench_sieve.rom
 	@echo "--- uxn ---"
 	@time $(UXNCLI) $<
 
@@ -65,21 +65,21 @@ bench-sieve-uxn: bench_sieve.rom
 
 bench-lines: bench-lines-c bench-lines-fs bench-lines-uxn
 
-bench_lines: bench_lines.c
+bench/bench_lines: bench/bench_lines.c
 	$(CC) $(CFLAGS) -o $@ $< $(SDL2_FLAGS)
 
-bench-lines-c: bench_lines
+bench-lines-c: bench/bench_lines
 	@echo "--- C+SDL2 (headless) ---"
-	@SDL_VIDEODRIVER=dummy ./bench_lines
+	@SDL_VIDEODRIVER=dummy ./bench/bench_lines
 
 bench-lines-fs:
 	@echo "--- lugforth+SDL2 (headless) ---"
-	@BENCH_HEADLESS=1 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy $(LUGFORTH) bench_lines.fs
+	@BENCH_HEADLESS=1 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy $(LUGFORTH) bench/bench_lines.fs
 
-bench_lines.rom: bench_lines.tal
+bench/bench_lines.rom: bench/bench_lines.tal
 	$(UXNASM) $< $@
 
-bench-lines-uxn: bench_lines.rom
+bench-lines-uxn: bench/bench_lines.rom
 	@echo "--- uxn (headless) ---"
 	@time $(UXNCLI) $<
 
@@ -88,12 +88,12 @@ bench: bench-sieve bench-lines
 # ---- visual: the same bench_lines, but with a real window left open ----
 
 view-lines:
-	$(LUGFORTH) bench_lines.fs
+	$(LUGFORTH) bench/bench_lines.fs
 
-view-lines-c: bench_lines
-	./bench_lines
+view-lines-c: bench/bench_lines
+	./bench/bench_lines
 
-view-lines-uxn: bench_lines.rom
+view-lines-uxn: bench/bench_lines.rom
 	$(UXNEMU) $<
 
 view: view-lines view-lines-c view-lines-uxn
@@ -106,7 +106,7 @@ view: view-lines view-lines-c view-lines-uxn
 # the logic of the ports from eForth Windows (2048, 3d, inference) and of the games
 # after r3forth (tetris, snake, minesweeper) and mastermind: each test prints PASS
 test-ports:
-	@for t in 2048_tests.fs 3d_tests.fs inference/inference_tests.fs inference/lamp_diagnosis_tests.fs games_tests.fs turtle_tests.fs; do \
+	@for t in games/2048_tests.fs graphics/3d_tests.fs utils/inference/inference_tests.fs utils/inference/lamp_diagnosis_tests.fs games/games_tests.fs games/raycaster_tests.fs graphics/turtle_tests.fs; do \
 	  printf "%-20s " "$$t"; \
 	  out=$$(cd .. && SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy $(LUGFORTH:../%=%) examples/$$t 2>&1 | tail -1); echo "$$out"; \
 	  case "$$out" in PASS*) ;; *) exit 1;; esac; \
@@ -125,4 +125,4 @@ smoke:
 	done
 
 clean:
-	rm -f bench_sieve bench_lines bench_sieve.rom bench_lines.rom bench_sieve.rom.sym bench_lines.rom.sym
+	rm -f bench/bench_sieve bench/bench_lines bench/bench_sieve.rom bench/bench_lines.rom bench/bench_sieve.rom.sym bench/bench_lines.rom.sym

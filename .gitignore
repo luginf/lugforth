@@ -2,11 +2,11 @@ out
 build.ninja
 attic/jotblk/env
 __pycache__
-examples/sdl2_pianoroll.sf2
-examples/bench_sieve
-examples/bench_lines
-examples/*.rom
-examples/*.rom.sym
+examples/music/sdl2_pianoroll.sf2
+examples/bench/bench_sieve
+examples/bench/bench_lines
+examples/bench/*.rom
+examples/bench/*.rom.sym
 ports/gba/*.gba
 ports/gba/*.elf
 ports/gba/*.o

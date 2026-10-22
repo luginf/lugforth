@@ -244,6 +244,14 @@ if (!globalObj.write) {
   };
 
   context.EscapeCode = function(code) {
+    var oldcy = context.cy;
+    context.EscapeCode1(code);
+    // The cursor moved (arrows, the redraw of a line being edited): draw it again,
+    // where it was and where it is, or it stays where it was
+    if (oldcy >= 0 && context.lines[oldcy]) { context.dirty[oldcy] = 1; }
+    if (context.cy >= 0 && context.lines[context.cy]) { context.dirty[context.cy] = 1; }
+  };
+  context.EscapeCode1 = function(code) {
     var m;
     if (code == '[2J') {
       context.ResetTerminal();
@@ -396,7 +404,7 @@ if (!globalObj.write) {
   };
   context.mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? -1 : 0;
   if (context.mobile) {
-    const SENTINEL = '​';
+    const SENTINEL = '\u200b';   // one character, whatever the encoding the page is read in
     var ta = document.createElement('textarea');
     ta.setAttribute('autocomplete', 'off');
     ta.setAttribute('autocorrect', 'off');
@@ -433,12 +441,18 @@ if (!globalObj.write) {
     context.focusInput = function() {
       // Not while a game screen (sdl2.fs) is open: its taps are not typing,
       // and the focus would bring the keyboard over the game.
-      if (context.sdl && context.sdl.open) { return; }
-      ta.focus();
+      if (context.sdl && context.sdl.open && !context.sdl.layer) { return; }
+      ta.focus({preventScroll: true});
     };
     document.addEventListener('click', context.focusInput);
     document.addEventListener('touchend', context.focusInput);
-    ta.focus();
+    ta.focus({preventScroll: true});
+    // The keyboard of the phone comes up and goes down: keep the prompt in view
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', function() {
+        window.scrollTo(0, document.body.scrollHeight);
+      });
+    }
   }
 
   context.text_fraction = context.mobile ? 3000 : 1667;
@@ -499,7 +513,9 @@ if (!globalObj.write) {
   }
   function KeyPress(e) {
     if (CtrlLetter(String.fromCharCode(e.keyCode))) { e.preventDefault(); return false; }
-    if (context.mobile) { e.preventDefault(); return false; }
+    // On a phone the characters come from the hidden textarea ('input' event): a keypress
+    // must reach it, or a keyboard that sends key events types nothing.
+    if (context.mobile) { return; }
     context.cursor_time = new Date().getTime();
     context.inbuffer.push(e.keyCode);
     e.preventDefault();

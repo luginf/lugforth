@@ -27,6 +27,20 @@ Forth pitfalls hit again and again: `b@` in the editor takes a *position in the 
 block ends it; `[char]` only inside definitions; `?do` with start > limit runs away. More in `docs/SKILLS.md`.
 Silent "Error including: file" = a throw somewhere: bisect with a scratch file using `.` prints.
 
+## Layout of `examples/` (reorganized 2026-10-22) and version
+
+`examples/` is split in `games/` (with `pinball/`, the tile sheet, their tests), `graphics/`, `music/` (with `fm/`), `utils/` (`inference/`,
+`infix/`, `gemini/`, txt2tags...), `system/` (network, assemblers, `varvara/`), `bench/` and `web/`. Tests stay beside the code they
+load (`include` is relative to the including file). Paths are spelled `examples/<folder>/name.fs` everywhere (Makefiles, tools/*.py,
+workflows). The website copies files by name from `out/web` (ports/web/BUILD maps the new sources, the public names did not change).
+On the bare-metal disk and the USB stick the folders are kept (`include games/sdl2_snake.fs`, `system/varvara/varvara_rpi.fs`); the
+Android Examples list shows `folder/name.fs` (SdlActivity.examples(), written blind). The web page of the raycaster (ports/web/sdl2_raycaster.html, on the site and in pages.yml) is in the demo list of make_pages.py. Web cells are 32 bits: use `*/` for 16.16 products. Tried here: test-ports, smoke, ninja web, headless Chromium on out/web;
+not tried: make_pages.py (no pandoc), the efi/rpi tests, Android.
+
+Version: in the root `BUILD` (`SetVersions(version=..., date='YYYY-MM-DD')`: the date of the change, shown by `info` under the revision) and the banner of MANUAL.md. The maintainer wants it raised at each
+modification, even by a fraction: last number of 7.0.11.N (now 7.0.11.3), a new 7.0.x at a significant step. Numeric on purpose
+(the release workflow and the packages read it; a date such as v2026-10-22a was not adopted). Do it in the same change set.
+
 ## Editors: `ed` and `writhdeck` (ports/posix/editor.fs, writhdeck.fs, *_tests.fs)
 
 `ed` is a text editor in Forth; `writhdeck` is a port of WrithDeck (original in `~/src/writhdeck`, Tcl/C,
@@ -80,12 +94,12 @@ under QEMU (`virt`, `raspi3b`), checking answers over the serial line (tools/bar
 No OS, picolibc, PL011 console, MMU identity map (needed: unaligned accesses fault with it off), faults become
 THROW. Not tried on a real Pi; Pi 4 written blind (QEMU 8.2 has no raspi4b). See ports/rpi/README.md.
 Graphics: `sdl2` short words on the mailbox framebuffer (ports/baremetal/sdl2.fs, screen.h), keys from the UART;
-`make -C ports/rpi breakout` plays examples/sdl2_breakout.fs in a QEMU raspi3b window (`BOARD=virt`: virt with
+`make -C ports/rpi breakout` plays examples/games/sdl2_breakout.fs in a QEMU raspi3b window (`BOARD=virt`: virt with
 `-device ramfb`, set up through fw_cfg), `make test` checks both by screendump.
 Text (font8x8), images (PNGs built in by tools/baremetal_assets.py), keyboard/mouse (virtio-input on virt with
 `-global virtio-mmio.force-legacy=false`, DWC2 USB HID on pi3; tested through QMP input-send-event), sound
 (sound.h mixer, virtio-sound on virt checked from a -audiodev wav file; Pi 3 PWM+DMA written blind), `paste`
-(a whole file over serial, then Ctrl-D: multi-line strings work). `make roguelike` runs examples/sdl2_roguelike.fs.
+(a whole file over serial, then Ctrl-D: multi-line strings work). `make roguelike` runs examples/games/sdl2_roguelike.fs.
 QEMU runs a whole bcm2835 DMA chain at once: a looping chain hangs it (even SIGTERM), so never start one blindly.
 Files: storage.h (Pi SDHCI/EMMC polled, virt virtio-blk) + fat.h (FAT12/16/32, MBR or not, long names read and written, mkdir/rmdir/chdir, dates from the clock),
 the standard file words, so include/ls/cat work; autoexec.fs runs at boot. tools/baremetal_mkdisk.py makes images (needs
@@ -125,7 +139,7 @@ one under QEMU, not on hardware. The efi test builds here with gnu-efi and ovmf 
 ## Ports from eForth Windows (Marc Petremann, GPL) - done 2026-10-13
 
 Source: https://github.com/MPETREMANN11/eForth-Windows (clone it into the scratchpad to read). Its eForth is
-a ueForth (7.0.7.x), so lugforth (7.0.10) loads most of it as is: `value/to`, `{ }`, `vocabulary`, `:noname`,
+a ueForth (7.0.7.x), so lugforth (7.0.11) loads most of it as is: `value/to`, `{ }`, `vocabulary`, `:noname`,
 floats. Only the Windows parts (GDI, `Kernel32`, `structures` with `L,`) had to be replaced.
 Sibling project `~/src/forks/uf-9` did the same for a 16-bit Forth (its `PORTS-EFORTH.txt`).
 
@@ -141,7 +155,7 @@ Ideas left: more inference examples from his docs
 Verified in a real X window (display :0) for sdl2_2048: see docs/SKILLS.md, last bullets. Gotchas met: `include` is relative to the including file; `if` at top level does not work (wrap in a word);
 `<# #s #>` takes ONE number here; `.r`, `random` ( n -- r ) are in `ansi_compat.fs`, `ms-ticks 1 or rand-seed !` seeds it.
 
-## Games after r3forth (examples/sdl2_tetris.fs, sdl2_snake.fs, sdl2_minesweeper.fs) - done 2026-10-19
+## Games after r3forth (examples/games/sdl2_tetris.fs, sdl2_snake.fs, sdl2_minesweeper.fs) - done 2026-10-19
 
 r3forth (https://github.com/phreda4/r3, Pablo Reda, MIT, credited in NOTICE) has its own syntax (`cond? ( ... )`,
 `:word`, fixed point 48.16): its code does not load here, the games are rewritten keeping its ideas. Digits from the
@@ -158,7 +172,7 @@ term demos (fire, matrix, torus), util/penner.r3 easing, lib/sdl2poly.r3 polygon
 Check a project online before naming it in the README ("Inspiration"), NOTICE or a list of ideas. Bifurcan, once
 suggested as a Forth for Uxn, is a Tal program (a clock), not a Forth.
 
-Forth is Fun (https://gitlab.com/garvalf/forth-is-fun, Eric Forgeot, MIT/Apache): `examples/sdl2_turtle.fs` is written after its
+Forth is Fun (https://gitlab.com/garvalf/forth-is-fun, Eric Forgeot, MIT/Apache): `examples/graphics/sdl2_turtle.fs` is written after its
 forthtoise.fs (same word names, English and French; strokes kept in a list and redrawn each frame), tests in `turtle_tests.fs`
 (`make -C examples test-ports`). Running it starts a shell (`logo`): lines typed in the terminal are kept as a program, `go` / `play` run it (compiled as a word `logo-prog`, since do/if outside a definition fail; `safe-eval` restores the source after a throw, `evaluate` does not). The shell loop was checked in a pty under Xvfb, not automated. Still to borrow: bresenham, the CYOA (choose your own adventure, also in French), glitch patterns.
 Trap met: `fdup f>s s>f f< if` left a wrong value here; round with `fdup f0< if 0.5e f- else 0.5e f+ then f>s`.
@@ -172,7 +186,7 @@ layer in `fb_back` (`fb_gfx`), every drawing C function calls it; `con_sync` (co
 `gfx-mode`, `graphic-size` (GFX-SIZE, `gfx_size` in screen.h; `con_compose` maps screen pixels to layer pixels) and a `cls` that clears to black in sdl2.fs. Posix console (sdl2_console.fs): a target texture `gfx-tex`, `con-draw`
 renders it between the background and the cells (pen saved around the redraw), `cls` and `flip` are redefined, `con-key` marks the
 window dirty so a drawing made between two keys shows. Tested: efi QEMU test (9 checks), the posix console by hand under Xvfb
-(xdotool; `python3 tools/gui_graphic_test.py out/posix/lugforth` automates it), not rpi (no aarch64 toolchain), not the Android app. Not in the web console (ports/web).
+(xdotool; `python3 tools/gui_graphic_test.py out/posix/lugforth` automates it), not rpi (no aarch64 toolchain), not the Android app. Web console (ports/web, 2026-10-22): `graphic` puts the drawing area above the text of terminal.html (fixed canvas + spacer, S.layer in sdl2.fs), checked in headless Chromium by CDP on desktop and an emulated phone.
 
 ## `play` and waves by name - done 2026-10-20
 
@@ -187,7 +201,7 @@ boards or in the browser, only the parsing is tested (posix).
 DurexForth (https://github.com/jkotlinski/durexforth, C64; manual https://jkotlinski.github.io/durexforth/, read 2026-10-20, license not checked
 before borrowing code: write our own) suggests, for `graphic` and `play`:
 - drawing: `paint ( x y -- )` flood fill, `plot`, `peek`, `pen` in inverse (XOR) mode, `line` from the last point;
-- turtle (examples/sdl2_turtle.fs): `back`, `turtle@` / `turtle!` (save and restore the state, for recursive fractals), `moveto ( x y deg -- )`;
+- turtle (examples/graphics/sdl2_turtle.fs): `back`, `turtle@` / `turtle!` (save and restore the state, for recursive fractals), `moveto ( x y deg -- )`;
 - sound: an ADSR envelope on `beep` (notes are flat and click at both ends), SID-like `voice! note! cutoff! filter!`;
 - `play` with several voices (DurexForth's `play-mml` takes one string per SID voice; ours has one voice);
 - the other settings (`zoom`, `width`, `height`, `key-hold`) are still values with `to`, unlike `color`, `wave`, `beep-volume`.

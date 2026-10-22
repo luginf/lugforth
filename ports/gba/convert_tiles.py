@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Converts an 8x8-tile sheet (examples/sdl2_tiles.png, or any PNG that is a
+# Converts an 8x8-tile sheet (examples/games/sdl2_tiles.png, or any PNG that is a
 # row of NxN tiles) into a C header of plain RGB15 pixels -- no palette, no
 # indexing, matching mode 3 (direct 16-bit framebuffer, see platform.fs's
 # gba-mode3/gba-dot) rather than the GBA's tile/sprite hardware. Good enough
@@ -27,15 +27,15 @@
 # `draw-tile` in platform.fs.
 #
 # Does not touch the source PNG: point it at whatever tile sheet exists
-# (examples/sdl2_tiles.png by default), including one hand-edited outside
+# (examples/games/sdl2_tiles.png by default), including one hand-edited outside
 # make_sdl2_tiles.fs/.py.
 #
-#   python3 ports/gba/convert_tiles.py examples/sdl2_tiles.png ports/gba/tiles_data.h
+#   python3 ports/gba/convert_tiles.py examples/games/sdl2_tiles.png ports/gba/tiles_data.h
 
 import sys
 from PIL import Image
 
-src = sys.argv[1] if len(sys.argv) > 1 else "examples/sdl2_tiles.png"
+src = sys.argv[1] if len(sys.argv) > 1 else "examples/games/sdl2_tiles.png"
 dst = sys.argv[2] if len(sys.argv) > 2 else "ports/gba/tiles_data.h"
 tile_size = int(sys.argv[3]) if len(sys.argv) > 3 else 8
 

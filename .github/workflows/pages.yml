@@ -6,10 +6,10 @@ on:
   push:
     branches: [ main ]
     # the site, and what goes into demo/: the web interpreter (common/, ports/web/),
-    # the games it runs (examples/sdl2_*) and the HTML examples (examples/web/)
+    # the games it runs (examples/*/sdl2_*) and the HTML examples (examples/web/)
     paths: [ 'docs/**', 'tools/make_pages.py', 'tools/words_added.py', 'ports/posix/SDL2*.md',
              'examples/README.md', 'NOTICE', '.github/workflows/pages.yml',
-             'common/**', 'ports/web/**', 'examples/sdl2_*', 'examples/web/**' ]
+             'common/**', 'ports/web/**', 'examples/**' ]
   workflow_dispatch:
 
 permissions:
@@ -36,7 +36,7 @@ jobs:
           ninja out/posix/lugforth out/web/lugforth.js out/web/terminal.html \
             out/web/sdl2_breakout.html out/web/sdl2_breakout.fs out/web/sdl2_drums.html \
             out/web/sdl2_drums.fs out/web/sdl2_fm.html out/web/sdl2_fm.fs out/web/fm_midi_parser.fs out/web/fm_engine_web.fs out/web/sdl2_roguelike.html out/web/sdl2_roguelike.fs \
-            out/web/sdl2_tiles.png out/web/sdl2_pinball.html out/web/pinball_common.fs out/web/pinball_raid.fs out/web/pinball_night.fs out/web/pinball_menu.fs
+            out/web/sdl2_tiles.png out/web/sdl2_raycaster.html out/web/sdl2_raycaster.fs out/web/sdl2_pinball.html out/web/pinball_common.fs out/web/pinball_raid.fs out/web/pinball_night.fs out/web/pinball_menu.fs
       - name: Build the site
         run: python3 tools/make_pages.py
       - uses: actions/upload-pages-artifact@v3

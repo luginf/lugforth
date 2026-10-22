@@ -2,12 +2,18 @@
 
 The web build has the same `sdl2` short words as the Linux build
 (`ports/posix/SDL2.md`), drawn on an HTML canvas. A game written with them runs
-unchanged in both: `examples/sdl2_breakout.fs` is loaded as is by
-`ports/web/sdl2_breakout.html`, `examples/sdl2_drums.fs` by
-`ports/web/sdl2_drums.html`, `examples/fm/sdl2_fm.fs` (an FM synthesizer with MIDI input, see `examples/fm/README.md`) by
-`examples/fm/sdl2_fm.html`, `examples/sdl2_roguelike.fs` (with its tile sheet
-`examples/sdl2_tiles.png`) by `ports/web/sdl2_roguelike.html` and
-`examples/pinball/` by `ports/web/sdl2_pinball.html`.
+unchanged in both: `examples/games/sdl2_breakout.fs` is loaded as is by
+`ports/web/sdl2_breakout.html`, `examples/music/sdl2_drums.fs` by
+`ports/web/sdl2_drums.html`, `examples/music/fm/sdl2_fm.fs` (an FM synthesizer with MIDI input, see `examples/music/fm/README.md`) by
+`examples/music/fm/sdl2_fm.html`, `examples/games/sdl2_roguelike.fs` (with its tile sheet
+`examples/games/sdl2_tiles.png`) by `ports/web/sdl2_roguelike.html` and
+`examples/games/pinball/` by `ports/web/sdl2_pinball.html`, and `examples/games/sdl2_raycaster.fs` (a 3D maze, steered with the mouse) by `ports/web/sdl2_raycaster.html`. The cells of the web build are 32 bits: a game that works in 16.16 fixed point must multiply through `*/` (see the raycaster).
+
+At the prompt of `terminal.html`, as in the console window on Linux, `graphic` opens a drawing area above the
+text (640x480, scaled to half the height of the page at most; `w h graphic-size` for another size) and the
+drawing words work from the prompt, the terminal staying usable, also on a phone: `graphic`, then
+`10 10 150 140 line`, `red color 200 20 100 60 box`, `cls`. `sdl2` alone also gives the sound words at the prompt
+(`s" t200 o4 c d e" play`, `440 300 beep`): the first key press or tap lets the page play sounds.
 
 ```forth
 sdl2                          \ loads on first use, like on Linux
@@ -98,7 +104,7 @@ These words have the same names and stack effects as on Linux, see
 * **Images** are loaded by the browser, so any format it reads works.
   `load-image` waits for the file (the interpreter yields meanwhile) and
   throws if it cannot be loaded. As on Linux, a name with directories that is
-  not found is tried again without them: `s" examples/sdl2_tiles.png"` finds
+  not found is tried again without them: `s" examples/games/sdl2_tiles.png"` finds
   `sdl2_tiles.png` next to the page. `image-tint` multiplies the colors, as
   in SDL, using a copy of the image kept for each color.
 * **Sound** starts after the first key press or click, because browsers

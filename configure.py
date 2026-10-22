@@ -221,10 +221,12 @@ def SetVersions(**kwargs):
 def SelectHeader():
   version = versions['version']
   stable = versions['stable']
+  date = versions.get('date', 'unknown')
   return f"""
 ninja_required_version = 1.1
 VERSION = {version}
 STABLE_VERSION = {stable}
+DATE = {date}
 """
 
 
@@ -272,6 +274,7 @@ rule importation
   --depsout $depfile \
   -DVERSION=$VERSION \
   -DSTABLE_VERSION=$STABLE_VERSION \
+  -DDATE=$DATE \
   -FREVISION=$dst/gen/REVISION \
   -FREVSHORT=$dst/gen/REVSHORT
 
@@ -362,6 +365,7 @@ rule publish
   command = $src/tools/publish.py --src $in --dst "$pubpath" \
   -DVERSION=$VERSION \
   -DSTABLE_VERSION=$STABLE_VERSION \
+  -DDATE=$DATE \
   -FREVISION=$dst/gen/REVISION \
   -FREVSHORT=$dst/gen/REVSHORT >/dev/null 2>&1
 
