@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Hand written notes for words that docs/site/*.html does not document.
+"""Hand written notes for words that attic/oldsite/*.html does not document.
 
 Used by tools/words_reference.py. Each entry is  name: (stack effect, description).
 The names of standard (ANS Forth) words are in ANS, so they need no note.
@@ -105,7 +105,7 @@ NOTES = {
   'ansi': ('( -- )', 'Vocabulary of terminal escape sequences: colors, cursor, screen.'),
   'editor': ('( -- )', 'Vocabulary of the block editor.'),
   'graphics': ('( -- )', 'Lazy loaded generic graphics interface (a window and a back buffer, on X11 or the web). See `common/graphics.fs`.'),
-  'httpd': ('( -- )', 'Lazy loaded HTTP server. See `docs/site/posix_common.html`.'),
+  'httpd': ('( -- )', 'Lazy loaded HTTP server. See `attic/oldsite/posix_common.html`.'),
   'internals': ('( -- )', 'Vocabulary of the inner workings of the system.'),
   'posix': ('( -- )', 'Vocabulary of the system calls and constants of Linux and macOS.'),
   'recognizers': ('( -- )', 'Vocabulary of the recognizers, which decide what to do with a word that is not found.'),
@@ -144,4 +144,39 @@ NOTES = {
   'call': ('( xt -- )', 'Calls a foreign function through the FFI. Used by `sofunc`, `sysfunc` (POSIX) and `JSWORD:` (web).'),
   'colors': ('( -- )', 'Web build: prints all 256 terminal colors, to see what `fg` and `bg` give.'),
   'web': ('( -- )', 'Web build: the vocabulary of the words specific to the browser (the JS interpreter, `JSWORD:`...).'),
+  # added by Lugforth
+  'info': ('( -- )', 'Prints the version, the revision and the date of the build, the free dictionary, the stacks and a few hints.'),
+  'help': ('( -- )', 'Same as `info`.'),
+  'graphic': ('( -- )', 'Loads `sdl2` and makes the drawing words (`line`, `box`, `color`, `cls`...) work at the prompt: in the console window under the text, on the web page in a drawing area above it.'),
+  'ed': ('( "file" -- )', 'The text editor written in Forth. See the manual.'),
+  'writhdeck': ('( "file" -- )', 'The writing editor (port of WrithDeck) built on `ed`, with a file browser when called alone. See the manual.'),
+  'pager-on': ('( -- )', 'Stops the output at each screenful at the prompt (space, Enter or q).'),
+  'pager-off': ('( -- )', 'Turns the pager off.'),
+  'line': ('( x1 y1 x2 y2 -- )', 'Draws a line in the current color. Typed at the web prompt before `graphic`, it opens the drawing area first.'),
+  'dot': ('( x y -- )', 'Draws a pixel. At the web prompt it opens the drawing area first.'),
+  'box': ('( x y w h -- )', 'Fills a rectangle. At the web prompt it opens the drawing area first.'),
+  'frame': ('( x y w h -- )', 'Draws the outline of a rectangle.'),
+  'hline': ('( x y w -- )', 'Draws a horizontal line of w pixels.'),
+  'disc': ('( cx cy r -- )', 'Fills a disc.'),
+  'circle': ('( cx cy r -- )', 'Draws the outline of a circle.'),
+  'cls': ('( -- )', 'Clears the drawing area to black.'),
+  'color': ('( $rrggbb -- )', 'Sets the drawing color: `red color`, `$ff8000 color`.'),
+  'rgb': ('( r g b -- )', 'Sets the drawing color from its three components, 0 to 255.'),
+  'rgba': ('( r g b a -- )', 'Same as `rgb`, with the alpha (opacity).'),
+  'alpha': ('( a -- )', 'Sets the opacity of the drawing color, 0 to 255 (after `color`, which resets it).'),
+  'ink': ('( n -- )', 'Sets the drawing color by number, 0 to 15 (0 black, 1 red, 2 green, 3 yellow, 4 blue, 5 magenta, 6 cyan, 7 white...).'),
+  'script-bye': ('( -- )', 'Ends a script: leaves the program when it ran from a file, and does nothing at the prompt.'),
+  'black': ('( -- $rrggbb )', 'The color black, $000000: `black color`.'),
+  'white': ('( -- $rrggbb )', 'The color white, $ffffff: `white color`.'),
+  'red': ('( -- $rrggbb )', 'The color red, $ff0000: `red color`.'),
+  'green': ('( -- $rrggbb )', 'The color green, $00c000: `green color`.'),
+  'blue': ('( -- $rrggbb )', 'The color blue, $0000ff: `blue color`.'),
+  'yellow': ('( -- $rrggbb )', 'The color yellow, $ffff00: `yellow color`.'),
+  'cyan': ('( -- $rrggbb )', 'The color cyan, $00ffff: `cyan color`.'),
+  'magenta': ('( -- $rrggbb )', 'The color magenta, $ff00ff: `magenta color`.'),
+  'orange': ('( -- $rrggbb )', 'The color orange, $ff8000: `orange color`.'),
+  'purple': ('( -- $rrggbb )', 'The color purple, $800080: `purple color`.'),
+  'pink': ('( -- $rrggbb )', 'The color pink, $ff80c0: `pink color`.'),
+  'brown': ('( -- $rrggbb )', 'The color brown, $804000: `brown color`.'),
+  'gray': ('( -- $rrggbb )', 'The color gray, $808080: `gray color`.'),
 }

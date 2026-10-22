@@ -23,23 +23,23 @@ ESP_OPTIONS = OPTIONS + ' -DFORTH=ESP32forth'
 DEPLOY_ITEMS = []
 
 DEPLOY_ITEMS += [
-  Copy('$dst/deploy/.gcloudignore', '$src/docs/site/.gcloudignore'),
+  Copy('$dst/deploy/.gcloudignore', '$src/attic/oldsite/.gcloudignore'),
   Copy('$dst/deploy/lugforth.js', '$dst/web/lugforth.js'),
   Copy('$dst/deploy/serial.html', '$dst/web/serial.html'),
-  Importation('$dst/deploy/index.html', '$src/docs/site/index.html', options=ESP_OPTIONS),
-  Importation('$dst/deploy/linux.html', '$src/docs/site/linux.html', options=UE_OPTIONS),
-  Importation('$dst/deploy/windows.html', '$src/docs/site/windows.html', options=UE_OPTIONS),
-  Importation('$dst/deploy/web.html', '$src/docs/site/web.html', options=UE_OPTIONS),
-  Importation('$dst/deploy/ESP32forth.html', '$src/docs/site/ESP32forth.html', options=ESP_OPTIONS),
-  Importation('$dst/deploy/pico-ice.html', '$src/docs/site/pico-ice.html', options=UE_OPTIONS),
-  Importation('$dst/deploy/internals.html', '$src/docs/site/internals.html', options=UE_OPTIONS),
-  Importation('$dst/deploy/classic.html', '$src/docs/site/classic.html', options=ESP_OPTIONS),
-  Copy('$dst/deploy/eforth.go', '$src/docs/site/eforth.go'),
-  Copy('$dst/deploy/app.yaml', '$src/docs/site/app.yaml'),
+  Importation('$dst/deploy/index.html', '$src/attic/oldsite/index.html', options=ESP_OPTIONS),
+  Importation('$dst/deploy/linux.html', '$src/attic/oldsite/linux.html', options=UE_OPTIONS),
+  Importation('$dst/deploy/windows.html', '$src/attic/oldsite/windows.html', options=UE_OPTIONS),
+  Importation('$dst/deploy/web.html', '$src/attic/oldsite/web.html', options=UE_OPTIONS),
+  Importation('$dst/deploy/ESP32forth.html', '$src/attic/oldsite/ESP32forth.html', options=ESP_OPTIONS),
+  Importation('$dst/deploy/pico-ice.html', '$src/attic/oldsite/pico-ice.html', options=UE_OPTIONS),
+  Importation('$dst/deploy/internals.html', '$src/attic/oldsite/internals.html', options=UE_OPTIONS),
+  Importation('$dst/deploy/classic.html', '$src/attic/oldsite/classic.html', options=ESP_OPTIONS),
+  Copy('$dst/deploy/eforth.go', '$src/attic/oldsite/eforth.go'),
+  Copy('$dst/deploy/app.yaml', '$src/attic/oldsite/app.yaml'),
 ]
 
 DEPLOY_ITEMS += [
-  Copy('$dst/deploy/static/' + i, '$src/docs/site/static/' + i) for i in [
+  Copy('$dst/deploy/static/' + i, '$src/attic/oldsite/static/' + i) for i in [
     'eforth.css',
     'robots.txt',
     'esp32-c3-wroom-02.jpg',

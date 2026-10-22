@@ -14,7 +14,7 @@
 # limitations under the License.
 
 SetVersions(
-    version='7.0.11.6',
+    version='7.0.11.8',
     date='2026-10-22',
     stable='7.0.9.0')
 
@@ -24,4 +24,3 @@ Include('ports/web')
 Include('ports/pico-ice')
 Include('ports/pico')
 Include('ports/esp32')
-Include('docs/site')

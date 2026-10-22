@@ -136,6 +136,13 @@ platform's `builtins.h`/`platform.fs`/boot-chain `.fs` file, not just GBA:
     runs per-pixel at any real resolution — full detail, with the exact
     numbers, in `ports/gba/README.md`'s "Performance" section.
 
+## Adding words
+
+After adding words to the interpreter, build (`ninja posix web`) and run `python3 tools/words_reference.py`: it asks the real
+interpreters for their words and rewrites `docs/WORDS.md` (descriptions from `attic/oldsite/*.html`, `tools/words_notes.py`,
+the stack comments of the sources; add a note in `words_notes.py` for a word it leaves undescribed). `tools/words_added.py`
+lists what differs from upstream uEforth for the "New words" page of the site.
+
 ## Forth pitfalls hit again and again
 
 - `b@` in the editor takes a *position in the text*, not an address.

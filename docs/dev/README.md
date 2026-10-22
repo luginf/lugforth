@@ -12,4 +12,4 @@ What a person or an agent working on Lugforth should read before touching the co
 | [IDEAS.md](IDEAS.md) | open questions (control structures outside a definition), ideas left, other Forths |
 
 For users: [MANUAL.md](../MANUAL.md) (tutorial and reference), [WORDS.md](../WORDS.md) (every word),
-[docs/pages](../pages) (the website), [docs/site](../site/README.md) (the pages inherited from uEforth).
+[docs/pages](../pages) (the website), [attic/oldsite](../../attic/oldsite/README.md) (the pages inherited from uEforth).

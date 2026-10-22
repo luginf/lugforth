@@ -43,7 +43,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with `ninja posix`). You
 prompt:
 
 ```
-Lugforth v7.0.11.6
+Lugforth v7.0.11.8
 :; ===========>/>
 type 'info' for help
  ok

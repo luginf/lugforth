@@ -20,7 +20,7 @@
 # handled here.
 import re,subprocess,os
 files=subprocess.check_output(['git','ls-files']).decode().split('\n')
-skip_prefix=('attic/','docs/site/')
+skip_prefix=('attic/',)
 skip_files={'NOTICE','LICENSE','README.md'}
 prot=[r'github\.com/flagxor/ueforth', r'/src/ueforth\b', r'upstream uEforth', r'uEforth by', r'uEforth \(https', r'of uEforth', r'Fork of uEforth',r'ueforth\.git']
 changed=0

@@ -96,4 +96,4 @@ Boot sequence (platform e.g. posix):
 - `ports/web/` — JavaScript/WASM target
 - `ports/windows/` — Win32 build via MSVC cross-compilation from WSL
 - `tools/` — build-time Python scripts
-- `docs/pages/` — the GitHub Pages site (Markdown, built by `tools/make_pages.py`); `docs/site/` — the documentation website inherited from uEforth (see its README); `docs/dev/` — these notes
+- `docs/pages/` — the GitHub Pages site (Markdown, built by `tools/make_pages.py`); `attic/oldsite/` — the documentation website inherited from uEforth (see its README); `docs/dev/` — these notes
