@@ -396,10 +396,10 @@ if (!globalObj.write) {
     var cur = context.lines[context.cy];
     if (!cur) { return; }
     var vv = window.visualViewport;
-    var bottom = (vv ? vv.offsetTop + vv.height : window.innerHeight) - 6;
+    var bottom = (vv ? vv.offsetTop + vv.height : window.innerHeight) - 6 - context.kbH;
     // a keyboard that covers the page: room below the text, or the last line cannot be scrolled up
     var covered = vv ? Math.max(0, window.innerHeight - vv.offsetTop - vv.height) : 0;
-    var pad = covered ? covered + 'px' : '';
+    var pad = covered || context.kbH ? (covered + context.kbH) + 'px' : '';
     if (context.terminal.style.paddingBottom !== pad) { context.terminal.style.paddingBottom = pad; }
     var r = cur[0].getBoundingClientRect();
     if (r.bottom > bottom) { window.scrollBy(0, r.bottom - bottom); }
@@ -408,6 +408,7 @@ if (!globalObj.write) {
   // No on-screen keyboard: on mobile a hidden textarea takes the focus so
   // the native keyboard of the device is used.
   context.KEYBOARD_HEIGHT = 0;
+  context.kbH = 0;   // height of the built-in keyboard when it is shown (see lugkeyboard below)
   context.Inject = function(text) {
     var data = new TextEncoder().encode(text);
     for (var i = 0; i < data.length; ++i) {
@@ -459,6 +460,7 @@ if (!globalObj.write) {
       // Not while a game screen (sdl2.fs) is open: its taps are not typing,
       // and the focus would bring the keyboard over the game.
       if (context.sdl && context.sdl.open && !context.sdl.layer) { return; }
+      if (context.kbH) { return; }
       ta.focus({preventScroll: true});
     };
     document.addEventListener('click', context.focusInput);
@@ -584,6 +586,150 @@ if (!globalObj.write) {
     KeyDown({key: k, keyCode: k == 'Tab' ? 9 : 0, ctrlKey: false,
              preventDefault: function() {}});
   };
+
+  // ---- Built-in keyboard for a phone's browser (not in the Android app, which has its own bar) ----
+  // Keys: letters (AZERTY or QWERTY, the button AZ/QW), shift, digits and symbols on two more
+  // pages, arrows, Tab (completion), Esc, Ctrl (sticky, then a letter), paste, space, Enter and
+  // backspace. A hold repeats the arrows and backspace. The button "native" hides it and brings the
+  // phone's own keyboard back; the small button at the bottom right shows it again. The choices are
+  // kept in localStorage.
+  if (context.mobile && !/; wv\)/.test(navigator.userAgent)) {
+    var kbLayout = 'azerty', kbOn = true, kbPage = 0, kbShift = false;
+    try {
+      kbLayout = localStorage.getItem('lugkb-layout') === 'qwerty' ? 'qwerty' : 'azerty';
+      kbOn = localStorage.getItem('lugkb-on') !== '0';
+    } catch (e) {}
+    var kbEl = document.createElement('div');
+    var kbShow = document.createElement('button');
+    var kbCtrlBtn = null;
+    kbEl.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:50;background:#222;padding:2px;' +
+      'box-sizing:border-box;touch-action:manipulation;user-select:none;-webkit-user-select:none';
+    kbShow.textContent = '⌨';
+    kbShow.style.cssText = 'position:fixed;right:6px;bottom:6px;z-index:50;width:44px;height:36px;font-size:22px;' +
+      'border:none;border-radius:6px;background:#555;color:#fff;opacity:.85';
+    var rows = {
+      azerty: ['azertyuiop', 'qsdfghjklm', 'wxcvbn'],
+      qwerty: ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'],
+    };
+    var pages = [
+      null,
+      ['1234567890', '@#$%&*-+()', '!"\':;/?'],
+      [String.fromCharCode(126, 96) + '^|\\{}[]_', '<>=,.%', '!"\':;/?'],
+    ];
+    var keyH = function() { return Math.max(30, Math.min(42, Math.floor(window.innerHeight / 11))); };
+    function kbSend(code) {
+      context.cursor_time = new Date().getTime();
+      context.inbuffer.push(code);
+    }
+    function kbChar(ch) {
+      if (kbShift) { ch = ch.toUpperCase(); kbShift = false; }
+      if (!CtrlLetter(ch)) { kbSend(ch.charCodeAt(0)); }
+      kbDraw();
+    }
+    function kbPaste() { context.Paste(); }
+    function kbHide() {
+      kbOn = false; try { localStorage.setItem('lugkb-on', '0'); } catch (e) {}
+      kbDraw(); ta.focus({preventScroll: true});
+    }
+    function kbOpen() {
+      kbOn = true; try { localStorage.setItem('lugkb-on', '1'); } catch (e) {}
+      ta.blur(); kbDraw();
+    }
+    kbShow.addEventListener('pointerdown', function(e) { e.preventDefault(); kbOpen(); });
+    // [label, width, action, repeats, id]
+    function key(label, w, act, rep) { return {l: label, w: w, a: act, r: rep}; }
+    function kbRows() {
+      var out = [];
+      var top = [
+        key(kbLayout === 'azerty' ? 'AZERTY' : 'QWERTY', 1.6, function() {
+          kbLayout = kbLayout === 'azerty' ? 'qwerty' : 'azerty';
+          try { localStorage.setItem('lugkb-layout', kbLayout); } catch (e) {}
+          kbDraw();
+        }),
+        key('Ctrl', 1.2, function() { KeyDown({key: 'Ctrl', keyCode: 0, ctrlKey: false, preventDefault: function() {}}); kbDraw(); }),
+        key('Esc', 1.1, function() { kbSend(27); }),
+        key('Paste', 1.4, kbPaste),
+        key('native', 1.5, kbHide),
+      ];
+      out.push(top);
+      var set = kbPage ? pages[kbPage] : [rows[kbLayout][0], rows[kbLayout][1], rows[kbLayout][2]];
+      for (var r = 0; r < 3; ++r) {
+        var line = [];
+        if (r === 2) {
+          line.push(kbPage ? key(kbPage === 1 ? '#+=' : '123', 1.5, function() { kbPage = kbPage === 1 ? 2 : 1; kbDraw(); })
+                           : key(kbShift ? '⇪' : '⇧', 1.5, function() { kbShift = !kbShift; kbDraw(); }));
+        }
+        var chars = set[r];
+        for (var i = 0; i < chars.length; ++i) {
+          (function(ch) { line.push(key(kbShift && !kbPage ? ch.toUpperCase() : ch, 1, function() { kbChar(ch); })); })(chars[i]);
+        }
+        if (r === 2) { line.push(key('⌫', 1.5, function() { kbSend(8); }, true)); }
+        out.push(line);
+      }
+      var arrow = function(l, name) { return key(l, 1, function() { window.lugkey(name); }, true); };
+      out.push([
+        key(kbPage ? 'ABC' : '?123', 1.4, function() { kbPage = kbPage ? 0 : 1; kbShift = false; kbDraw(); }),
+        key('Tab', 1.2, function() { kbSend(9); }),
+        arrow('←', 'ArrowLeft'), arrow('↓', 'ArrowDown'), arrow('↑', 'ArrowUp'), arrow('→', 'ArrowRight'),
+        key('', 2, function() { kbSend(32); }),
+        key('⏎', 1.4, function() { kbSend(13); }),
+      ]);
+      return out;
+    }
+    var kbTimer = null;
+    function kbStop() { if (kbTimer) { clearTimeout(kbTimer); clearInterval(kbTimer); kbTimer = null; } }
+    function kbDraw() {
+      kbStop();
+      var shown = kbOn && !(context.sdl && context.sdl.open && !context.sdl.layer);
+      kbEl.style.display = shown ? '' : 'none';
+      kbShow.style.display = !kbOn && !(context.sdl && context.sdl.open && !context.sdl.layer) ? '' : 'none';
+      if (!shown) {
+        if (context.kbH) { context.kbH = 0; context.terminal.style.paddingBottom = ''; }
+        return;
+      }
+      var h = keyH();
+      kbEl.innerHTML = '';
+      var all = kbRows();
+      for (var r = 0; r < all.length; ++r) {
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;justify-content:center;gap:3px;margin:2px 0';
+        var total = 0;
+        for (var i = 0; i < all[r].length; ++i) { total += all[r][i].w; }
+        for (var i = 0; i < all[r].length; ++i) {
+          (function(k) {
+            var b = document.createElement('button');
+            b.textContent = k.l;
+            var small = r === 0;
+            b.style.cssText = 'flex:' + k.w + ' 1 0;height:' + (small ? Math.round(h * 0.7) : h) + 'px;min-width:0;padding:0;' +
+              'border:none;border-radius:5px;color:#fff;font:' + (small ? 13 : 18) + 'px monospace;' +
+              'background:' + (k.l === 'Ctrl' && ctrlNext ? '#3a6' : (k.l.length > 1 && k.l !== '→' ? '#555' : '#444'));
+            b.addEventListener('pointerdown', function(e) {
+              e.preventDefault();
+              k.a();
+              if (k.r) {
+                kbTimer = setTimeout(function() { kbTimer = setInterval(k.a, 70); }, 380);
+              }
+            });
+            ['pointerup', 'pointercancel', 'pointerleave'].forEach(function(n) { b.addEventListener(n, kbStop); });
+            row.appendChild(b);
+          })(all[r][i]);
+        }
+        kbEl.appendChild(row);
+      }
+      document.body.appendChild(kbEl);
+      context.kbH = kbEl.offsetHeight;
+      context.KeepInView();
+      window.scrollTo(0, document.body.scrollHeight);
+    }
+    document.body.appendChild(kbShow);
+    window.addEventListener('resize', kbDraw);
+    setInterval(function() {   // a game screen takes the whole page: no keyboard over it
+      var game = context.sdl && context.sdl.open && !context.sdl.layer;
+      if (game !== !!kbEl.dataset.game) { kbEl.dataset.game = game ? '1' : ''; kbDraw(); }
+    }, 400);
+    if (kbOn) { ta.blur(); }
+    kbDraw();
+  }
   var fontPx = 0;
   function GetFont() {
     return fontPx || parseFloat(getComputedStyle(context.terminal).fontSize) || 16;

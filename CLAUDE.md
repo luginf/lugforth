@@ -71,3 +71,11 @@ away; `if`, `do`, `begin` outside a definition silently give a wrong result (wra
 
 Check a project online before naming it in the README ("Inspiration"), NOTICE or a list of ideas. Code borrowed under a license
 goes in NOTICE with its text.
+
+## Web page: JS inside ports/web/*.fs
+
+The JavaScript of `ports/web/platform.fs` and `sdl2.fs` sits in `r~ ... ~` blocks, themselves inside a JS template string of the built
+`lugforth.js`: a `~` or a backtick in it breaks every page (use `String.fromCharCode(126, 96)`). On a phone (not the Android app, `; wv)` in the
+user agent) platform.fs draws a built-in keyboard (AZERTY/QWERTY button, arrows, Tab, Esc, sticky Ctrl, paste, two symbol pages, "native"
+to get the phone's own keyboard back, choices in localStorage `lugkb-*`). Tested in headless Chrome with a mobile user agent driven over
+the DevTools protocol (mouse events on the buttons), not on a real phone.
