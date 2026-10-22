@@ -437,3 +437,25 @@ static cell_t vol_mount(cell_t i) {
   fs_cwd_path[0] = '/'; fs_cwd_path[1] = 0;
   return 0;
 }
+
+// ---- file system drivers: a UEFI driver (.efi) read from the disk in use, started, then
+// bound to the disks (connect_all), so that the volumes it understands (exFAT, ext4...)
+// show in `volumes`. The firmware itself only has FAT. 0, or -1 the file cannot be read,
+// -2 the firmware refuses the image (not an x86-64 UEFI image, or Secure Boot is on),
+// -3 its start failed (a driver that finds nothing to do may also say so).
+static cell_t efi_load_driver(const char *p, cell_t n) {
+  cell_t ior, size;
+  cell_t fh = fat_open(p, n, 0, 0, &ior);
+  if (ior) return -1;
+  size = fat_size(fh, &ior);
+  uint8_t *buf = ior || size <= 0 ? 0 : malloc(size);
+  if (!buf || fat_read(fh, buf, size, &ior) != size || ior) { free(buf); fat_close(fh); return -1; }
+  fat_close(fh);
+  EFI_HANDLE h = 0;
+  EFI_STATUS s = BS->LoadImage(FALSE, image_handle, NULL, buf, (UINTN) size, &h);
+  free(buf);
+  if (s != EFI_SUCCESS) return -2;
+  if (BS->StartImage(h, NULL, NULL) != EFI_SUCCESS) return -3;
+  connect_all();
+  return 0;
+}

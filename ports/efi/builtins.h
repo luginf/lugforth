@@ -42,6 +42,7 @@
   XV(pc, "VOLUME-LABEL", VOLUME_LABEL, n2 = vol_label(n2, c1, n0); DROPn(2)) \
   XV(pc, "VOLUME-SIZE", VOLUME_SIZE, n0 = vol_size_mb(n0)) \
   XV(pc, "VOLUME-MOUNT", VOLUME_MOUNT, n0 = vol_mount(n0)) \
+  XV(pc, "LOAD-DRIVER", LOAD_DRIVER, n1 = efi_load_driver(c1, n0); DROP) \
   XV(pc, "SND-ENABLE", SND_ENABLE, snd_enable(n0); DROP) \
   XV(pc, "INB", INB_OP, n0 = inb((uint16_t) n0)) \
   XV(pc, "OUTB", OUTB_OP, outb((uint16_t) n0, (uint8_t) n1); DROPn(2))

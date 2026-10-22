@@ -803,11 +803,28 @@ console on the screen, the `sdl2` words, `include` and the editors from the stic
 sudo apt install gnu-efi ovmf qemu-system-x86 dosfstools mtools
 make -C ports/efi usb     # out/efi/usb.img, to dd onto a stick
 make -C ports/efi run     # the same image under QEMU with OVMF
-make -C ports/efi test    # 117 checks under QEMU
+make -C ports/efi test    # 120 checks under QEMU
 ```
 
 Several sticks: `volumes` lists the FAT volumes (`*` marks the one in use), `n mount` makes one the disk of
 `include`, `ls`, `cd`; a stick plugged after the start is found. See the README of the port.
+
+Other file systems (exFAT, ext2/3/4, NTFS...): the firmware only reads FAT, but UEFI file system
+drivers can be loaded from the stick. Copy the x64 drivers of
+[EfiFs](https://github.com/pbatard/efifs/releases) (GPL, not part of lugforth) to `EFI/drivers/` on the
+stick: `exfat_x64.efi` for exFAT, `ext2_x64.efi` for ext2, ext3 and ext4. Then:
+
+```
+include drivers.fs   \ loads every .efi of /EFI/drivers/, then shows the volumes
+2 mount ls           \ an ext4 or exFAT volume, now in the list
+0 mount              \ back to the stick
+```
+
+`drivers.fs` (on the stick made by `make usb`) is not run at boot: add the line `include drivers.fs` to
+`autoexec.fs` to have the drivers each time. They only read: `include`, `cat`, `ls` work on those
+volumes, writing a file fails. One driver by hand: `s" /EFI/drivers/ext2_x64.efi" pc load-driver . forth`
+(0 loaded, -1 file not read, -2 refused by the firmware: not an x64 UEFI image or Secure Boot on,
+-3 its start failed). The stick itself stays FAT32.
 
 See [ports/efi/README.md](ports/efi/README.md).
 

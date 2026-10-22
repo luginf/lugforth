@@ -107,13 +107,17 @@ and file opcodes are shared in ports/baremetal/builtins.h (`BM_VOC` = rpi or pc,
 Duplication left: the common part of the two platform.fs (azerty, console-zoom, keys).
 
 `make -C ports/efi test` builds out/efi/BOOTX64.EFI (gcc + gnu-efi) and boots it under QEMU q35 + OVMF from a USB stick
-image (MBR + FAT32, tools/baremetal_mkdisk.py), 117 checks (tools/efi_qemu_test.py, which reuses baremetal_qemu_test.py). Needs
+image (MBR + FAT32, tools/baremetal_mkdisk.py), 120 checks (tools/efi_qemu_test.py, which reuses baremetal_qemu_test.py). Needs
 `gnu-efi ovmf qemu-system-x86 dosfstools mtools`. Stays in boot services: GOP screen, ConIn keyboard (no releases: a key
 is held 120 ms after its last press; the test uses `-device usb-kbd`, PS/2 does not repeat), the stick's FAT through
 Simple File System (ports/efi/files.h, same API as fat.h). Reuses ports/baremetal (screen.h, console.h, input.h, font8x8.h, sdl2.fs, files.fs...), shared with ports/rpi;
 vocabulary `pc` aliased `rpi`. Console and `fb_flip` (ports/baremetal) draw in RAM and write only changed pixels, never read video memory; mouse polled from the firmware pointers (untestable under OVMF, trackpad may not be exposed). Speed on real hardware not measured yet. efi_main is called SysV by gnu-efi's crt0 (NOT EFIAPI: it crashed); own libc in libc.h
 (x87 math), setjmp and fault stubs in start.S (patched copy of the firmware IDT). Sound: minimal Intel HD Audio driver (ports/efi/hda.h, mixer shared in ports/baremetal/mixer.h with rpi/sound.h), checked by the test through `-audiodev wav` with QEMU intel-hda + hda-duplex (`make run` has them too, AUDIODEV=pa); `sound-off` / `sound` keep the choice in lugforth.ini (ports/efi/sound_ini.fs); not tried on a real PC. Booted from a real USB stick
 (prompt, sdl2_3d, roguelike work); ports/efi/README.md has the steps (Secure Boot off, one-time boot menu).
+Other file systems: `load-driver` (pc, files.h: LoadImage from a buffer, StartImage, connect_all) and
+ports/efi/disk/drivers.fs (on the stick, NOT run at boot) load EfiFs drivers from EFI/drivers/ (exfat_x64.efi,
+ext2_x64.efi: read only, GPL, not in the repo). EFIFS=dir make test adds 7 checks (exFAT and ext4 disks made with
+mkfs.exfat / mkfs.ext4 -d; exfatprogs installs with apt).
 `volumes` / `n mount` (files.h, platform.fs) switch the FAT volume of the file words (refused while a file is open, the old volume flushed): tested with a second stick and a hot-plugged
 one under QEMU, not on hardware. The efi test builds here with gnu-efi and ovmf unpacked from `apt download` (no root):
 `make EFIINC=<root>/usr/include/efi EFILIB=<root>/usr/lib OVMF=<root>/usr/share/OVMF/OVMF_CODE_4M.fd test`. The dead key test is flaky.

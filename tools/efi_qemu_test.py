@@ -25,6 +25,7 @@ checked with fsck.fat), the keyboard through QMP, and the editors.
 """
 
 import os
+import subprocess
 import sys
 import time
 
@@ -441,6 +442,73 @@ def games(b):
   leave('minesweeper')
 
 
+def drivers_errors(b):
+  """load-driver and drivers.fs without any driver at hand: what they say."""
+  r = b.run('s" /nope.efi" pc load-driver . forth')
+  check('load-driver: a missing file gives -1', r, r.split()[0] == '-1')
+  r = b.run('s" /autoexec.fs" pc load-driver . forth')
+  check('load-driver: a file that is no UEFI image gives -2', r, r.split()[0] == '-2')
+  r = b.run('include drivers.fs')
+  check('drivers.fs without EFI/drivers/ says so', r, 'no EFI/drivers/' in r)
+
+
+def drivers_full(out, tmp):
+  """With EFIFS=dir holding exfat_x64.efi and ext2_x64.efi (EfiFs, not in the repository):
+  drivers.fs loads them from EFI/drivers/ of the stick, and an exFAT disk and an ext4
+  disk (made with mkfs.exfat and mkfs.ext4 -d) show in volumes; the ext4 one is read."""
+  d = os.environ.get('EFIFS')
+  drv = ['exfat_x64.efi', 'ext2_x64.efi']
+  if not d or not all(os.path.exists(os.path.join(d, f)) for f in drv):
+    print('  skip  file system drivers (EFIFS=dir with %s from https://github.com/pbatard/efifs)' % ' '.join(drv))
+    return
+  img = os.path.join(tmp, 'drv.img')
+  spec = baremetal_mkdisk.make_disk(img, 32, True)
+  baremetal_mkdisk.put(spec, os.path.join(ROOT, 'ports/efi/disk/drivers.fs'), 'drivers.fs')
+  for f in drv:
+    baremetal_mkdisk.put(spec, os.path.join(d, f), 'EFI/drivers/' + f)
+  baremetal_mkdisk.put(spec, os.path.join(out, 'BOOTX64.EFI'), 'EFI/BOOT/BOOTX64.EFI')
+  e4, ex = os.path.join(tmp, 'ext4.img'), os.path.join(tmp, 'exfat.img')
+  e4d = os.path.join(tmp, 'ext4.d')
+  os.makedirs(e4d, exist_ok=True)
+  with open(os.path.join(e4d, 'hi4.fs'), 'w') as f:
+    f.write('." hello from ext4" cr\n')
+  for p in (e4, ex):
+    if os.path.exists(p):
+      os.remove(p)
+    with open(p, 'wb') as f:
+      f.truncate(16 << 20)
+  subprocess.run(['mkfs.ext4', '-q', '-F', '-L', 'LUGEXT4', '-d', e4d, e4], check=True)
+  subprocess.run(['mkfs.exfat', '-L', 'LUGEXFAT', ex], check=True, stdout=subprocess.DEVNULL)
+  args = ['-machine', 'q35', '-m', '512M', '-drive', 'if=pflash,format=raw,readonly=on,file=%s' % OVMF,
+          '-drive', 'if=none,id=stick,format=raw,file=%s' % img, '-device', 'qemu-xhci',
+          '-device', 'usb-storage,drive=stick', '-device', 'usb-kbd',
+          '-drive', 'if=none,id=d4,format=raw,file=%s' % e4, '-device', 'usb-storage,drive=d4',
+          '-drive', 'if=none,id=dx,format=raw,file=%s' % ex, '-device', 'usb-storage,drive=dx']
+  b = EfiBoard(args, tmp)
+  try:
+    b.boot(120)
+    r = b.run('volumes')
+    check('drivers: before, only the FAT stick', r, r.count(' MB') == 1)
+    r = b.run('include drivers.fs')
+    check('drivers: both loaded', r, r.count(': loaded') == 2)
+    check('drivers: exFAT and ext4 volumes seen', r, 'LUGEXFAT' in r and 'LUGEXT4' in r)
+    n = [l.replace('*', ' ').split()[0] for l in r.splitlines() if 'LUGEXT4' in l][0]
+    r = b.run('%s mount ls' % n)
+    check('drivers: ls on ext4', r, 'hi4.fs' in r)
+    r = b.run('include hi4.fs')
+    check('drivers: include from ext4', r, 'hello from ext4' in r)
+    r = b.run('s" new.fs" w/o create-file . drop')
+    check('drivers: ext4 is read only (create refused)', r, r.split()[0] != '0')
+    n = [l.replace('*', ' ').split()[0] for l in b.run('volumes').splitlines() if 'LUGEXFAT' in l][0]
+    r = b.run('%s mount' % n) + ' ' + b.run('ls') + ' '
+    r += b.run('pc volume-now . forth')
+    check('drivers: the empty exFAT volume mounted', r, 'ERROR' not in r and r.split()[-2] == n)
+  except Exception as e:
+    check('drivers session', str(e), False)
+  finally:
+    b.kill()
+
+
 def main():
   out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'out', 'efi')
   tmp = os.path.join(out, 'test')
@@ -457,7 +525,7 @@ def main():
                     ('examples/sdl2_tetris.fs', 'sdl2_tetris.fs'), ('examples/sdl2_snake.fs', 'sdl2_snake.fs'),
                     ('examples/sdl2_minesweeper.fs', 'sdl2_minesweeper.fs'),
                     ('ports/posix/editor.fs', 'lib/editor.fs'), ('ports/posix/writhdeck.fs', 'lib/writhdeck.fs'),
-                    ('ports/posix/eval_copy.fs', 'lib/eval_copy.fs')]:
+                    ('ports/posix/eval_copy.fs', 'lib/eval_copy.fs'), ('ports/efi/disk/drivers.fs', 'drivers.fs')]:
     baremetal_mkdisk.put(spec, os.path.join(ROOT, src), dest)
   baremetal_mkdisk.put(spec, os.path.join(out, 'BOOTX64.EFI'), 'EFI/BOOT/BOOTX64.EFI')
   img2 = os.path.join(tmp, 'usb2.img')                 # a second stick, to switch to
@@ -503,6 +571,7 @@ def main():
     b.region = (960, 720)
     t.test_breakout(b)
     games(b)
+    drivers_errors(b)
     b.region = (960, 624)
     b.send(b'include sdl2_roguelike.fs\r')   # the game: the prompt comes back after Esc
   except Exception as e:
@@ -527,6 +596,7 @@ def main():
     check('session', str(e), False)
   finally:
     b.kill()
+  drivers_full(out, tmp)
   t.check_sound(wav)   # the Intel HD Audio driver (hda.h), recorded by QEMU
   t.check_disk(img, spec, 'USB stick FAT32 (UEFI)')
   print('%s' % ('ALL OK' if t.failures == 0 else '%d FAILED' % t.failures))
