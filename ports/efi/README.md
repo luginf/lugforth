@@ -19,7 +19,7 @@ make -C ports/efi          # out/efi/BOOTX64.EFI
 make -C ports/efi usb      # out/efi/usb.img: MBR + FAT32, EFI/BOOT/BOOTX64.EFI and the examples
 make -C ports/efi stage    # the same files as a tree in /tmp/lugforth, or in DEST=/media/me/STICK, for a stick you already have
 make -C ports/efi run      # QEMU (q35, OVMF) on that image: a window, the serial line here, sound (AUDIODEV=pa)
-make -C ports/efi test     # boots it under QEMU and checks 117 things
+make -C ports/efi test     # boots it under QEMU and checks 124 things (131 with EFIFS=dir of the EfiFs drivers)
 ```
 
 ## Booting it from a USB stick
@@ -87,6 +87,34 @@ stick, or have `/lib/editor.fs` and `/lib/writhdeck.fs` on it too. Do not pull t
 without `mount`ing another one first. `mount` refuses ("close the open files first") while a file
 is open, and flushes the volume it leaves.
 
+## Other file systems: exFAT, ext4 (drivers to load)
+
+The firmware itself only reads FAT (the only file system UEFI requires), so a disk in exFAT, ext2/3/4,
+NTFS... is not in `volumes` at first. UEFI file system drivers fill the gap: lugforth loads them from
+the stick with `load-driver` (vocabulary `pc`), and `drivers.fs`, on the stick made by `make usb`,
+loads every `.efi` file of `EFI/drivers/`. It is not run at boot.
+
+1. Take the x64 drivers of [EfiFs](https://github.com/pbatard/efifs/releases) (GPL, not part of
+   lugforth): `exfat_x64.efi` for exFAT, `ext2_x64.efi` for ext2, ext3 and ext4 (`ntfs_x64.efi`,
+   `btrfs_x64.efi`, `iso9660_x64.efi`... work the same way).
+2. Copy them to `EFI/drivers/` on the stick (beside `EFI/BOOT/`).
+3. At the prompt:
+
+   ```
+   include drivers.fs   \ /EFI/drivers/exfat_x64.efi : loaded ... then the volumes
+   2 mount              \ the ext4 partition: ls, cd, include, cat
+   0 mount              \ back to the stick
+   ```
+
+   To have them at each boot, add the line `include drivers.fs` to `autoexec.fs`.
+
+These drivers only read: on such a volume `include`, `cat`, `ls` and `open-file` work, but creating or
+writing a file fails (`create-file` gives 22). Keep the files you write on a FAT volume. The stick
+itself stays FAT32, or the firmware would not find `EFI/BOOT/BOOTX64.EFI`.
+`s" /EFI/drivers/x.efi" pc load-driver forth` loads one driver by hand and gives 0, or -1 (the file
+cannot be read), -2 (the firmware refuses the image: not an x64 UEFI one, or Secure Boot is on) or
+-3 (its start failed). Tested under QEMU with an exFAT disk and an ext4 one, not yet on a real PC.
+
 ## Status
 
 | | QEMU (q35, OVMF) | a real PC |
@@ -95,7 +123,7 @@ is open, and flushes the volume it leaves.
 | Faults (#GP, #PF, divide...) become `THROW` | tested | to try |
 | Idle CPU: sleeps in `WaitForEvent` | not measured | to try |
 | Console on the screen (GOP, at least 1280x960, zoom 1 to 3 by size) | tested | to try |
-| Screen words, lines, text, images, breakout, roguelike, tetris, snake, minesweeper | tested | to try |
+| Screen words, lines, text, images, breakout, roguelike, tetris, snake, minesweeper, mastermind | tested | to try |
 | Keyboard (firmware console input), typing and held keys | USB keyboard, tested | to try |
 | Files on the stick: `include`, `ls`, long names, write, rename, delete | tested, checked with mtools and fsck.fat | to try |
 | `ed`, `writhdeck` | tested | to try |
