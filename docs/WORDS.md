@@ -28,7 +28,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
   ESP32, so it also covers hardware words that this build does not have.
 * [ANS Forth standard](https://forth-standard.org/standard/words), for the
   standard words.
-* The SDL2 words are in [ports/posix/SDL2-words.md](ports/posix/SDL2-words.md).
+* The SDL2 words are in [ports/posix/SDL2-words.md](../ports/posix/SDL2-words.md).
 
 ## The `forth` vocabulary
 

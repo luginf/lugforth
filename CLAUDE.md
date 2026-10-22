@@ -38,7 +38,7 @@ Android Examples list shows `folder/name.fs` (SdlActivity.examples(), written bl
 not tried: make_pages.py (no pandoc), the efi/rpi tests, Android.
 
 Version: in the root `BUILD` (`SetVersions(version=..., date='YYYY-MM-DD')`: the date of the change, shown by `info` under the revision) and the banner of MANUAL.md. The maintainer wants it raised at each
-modification, even by a fraction: last number of 7.0.11.N (now 7.0.11.3), a new 7.0.x at a significant step. Numeric on purpose
+modification, even by a fraction: last number of 7.0.11.N (now 7.0.11.4), a new 7.0.x at a significant step. Numeric on purpose
 (the release workflow and the packages read it; a date such as v2026-10-22a was not adopted). Do it in the same change set.
 
 ## Editors: `ed` and `writhdeck` (ports/posix/editor.fs, writhdeck.fs, *_tests.fs)
