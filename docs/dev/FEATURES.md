@@ -1,0 +1,110 @@
+# Features and examples: what exists and how it was tested
+
+Editors, SDL2 words, games and ports of examples, with what was and was not checked. Part of [README.md](../../README.md).
+
+## SDL2 multimedia
+
+Short game-oriented words on top of libSDL2, for the POSIX build and (same source, same words) the web build. Full docs: `ports/posix/SDL2.md`, `ports/posix/SDL2-words.md` (every word), `ports/web/SDL2.md`. Examples: `examples/graphics/sdl2_demo.fs`, `examples/games/sdl2_breakout.fs` and `examples/music/sdl2_drums.fs` (a 16 step drum machine); these two also run unchanged in the browser through `ports/web/sdl2_breakout.html` and `ports/web/sdl2_drums.html`. `examples/games/sdl2_roguelike.fs` uses the tile sheet `examples/games/sdl2_tiles.png` (drawn by `examples/games/make_sdl2_tiles.fs`, a lugforth program that writes the PNG by hand with CRC-32, Adler-32 and a stored zlib block: no outside assets; `examples/games/make_sdl2_tiles.py` is the same program in Python, kept to compare the two, same pixels) through `sdl2-image` (`draw-part`, `image-tint`); `ports/web/sdl2.fs` has the same image words on canvas and `ports/web/sdl2_roguelike.html` runs the same file. `load-image` retries a missing name without its directories on both platforms. `examples/music/fm/` is a two operator FM synthesizer with a keyboard on screen and MIDI input, on both platforms, deliberately kept out of the interpreter (see its README); the interpreter only has the hooks `render-hook`, `active-hook`, `latency` and `scan?`. `examples/music/sdl2_pianoroll.fs` is a piano-roll sequencer (4 tracks, chainable 16-step patterns, MIDI+soundfont playback, `.mid` and ABC export); POSIX only, not ported to the web build.
+
+### Files
+
+
+- `ports/posix/sdl2.fs` - core, lazy loaded: typing `sdl2` compiles the vocabulary. Extras loaded the same way: `sdl2-image` (`ports/posix/sdl2_image.fs`), `sdl2-ttf`, `sdl2-mixer`. All are pulled in by `ports/posix/posix_boot.fs`.
+- `ports/web/sdl2.fs` - same vocabulary name and same words on a canvas (JS state in `context.sdl`, `JSWORD:` primitives). Only the short words exist there: no raw `SDL_` words, no image/ttf/mixer, no `wait sdl-error window-handle renderer pen sample-rate`. Pulled in by `ports/web/web_boot.fs`; `ports/web/BUILD` copies the example pages and files to `out/web`.
+- Tests are NOT in the ninja build. Run by hand:
+  `SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy out/posix/lugforth ports/posix/sdl2_tests.fs` (22 tests) `ports/posix/sdl2_media_tests.fs` (7 tests), `ports/posix/sdl2_abc_tests.fs` (18 tests) and `examples/music/fm/sdl2_fm_tests.fs` (24 tests: MIDI parser and ALSA events, voices, pitch). `common/forth_namespace_tests.fs` lists the new vocabularies.
+
+### Music: soundfont and ABC tunes
+
+- `ports/posix/sdl2_mixer.fs` has `soundfont ( a n -- )` and `soundfont?` (`Mix_SetSoundFonts`): a `.sf2` or `.sf3` file, looked for as given, then by base name in the current directory, then in the directory of the script (`1 argv`). FluidSynth reads only files, so a soundfont cannot come from memory. Loading a MIDI from memory (`SDL_RWFromConstMem`, `Mix_LoadMUS_RW`) failed with "Unrecognized audio format" and was not pursued.
+- `sdl2-abc` (`ports/posix/sdl2_abc.fs`, `ports/web/sdl2_abc.fs`) reads tunes in ABC notation and plays them. The reader is shared: `common/abc.fs` defines `abc-parser` in `internals`, a word that returns the reader's source as a string, which each platform loader evaluates (words in vocabulary `abc-int`, public ones in `sdl2`). POSIX writes a standard MIDI file to a temporary file made by `mkstemps` (a fixed name in `/tmp` failed when another user had made it), deletes it once loaded and plays it with the mixer; the web loader schedules WebAudio oscillators. Tests: `ports/posix/sdl2_abc_tests.fs` (18). A tune is written with `r~ ... ~` because ABC uses `|`.
+
+## Editors: `ed` and `writhdeck` (ports/posix/editor.fs, writhdeck.fs, *_tests.fs)
+
+`ed` is a text editor in Forth; `writhdeck` is a port of WrithDeck (original in `~/src/writhdeck`, Tcl/C,
+manual `writhdeck_MANUAL.md`) built on top of it. Both are strings compiled on first use (`ed-src`,
+`wd-src`), so no `|` inside the source.
+
+Done in writhdeck: wrapped lines in a centered column, focus mode, Hemingway, words and daily goal, stopwatch
+and countdown, outline (Esc o), replace all, autosave, txt2tags/Markdown highlighting, themes, Esc menu
+(`w f h t o v s r g a + - c x q ?`), word occurrences (Esc v), redo (Ctrl+Y, also in ed), file browser
+(`writhdeck` alone or Ctrl+O: Enter, n new, / filter, r rename, d delete, b backup to `backups/`).
+PageUp/PageDown work (checked in a pty, ed and writhdeck).
+
+Still to do, from the original (priority order):
+1. Favorites and recent files in the browser (kept in `editor.ini` or a `recent.txt` beside it).
+2. Line numbers (Ctrl+L), Ctrl+Left/Right already move by word.
+3. Daily statistics kept on disk (per file, high-water mark) and shown by `s` in the browser too.
+4. Repetition detection (same word within a range) and spell check (Hunspell via `hunspell -a` pipe?).
+5. Second workspace (F10) and vertical split view (F3/F4).
+6. Ctrl+Q in an edited text returns to the browser (now it quits); modal commands `t s w q` of the original.
+7. INI profiles/schemes, i18n.
+Esc followed at once by a letter is read as Alt+letter: the pty tests wait 0.5 s between them.
+Settings: `ed` keeps `editor.ini`, `writhdeck` `writhdeck.ini`, both in the ini format of WrithDeck (Tcl): `key = value`,
+`%`/`#` comments, `[sections]` ignored, parser `ini-text` in editor.fs, `ini-kv` / `ini-body` / `ini-defname` / `ini-load` are
+deferred and `wd-install` / `ed-plain` swap them. Never the Tcl program's own `~/Documents/writhdeck/writhdeck.ini`
+(its `[keys]`, `[schemes]`, `[profiles]` would be lost). Status bar zones `status_left/center/right` with tokens (`session`,
+`modes` are ours); `dry` makes `stype` only count, to measure a zone. Tests: `test-wd-ini` writes to out/tests, not to the user's home.
+Not run on the boards (no aarch64 or gnu-efi toolchain here).
+Both also run on the bare-metal board (ports/rpi, `ed` / `writhdeck` words, files in /lib): the POSIX-only
+parts are under `[defined] posix [if] ... [else] ... [then]` inside the source strings, keep them that way.
+The editors end with `only forth ...`: a file that is `include`d must save `current @` and put it back
+(`current !`) at its end if the caller may have pushed a vocabulary (`sdl2` at the prompt pushes one), as
+varvara_rpi.fs does: `definitions` after `previous` would otherwise leave the caller defining in `sdl2`.
+
+## Ports from eForth Windows (Marc Petremann, GPL) - done 2026-10-13
+
+Source: https://github.com/MPETREMANN11/eForth-Windows (clone it into the scratchpad to read). Its eForth is
+a ueForth (7.0.7.x), so lugforth (7.0.11) loads most of it as is: `value/to`, `{ }`, `vocabulary`, `:noname`,
+floats. Only the Windows parts (GDI, `Kernel32`, `structures` with `L,`) had to be replaced.
+Sibling project `~/src/forks/uf-9` did the same for a 16-bit Forth (its `PORTS-EFORTH.txt`).
+
+In `examples/` (GPL, listed in NOTICE; `make -C examples test-ports` runs the logic tests, `make smoke` the SDL2 one):
+- `2048.fs` (+ `2048_tests.fs`): terminal game, `2048-play`. Tested in a pty; colors/layout not seen by eye.
+- `3d.fs` (+ `3d_tests.fs`) and `sdl2_3d.fs`: math, objects, rotation, perspective; SDL2 drawing checked only with
+  the dummy video driver (pixel counts), not on a real screen.
+- `inference/` (inference.fs, weather.fs, lamp_diagnosis.fs, tests, Makefile, READMEs): facts, rules, `infer`.
+- `sdl2_2048.fs`: SDL2 front end of 2048.fs (bitmap digits, arrows/wasd/mouse swipe, slide+pop animation, `--no-anim`); checked with the dummy driver
+  (pixel colors of tiles and digits), not by eye. Could be added to the Android Examples list.
+Ideas left: more inference examples from his docs
+(`INFERENCE/docs/*.odt`), `3Dmodelisation`/`dumpTool` extras, other upstream projects (lotto, 6809, flog, BMP, HTTP).
+Verified in a real X window (display :0) for sdl2_2048: see [PITFALLS.md](PITFALLS.md), last bullets. Gotchas met: `include` is relative to the including file; `if` at top level does not work (wrap in a word);
+`<# #s #>` takes ONE number here; `.r`, `random` ( n -- r ) are in `ansi_compat.fs`, `ms-ticks 1 or rand-seed !` seeds it.
+
+## Games after r3forth (examples/games/sdl2_tetris.fs, sdl2_snake.fs, sdl2_minesweeper.fs) - done 2026-10-19
+
+r3forth (https://github.com/phreda4/r3, Pablo Reda, MIT, credited in NOTICE) has its own syntax (`cond? ( ... )`,
+`:word`, fixed point 48.16): its code does not load here, the games are rewritten keeping its ideas. Digits from the
+3x5 bitmap of breakout, no fonts. `games_tests.fs` (in `make test-ports`) loads them with `tetris-no-run` etc.
+defined, which skips the game loop (`[defined] x [if] [else] ... [then]` at the end of each file).
+tools/efi_qemu_test.py plays them from the stick (screendump checks). Not seen on the Pi under QEMU (same sdl2.fs).
+`color` resets the alpha to 255: set `alpha` after `color`. Edges of keys: `just` keeps the last state per key.
+`sdl2_mastermind.fs` (ours, not from r3) follows the same pattern: `mastermind-no-run`, tests in games_tests.fs, efi test.
+Other r3 candidates: bdash (Boulder Dash, own sprites needed), sokoban (levels of unclear license), raycaster,
+term demos (fire, matrix, torus), util/penner.r3 easing, lib/sdl2poly.r3 polygon fill.
+
+## Forth is Fun (turtle)
+
+Forth is Fun (https://gitlab.com/garvalf/forth-is-fun, Eric Forgeot, MIT/Apache): `examples/graphics/sdl2_turtle.fs` is written after its
+forthtoise.fs (same word names, English and French; strokes kept in a list and redrawn each frame), tests in `turtle_tests.fs`
+(`make -C examples test-ports`). Running it starts a shell (`logo`): lines typed in the terminal are kept as a program, `go` / `play` run it (compiled as a word `logo-prog`, since do/if outside a definition fail; `safe-eval` restores the source after a throw, `evaluate` does not). The shell loop was checked in a pty under Xvfb, not automated. Still to borrow: bresenham, the CYOA (choose your own adventure, also in French), glitch patterns.
+Trap met: `fdup f>s s>f f< if` left a wrong value here; round with `fdup f0< if 0.5e f- else 0.5e f+ then f>s`.
+
+## Drawing at the prompt (`graphic`) - done 2026-10-20
+
+`graphic` (loads sdl2 too) makes `0 0 100 100 line`, `red color ... box`, `n ink`, `cls` work at the console
+prompt, drawn under the text, as BASIC on a MO5. Baremetal (ports/baremetal, rpi + efi): `gfx_ensure` in screen.h makes a 640x480
+layer in `fb_back` (`fb_gfx`), every drawing C function calls it; `con_sync` (console.h) shows it through cell pixels that are 0
+(default background, scaled by `con_zoom`); `fb_flip` then only syncs; `fb_open` / `fb_close` end it. Forth: `gfx-on`, `graphic`,
+`gfx-mode`, `graphic-size` (GFX-SIZE, `gfx_size` in screen.h; `con_compose` maps screen pixels to layer pixels) and a `cls` that clears to black in sdl2.fs. Posix console (sdl2_console.fs): a target texture `gfx-tex`, `con-draw`
+renders it between the background and the cells (pen saved around the redraw), `cls` and `flip` are redefined, `con-key` marks the
+window dirty so a drawing made between two keys shows. Tested: efi QEMU test (9 checks), the posix console by hand under Xvfb
+(xdotool; `python3 tools/gui_graphic_test.py out/posix/lugforth` automates it), not rpi (no aarch64 toolchain), not the Android app. Web console (ports/web, 2026-10-22): `graphic` puts the drawing area above the text of terminal.html (fixed canvas + spacer, S.layer in sdl2.fs), checked in headless Chromium by CDP on desktop and an emulated phone.
+
+## `play` and waves by name - done 2026-10-20
+
+`play ( a n -- )` (MML, MSX octave numbering, with p n & v w; parser `p-step` and friends, output through the deferred `p-out`, default `beep`) is
+written in the three sdl2.fs: ports/posix (tests in sdl2_tests.fs), ports/baremetal, ports/web: keep the copies equal.
+`wave`, `beep-volume`, `pitch-drop` are settings (`: setting` = `create , does> !`: `1 wave` and `1 to wave` both store; read with `wave@` etc.), like `color` takes its value; `square triangle saw noise sine` set `wave`. Sine is wave 4 (table in sdl2.fs posix,
+`snd_wave` in ports/rpi/sound.h, 'sine' oscillator on the web). A rest is a beep of frequency 0 (silent). Not heard on the
+boards or in the browser, only the parsing is tested (posix).

@@ -84,7 +84,7 @@ USB_FILES := $(OUT)/BOOTX64.EFI=EFI/BOOT/BOOTX64.EFI \
   $(EXAMPLE_FILES) $(ROOT)/ports/rpi/disk/autoexec.fs=autoexec.fs \
   $(ROOT)/ports/posix/editor.fs=lib/editor.fs $(ROOT)/ports/posix/writhdeck.fs=lib/writhdeck.fs \
   $(ROOT)/ports/posix/eval_copy.fs=lib/eval_copy.fs \
-  $(ROOT)/MANUAL.md=MANUAL.md $(ROOT)/ports/efi/disk/drivers.fs=drivers.fs \
+  $(ROOT)/docs/MANUAL.md=MANUAL.md $(ROOT)/docs/WORDS.md=WORDS.md $(ROOT)/ports/efi/disk/drivers.fs=drivers.fs \
   $(foreach f,$(wildcard $(ROOT)/examples/system/varvara/*.fs $(ROOT)/examples/system/varvara/*.rom),$(f)=system/varvara/$(notdir $(f)))
 
 usb: $(OUT)/BOOTX64.EFI

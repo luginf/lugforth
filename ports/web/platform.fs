@@ -386,6 +386,23 @@ if (!globalObj.write) {
     if (newline) {
       window.scrollTo(0, document.body.scrollHeight);
     }
+    if (count > 0 && context.mobile) { context.KeepInView(); }
+  };
+
+  // The line being typed must stay above the keyboard of a phone. Browsers differ: the
+  // keyboard shrinks the page (Firefox) or covers its bottom (Chrome, Brave), and the
+  // visual viewport tells what is really seen.
+  context.KeepInView = function() {
+    var cur = context.lines[context.cy];
+    if (!cur) { return; }
+    var vv = window.visualViewport;
+    var bottom = (vv ? vv.offsetTop + vv.height : window.innerHeight) - 6;
+    // a keyboard that covers the page: room below the text, or the last line cannot be scrolled up
+    var covered = vv ? Math.max(0, window.innerHeight - vv.offsetTop - vv.height) : 0;
+    var pad = covered ? covered + 'px' : '';
+    if (context.terminal.style.paddingBottom !== pad) { context.terminal.style.paddingBottom = pad; }
+    var r = cur[0].getBoundingClientRect();
+    if (r.bottom > bottom) { window.scrollBy(0, r.bottom - bottom); }
   };
 
   // No on-screen keyboard: on mobile a hidden textarea takes the focus so
@@ -449,9 +466,12 @@ if (!globalObj.write) {
     ta.focus({preventScroll: true});
     // The keyboard of the phone comes up and goes down: keep the prompt in view
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', function() {
+      var kb = function() {
         window.scrollTo(0, document.body.scrollHeight);
-      });
+        context.KeepInView();
+      };
+      window.visualViewport.addEventListener('resize', kb);
+      window.visualViewport.addEventListener('scroll', function() { context.KeepInView(); });
     }
   }
 

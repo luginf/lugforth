@@ -14,7 +14,7 @@
 # limitations under the License.
 
 SetVersions(
-    version='7.0.11.4',
+    version='7.0.11.6',
     date='2026-10-22',
     stable='7.0.9.0')
 

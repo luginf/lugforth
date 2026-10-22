@@ -17,6 +17,24 @@ Run one with `lugforth examples/games/sdl2_breakout.fs`, or `include games/sdl2_
 On the bare-metal boards the folders are kept on the disk or the stick (`include games/sdl2_snake.fs`, `include system/varvara/varvara_rpi.fs`),
 and the website (`ports/web/BUILD`) copies the files that run in the browser by name.
 
+## In the browser
+
+Several examples also run in the browser, from the [website](https://luginf.github.io/lugforth/), with the very same files:
+
+* [Terminal](https://luginf.github.io/lugforth/demo/terminal.html): the Forth prompt, also on a phone. Type `sdl2`, then
+  `10 10 150 140 line`, `red color 200 20 100 60 box`, `s" t200 o4 c d e f g" play`.
+  `terminal.html?run=sdl2_roguelike.fs` runs a game file of the demo before the prompt.
+* Games: [Breakout](https://luginf.github.io/lugforth/demo/sdl2_breakout.html),
+  [roguelike](https://luginf.github.io/lugforth/demo/sdl2_roguelike.html),
+  [raycaster](https://luginf.github.io/lugforth/demo/sdl2_raycaster.html) (the 3D maze, steered with the mouse),
+  [pinball](https://luginf.github.io/lugforth/demo/sdl2_pinball.html).
+* Music: [drums](https://luginf.github.io/lugforth/demo/sdl2_drums.html),
+  [FM synthesizer](https://luginf.github.io/lugforth/demo/sdl2_fm.html) (with MIDI input).
+* Drawing from HTML (`web/`): [a button calling a Forth word](https://luginf.github.io/lugforth/demo/button.html),
+  [string art](https://luginf.github.io/lugforth/demo/string_art.html),
+  [vector lettering](https://luginf.github.io/lugforth/demo/vector_logo.html) and
+  [its outline](https://luginf.github.io/lugforth/demo/vector_logo_outline.html).
+
 ## Benchmarks: lugforth vs C vs uxn
 
 Two benchmarks, each in three files doing the same work (same algorithm, constants

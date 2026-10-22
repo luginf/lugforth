@@ -275,7 +275,7 @@ $400000 color15 constant DEAD-BG15
 \ iteration -- so it silently corrupts the do-loop's own index/limit on the
 \ same stack. A plain word call each iteration is its own scope and cleans
 \ up correctly at its own `;`; only found this by bisecting a bus error
-\ with checkpoints (see SKILLS.md).
+\ with checkpoints (see docs/dev/PITFALLS.md).
 : draw-monster { i }
   i mhp 0 > 0= if exit then
   i mx i my visible? 0= if exit then

@@ -1,126 +1,15 @@
-# SKILLS.md
+# Pitfalls learned the hard way
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Read before touching Forth sources, the loaders, the web build or a new platform. Part of [README.md](../../README.md).
 
-## Overview
+## Forth, loaders and SDL2
 
-µEforth is an EForth-inspired Forth implementation bootstrapped from a minimalist C kernel. It targets multiple platforms: POSIX/Linux, ESP32 (Arduino), pico-ice, Web (WASM/JS), and Windows.
-
-[WORDS.md](WORDS.md) is a generated reference of the words of the `forth` vocabulary and the other Linux/web vocabularies, with stack effects and descriptions where known (`tools/words_reference.py`, run it again after adding words). SDL2 words have their own reference, [ports/posix/SDL2-words.md](ports/posix/SDL2-words.md).
-
-## Build System
-
-The build uses a two-step process: `configure.py` generates `build.ninja`, then `ninja` builds.
-
-```sh
-./configure.py        # detect tools, generate build.ninja
-ninja                 # build all enabled platforms
-
-./configure.py -f     # fast config, excludes slower components (web, windows)
-```
-
-Individual platform targets:
-```sh
-ninja posix
-ninja esp32
-ninja pico-ice
-ninja win32
-ninja win64
-ninja web
-ninja install         # install posix build to /usr/bin/lugforth
-```
-
-ESP32 flash targets: `ninja esp32-flash`, `ninja esp32s2-flash`, `ninja esp32s3-flash`, `ninja esp32c3-flash`, `ninja esp32cam-flash`. Set `PORT=com3` etc. to select board.
-
-Required packages: `sudo apt install ninja-build gcc-arm-none-eabi` (arm tools needed for pico-ice; nodejs for web).
-
-## Tests
-
-Tests run as part of the platform build (e.g., `ninja posix` compiles and runs all POSIX tests). There is no separate test command.
-
-To run tests manually after building:
-```sh
-out/posix/lugforth common/all_tests.fs   # run all common tests
-out/posix/lugforth common/base_tests.fs  # run a single test file
-```
-
-Each test file in `common/*_tests.fs` defines words prefixed `test-`. The testing framework (`common/testing.fs`) discovers and runs all `test-*` words in the current vocabulary using `run-tests`. Key assertion words: `=assert`, `assert`, `<assert`, `>assert`.
-
-## Architecture
-
-### C Kernel + Forth Bootstrap
-
-The system is a threaded-code interpreter written in C with platform-specific extensions, bootstrapped by Forth source files compiled into the binary as C headers.
-
-**C layer** (`common/`):
-- `tier0_opcodes.h` — primitive cell/stack types and low-level macros (PUSH, DROP, DUP, PARK/UNPARK, THROWIT)
-- `tier1_opcodes.h`, `tier2_opcodes.h` — higher-level built-in opcodes
-- `interp.h` — the interpreter loop using GNU computed-goto dispatch (`goto **(void **) w`)
-- `core.h` — dictionary lookup, number conversion, word header layout
-- `bits.h` — cell size helpers
-- `floats.h`, `calls.h` — float and foreign-call opcodes
-
-Each platform defines `PLATFORM_OPCODE_LIST` (its own C macros for platform-specific opcodes) and `VOCABULARY_LIST`, then `#include`s the common headers. For example, `ports/posix/main.c` (actually `ports/posix/interp.h`) adds `DLSYM`, `ERRNO`, and `CALLING_OPCODE_LIST`.
-
-**Forth bootstrap layer**:
-Forth source is never loaded at runtime from files — it is compiled into the binary as a C `const char[]` header using `tools/importation.py`. For POSIX: `ports/posix/posix_boot.fs` → `out/gen/posix_boot.h`.
-
-Boot sequence (platform e.g. posix):
-1. `common/phase1.fs` — core Forth words (control flow, recognizers, vocabularies, floats, structures)
-2. Platform-specific `ports/posix/posix.fs` — POSIX syscall bindings
-3. `common/phase2.fs` — higher-level utilities, code generation, locals, case
-4. `common/phase_filetools.fs`, `common/phase_desktop.fs` — file I/O, desktop integration
-5. `common/fini.fs` — transfers builtins into dictionary, sets up save/restore baseline, executes autoboot xt
-
-### The `importation.py` Tool
-
-`tools/importation.py` is the build-time preprocessor. It:
-- Resolves `needs filename.fs` directives (like include-once for Forth files)
-- Resolves `#include "file.h"` in C/C++ files
-- Performs `-D` string substitutions (e.g., `VERSION`, `STABLE_VERSION`)
-- Performs `-F` file-content substitutions (e.g., `REVISION`)
-- Can emit C headers wrapping the assembled content (`--name`, `--header` flags)
-
-### BUILD Files
-
-`configure.py` evaluates `BUILD` files (Python DSL) to generate `build.ninja`. The root `BUILD` calls `Include('ports/posix')`, `Include('ports/esp32')`, etc. Each platform `BUILD` uses functions like `Importation()`, `Compile()`, `ForthTest()`, `Alias()`, `Default()`.
-
-`ForthTest(target, forth_binary, test_file)` runs a Forth test by executing `interp forth test` and capturing output to `target`.
-
-### Platform Structure
-
-- `common/` — shared Forth source and C headers used by all platforms
-- `ports/posix/` — Linux/macOS: C entry point, POSIX bindings, sockets, X11, pthreads
-- `ports/esp32/` — Arduino `.ino` + C++ builtins; optional extensions in `ports/esp32/optional/`
-- `ports/pico-ice/` — RP2040-based FPGA board
-- `ports/web/` — JavaScript/WASM target
-- `ports/windows/` — Win32 build via MSVC cross-compilation from WSL
-- `tools/` — build-time Python scripts
-- `docs/site/` — documentation website sources
-
-## SDL2 multimedia (branch `sdl2`)
-
-Short game-oriented words on top of libSDL2, for the POSIX build and (same source, same words) the web build. Full docs: `ports/posix/SDL2.md`, `ports/posix/SDL2-words.md` (every word), `ports/web/SDL2.md`. Examples: `examples/graphics/sdl2_demo.fs`, `examples/games/sdl2_breakout.fs` and `examples/music/sdl2_drums.fs` (a 16 step drum machine); these two also run unchanged in the browser through `ports/web/sdl2_breakout.html` and `ports/web/sdl2_drums.html`. `examples/games/sdl2_roguelike.fs` uses the tile sheet `examples/games/sdl2_tiles.png` (drawn by `examples/games/make_sdl2_tiles.fs`, a lugforth program that writes the PNG by hand with CRC-32, Adler-32 and a stored zlib block: no outside assets; `examples/games/make_sdl2_tiles.py` is the same program in Python, kept to compare the two, same pixels) through `sdl2-image` (`draw-part`, `image-tint`); `ports/web/sdl2.fs` has the same image words on canvas and `ports/web/sdl2_roguelike.html` runs the same file. `load-image` retries a missing name without its directories on both platforms. `examples/music/fm/` is a two operator FM synthesizer with a keyboard on screen and MIDI input, on both platforms, deliberately kept out of the interpreter (see its README); the interpreter only has the hooks `render-hook`, `active-hook`, `latency` and `scan?`. `examples/music/sdl2_pianoroll.fs` is a piano-roll sequencer (4 tracks, chainable 16-step patterns, MIDI+soundfont playback, `.mid` and ABC export); POSIX only, not ported to the web build.
-
-### Files
-
-- `ports/posix/sdl2.fs` - core, lazy loaded: typing `sdl2` compiles the vocabulary. Extras loaded the same way: `sdl2-image` (`ports/posix/sdl2_image.fs`), `sdl2-ttf`, `sdl2-mixer`. All are pulled in by `ports/posix/posix_boot.fs`.
-- `ports/web/sdl2.fs` - same vocabulary name and same words on a canvas (JS state in `context.sdl`, `JSWORD:` primitives). Only the short words exist there: no raw `SDL_` words, no image/ttf/mixer, no `wait sdl-error window-handle renderer pen sample-rate`. Pulled in by `ports/web/web_boot.fs`; `ports/web/BUILD` copies the example pages and files to `out/web`.
-- Tests are NOT in the ninja build. Run by hand:
-  `SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy out/posix/lugforth ports/posix/sdl2_tests.fs` (22 tests) `ports/posix/sdl2_media_tests.fs` (7 tests), `ports/posix/sdl2_abc_tests.fs` (18 tests) and `examples/music/fm/sdl2_fm_tests.fs` (24 tests: MIDI parser and ALSA events, voices, pitch). `common/forth_namespace_tests.fs` lists the new vocabularies.
-
-### Music: soundfont and ABC tunes
-
-- `ports/posix/sdl2_mixer.fs` has `soundfont ( a n -- )` and `soundfont?` (`Mix_SetSoundFonts`): a `.sf2` or `.sf3` file, looked for as given, then by base name in the current directory, then in the directory of the script (`1 argv`). FluidSynth reads only files, so a soundfont cannot come from memory. Loading a MIDI from memory (`SDL_RWFromConstMem`, `Mix_LoadMUS_RW`) failed with "Unrecognized audio format" and was not pursued.
-- `sdl2-abc` (`ports/posix/sdl2_abc.fs`, `ports/web/sdl2_abc.fs`) reads tunes in ABC notation and plays them. The reader is shared: `common/abc.fs` defines `abc-parser` in `internals`, a word that returns the reader's source as a string, which each platform loader evaluates (words in vocabulary `abc-int`, public ones in `sdl2`). POSIX writes a standard MIDI file to a temporary file made by `mkstemps` (a fixed name in `/tmp` failed when another user had made it), deletes it once loaded and plays it with the mixer; the web loader schedules WebAudio oscillators. Tests: `ports/posix/sdl2_abc_tests.fs` (18). A tune is written with `r~ ... ~` because ABC uses `|`.
 - In a loader (a colon definition compiled at boot), a name such as `sdl2` or `sdl2-mixer` written outside the evaluated string is bound to the loader that existed then: running it again reloads everything and creates a new empty vocabulary. Put such names in a string run by `evaluate`.
 - A control structure (`if`, `do`, `begin`) outside a definition is not valid, even inside an `evaluate`d string: no error, a wrong result (see `CLAUDE.md`, open question). `2swap`, `0>` and `within` do exist (`common/ansi_compat.fs`).
 - Locals declared with `{ }` inside an `if` branch corrupt the return stack when the branch is skipped (a silent -9); declare them at the top of the word or use values.
 - `dump-file` takes the data first and the file name last.
 - A nested `( ... )` inside a stack comment closes the comment at the first `)`: `( optional xt ( n -- ): text )` leaves `: text )` to be compiled, which started a definition and gave "n NOT FOUND" when `sdl2` loaded (found while adding `render-hook`). Write `( xt, n -- : text )`. `ninja posix` does not load `sdl2`, so run the SDL tests after touching `ports/posix/sdl2.fs`.
 - A `render-hook` (see `examples/music/fm`) adds into `mix`, which holds 4096 cells: never ask it for more samples than that (`latency` is 2205, and a test that calls `fm-render` directly stays under 4096 or it overwrites the memory after `mix` and fails in unrelated tests).
-
-### Gotchas (all hit while writing it)
 
 - **r| copies** (changed 2026-10-13). `r"`, `r|` and `r~` used to keep, in a definition, the address of the text they were read from, not a copy. That is fine while the text stays: the boot text lives in the binary. It is wrong for a file read with `include` or `needs` (freed after loading: a lazy loader such as `: sdl2 r| ... | evaluate ;` found garbage later, seen as "he NOT FOUND" in lugforth-mini), for a line typed at the prompt (overwritten by the next line) and for a string evaluated then freed. Now `r-copy` (an `internals` variable, set to -1 by `common/fini.fs` at the end of the boot) makes them copy their text exactly as `s"` does; during the boot they still keep addresses, so the boot costs nothing more, and on ESP32 or Pico only what the user defines later is copied. `include-file` also keeps the text of a file alive when an address was taken (`src-ref`), which only happens if `r-copy` is 0. Test: `test-r-copy` in `common/ansi_compat_tests.fs`. **To go back** to addresses only: delete the line `-1 r-copy !` in `common/fini.fs` (the rest is then inert; `include-file` still protects included files). Possible side effects to watch: a program that relied on `r|` giving an address inside its own source (none in this repository), and the dictionary use of the strings defined after the boot (a 60 KB `r|` is copied once).
 - `ms` (`common/tasks.fs`) used to keep one CPU at 100% (a loop on `ms-ticks` with `pause`); on POSIX it now sleeps 1 ms between two `pause`. Other ports still busy-wait. In a program that polls (`key?` in a loop, a game or editor waiting for a key) sleep with `usleep` instead, which is in the `posix` vocabulary: `50000 usleep drop` for 50 ms (see `wd-wait` in `ports/posix/writhdeck.fs`). Also, the SDL console window only redraws in `key` and in `key?`, so a loop that never calls either shows nothing.
@@ -140,7 +29,19 @@ Short game-oriented words on top of libSDL2, for the POSIX build and (same sourc
 - After `sdl2` (and `sdl2-mixer`, ...) finish loading, `posix` is no longer in the search order for the code that follows (the loader's own `previous`s remove it): a plain example that wants `sysfunc`/`sofunc` directly (e.g. for its own `mkstemps`) needs its own `also posix` first, same as `sdl2_abc.fs`'s loader does internally. **Danger**: that `also posix` stays in effect for the rest of the file and can shift the search order enough that a later word of yours with a common name (`remember`, ...) gets shadowed by an unrelated word already defined in `forth`/`internals` (e.g. `common/filetools.fs` has its own `remember`, for `rm`/`reset`). Calling the wrong word silently corrupts state instead of raising a normal error, and the symptom is a bare "Error including" with no message, from wherever the corrupted stack/memory is next touched, not from the real call site (`ports/posix/faults.h` also converts a real SIGSEGV/SIGBUS/SIGFPE/SIGINT into the same silent throw, so check with `gdb -batch -ex run -ex bt` first: a clean process exit, not a caught signal, points at exactly this). Once found in `examples/music/sdl2_pianoroll.fs` (its own `remember` collided this way, only visible when the app was launched with a cwd where evaluation order happened to expose it), the fix was to rename the word (`key-remember`). Give any word defined after `also posix` a name unlikely to already exist (or check with `see`/a fresh vocabulary).
 - Testing with Xvfb + `xdotool`: `xdotool mousemove --window <id> x y` is window-relative and immune to the window's on-screen position, unlike plain root coordinates with `import -window root` (a window is not always at 0,0: check with `xdotool getwindowgeometry`). A `click` (down+up in one call) can be faster than a frame and get missed; a separate `mousedown`/`sleep 0.2`/`mouseup`, with the pointer already settled a moment before, is reliable. A screenshot taken right after a click can show the pre-click frame (redraw lag): re-screenshot, or check side effects (a growing recorded audio file, a written test file) instead of trusting one image.
 
-### `ports/gba/` (a new-platform port, not SDL2): boot-chain gotchas
+## More traps and test tricks
+
+- Found while porting eForth Windows and the editors (2026-10): an `if`, `begin` or `do` at top level (outside a definition) does not work, no error: `s" --x" option? if false to flag then` ran its `then` part every time, which silently switched off the animation of `sdl2_2048.fs`. Put it in a word. `<# #s #>` takes ONE number here (not a double). `include` is relative to the file that includes, not to the working directory. `b@` and `b!` in `ed`/`writhdeck` take a position in the text, not an address. `ms-ticks 1 or rand-seed !` seeds `random` ( n -- r ); `rnd` does not exist.
+- Look at the real thing: this machine can have an X display (`echo $DISPLAY`). Run the program, `xdotool windowfocus`, press a key with `keydown`, a short `sleep`, `keyup` (`xdotool key` is faster than a frame and is missed by `pressed?`), and `import -window $(xdotool search --name TITLE | head -1) shot.png`. A slowed down copy of an animation (3 s instead of 0.2 s) makes it visible in screenshots. Do not `pkill -f` a pattern that appears in your own shell command line.
+- A Makefile that checks results: `examples/utils/inference/Makefile` runs scenarios, prints the facts and greps the expected ones (`-> OK` or `-> FAIL`). Strip `\r` from the output of lugforth before grepping.
+
+- Web (ports/web) traps met 2026-10-22, plus the next ones (keyboard of a phone): a JSWORD body must not declare a variable named `sp` (it shadows the stack pointer: the word runs but does not pop its arguments); `[defined] x [if] ... [then]` inside a colon definition breaks the web interpreter (wrap whole definitions at top level); a JS source with a literal non-ASCII character is read as Windows-1252 when the page has no `<meta charset>` and the server sends none (use `'\u200b'`); a `keypress` handler that calls preventDefault on a phone stops the hidden textarea from getting the character. Test the web page with headless Chromium over CDP (`chromium --headless=new --remote-debugging-port`, python `websockets`, `Input.dispatchKeyEvent`, `Emulation.setDeviceMetricsOverride mobile`), after `ninja web` and from `out/web`.
+
+- A page without `<meta charset>` served without an encoding reads a JS source in Windows-1252: no literal non-ASCII character in the web sources.
+- On a phone, a keyboard that covers the page leaves the last line unreachable if there is nothing below it: add padding below the text (`context.KeepInView`).
+- Do not `pkill -f` a pattern that appears in your own shell command line (it kills the shell); list the processes with `ps` and kill by PID.
+
+## New platform ports (ports/gba): boot-chain gotchas
 
 Full detail in `ports/gba/README.md`; short version, since these apply to any new
 platform's `builtins.h`/`platform.fs`/boot-chain `.fs` file, not just GBA:
@@ -235,12 +136,9 @@ platform's `builtins.h`/`platform.fs`/boot-chain `.fs` file, not just GBA:
     runs per-pixel at any real resolution — full detail, with the exact
     numbers, in `ports/gba/README.md`'s "Performance" section.
 
-### Other Forths, for comparison (not part of this repo)
+## Forth pitfalls hit again and again
 
-- gforth 0.7.9 bundles no SDL. Bindings exist: `JeremiahCheatham/Gforth-SDL2-Bindings` (52 files, SDL2 + image + mixer + ttf, raw API, event enums suffixed `_ENUM`), `foggynight/gforth-sdl2` (SWIG generated, copy in `garvalf/forth-is-fun` `gforth/lib` with only SDL, events, render, scancode, timer, video, plus a small `sdl_init.fth` helper and the `forthtoise.fth` turtle), and the `magnoquill-gforth.fth` cart.
-- They use `c-library` (C compiled at load time, needs gcc + libsdl2-dev; floats and structs possible) and are 1:1 with the C API; gforth needs case-sensitive wordlists (`table >order`) to avoid the same `SDL_Quit`/`SDL_QUIT` clash. This branch uses `dlopen` (only the `.so` is needed), has a high level vocabulary, and is the only one that also runs in a browser.
-- Found while porting eForth Windows and the editors (2026-10): an `if`, `begin` or `do` at top level (outside a definition) does not work, no error: `s" --x" option? if false to flag then` ran its `then` part every time, which silently switched off the animation of `sdl2_2048.fs`. Put it in a word. `<# #s #>` takes ONE number here (not a double). `include` is relative to the file that includes, not to the working directory. `b@` and `b!` in `ed`/`writhdeck` take a position in the text, not an address. `ms-ticks 1 or rand-seed !` seeds `random` ( n -- r ); `rnd` does not exist.
-- Look at the real thing: this machine can have an X display (`echo $DISPLAY`). Run the program, `xdotool windowfocus`, press a key with `keydown`, a short `sleep`, `keyup` (`xdotool key` is faster than a frame and is missed by `pressed?`), and `import -window $(xdotool search --name TITLE | head -1) shot.png`. A slowed down copy of an animation (3 s instead of 0.2 s) makes it visible in screenshots. Do not `pkill -f` a pattern that appears in your own shell command line.
-- A Makefile that checks results: `examples/utils/inference/Makefile` runs scenarios, prints the facts and greps the expected ones (`-> OK` or `-> FAIL`). Strip `\r` from the output of lugforth before grepping.
-
-- Web (ports/web) traps met 2026-10-22: a JSWORD body must not declare a variable named `sp` (it shadows the stack pointer: the word runs but does not pop its arguments); `[defined] x [if] ... [then]` inside a colon definition breaks the web interpreter (wrap whole definitions at top level); a JS source with a literal non-ASCII character is read as Windows-1252 when the page has no `<meta charset>` and the server sends none (use `'\u200b'`); a `keypress` handler that calls preventDefault on a phone stops the hidden textarea from getting the character. Test the web page with headless Chromium over CDP (`chromium --headless=new --remote-debugging-port`, python `websockets`, `Input.dispatchKeyEvent`, `Emulation.setDeviceMetricsOverride mobile`), after `ninja web` and from `out/web`.
+- `b@` in the editor takes a *position in the text*, not an address.
+- `{ locals }` inside a conditional or loop body break: declare them at the top of the word.
+- A `|` inside an `r|` block ends it. `[char]` only inside definitions. `?do` with start > limit runs away.
+- A silent "Error including: file" is a throw somewhere: bisect with a scratch file using `.` prints.
