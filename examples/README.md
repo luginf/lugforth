@@ -81,7 +81,14 @@ boards (`ports/rpi`, `ports/efi`: `include sdl2_tetris.fs` from the card or the 
   opens around it when its flags are all there. Mouse (left opens, right flags) or keyboard (arrows,
   space opens, f flags), so it plays on the PC under UEFI where the mouse may be missing.
 
-`games_tests.fs` tests their logic without opening a window (`make test-ports`).
+Beside them, written for lugforth:
+
+* `sdl2_mastermind.fs`: find the four hidden colors (out of six, repeats allowed) in ten tries; after each
+  row, a black peg per color at its place, a white one per right color elsewhere. Keys 1 to 6 put a color
+  in the frame, left/right move it, up/down change its color, backspace takes it away, space or enter
+  checks the row; or the mouse (a color below, a hole, the green box). r a new game.
+
+`games_tests.fs` tests the logic of the four without opening a window (`make test-ports`).
 
 ## Ports from eForth Windows
 

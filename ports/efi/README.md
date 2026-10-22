@@ -19,7 +19,7 @@ make -C ports/efi          # out/efi/BOOTX64.EFI
 make -C ports/efi usb      # out/efi/usb.img: MBR + FAT32, EFI/BOOT/BOOTX64.EFI and the examples
 make -C ports/efi stage    # the same files as a tree in /tmp/lugforth, or in DEST=/media/me/STICK, for a stick you already have
 make -C ports/efi run      # QEMU (q35, OVMF) on that image: a window, the serial line here, sound (AUDIODEV=pa)
-make -C ports/efi test     # boots it under QEMU and checks 120 things (127 with EFIFS=dir of the EfiFs drivers)
+make -C ports/efi test     # boots it under QEMU and checks 124 things (131 with EFIFS=dir of the EfiFs drivers)
 ```
 
 ## Booting it from a USB stick
@@ -123,7 +123,7 @@ cannot be read), -2 (the firmware refuses the image: not an x64 UEFI one, or Sec
 | Faults (#GP, #PF, divide...) become `THROW` | tested | to try |
 | Idle CPU: sleeps in `WaitForEvent` | not measured | to try |
 | Console on the screen (GOP, at least 1280x960, zoom 1 to 3 by size) | tested | to try |
-| Screen words, lines, text, images, breakout, roguelike, tetris, snake, minesweeper | tested | to try |
+| Screen words, lines, text, images, breakout, roguelike, tetris, snake, minesweeper, mastermind | tested | to try |
 | Keyboard (firmware console input), typing and held keys | USB keyboard, tested | to try |
 | Files on the stick: `include`, `ls`, long names, write, rename, delete | tested, checked with mtools and fsck.fat | to try |
 | `ed`, `writhdeck` | tested | to try |

@@ -1,4 +1,4 @@
-\ Tests of the logic of sdl2_tetris.fs, sdl2_snake.fs and sdl2_minesweeper.fs,
+\ Tests of the logic of sdl2_tetris.fs, sdl2_snake.fs, sdl2_minesweeper.fs and sdl2_mastermind.fs,
 \ loaded without their game loop:  lugforth examples/games_tests.fs
 \ (the output ends with PASS). Needs libSDL2, but opens no window.
 
@@ -96,6 +96,45 @@ closed-mine dup cols mod swap cols / open-cell  state 1 t=
 7 rand-seed !  new-game  4 4 open-cell
 : open-all-safe ( -- ) cols rows * 0 do i mine has? 0= if i open-one then loop flood check-win ;
 open-all-safe  state 2 t=  flags mines t=  open-count cols rows * mines - t=
+depth 0 t=
+
+( ---- Mastermind ---- )
+: mastermind-no-run ;
+include sdl2_mastermind.fs
+1 rand-seed !
+
+: secret! ( a b c d -- ) secret 3 + c! secret 2 + c! secret 1+ c! secret c! ;
+create try 4 allot
+: try! ( a b c d -- a ) try 3 + c! try 2 + c! try 1+ c! try c! try ;
+new-game   state 0 t=   row 0 t=
+: secret-ok? ( -- f ) -1  holes 0 do secret i + c@ 1 7 within 0= if drop 0 then loop ;
+secret-ok? -1 t=
+\ the pegs: right places, then right colors elsewhere, each color counted once
+1 2 3 4 secret!
+1 2 3 4 try! score 0 t= 4 t=
+4 3 2 1 try! score 4 t= 0 t=
+1 3 5 6 try! score 1 t= 1 t=
+5 5 5 5 try! score 0 t= 0 t=
+1 1 1 1 try! score 0 t= 1 t=
+1 1 2 2 secret!
+2 2 1 1 try! score 4 t= 0 t=
+1 2 1 2 try! score 2 t= 2 t=
+1 1 1 3 try! score 0 t= 2 t=
+\ filling a row with the keys' words, then checking it
+new-game  1 1 2 2 secret!
+3 put 3 put 3 put   full? 0 t=   slot 3 t=
+check-row  row 0 t=   ( not full: nothing checked )
+4 put   full? -1 t=   check-row   row 1 t=  0 exact@ 0 t=  0 near@ 0 t=  slot 0 t=
+1 put 2 put  0 to slot  1 turn-color  row guess c@ 2 t=  -1 turn-color -1 turn-color  row guess c@ 0 t=
+take-away  slot 0 t=
+\ the right row: won
+new-game  1 1 2 2 secret!  0 to won 0 to played
+1 put 1 put 2 put 2 put  check-row  state 1 t=  won 1 t=  played 1 t=
+\ ten wrong rows: lost
+new-game  1 1 2 2 secret!
+: wrong-row ( -- ) 3 put 3 put 3 put 3 put check-row ;
+: ten-wrong ( -- ) 10 0 do wrong-row loop ;
+ten-wrong  state 2 t=  played 11 t=  won 1 t=
 depth 0 t=
 
 : report ( -- )   tfail @ 0= if ." PASS " tn @ . cr else ." FAILED " tfail @ . cr then ;

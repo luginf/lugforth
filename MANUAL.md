@@ -731,6 +731,7 @@ status_right  = goal help_bar
 | `sdl2_breakout.fs` | breakout |
 | `sdl2_roguelike.fs` | roguelike |
 | `sdl2_tetris.fs`, `sdl2_snake.fs`, `sdl2_minesweeper.fs` | rewritten after the games of r3forth |
+| `sdl2_mastermind.fs` | mastermind: four colors out of six in ten tries, keyboard or mouse |
 | `sdl2_3d.fs` | turning wireframes |
 | `sdl2_2048.fs` | sliding tiles; `--no-anim` turns the animation off |
 | `2048.fs` | 2048 in the terminal |
@@ -803,7 +804,7 @@ console on the screen, the `sdl2` words, `include` and the editors from the stic
 sudo apt install gnu-efi ovmf qemu-system-x86 dosfstools mtools
 make -C ports/efi usb     # out/efi/usb.img, to dd onto a stick
 make -C ports/efi run     # the same image under QEMU with OVMF
-make -C ports/efi test    # 120 checks under QEMU
+make -C ports/efi test    # 124 checks under QEMU
 ```
 
 Several sticks: `volumes` lists the FAT volumes (`*` marks the one in use), `n mount` makes one the disk of

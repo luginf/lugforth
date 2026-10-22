@@ -107,7 +107,7 @@ and file opcodes are shared in ports/baremetal/builtins.h (`BM_VOC` = rpi or pc,
 Duplication left: the common part of the two platform.fs (azerty, console-zoom, keys).
 
 `make -C ports/efi test` builds out/efi/BOOTX64.EFI (gcc + gnu-efi) and boots it under QEMU q35 + OVMF from a USB stick
-image (MBR + FAT32, tools/baremetal_mkdisk.py), 120 checks (tools/efi_qemu_test.py, which reuses baremetal_qemu_test.py). Needs
+image (MBR + FAT32, tools/baremetal_mkdisk.py), 124 checks (tools/efi_qemu_test.py, which reuses baremetal_qemu_test.py). Needs
 `gnu-efi ovmf qemu-system-x86 dosfstools mtools`. Stays in boot services: GOP screen, ConIn keyboard (no releases: a key
 is held 120 ms after its last press; the test uses `-device usb-kbd`, PS/2 does not repeat), the stick's FAT through
 Simple File System (ports/efi/files.h, same API as fat.h). Reuses ports/baremetal (screen.h, console.h, input.h, font8x8.h, sdl2.fs, files.fs...), shared with ports/rpi;
@@ -149,6 +149,7 @@ r3forth (https://github.com/phreda4/r3, Pablo Reda, MIT, credited in NOTICE) has
 defined, which skips the game loop (`[defined] x [if] [else] ... [then]` at the end of each file).
 tools/efi_qemu_test.py plays them from the stick (screendump checks). Not seen on the Pi under QEMU (same sdl2.fs).
 `color` resets the alpha to 255: set `alpha` after `color`. Edges of keys: `just` keeps the last state per key.
+`sdl2_mastermind.fs` (ours, not from r3) follows the same pattern: `mastermind-no-run`, tests in games_tests.fs, efi test.
 Other r3 candidates: bdash (Boulder Dash, own sprites needed), sokoban (levels of unclear license), raycaster,
 term demos (fire, matrix, torus), util/penner.r3 easing, lib/sdl2poly.r3 polygon fill.
 

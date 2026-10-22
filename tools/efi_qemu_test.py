@@ -441,6 +441,25 @@ def games(b):
   check('minesweeper: space opens cells (%d)' % opened, '', opened > 100)
   leave('minesweeper')
 
+  def band(scr, r):   # the color of row r of the board, between its small pegs and its green box
+    y = (tries_y(r) - 6) * 3 + 1
+    return pixel(scr, 120 * 3 + 1, y)
+  def tries_y(r):
+    return (9 - r) * 18 + 22 + 9 + 2
+  start('sdl2_mastermind.fs', (540, 720))
+  scr = b.screen()
+  check('mastermind: the first row is the one played', band(scr, 0) + band(scr, 1), band(scr, 0) == '8a6038' and band(scr, 1) == '6b4a2b')
+  for k in ['1', '2', '3', '4']:
+    key(k)
+  scr = b.screen()
+  colors = [pixel(scr, (16 + 20 * i) * 3 + 1, tries_y(0) * 3 + 1) for i in range(4)]
+  check('mastermind: keys 1 to 4 put four colors', colors, colors == ['e03030', 'f0d020', '30b040', '3070f0'])
+  key('ret')
+  scr = b.screen()
+  check('mastermind: enter checks it, the next row is played', band(scr, 0) + band(scr, 1),
+        band(scr, 1) == '8a6038' or '30b040' in pixel(scr, 30 * 3, 10 * 3))   # or found at once (1 in 1296)
+  leave('mastermind')
+
 
 def drivers_errors(b):
   """load-driver and drivers.fs without any driver at hand: what they say."""
@@ -523,7 +542,7 @@ def main():
     baremetal_mkdisk.put(spec, os.path.join(tmpd, name), name)
   for src, dest in [('examples/sdl2_roguelike.fs', 'sdl2_roguelike.fs'),
                     ('examples/sdl2_tetris.fs', 'sdl2_tetris.fs'), ('examples/sdl2_snake.fs', 'sdl2_snake.fs'),
-                    ('examples/sdl2_minesweeper.fs', 'sdl2_minesweeper.fs'),
+                    ('examples/sdl2_minesweeper.fs', 'sdl2_minesweeper.fs'), ('examples/sdl2_mastermind.fs', 'sdl2_mastermind.fs'),
                     ('ports/posix/editor.fs', 'lib/editor.fs'), ('ports/posix/writhdeck.fs', 'lib/writhdeck.fs'),
                     ('ports/posix/eval_copy.fs', 'lib/eval_copy.fs'), ('ports/efi/disk/drivers.fs', 'drivers.fs')]:
     baremetal_mkdisk.put(spec, os.path.join(ROOT, src), dest)
