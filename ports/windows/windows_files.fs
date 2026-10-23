@@ -44,6 +44,8 @@ $80 constant FILE_ATTRIBUTE_NORMAL
 also forth definitions
 
 ( Generic Files )
+: win-path ( z -- z )   \ a / of a path becomes a backslash: both can be typed
+   dup begin dup c@ while dup c@ 47 = if 92 over c! then 1+ repeat drop ;
 $80000000 constant R/O ( GENERIC_READ )
 $40000000 constant W/O  ( GENERIC_WRITE )
 R/O W/O or constant R/W
@@ -51,12 +53,12 @@ R/O W/O or constant R/W
 : CLOSE-FILE ( fh -- ior ) CloseHandle 0=ior ;
 : FLUSH-FILE ( fh -- ior ) FlushFileBuffers 0=ior ;
 : OPEN-FILE ( a n fam -- fh ior )
-   >r s>z r> FILE_SHARE_READ FILE_SHARE_WRITE or NULL
+   >r s>z win-path r> FILE_SHARE_READ FILE_SHARE_WRITE or NULL
    OPEN_EXISTING FILE_ATTRIBUTE_NORMAL NULL CreateFileA d0<ior ;
 : CREATE-FILE ( a n fam -- fh ior )
-   >r s>z r> FILE_SHARE_READ FILE_SHARE_WRITE or NULL
+   >r s>z win-path r> FILE_SHARE_READ FILE_SHARE_WRITE or NULL
    CREATE_ALWAYS FILE_ATTRIBUTE_NORMAL NULL CreateFileA d0<ior ;
-: DELETE-FILE ( a n -- ior ) s>z DeleteFileA 0=ior ;
+: DELETE-FILE ( a n -- ior ) s>z win-path DeleteFileA 0=ior ;
 : RENAME-FILE ( a n a n -- ior ) s>z -rot s>z swap MoveFileA 0=ior ;
 : WRITE-FILE ( a n fh -- ior )
    -rot dup >r 0 >r rp@ NULL WriteFile

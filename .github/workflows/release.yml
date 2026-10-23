@@ -270,9 +270,12 @@ jobs:
         run: |
           cp dist/lugforth.exe pkg/
           cp ports/windows/sdl2_test.fs pkg/
+          echo '." include ok" cr' > pkg/sdl2_test2.fs
           cd pkg
           timeout 120 ./lugforth.exe sdl2_test.fs < /dev/null 2>&1 | tee ../sdl2_test.log || true
           grep -q "ALL PASSED" ../sdl2_test.log
+          grep -q "SDL2.dll" ../sdl2_test.log
+          test "$(grep -c "include ok" ../sdl2_test.log)" = 2
 
       - name: Package
         shell: bash

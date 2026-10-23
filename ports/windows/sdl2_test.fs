@@ -1,5 +1,9 @@
 \ Test of the SDL2 bindings on Windows (CI): run from the folder of the package
 \ with SDL_VIDEODRIVER=dummy and SDL_AUDIODRIVER=dummy.
+ls lib
+ls .
+include lib/../sdl2_test2.fs
+include lib\..\sdl2_test2.fs
 sdl2
 also sdl2
 : check ( f -- ) 0= if ." FAILED" cr -1 throw then ;

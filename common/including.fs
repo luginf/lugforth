@@ -17,7 +17,7 @@
 
 internals definitions
 
-: ends/ ( a n -- f ) 1- + c@ [char] / = ;
+: ends/ ( a n -- f ) 1- + c@ dup 47 = swap 92 = or ;   ( / or a Windows backslash )
 : dirname ( a n -- )
    dup if
      2dup ends/ if 1- then
