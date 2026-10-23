@@ -37,7 +37,7 @@ create inrec 24 allot   variable inrn
 
 create csbi 24 allot
 variable in-mode
-termios definitions also windows
+also posix termios definitions also windows
 64 constant sizeof(termios)
 create new-termios 64 allot
 : .c_lflag ( a -- a ) 12 + ;
@@ -55,4 +55,4 @@ create new-termios 64 allot
    init-console
    stdout csbi GetConsoleScreenBufferInfo $ffffffff and 0= if 24 80 exit then
    csbi 16 + sw@ csbi 12 + sw@ - 1+   csbi 14 + sw@ csbi 10 + sw@ - 1+ ;
-previous forth definitions
+previous previous previous forth definitions
