@@ -56,11 +56,27 @@ jobs:
           grep -A25 "Call graph" /tmp/sample.txt | head -40 || true
           pkill -x lugforth || true
 
-      - name: Test
+      - name: Trace the system calls
         continue-on-error: true
         timeout-minutes: 3
         run: |
           cd /tmp
-          LUGFORTH_FAULTS=1 perl -e 'alarm 10; exec @ARGV' "$GITHUB_WORKSPACE/dist/lugforth" < /dev/null 2>&1 | head -c 600
-          echo '1 2 + . bye' | perl -e 'alarm 20; exec @ARGV' "$GITHUB_WORKSPACE/dist/lugforth" | tail -3
-          perl -e 'alarm 150; exec @ARGV' "$GITHUB_WORKSPACE/dist/lugforth" "$GITHUB_WORKSPACE/common/all_tests.fs" < /dev/null | tail -5
+          (LUGFORTH_FAULTS=1 "$GITHUB_WORKSPACE/dist/lugforth" < /dev/null > /tmp/out2.txt 2>&1 &)
+          sleep 1
+          P=$(pgrep -x lugforth | head -1)
+          sudo fs_usage -w -f filesys -f network "$P" > /tmp/fsu.txt 2>&1 &
+          sleep 2
+          sudo pkill -x fs_usage || true
+          pkill -x lugforth || true
+          head -40 /tmp/fsu.txt | cut -c1-220
+          echo "--- out2:"; head -c 300 /tmp/out2.txt
+          echo "--- sample, first calls:"
+          sample lugforth 1 -file /tmp/s2.txt >/dev/null 2>&1 || true
+
+      - name: Test
+        continue-on-error: true
+        timeout-minutes: 1
+        run: |
+          cd /tmp
+          echo '1 2 + . bye' | perl -e 'alarm 10; exec @ARGV' "$GITHUB_WORKSPACE/dist/lugforth" 2>&1 | head -c 400
+          perl -e 'alarm 10; exec @ARGV' "$GITHUB_WORKSPACE/dist/lugforth" < /dev/null 2>&1 | head -c 400
