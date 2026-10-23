@@ -54,7 +54,7 @@ variable console-mode
   STD_OUTPUT_HANDLE GetStdHandle to stdout
   STD_ERROR_HANDLE GetStdHandle to stderr
   stdin console-mode GetConsoleMode drop
-  stdin console-mode @ ENABLE_LINE_INPUT ENABLE_MOUSE_INPUT or
+  stdin console-mode @ ENABLE_LINE_INPUT ENABLE_MOUSE_INPUT or ENABLE_ECHO_INPUT or
                        ENABLE_WINDOW_INPUT or invert and ENABLE_VIRTUAL_TERMINAL_INPUT or SetConsoleMode drop
   stdout console-mode GetConsoleMode drop
   stdout console-mode @ ENABLE_VIRTUAL_TERMINAL_PROCESSING or SetConsoleMode drop

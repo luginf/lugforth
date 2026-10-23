@@ -13,18 +13,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# The boot code as C headers (MSVC and MinGW builds).
+Importation('$dst/gen/windows_boot.h', '$src/ports/windows/windows_boot.fs',
+            header_mode='win', name='boot')
+Importation('$dst/gen/windows_boot_extra.h', '$src/ports/windows/windows_boot_extra.fs',
+            header_mode='win', name='boot_extra')
+
+# MinGW on Linux, no Visual Studio needed: ninja windows-mingw -> out/windows-mingw/lugforth.exe
+# (a console program, so that pipes work; wine runs it: wine out/windows-mingw/lugforth.exe file.fs).
+if MINGW_ENABLED:
+  Alias('windows-mingw', ForthTest('$dst/tests/windows_mingw_test.out',
+                                   '$dst/windows-mingw/lugforth.exe', '$src/ports/windows/mingw_test.fs',
+                                   interp='wine'))
+  CompileMingw('$dst/windows-mingw/main.o', '$src/ports/windows/main.c',
+               implicit=['$dst/gen/windows_boot.h', '$dst/gen/windows_boot_extra.h'])
+  Copy('$dst/resources/eforth.ico', 'docs/images/eforth.ico')
+  ResourceMingw('$dst/windows-mingw/res.o', '$src/ports/windows/lugforth.rc',
+                implicit=['$dst/resources/eforth.ico'])
+  LinkMingw('$dst/windows-mingw/lugforth.exe',
+            '$dst/windows-mingw/main.o $dst/windows-mingw/res.o')
+
 if not WINDOWS_ENABLED:
   Return()
 
 Alias('windows', 'win32 win64')
 if not FAST:
   Default('windows')
-
-# Create boot.
-Importation('$dst/gen/windows_boot.h', '$src/ports/windows/windows_boot.fs',
-            header_mode='win', name='boot')
-Importation('$dst/gen/windows_boot_extra.h', '$src/ports/windows/windows_boot_extra.fs',
-            header_mode='win', name='boot_extra')
 
 # Compile Win32.
 Alias('win32', ' '.join([
@@ -52,8 +66,7 @@ LinkW64('$dst/windows/lugforth64.exe',
         ' '.join(['$dst/windows/lugforth64.obj',
                   '$dst/resources/lugforth_res64.res']))
 
-# Create icon.
-Copy('$dst/resources/eforth.ico', 'docs/images/eforth.ico')
+# The icon is copied above.
 CompileResource32('$dst/resources/lugforth_res32.res', '$src/ports/windows/lugforth.rc',
                   implicit=['$dst/resources/eforth.ico'])
 CompileResource64('$dst/resources/lugforth_res64.res', '$src/ports/windows/lugforth.rc',

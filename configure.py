@@ -17,6 +17,7 @@
 import argparse
 import os
 import sys
+import shutil
 import subprocess
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -101,6 +102,9 @@ D8_AVAILABLE = False
 D8 = 'UNSUPPORTED'
 
 WINDOWS_ENABLED = False
+MINGW_ENABLED = False
+MINGW_CC = 'x86_64-w64-mingw32-gcc'
+MINGW_RC = 'x86_64-w64-mingw32-windres'
 WINTMP = '/UNSUPPORTED'
 WIN_CL32 = 'UNSUPPORTED'
 WIN_CL64 = 'UNSUPPORTED'
@@ -193,6 +197,11 @@ def DetectGenericTools(args):
     if not args.quiet:
       sys.stderr.write('V8 checkout in $HOME/src/v8 not found, '
                        'disabling asm.js tests.\n')
+  global MINGW_ENABLED
+  if shutil.which(MINGW_CC) and shutil.which(MINGW_RC):
+    MINGW_ENABLED = True
+  elif not args.quiet:
+    sys.stderr.write('MinGW (x86_64-w64-mingw32-gcc, windres) not found, windows-mingw disabled.\n')
   try:
     LSQ('/usr/bin/nodejs')
     WEB_ENABLED = True
@@ -244,6 +253,8 @@ CXX = g++
 
 WIN_CL32 = {WIN_CL32}
 WIN_CL64 = {WIN_CL64}
+MINGW_CC = {MINGW_CC}
+MINGW_RC = {MINGW_RC}
 WIN_LINK32 = {WIN_LINK32}
 WIN_LINK64 = {WIN_LINK64}
 WIN_RC32 = {WIN_RC32}
@@ -317,6 +328,20 @@ rule link_win64
 rule rc_win32
   description = WIN_RC32 $in
   command = $WIN_RC32 /nologo /i $src /fo $out $in && touch $out
+
+rule cc_mingw
+  description = MINGW_CC $in
+  depfile = $out.d
+  deps = gcc
+  command = $MINGW_CC -O2 -w -DLUGFORTH_CONSOLE -I $src -I $dst -MD -MF $depfile -c $in -o $out
+
+rule link_mingw
+  description = MINGW_LINK $out
+  command = $MINGW_CC -mconsole -static -s -o $out $in -luser32
+
+rule rc_mingw
+  description = MINGW_RC $in
+  command = $MINGW_RC -I $src $in $out
 
 rule rc_win64
   description = WIN_RC64 $in
@@ -445,6 +470,18 @@ def ResizeImage(target, source, size, implicit=[]):
 
 def ConvertImage(target, source, implicit=[]):
   return Simple('convert_image', target, source, implicit)
+
+
+def CompileMingw(target, source, implicit=[]):
+  return Simple('cc_mingw', target, source, implicit)
+
+
+def LinkMingw(target, source, implicit=[]):
+  return Simple('link_mingw', target, source, implicit)
+
+
+def ResourceMingw(target, source, implicit=[]):
+  return Simple('rc_mingw', target, source, implicit)
 
 
 def CompileResource32(target, source, implicit=[]):

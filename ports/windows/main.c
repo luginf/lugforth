@@ -17,7 +17,13 @@
 #include <immintrin.h>
 
 #define CALLTYPE WINAPI
-#if defined(_M_X64)
+#if defined(__GNUC__) && defined(__x86_64__)
+// MinGW: no _mul128 / _div128, a 128 bit product does the same.
+# define SSMOD_FUNC \
+  --sp; { __int128 n = (__int128) *sp * (__int128) sp[1]; \
+  cell_t q = (cell_t) (n / tos); *sp = (cell_t) (n % tos); \
+  if (*sp < 0) { *sp += tos; tos = q - 1; } else { tos = q; } }
+#elif defined(_M_X64)
 # define SSMOD_FUNC \
   --sp; cell_t b, a = _mul128(*sp, sp[1], &b); b = _div128(b, a, tos, sp); \
   if (*sp < 0) { *sp += tos; tos = b - 1; } else { tos = b; }
@@ -155,3 +161,8 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show) {
   for (;;) { g_sys->rp = forth_run(g_sys->rp); }
 }
 
+
+#if defined(__MINGW32__) && defined(LUGFORTH_CONSOLE)
+// Console subsystem build (MinGW): standard handles are the ones of the caller, so pipes and redirection work.
+int main(void) { return WinMain(GetModuleHandle(NULL), NULL, NULL, SW_SHOWDEFAULT); }
+#endif

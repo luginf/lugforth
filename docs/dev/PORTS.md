@@ -138,3 +138,13 @@ posix termios`, `z"` and `z>s`, `bytes`, `sysfunc` (mapped to `sf-*` words: gete
 `stty raw -echo`. Traps: gforth compiles into a wordlist outside `forth` at start (`forth-wordlist set-current` first, or `only forth`
 loses the vocabularies); `{ locals }` are refused outside a definition; `included` paths are relative to the including file.
 `python3 tools/editors_pty_test.py ports/gforth/writhdeck-gforth.fs` runs the same pty test as for the native build (all pass).
+
+## Windows exe built with MinGW (no Visual Studio)
+
+`ninja windows-mingw` (needs `x86_64-w64-mingw32-gcc` and `windres`) builds `out/windows-mingw/lugforth.exe` on Linux from the same
+`ports/windows/main.c`, then runs `ports/windows/mingw_test.fs` under wine. Differences from the MSVC build, all in `main.c` / `interp.h`:
+`*/` uses `__int128` instead of `_mul128/_div128`; MinGW has no `__try`, so a vectored exception handler `longjmp`s back into `forth_run`
+(division by zero gives -10, an invalid address -9, as with MSVC); the exe is a *console* program (`-DLUGFORTH_CONSOLE`, `main` calls
+`WinMain`), so stdout, pipes and wine output work. The CI still builds with MSVC. With this exe the whole `ports/windows/sdl2_test.fs`
+of the CI passes under wine (SDL2.dll and SDL2_ttf.dll of the CI package, any TTF copied to `drive_c/windows/Fonts/arial.ttf`
+and `consola.ttf`). The MSVC exe prints nothing under wine (GUI subsystem).

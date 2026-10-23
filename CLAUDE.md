@@ -30,6 +30,7 @@ leave changes in the working tree and say how to see the diff. A commit asked fo
     python3 tools/editors_pty_test.py out/posix/lugforth   # pty test of ed, writhdeck (save, browser, idle CPU)
     make -C examples smoke                  # headless load of the SDL2 examples (SDL_VIDEODRIVER=dummy)
     make -C examples test-ports             # logic tests of the games, 3d, inference, raycaster, turtle
+    ninja windows-mingw                     # out/windows-mingw/lugforth.exe with MinGW, tested under wine (see docs/dev/PORTS.md)
     ninja web                               # out/web: pages and lugforth.js; serve from there (python3 -m http.server)
 
 Xvfb and `xdotool` are installed: run `Xvfb :99 &`, then the SDL examples with `DISPLAY=:99` and screenshot with `import -window root`
@@ -45,7 +46,7 @@ Do not `pkill -f` a pattern that appears in your own command line (it kills your
 
 At each modification, raise the version, even by a fraction: in the root `BUILD`,
 `SetVersions(version='YYYY.MM.DD.N', date='YYYY-MM-DD')` (the date of the change, N = 1, 2... for the changes of that day; `info` shows it
-under the revision), and the banner of `docs/MANUAL.md` (`Lugforth vYYYY.MM.DD.N`). Now 2026.10.23.10 (2026-10-23). The release tag is
+under the revision), and the banner of `docs/MANUAL.md` (`Lugforth vYYYY.MM.DD.N`). Now 2026.10.23.12 (2026-10-23). The release tag is
 `v` + this version (`v2026.10.23.1`): the release workflow refuses a tag that differs from `BUILD`. Dotted digits on purpose (the release
 workflow, the packages and the Android `versionCode` read it). Do it in the same change set. (Before 2026.10.23.1 it was 7.0.11.N, and the
 tags v0.5.x.)
