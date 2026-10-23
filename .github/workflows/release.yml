@@ -259,7 +259,7 @@ jobs:
           cp sdl2dl/LICENSE.txt pkg/SDL2-LICENSE.txt 2>/dev/null || true
           cp sdl2dl/README-SDL.txt pkg/ 2>/dev/null || true
           cp sdl2dl/LICENSE.*.txt pkg/ 2>/dev/null || true
-          cp ports/posix/sdl2.fs ports/posix/sdl2_ttf.fs ports/posix/sdl2_console.fs ports/posix/sdl2_console_ttf.fs ports/posix/eval_copy.fs pkg/lib/
+          cp ports/posix/sdl2.fs ports/posix/sdl2_ttf.fs ports/posix/sdl2_console.fs ports/posix/sdl2_console_ttf.fs ports/posix/eval_copy.fs ports/posix/editor.fs ports/posix/writhdeck.fs pkg/lib/
           ls -R pkg
 
       - name: Test the SDL2 words
@@ -275,6 +275,7 @@ jobs:
           timeout 120 ./lugforth.exe sdl2_test.fs < /dev/null 2>&1 | tee ../sdl2_test.log || true
           grep -q "ALL PASSED" ../sdl2_test.log
           grep -q "SDL2.dll" ../sdl2_test.log
+          grep -q "editors ok" ../sdl2_test.log
           grep -qi "fonts/.*ttf" ../sdl2_test.log
           test "$(grep -c "include ok" ../sdl2_test.log)" = 2
 
@@ -286,6 +287,7 @@ jobs:
           mkdir -p "release/$D"
           cp dist/lugforth.exe README.md "release/$D/"
           cp -R pkg/lib pkg/*.dll pkg/*.txt "release/$D/" 2>/dev/null || true
+          cp ports/windows/lugforth-gui.bat "release/$D/"
           rm -f "release/$D/sdl2_test.fs"
           sh tools/release_examples.sh "release/$D/examples"
           (cd release && 7z a -tzip "../dist/$D.zip" "$D" > /dev/null)

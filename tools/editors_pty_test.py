@@ -3,10 +3,13 @@
 terminal left in a bad mode. Standard library only.
 
     python3 tools/editors_pty_test.py out/posix/lugforth
+    python3 tools/editors_pty_test.py ports/gforth/writhdeck-gforth.fs    # the same under gforth
 """
 import os, pty, select, sys, tempfile, time, resource
 
 LF = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else 'out/posix/lugforth')
+GF = LF.endswith('.fs')       # a gforth loader, run by gforth
+ARGS = ['gforth', LF] if GF else [LF]
 failed = 0
 
 
@@ -15,8 +18,14 @@ class Term:
     env = dict(os.environ, TERM='xterm', LUGFORTH_HOME=home, LINES='24', COLUMNS='80')
     self.pid, self.fd = pty.fork()
     if self.pid == 0:
-      os.execve(LF, [LF], env)
+      os.execvpe(ARGS[0], ARGS, env)
     self.buf = b''
+    for ini in ('editor.ini', 'writhdeck.ini'):    # existing settings are read too
+      with open(os.path.join(home, ini), 'w') as f:
+        f.write('theme=colorforth\nwidth=72\ngoal=500\nwrap=1\n')
+    if GF:
+      self.pump(2.5)      # gforth prints no ok before the first line
+      os.write(self.fd, b'\r')
 
   def pump(self, secs):
     end = time.time() + secs

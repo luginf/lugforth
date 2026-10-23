@@ -486,6 +486,7 @@ z" mkdir" 2 sysfunc ed-mkdir
   0 to inil
   z" LUGFORTH_HOME" ed-getenv ?dup if z>s inip+ exit then
   z" HOME" ed-getenv ?dup if z>s inip+ s" /.local/share/lugforth" inip+ exit then
+  z" APPDATA" ed-getenv ?dup if z>s inip+ s" /lugforth" inip+ exit then
   s" ." inip+ ;
 : mk-dirs ( -- )
   0 inip inil + c!

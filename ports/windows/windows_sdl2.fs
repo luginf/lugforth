@@ -28,7 +28,13 @@ posix definitions also windows
 
 ( What the console window asks for: the C library, directories, no terminal )
 z" msvcrt.dll" dll msvcrt
-: sysfunc ( z n "name" -- ) msvcrt ;
+: c-name { z -- z }   \ the POSIX names that msvcrt has with an underscore
+   z z>s s" mkdir" compare 0= if z" _mkdir" exit then
+   z z>s s" chdir" compare 0= if z" _chdir" exit then
+   z z>s s" getcwd" compare 0= if z" _getcwd" exit then
+   z ;
+: sysfunc ( z n "name" -- ) >r c-name r> msvcrt ;
+: usleep ( us -- n ) 1000 / 1 max ms 0 ;
 : dlsym ( h z -- a ) GetProcAddress ;
 : isatty ( n -- f ) drop 0 ;
 0 constant stdin
@@ -37,10 +43,16 @@ z" msvcrt.dll" dll msvcrt
 : .d_type ( ent -- n ) @ $10 and if 4 else 8 then ;
 : closedir ( dh -- ior ) close-dir ;
 vocabulary termios
-termios definitions
-0 value form-hook   ( a console that is not the tty gives its own size here )
-posix definitions
 previous forth definitions
+
+( ed and writhdeck: lib/editor.fs and lib/writhdeck.fs, loaded when first asked, then the command runs again )
+create lazy-buf 320 allot
+: lazy-run { na nn la ln ca cn }
+   la ln included
+   ca lazy-buf cn cmove   32 lazy-buf cn + c!   na lazy-buf cn 1+ + nn cmove
+   lazy-buf cn 1+ nn + evaluate ;
+: ed ( "file" -- ) bl parse 255 min s" lib/editor.fs" s" ed" lazy-run ;
+: writhdeck ( "file" -- ) bl parse 255 min s" lib/writhdeck.fs" s" writhdeck" lazy-run ;
 
 : sdl2 ( -- ) s" lib/sdl2.fs" included s" sdl2" evaluate ;
 : sdl2-ttf ( -- ) s" lib/sdl2_ttf.fs" included s" sdl2-ttf" evaluate ;

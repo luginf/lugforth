@@ -127,3 +127,14 @@ checked: the SDL2 console, the editors, sockets (sockets.fs has the Linux consta
 (only the arm64 half of the universal binary ran), a real terminal size (`form` gave 0 0 in the CI pty). The binary is not signed:
 `xattr -d com.apple.quarantine lugforth` or right click, Open. A `( ... )` comment must hold no inner `)`: it ended a comment
 early and the boot faulted without a message.
+
+## ed and writhdeck under gforth
+
+`gforth ports/gforth/writhdeck-gforth.fs` (then `ed file`, `writhdeck file` at the prompt; tested with gforth 0.7.9). The files of
+`ports/posix` are not changed: the loader cuts the Forth text between `r|` and the closing bar, writes it to
+`/tmp/lugforth-gforth-body.fs` and includes it. `ports/gforth/compat.fs` supplies what gforth lacks: the vocabularies `ansi internals
+posix termios`, `z"` and `z>s`, `bytes`, `sysfunc` (mapped to `sf-*` words: getenv, mkdir, chdir, getcwd, remove, rename, time), `readdir` /
+`.d_name` / `.d_type` over `read-dir`, the ANSI words of `common/ansi.fs`, `ms-ticks`, and `<#` taking one cell as in ueForth. Raw mode is
+`stty raw -echo`. Traps: gforth compiles into a wordlist outside `forth` at start (`forth-wordlist set-current` first, or `only forth`
+loses the vocabularies); `{ locals }` are refused outside a definition; `included` paths are relative to the including file.
+`python3 tools/editors_pty_test.py ports/gforth/writhdeck-gforth.fs` runs the same pty test as for the native build (all pass).
