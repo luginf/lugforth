@@ -6,7 +6,7 @@ How the interpreter is built and tested. Part of the notes for developers (and f
 
 µEforth is an EForth-inspired Forth implementation bootstrapped from a minimalist C kernel. It targets multiple platforms: POSIX/Linux, ESP32 (Arduino), pico-ice, Web (WASM/JS), and Windows.
 
-[WORDS.md](../WORDS.md) is a generated reference of the words of the `forth` vocabulary and the other Linux/web vocabularies, with stack effects and descriptions where known (`tools/words_reference.py`, run it again after adding words). SDL2 words have their own reference, [ports/posix/SDL2-words.md](../../ports/posix/SDL2-words.md).
+[WORDS.md](../WORDS.md) is a generated reference of the words of the `forth` vocabulary and the other Linux/web vocabularies, with stack effects and descriptions where known (`tools/words_reference.py`, run it again after adding words). SDL2 words have their own reference, [docs/SDL2-words.md](../../docs/SDL2-words.md).
 
 ## Build System
 
@@ -55,7 +55,7 @@ The system is a threaded-code interpreter written in C with platform-specific ex
 **C layer** (`common/`):
 - `tier0_opcodes.h` — primitive cell/stack types and low-level macros (PUSH, DROP, DUP, PARK/UNPARK, THROWIT)
 - `tier1_opcodes.h`, `tier2_opcodes.h` — higher-level built-in opcodes
-- `interp.h` — the interpreter loop using GNU computed-goto dispatch (`goto **(void **) w`)
+- `common/interp.h` — the interpreter loop using GNU computed-goto dispatch (`goto **(void **) w`)
 - `core.h` — dictionary lookup, number conversion, word header layout
 - `bits.h` — cell size helpers
 - `floats.h`, `calls.h` — float and foreign-call opcodes

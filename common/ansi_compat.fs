@@ -23,13 +23,18 @@ forth definitions
 ( Constants and small helpers )
 -1 constant true
 0 constant false
+\ Flag inversion (same as 0=): 0 gives -1 (true), any other value gives 0 (false).
 : not ( f -- f ) 0= ;
+\ Does nothing. Handy as the default of a defer.
 : noop ( -- ) ;
 : 0> ( n -- f ) 0 > ;
 : u> ( u u -- f ) swap u< ;
 : within ( n lo hi -- f ) over - >r - r> u< ;
+\ Adds 2 to a number.
 : 2+ ( n -- n ) 2 + ;
+\ Subtracts 2 from a number.
 : 2- ( n -- n ) 2 - ;
+\ The address of the previous cell: a minus the size of a cell (8 bytes).
 : cell- ( a -- a ) cell - ;
 : chars ( n -- n ) ;
 : char+ ( a -- a ) 1+ ;
@@ -63,6 +68,7 @@ forth definitions
 : d= { lo1 hi1 lo2 hi2 -- f } lo1 lo2 = hi1 hi2 = and ;
 : du< { lo1 hi1 lo2 hi2 -- f } hi1 hi2 u< hi1 hi2 = lo1 lo2 u< and or ;
 : d< { lo1 hi1 lo2 hi2 -- f } hi1 hi2 < hi1 hi2 = lo1 lo2 u< and or ;
+\ True when the signed double d1 is greater than d2.
 : d> ( d d -- f ) 2swap d< ;
 : m+ ( d n -- d ) s>d d+ ;
 : 2constant ( a b "name" -- ) create swap , , does> dup @ swap cell+ @ ;
@@ -111,6 +117,7 @@ variable dpos
       2dup or 0=
    until 2drop dpos @ dbuf 80 + over - ;
 forth definitions internals
+\ Prints an unsigned double number followed by a space.
 : ud. ( ud -- ) ud>s type space ;
 : d. ( d -- )
    dup 0< if dabs ud>s swap 1- 45 over c! swap 1+
@@ -125,6 +132,7 @@ forth definitions
 : move ( src dst n -- ) >r 2dup u< r> swap if cmove> else cmove then ;
 : count ( a -- a n ) dup 1+ swap c@ ;
 : /string ( a n k -- a n ) swap over - >r + r> ;
+\ Copies the string a n to dst as a counted string: the length in the first byte, then the characters.
 : place { a n dst -- } n dst c! a dst 1+ n cmove ;
 : compare { a1 n1 a2 n2 -- -1|0|1 }
    0 begin
@@ -142,8 +150,10 @@ internals definitions
 forth definitions internals
 : search ( a1 n1 a2 n2 -- a3 n3 f ) 3 pick 3 pick (search) ;
 forth definitions
+\ Skips characters of the string a n until the first ch. Leaves the rest, starting at that character (n is 0 if ch is not found).
 : scan { a n ch -- a n }
    begin n if a c@ ch <> else 0 then while 1 +to a -1 +to n repeat a n ;
+\ Skips the leading characters ch of the string a n. Leaves the rest, starting at the first character that is not ch.
 : skip { a n ch -- a n }
    begin n if a c@ ch = else 0 then while 1 +to a -1 +to n repeat a n ;
 
@@ -178,8 +188,10 @@ forth definitions internals
 forth definitions
 
 ( Conditional compilation helpers and markers )
+\ True when the next word is found in the dictionary. Mostly used with [if]: [defined] foo [if] ... [then].
 : [defined] ( "name" -- f )
    bl parse find 0<> state @ if postpone literal then ; immediate
+\ True when the next word is not found in the dictionary: the reverse of [defined].
 : [undefined] ( "name" -- f )
    bl parse find 0= state @ if postpone literal then ; immediate
 : [compile] ( "name" -- ) ' , ; immediate
@@ -187,6 +199,7 @@ forth definitions
 : marker ( "name" -- )
    here current @ @ create , ,
    does> dup @ current @ ! cell+ @ here - allot ;
+\ Like marker, but first forgets the word of that name and everything after it if it exists, so a file can be loaded again without piling up its words.
 : anew ( "name" -- )
    >in @ dup bl parse find swap >in !
    if dup >in ! forget then >in ! marker ;
@@ -198,6 +211,7 @@ forth definitions
    2drop 0 ;
 
 ( Pseudo random numbers, a linear congruential generator )
+\ The seed of random (a linear congruential generator). Change it to get another sequence: ms-ticks 1 or rand-seed !
 variable rand-seed   1 rand-seed !
 : random ( n -- r ) rand-seed @ 1103515245 * 12345 + dup rand-seed !
                     16 rshift 32767 and swap mod ;

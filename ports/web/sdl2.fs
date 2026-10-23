@@ -17,7 +17,7 @@
 \ Same words and stack effects as ports/posix/sdl2.fs, so a game written with
 \ the short words (see examples/games/sdl2_breakout.fs) runs unchanged in both.
 \ Only the short words exist here, not the raw SDL_ names nor sdl2-image,
-\ sdl2-ttf and sdl2-mixer. See ports/web/SDL2.md.
+\ sdl2-ttf and sdl2-mixer. See docs/SDL2-web.md.
 \ NOTE: the block below is a string, so it must not contain a vertical bar,
 \ in Forth or in the JavaScript (write a ternary instead of a logical or).
 \ A tilde ends each JavaScript part.
@@ -363,6 +363,7 @@ JSWORD: dot { x y }
   var S = context.sdl;
   if (S.need()) { S.ctx.fillRect(x, y, 1, 1); }
 ~
+: plot ( x y -- ) dot ;   \ alias of dot, the usual Forth name
 JSWORD: line { x1 y1 x2 y2 }
   var S = context.sdl;
   if (!S.need()) { return; }
@@ -507,13 +508,27 @@ JSWORD: js-beep { freq ms w vol }
   if (!ac) { return; }
   if (ac.state !== 'running') { return; }
   var t = Math.max(ac.currentTime, S.beepEnd);
-  if (t - ac.currentTime > 2) { return; }
+  if (t - ac.currentTime > (S.ahead ? S.ahead : 2)) { return; }
   var d = ms / 1000;
   var g = ac.createGain();
   var level = (freq > 0 ? vol : 0) / 32768;
-  g.gain.setValueAtTime(level, t);
-  g.gain.setValueAtTime(level, t + Math.max(0, d - 0.01));
-  g.gain.linearRampToValueAtTime(0, t + d);
+  var env = S.env;
+  if (env && freq > 0) {
+    // attack, decay to the sustain level, hold, release over the end of the note
+    var a = Math.min(env.a, d);
+    var dc = Math.min(env.d, Math.max(0, d - a));
+    var sl = level * env.s;
+    var rs = Math.max(d - env.r, a + dc);
+    g.gain.setValueAtTime(a > 0 ? 0 : level, t);
+    if (a > 0) { g.gain.linearRampToValueAtTime(level, t + a); }
+    if (dc > 0) { g.gain.linearRampToValueAtTime(sl, t + a + dc); } else { g.gain.setValueAtTime(sl, t + a); }
+    if (rs > a + dc) { g.gain.setValueAtTime(sl, t + rs); }
+    g.gain.linearRampToValueAtTime(0, t + d);
+  } else {
+    g.gain.setValueAtTime(level, t);
+    g.gain.setValueAtTime(level, t + Math.max(0, d - 0.01));
+    g.gain.linearRampToValueAtTime(0, t + d);
+  }
   g.connect(ac.destination);
   var src = S.makeSource(w, freq, t);
   src.connect(g);
@@ -521,6 +536,42 @@ JSWORD: js-beep { freq ms w vol }
   src.start(t); src.stop(t + d);
   S.beepEnd = t + d;
 ~
+JSWORD: js-adsr { on a d s r }
+  context.sdl.env = on ? { a: a / 1000, d: d / 1000, s: s / 100, r: r / 1000 } : null;
+~
+JSWORD: js-ahead { s }
+  context.sdl.ahead = s;
+~
+( Several voices start together: each one is scheduled from the same time )
+JSWORD: js-chord-start { }
+  var S = context.sdl;
+  S.ensureAudio();
+  if (!S.ac) { return; }
+  S.chordT = Math.max(S.ac.currentTime, S.beepEnd);
+  S.chordEnd = S.chordT;
+~
+JSWORD: js-voice-start { }
+  var S = context.sdl;
+  if (!S.ac) { return; }
+  S.beepEnd = S.chordT;
+~
+JSWORD: js-voice-end { }
+  var S = context.sdl;
+  if (!S.ac) { return; }
+  S.chordEnd = Math.max(S.chordEnd, S.beepEnd);
+~
+JSWORD: js-chord-end { }
+  var S = context.sdl;
+  if (!S.ac) { return; }
+  S.beepEnd = S.chordEnd;
+~
+\ ADSR envelope of the beeps (and of play): attack, decay in ms, sustain in percent, release in ms
+\ (the release is the end of the note, not added to it). Off by default: the old short fade.
+0 value env-on   0 value env-a   0 value env-d   100 value env-s   0 value env-r
+: adsr ( a d s r -- ) 0 max to env-r  0 max 100 min to env-s  0 max to env-d  0 max to env-a  -1 to env-on
+  -1 env-a env-d env-s env-r js-adsr ;
+: adsr@ ( -- a d s r ) env-a env-d env-s env-r ;
+: adsr-off ( -- ) 0 to env-on  0 0 0 0 0 js-adsr ;
 : beep ( freq ms -- ) wave@ beep-volume@ js-beep ;
 
 ( ---- Waves by name, and play: notes typed fast ---- )
@@ -572,15 +623,58 @@ defer p-out   ' beep is p-out
   dup [char] r = over [char] p = or if drop p-rest exit then
   dup [char] n = if drop p-number exit then
   dup [char] & = if drop -1 to p-tie exit then
-  dup [char] v = if drop p-num if 0 max 15 min 400 * beep-volume else drop then exit then
+  dup [char] v = if drop p-flush p-num if 0 max 15 min 400 * beep-volume else drop then exit then
   dup [char] o = if drop p-num if 0 max 8 min to p-oct else drop then exit then
   dup [char] l = if drop p-num if 1 max to p-len else drop then exit then
   dup [char] t = if drop p-num if 20 max to p-tempo else drop then exit then
-  dup [char] w = if drop p-num if wave else drop then exit then
+  dup [char] w = if drop p-flush p-num if wave else drop then exit then
   dup [char] < = if drop p-oct 0> if -1 +to p-oct then exit then
   dup [char] > = if drop p-oct 8 < if 1 +to p-oct then exit then
   drop ;
-: play ( a n -- ) to p-n to p-a  begin p-n 0> while p-step repeat p-flush ;
+( ---- Several voices: s" o4 c d e, o3 c2 g2" play ---- )
+\ The voices are separated by commas (4 at most, 512 notes each) and start together. Each one
+\ begins with the octave, length, tempo, wave and volume the play started with.
+4 constant p-voices   512 constant p-max
+create p-evs p-voices p-max * 4 * cells allot      ( by note: frequency, ms, wave, volume )
+create p-cnt p-voices cells allot                  ( notes of each voice )
+0 value p-v   0 value p-nv   0 value p-k
+: p-slot ( v k -- a ) swap p-max * + 4 * cells p-evs + ;
+: p-rec ( freq ms -- )
+  p-v dup cells p-cnt + @ { f m v k }
+  k p-max < if
+    f  m  wave@  beep-volume@  v k p-slot
+    >r r@ 3 cells + ! r@ 2 cells + ! r@ cell+ ! r> !
+    1 v cells p-cnt + +!
+  then ;
+: p-comma ( a n -- i )   ( the index of the first comma, or n )
+  { a n } n 0 ?do a i + c@ [char] , = if i unloop exit then loop n ;
+: p-run ( a n -- ) to p-n to p-a  begin p-n 0> while p-step repeat p-flush ;
+: p-parse ( a n -- )   ( fills p-evs and p-cnt, one voice for each part between commas )
+  p-oct p-len p-tempo wave@ beep-volume@ { a n o l t w vol }
+  p-cnt p-voices cells erase   0 to p-v
+  ['] p-rec is p-out
+  begin n 0> p-v p-voices < and while
+    o to p-oct  l to p-len  t to p-tempo  w wave  vol beep-volume
+    a n p-comma to p-k
+    a p-k p-run
+    p-k 1+ n min to p-k   p-k +to a   p-k negate +to n
+    1 +to p-v
+  repeat
+  p-v to p-nv   ['] beep is p-out ;
+: p-event ( e -- ) { e } e @ e cell+ @ e 2 cells + @ e 3 cells + @ js-beep ;
+: p-mix ( -- )   ( schedules the voices from the same moment )
+  js-chord-start
+  p-nv 0 ?do
+    js-voice-start
+    i cells p-cnt + @ 0 ?do j i p-slot p-event loop
+    js-voice-end
+  loop
+  js-chord-end ;
+\ A tune is scheduled whole, so the usual 2 s look-ahead of a beep is lifted while it is.
+: play ( a n -- )
+  600 js-ahead
+  2dup p-comma over = if p-run 2 js-ahead exit then
+  p-parse p-mix 2 js-ahead ;
 0 setting pitch-drop
 : pitch-drop@ ( -- n ) [ ' pitch-drop >body ] literal @ ;
 2205 value latency   ( no effect in a browser: WebAudio schedules the sound itself )
@@ -686,6 +780,7 @@ sdl2 definitions
 : line graphic s" line" evaluate ;
 : box graphic s" box" evaluate ;
 : dot graphic s" dot" evaluate ;
+: plot graphic s" plot" evaluate ;
 : hline graphic s" hline" evaluate ;
 : frame graphic s" frame" evaluate ;
 : disc graphic s" disc" evaluate ;

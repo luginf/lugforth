@@ -1,5 +1,12 @@
 # Lugforth manual
 
+## Goal
+
+Lugforth is a playground to learn and experiment with Forth, and to build applications with it: virtual
+ones, on the PC (Linux, Windows, the web browser) and on Android, and real ones, on boards such as the
+Raspberry Pi Pico and the ESP32 (and on bare Raspberry Pi and PC hardware). The same language and the
+same words run everywhere: you try an idea at the prompt, keep it in a file, and carry it to another target.
+
 Two parts. **Learn** is a tutorial: start at chapter 1 and type every example. **Reference** has the
 details of Lugforth itself (binaries, editors, examples, ports, building). Word reference:
 [docs/WORDS.md](WORDS.md). Pitfalls: [docs/dev/PITFALLS.md](dev/PITFALLS.md).
@@ -43,7 +50,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with `ninja posix`). You
 prompt:
 
 ```
-Lugforth v7.0.11.8
+Lugforth v7.0.11.16
 :; ===========>/>
 type 'info' for help
  ok
@@ -247,10 +254,12 @@ For several values of one number, `case`:
 two ok
 ```
 
-> **Important.** `if`, `do`, `begin` and the other control words only work **inside a definition**.
-> Typed directly at the prompt they do not give an error, but they give a wrong result. Wrap the
-> test in a word: `: t 1 if ." yes" then ; t`. See
-> [the open question in docs/dev/IDEAS.md](dev/IDEAS.md#open-question-control-structures-outside-a-definition).
+> **Control words outside a definition.** `if`, `do`, `begin`, `case`, `for` and their partners also work
+> typed at the prompt, at the top level of a file or in an `evaluate`d string: `3 0 do i . loop`
+> prints `0 1 2`, `1 if ." yes" then` prints `yes`. The structure is compiled into a temporary
+> anonymous word, run as soon as it is closed (`loop`, `then`, `until`...), then forgotten. It may span
+> several lines, and stack items left before it stay available. A structure still open when an error
+> occurs is dropped; the next one starts afresh. (`common/interpret_control.fs`.)
 
 **Exercises**
 
@@ -493,7 +502,7 @@ Forth passes behavior around:
 Lugforth Lugforth Lugforth  ok
 ```
 
-**Where next.** Games with graphics and sound use the SDL2 words: read `examples/games/sdl2_snake.fs`, the
+**Where next.** Games with graphics and sound use the SDL2 words ([SDL2.md](SDL2.md) is the tour, [SDL2-words.md](SDL2-words.md) the list of every word, [SDL2-web.md](SDL2-web.md) the web build): read `examples/games/sdl2_snake.fs`, the
 shortest, then `sdl2_tetris.fs` and `sdl2_breakout.fs` ([Examples](#examples)). `ed` and `writhdeck`
 are written in Forth too, in `ports/posix/`: reading them shows the same words at a larger scale. For the
 rest of the language, [docs/WORDS.md](WORDS.md) lists every word with a short description. To go
@@ -543,7 +552,7 @@ Pushing a tag such as `v7.0.8.1` (or running `.github/workflows/release.yml` by 
 | Linux | Tarball and AppImage, built on Debian 10 (glibc 2.27 or newer). The AppImage carries the SDL2 libraries, the examples and a font. From a console it gives the terminal interface; a click on the desktop opens the window of `lugforth --gui` (a terminal if it cannot open). Examples are copied on first run to `~/.local/share/lugforth/examples` (`LUGFORTH_HOME` changes the directory), never overwritten. |
 | Android | `lugforth-VERSION-android.apk` (arm64), built by hand with `ports/android/build_apk.sh` and attached to the release. Signed with a debug key kept in `out/android/debug.keystore`: keep that file to be able to update an installed copy. |
 | Windows x64 | MSVC build, not in CI yet. No SDL2: the SDL2 examples, `ed`, `writhdeck` and the console window are POSIX (Linux) only. |
-| macOS | Builds but does not start yet; not published. |
+| macOS | `lugforth-<version>-macos-universal.zip` (Apple silicon and Intel, macOS 11 or later). Not signed: right click, Open, or `xattr -d com.apple.quarantine lugforth`. Tested in CI on Apple silicon: the prompt, the tests and Tab completion; the console window, the editors and sockets have not been tried. |
 
 Static binaries are not possible: Lugforth reaches libc, SDL2 and X11 through `dlopen`/`dlsym`.
 
@@ -551,7 +560,9 @@ Static binaries are not possible: Lugforth reaches libc, SDL2 and X11 through `d
 
 `lugforth --gui [file.fs]` (any Linux build with SDL2) opens a console window with a TrueType font,
 mouse selection and paste, and scrolling back. The menu is hidden until the button at the top right
-(or F10) is used: examples, text size, colors (with a picker), system fonts, help. Alt+Enter is full screen.
+(or F10) is used: examples, text size, colors (with a picker), system fonts, help. The Examples menu is there only when
+the current folder (or `LUGFORTH_EXAMPLES`) holds `.fs` files. A right click on the button hides it, a right click on its place
+shows it again; F10 still opens the menu. A middle click pastes the X11 selection, as in other Linux programs: the text just selected in this window or in another program (not the clipboard, which Ctrl+V pastes; SDL2 2.26 or newer, with an older one the middle click pastes the clipboard). Text selected here with the mouse is offered to the other programs the same way. Ctrl + and Ctrl - change the text size, Ctrl 0 resets it. Alt+Enter is full screen.
 
 Settings are kept in `~/.local/share/lugforth/lugforth.ini` (`LUGFORTH_HOME` changes the directory):
 
@@ -564,6 +575,10 @@ Settings are kept in `~/.local/share/lugforth/lugforth.ini` (`LUGFORTH_HOME` cha
 | `fullscreen=` | the key, `Alt+Enter` by default |
 
 ## Drawing at the prompt
+
+The words of this section and the sound one below are the SDL2 short words, described one by one in
+[SDL2-words.md](SDL2-words.md) (tour: [SDL2.md](SDL2.md), web build: [SDL2-web.md](SDL2-web.md)); other names for
+the same word, such as `plot` for `dot`, are listed under Aliases there.
 
 Type `graphic` once, then draw as in BASIC on an 8 bit micro: the drawing shows at once, under the
 text, with no `screen` and no `flip`.
@@ -585,7 +600,7 @@ no window: `graphic` says so.
 
 ## Sound at the prompt
 
-After `sdl2` (nothing to open, no window needed on Linux, the sound comes out of the speakers):
+In the console window (`lugforth --gui`) type `sound` once; elsewhere type `sdl2` (nothing to open, no window needed on Linux, the sound comes out of the speakers):
 
     440 300 beep                          \ a note: frequency in Hz, length in ms
     sine                                  \ the shape: square triangle saw noise sine
@@ -595,7 +610,54 @@ After `sdl2` (nothing to open, no window needed on Linux, the sound comes out of
 `#` sharp, `-` flat, a length after the note (4 quarter, 8 eighth, a dot lengthens by half), `r` or `p` a rest,
 `o4` the octave (`<` and `>` go down and up; `o4 c` is the middle C), `l8` the default length, `t120` the
 tempo, `n49` a note by number (n49 is the middle C, n0 a rest), `&` ties two notes of the same pitch
-(`c4&c8`), `v8` the volume (0 to 15), `w1` the wave. The full table is in `ports/posix/SDL2.md`.
+(`c4&c8`), `v8` the volume (0 to 15), `w1` the wave. The full table is in [SDL2.md](SDL2.md).
+
+**Several voices.** A comma in the string starts another voice, and all the voices start together
+(4 at most, 512 notes each; the sound lasts as long as the longest):
+
+    s" t120 o4 l8 e d c d e e e4, o3 l4 c g c g c2" play
+
+Examples (each one is a single line to type after `sdl2`):
+
+    \ a melody over a bass: the bass has its own octave, wave and volume
+    s" t140 o4 l8 w2 v10 c d e f g4 g4, w0 v6 o3 l4 c g c g, w1 v8 o2 l2 c c" play
+
+    \ a canon: the second voice waits a whole note (r1) and plays the same four notes
+    s" t120 o4 l4 c d e c, r1 c d e c" play
+
+    \ a chord of three voices, one note each: C, E and G
+    s" l1 o4 c, o4 e, o4 g" play
+
+    \ a note held while another moves: the sound lasts as long as the longest voice
+    s" t120 l8 o4 v12 w4 e g b >e4 <b4, v7 w1 o3 l1 e" play
+
+Each voice begins with the octave, length, tempo, wave and volume that the `play` started with, so repeat
+`t` or `w` in the voices that need them. After the `play` the settings are those of the last voice.
+On the web, on the Pi and on the PC the notes of all the voices are queued at once; with `sdl2-mixer`,
+`play` is a different word (see [SDL2.md](SDL2.md)).
+
+**Envelope.** `adsr ( attack decay sustain release -- )` shapes every note of `beep` and `play`: the attack
+and the decay are in ms, the sustain is a level in percent of the peak, the release in ms is the end of the
+note (it does not make it longer). `10 80 60 120 adsr` is a plucked sound, `300 0 100 300 adsr` a slow
+swell. Examples:
+
+    10 80 60 120 adsr                      \ pluck: quick attack, falls to 60 %
+    s" t160 o4 l8 c e g >c4" play
+
+    300 0 100 300 adsr                     \ swell: slow attack, slow release
+    s" t80 o3 l2 c g" play
+
+    5 0 100 40 adsr  sine                  \ soft organ: no click, short release
+    s" t120 o4 l4 e g e c2" play
+
+    20 150 40 400 adsr                     \ bell-like, with voices together
+    s" t90 o5 l2 e c, o3 l2 c g" play
+
+    adsr-off                               \ back to the plain note
+
+`adsr@` reads the four values back and `adsr-off` returns to the plain note (the default: a flat note with a very short fade at its end). Hits
+(`drum-hit`) and ABC tunes are not touched.
+
 `wave`, `beep-volume` and `pitch-drop` take their value from the stack, as `color` does: `1 wave`, `5000 beep-volume`
 (read them back with `wave@`, `beep-volume@`, `pitch-drop@`; `to wave` still works). `silence` stops. Tunes in ABC notation: `sdl2-abc`, `abc-play`.
 

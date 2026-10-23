@@ -37,10 +37,13 @@ static int snd_wave(int wave, uint32_t phase) {   // phase 0..65535 -> -32768..3
   return phase < 32768 ? 32767 : -32768;
 }
 
-#define SND_BEEPS 128
-static struct { uint32_t freq, left; int wave, vol; } snd_beeps[SND_BEEPS];
-static unsigned snd_beep_head, snd_beep_tail;
-static uint32_t snd_beep_phase;
+// Beeps: SND_CH channels (the voices of play, channel 0 for beep), each a queue played in order.
+#define SND_BEEPS 512
+#define SND_CH 4
+static struct { uint32_t freq, left, total; int wave, vol, env, a, d, s, r; } snd_beeps[SND_CH][SND_BEEPS];
+static unsigned snd_beep_head[SND_CH], snd_beep_tail[SND_CH];
+static uint32_t snd_beep_phase[SND_CH];
+static struct { int on; cell_t a, d, s, r; } snd_env;   // ADSR in ms and percent; off by default
 
 #define SND_HITS 8
 static struct { uint32_t phase, freq, left, total; int wave, drop, vol; } snd_hits[SND_HITS];
@@ -57,14 +60,42 @@ static void snd_wake(void);          // the port starts its output at the first 
 
 static uint32_t snd_ms(cell_t ms) { return ms <= 0 ? 0 : (uint32_t) ((uint64_t) ms * SND_RATE / 1000); }
 
-static void snd_beep(cell_t freq, cell_t ms, cell_t wave, cell_t vol) {
+static void snd_adsr(cell_t a, cell_t d, cell_t s, cell_t r, cell_t on) {
+  snd_env.on = on != 0; snd_env.a = a; snd_env.d = d;
+  snd_env.s = s < 0 ? 0 : s > 100 ? 100 : s; snd_env.r = r;
+}
+
+static void snd_vbeep(cell_t freq, cell_t ms, cell_t wave, cell_t vol, cell_t ch) {
   snd_wake();
-  if (snd_beep_head - snd_beep_tail >= SND_BEEPS || ms <= 0) return;
-  unsigned i = snd_beep_head % SND_BEEPS;
-  snd_beeps[i].freq = freq > 0 ? (uint32_t) freq : 0;
-  snd_beeps[i].left = snd_ms(ms);
-  snd_beeps[i].wave = (int) wave; snd_beeps[i].vol = (int) vol;
-  snd_beep_head++;
+  if (ch < 0 || ch >= SND_CH) return;
+  if (snd_beep_head[ch] - snd_beep_tail[ch] >= SND_BEEPS || ms <= 0) return;
+  unsigned i = snd_beep_head[ch] % SND_BEEPS;
+  snd_beeps[ch][i].freq = freq > 0 ? (uint32_t) freq : 0;
+  snd_beeps[ch][i].left = snd_beeps[ch][i].total = snd_ms(ms);
+  snd_beeps[ch][i].wave = (int) wave; snd_beeps[ch][i].vol = (int) vol;
+  snd_beeps[ch][i].env = snd_env.on && freq > 0;
+  snd_beeps[ch][i].a = (int) snd_ms(snd_env.a); snd_beeps[ch][i].d = (int) snd_ms(snd_env.d);
+  snd_beeps[ch][i].s = (int) snd_env.s * 10;     snd_beeps[ch][i].r = (int) snd_ms(snd_env.r);
+  snd_beep_head[ch]++;
+}
+
+static void snd_beep(cell_t freq, cell_t ms, cell_t wave, cell_t vol) { snd_vbeep(freq, ms, wave, vol, 0); }
+
+// Pads the shorter channels with a rest so that the next notes of every channel start together.
+static void snd_sync(void) {
+  uint64_t pend[SND_CH], most = 0;
+  for (int c = 0; c < SND_CH; c++) {
+    pend[c] = 0;
+    for (unsigned k = snd_beep_tail[c]; k != snd_beep_head[c]; k++) pend[c] += snd_beeps[c][k % SND_BEEPS].left;
+    if (pend[c] > most) most = pend[c];
+  }
+  for (int c = 0; c < SND_CH; c++) {
+    if (pend[c] >= most || snd_beep_head[c] - snd_beep_tail[c] >= SND_BEEPS) continue;
+    unsigned i = snd_beep_head[c] % SND_BEEPS;
+    snd_beeps[c][i].freq = 0; snd_beeps[c][i].env = 0; snd_beeps[c][i].wave = 0; snd_beeps[c][i].vol = 0;
+    snd_beeps[c][i].left = snd_beeps[c][i].total = (uint32_t) (most - pend[c]);
+    snd_beep_head[c]++;
+  }
 }
 
 static void snd_hit(cell_t freq, cell_t ms, cell_t wave, cell_t vol, cell_t drop) {
@@ -81,7 +112,7 @@ static void snd_hit(cell_t freq, cell_t ms, cell_t wave, cell_t vol, cell_t drop
 }
 
 static void snd_silence(void) {
-  snd_beep_tail = snd_beep_head;
+  for (int c = 0; c < SND_CH; c++) snd_beep_tail[c] = snd_beep_head[c];
   for (int i = 0; i < SND_HITS; i++) snd_hits[i].left = 0;
 }
 
@@ -116,21 +147,40 @@ static int snd_voices_busy(void) {
 static cell_t snd_tune_playing(void) { return snd_tune_on || snd_voices_busy() ? -1 : 0; }
 
 static cell_t snd_busy(void) {
-  if (snd_beep_head != snd_beep_tail) return -1;
+  for (int c = 0; c < SND_CH; c++) if (snd_beep_head[c] != snd_beep_tail[c]) return -1;
   for (int i = 0; i < SND_HITS; i++) if (snd_hits[i].left) return -1;
   return 0;
 }
 
+// Level of an ADSR note in thousandths: the release is the end of the note.
+static int snd_env_ad(uint32_t i, int a, int d, int s) {
+  if (i < (uint32_t) a) return (int) ((uint64_t) i * 1000 / a);
+  if (i < (uint32_t) a + d) return 1000 - (int) ((uint64_t) (1000 - s) * (i - a) / d);
+  return s;
+}
+#define SND_ENV_T __typeof__(snd_beeps[0][0])
+static int snd_env_gain(const SND_ENV_T *e) {
+  uint32_t i = e->total - e->left;
+  uint32_t rs = e->total > (uint32_t) e->r ? e->total - e->r : 0;
+  if (i < rs) return snd_env_ad(i, e->a, e->d, e->s);
+  return (int) ((uint64_t) snd_env_ad(rs, e->a, e->d, e->s) * (e->total - i) / (e->total - rs));
+}
+
 __attribute__((unused)) static int16_t snd_next(void) {   // unused on the Pi 4 (no output yet)
   int32_t s = 0;
-  while (snd_beep_head != snd_beep_tail && !snd_beeps[snd_beep_tail % SND_BEEPS].left) {
-    snd_beep_tail++; snd_beep_phase = 0;
-  }
-  if (snd_beep_head != snd_beep_tail) {
-    unsigned i = snd_beep_tail % SND_BEEPS;
-    if (snd_beeps[i].freq) s += snd_wave(snd_beeps[i].wave, snd_beep_phase >> 16) * snd_beeps[i].vol >> 15;
-    snd_beep_phase += (uint32_t) ((uint64_t) snd_beeps[i].freq * 65536 * 65536 / SND_RATE);
-    snd_beeps[i].left--;
+  for (int c = 0; c < SND_CH; c++) {
+    while (snd_beep_head[c] != snd_beep_tail[c] && !snd_beeps[c][snd_beep_tail[c] % SND_BEEPS].left) {
+      snd_beep_tail[c]++; snd_beep_phase[c] = 0;
+    }
+    if (snd_beep_head[c] == snd_beep_tail[c]) continue;
+    unsigned i = snd_beep_tail[c] % SND_BEEPS;
+    if (snd_beeps[c][i].freq) {
+      int32_t v = snd_wave(snd_beeps[c][i].wave, snd_beep_phase[c] >> 16) * snd_beeps[c][i].vol >> 15;
+      if (snd_beeps[c][i].env) v = (int32_t) ((int64_t) v * snd_env_gain(&snd_beeps[c][i]) / 1000);
+      s += v;
+    }
+    snd_beep_phase[c] += (uint32_t) ((uint64_t) snd_beeps[c][i].freq * 65536 * 65536 / SND_RATE);
+    snd_beeps[c][i].left--;
   }
   for (int i = 0; i < SND_HITS; i++) {
     if (!snd_hits[i].left) continue;

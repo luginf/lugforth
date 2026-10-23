@@ -35,6 +35,7 @@
 needs eval_copy.fs
 needs sdl2.fs
 
+\ The source of the console window (lugforth --gui), a string compiled when the window is first opened.
 : gui-src r|
 sdl2
 sdl2 definitions also posix
@@ -47,6 +48,14 @@ z" SDL_GetModState" 0 sdl SDL_GetModState ( -- n )
 z" SDL_SetClipboardText" 1 sdl SDL_SetClipboardText ( z -- n )
 z" SDL_GetClipboardText" 0 sdl SDL_GetClipboardText ( -- z )
 z" SDL_free" 1 sdl SDL_free ( a -- void )
+\ The X11 primary selection (the text just selected, pasted with the middle click) came with SDL 2.26:
+\ looked up by hand, so that an older SDL2 still gives the console, without the primary selection.
+' sdl >body @ constant sdl-lib
+: primary-get-fn ( -- a )   z" SDL_GetPrimarySelectionText" sdl-lib swap dlsym ;
+: primary-set-fn ( -- a )   z" SDL_SetPrimarySelectionText" sdl-lib swap dlsym ;
+also internals ' call0 constant ccall0   ' call1 constant ccall1 previous
+: primary-get ( -- z or 0 ) primary-get-fn dup 0= if exit then ccall0 execute ;
+: primary-set ( z -- ) primary-set-fn dup 0= if 2drop exit then ccall1 execute drop ;
 z" SDL_SetRenderTarget" 2 sdl SDL_SetRenderTarget ( a a -- n )
 z" getenv" 1 sysfunc c-getenv ( z -- z )
 $0303 constant SDL_TEXTINPUT
@@ -393,7 +402,7 @@ create selbuf 20000 allot
     i  i r1 = if c1 else 0 then  i r2 = if c2 else con-cols 1- then  sel-row
     i r2 < if 10 sel-put then
   loop
-  0 sel-put  selbuf SDL_SetClipboardText drop ;
+  0 sel-put  selbuf SDL_SetClipboardText drop  selbuf primary-set ;
 0 value dr   0 value rb   0 value bc1   0 value bc2
 : draw-sel ( top v -- )
   sel-on 0= if 2drop exit then
@@ -422,10 +431,14 @@ create text-queue q-size allot
   dup 10 = if drop 13 q-push exit then
   dup 13 = if drop exit then
   dup 9 = over 31 > or if q-push else drop then ;
-: paste ( -- )
-  SDL_GetClipboardText dup 0= if drop exit then
+: paste-text ( z -- )   ( a string of SDL, freed here )
   dup begin dup c@ dup while paste-char 1+ repeat 2drop
   SDL_free drop ;
+: paste ( -- )   SDL_GetClipboardText dup 0= if drop exit then paste-text ;
+: paste-primary ( -- )   ( middle click: the X11 selection, made in this window or in another program, not the clipboard )
+  primary-get-fn 0= if paste exit then   ( an SDL2 without it: the clipboard )
+  primary-get dup 0= if drop exit then
+  paste-text ;
 
 0 value kmod
 : ctrl? ( -- f ) kmod $c0 and 0<> ;
@@ -590,7 +603,10 @@ create spath 520 allot
   dup 2 = if drop s" Colors" exit then
   3 = if s" Font" exit then
   s" Help" ;
-: m-w ( i -- px ) m-name nip 2 + con-cw * ;
+0 value ex-have   \ a .fs file in the examples folder: else the Examples menu is not shown
+: m-w ( i -- px )
+  dup 0= ex-have 0= and if drop 0 exit then
+  m-name nip 2 + con-cw * ;
 : m-x ( i -- px ) con-cw swap 0 ?do i m-w + loop ;
 : m-at ( x -- i )   \ the menu under x, or -1
   -1 swap
@@ -624,6 +640,7 @@ create ent-pool pool-size allot
 : ent-xchg ( i j -- )
   2dup ent-a -rot cell-swap   2dup ent-n -rot cell-swap   ent-id -rot cell-swap ;
 : ent-sort ( -- )
+  ent-count 2 < if exit then   \ ?do with start > limit runs away
   ent-count 1 ?do
     i begin dup 0> if dup dup 1- ent< else 0 then while
       dup dup 1- ent-xchg  1-
@@ -638,6 +655,8 @@ create ent-pool pool-size allot
 : ex-list ( -- )
   ex-dir open-dir if drop exit then
   begin dup readdir dup while ex-ent repeat drop closedir drop ;
+: ex-check ( -- )   \ looked at again each time the bar opens: the folder may have changed
+  0 to ent-count   0 to ent-used   ex-list   ent-count 0<> to ex-have   0 to ent-count   0 to ent-used ;
 
 : no-fonts ( -- ) s" (no system font found)" 0 ent-add ;
 defer font-fill ( -- )   ' no-fonts is font-fill
@@ -671,7 +690,7 @@ defer font-pick ( k -- )   ' drop is font-pick
 
 : close-menu ( -- )  -1 to menu-open  -1 to hover  -1 to dirty ;
 : margin-step ( n -- )   margin + 0 max 64 min to margin  relayout save-ini ;
-: bar-toggle ( -- )   bar-open 0= to bar-open  close-menu  relayout ;
+: bar-toggle ( -- )   bar-open 0= to bar-open  close-menu  bar-open if ex-check then  relayout ;
 : open-menu ( i -- ) dup to menu-open menu-fill  0 to drop-off  -1 to hover  -1 to dirty ;
 : drop-x ( -- px ) menu-open m-x ;
 : drop-w ( -- px )
@@ -708,12 +727,12 @@ defer font-pick ( k -- )   ' drop is font-pick
 : help-line ( k -- a n )
   dup 0 = if drop s" Lugforth" exit then
   dup 1 = if drop s" " exit then
-  dup 2 = if drop s" Menu: the button at the top right, or F10; right click hides it." exit then
+  dup 2 = if drop s" Menu: the button at the top right, or F10. Right click on the button hides it, and on its place shows it again." exit then
   dup 3 = if drop s" Examples: run a file of your examples folder." exit then
   dup 4 = if drop s" View: text size (Ctrl+wheel, Ctrl + and Ctrl - too)." exit then
   dup 5 = if drop s" Colors (with a picker) and Font: kept with the size in" exit then
   dup 6 = if drop s" ~/.local/share/lugforth/lugforth.ini" exit then
-  dup 7 = if drop s" Mouse: drag to select and copy, middle click pastes." exit then
+  dup 7 = if drop s" Mouse: drag to select and copy, middle click pastes the selection (of this window or of another program)." exit then
   dup 8 = if drop s" Wheel, PageUp and PageDown scroll back." exit then
   dup 9 = if drop s" Tab completes words and file names, Up and Down" exit then
   dup 10 = if drop s" give back the history. Type  words  for the list" exit then
@@ -728,6 +747,11 @@ defer font-pick ( k -- )   ' drop is font-pick
 : hb-x ( -- n ) ow hb-size - ;
 : hb-hit ( x y -- f ) hb-size < swap hb-x >= and ;
 0 value ht
+0 value hb-hidden   \ right click on the button hides it, right click on its place shows it again
+: hb-toggle ( -- )
+  hb-hidden 0= to hb-hidden
+  hb-hidden if bar-open if bar-toggle then then
+  close-menu  -1 to dirty ;
 : draw-hb ( -- )
   bar-open if 60 64 67 rgb else 30 32 36 200 rgba then
   hb-x 0 hb-size hb-size box
@@ -740,8 +764,10 @@ defer font-pick ( k -- )   ' drop is font-pick
   0 0 ow bar-h 32 33 36 fbox
   230 230 230 glyph-tint
   menus 0 ?do
-    i menu-open = if i m-x 0 i m-w bar-h 60 64 67 fbox then
-    i m-name  i m-x con-cw +  bar-h con-ch - 2/  draw-text
+    i m-w if
+      i menu-open = if i m-x 0 i m-w bar-h 60 64 67 fbox then
+      i m-name  i m-x con-cw +  bar-h con-ch - 2/  draw-text
+    then
   loop ;
 : draw-drop ( -- )
   menu-open 0< if exit then
@@ -922,7 +948,7 @@ create gp 4 cells allot
     fg-col rgb-split 150 rgba
     cx con-cw * margin +  cy top - con-ch * top-px + margin + con-ch 3 / 2* +  con-cw  con-ch 3 /  box
   then
-  menu-on if bar-open if draw-bar then draw-hb draw-drop draw-picker draw-help then
+  menu-on if bar-open if draw-bar then hb-hidden 0= if draw-hb then draw-drop draw-picker draw-help then
   renderer SDL_RenderPresent drop
   0 to dirty ;
 
@@ -959,11 +985,12 @@ create gp 4 cells allot
   dup [char] c = shift? and if drop sel-copy -1 exit then
   dup [char] a >= over [char] z <= and shift? 0= and if 96 - q-push -1 exit then
   drop 0 ;
+0 value ctrl-cmd   \ a Ctrl key was taken as a command: the text event that follows is dropped
 : con-key-event ( sym -- )
   help-open if drop 0 to help-open -1 to dirty exit then
   pick-on if drop pick-close exit then
   dup fs-key? if drop fs-toggle exit then
-  ctrl? if dup ctrl-key if drop exit then then
+  ctrl? if dup ctrl-key if drop -1 to ctrl-cmd exit then then
   dup $0d = over $40000058 = or if drop 13 q-push exit then
   dup 8 = over 9 = or over 27 = or if q-push exit then
   dup $7f = if drop 27 q-push [char] [ q-push [char] 3 q-push [char] ~ q-push exit then
@@ -987,9 +1014,10 @@ create gp 4 cells allot
 : mouse-down ( -- )
   help-open if 0 to help-open -1 to dirty exit then
   pick-on if pick-click exit then
-  ev 16 + c@ 3 = if   ( right click on the menu: hide it, or show it again )
-    ev-y bar-h <  ev-x ev-y hb-hit or if bar-toggle then exit then
-  ev-x ev-y hb-hit if bar-toggle exit then
+  ev 16 + c@ 3 = if   ( right click: on the button, hide it or show it again; on the open bar, close it )
+    ev-x ev-y hb-hit if hb-toggle exit then
+    bar-open if ev-y bar-h < if bar-toggle then then exit then
+  ev-x ev-y hb-hit hb-hidden 0= and if bar-toggle exit then
   ev-y bar-h < if
     ev-x m-at to menu-clicked
     menu-clicked menu-open = if close-menu exit then
@@ -999,7 +1027,7 @@ create gp 4 cells allot
     ev-x ev-y drop-hit dup 0< 0= if run-entry close-menu exit then drop
     close-menu exit
   then
-  ev 16 + c@ 2 = if paste exit then
+  ev 16 + c@ 2 = if paste-primary exit then
   ev 16 + c@ 1 <> if exit then
   ev-x ev-y mouse>cell dup to sel-a to sel-b  0 to sel-on  -1 to dragging  -1 to dirty ;
 : mouse-up ( -- )
@@ -1036,6 +1064,7 @@ create gp 4 cells allot
     ctrl-next if
       ev 12 + c@ 32 or dup [char] a >= over [char] z <= and
       if 96 - q-push 0 to ctrl-next exit then drop 0 to ctrl-next then
+    ctrl-cmd if exit then   ( Ctrl and a key that was a command, such as + or -: no text )
     ev 12 + begin dup c@ dup while q-push 1+ repeat 2drop exit then
   dup SDL_KEYDOWN = if
     drop ev 24 + sl@ to kmod  ev 20 + sl@
@@ -1049,7 +1078,7 @@ create gp 4 cells allot
   dup $200 = if   ( window resized or turned )
     drop ev 12 + c@ dup 5 = swap 6 = or if relayout then exit then
   drop ;
-: con-pump ( -- ) begin ev SDL_PollEvent sign-extend while con-event repeat ;
+: con-pump ( -- ) begin ev SDL_PollEvent sign-extend while con-event repeat  0 to ctrl-cmd ;
 
 : con-form ( -- rows cols )   con-rows con-cols ;
 also termios
@@ -1113,13 +1142,17 @@ previous
 also forth definitions
 : graphic ( -- )   \ the drawing words at the prompt, in the console window (sdl2 is loaded too)
   sdl2  s" graphic-on" evaluate ;
+: sound ( -- )   \ the sound words at the prompt: 440 300 beep, s" c d e" play (sdl2 is loaded too)
+  sdl2  s" audio-open" evaluate ;
 previous sdl2 definitions
 
 previous
 | ;
 
+\ Compiles the console window code (gui-src) if it is not yet.
 : gui-load ( -- )   sdl2 gui-src eval-copy ;
 
 also posix
+\ True when standard input is a terminal (then the console window is not needed).
 : gui-tty? ( -- f )   stdin isatty ;
 previous

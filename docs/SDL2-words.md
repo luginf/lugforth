@@ -57,6 +57,7 @@ Word lists: [alphabetical index](#alphabetical-index).
 | `alpha` | `( a -- )` | Change only the alpha of the current color. |
 | `black` `white` `red` `green` `blue` `yellow` `cyan` `magenta` `orange` `purple` `pink` `brown` `gray` | `( -- $rrggbb )` | Named colors, constants: `$000000 $ffffff $ff0000 $00c000 $0000ff $ffff00 $00ffff $ff00ff $ff8000 $800080 $ff80c0 $804000 $808080`. Use as `red color`. |
 | `pen-r` `pen-g` `pen-b` `pen-a` | `( -- n )` | Values. Components of the current color. Read them, set the color with `rgba`. |
+| `ink` | `( n -- )` | Set the drawing color by number, as on an 8 bit micro: 0 black, 1 red, 2 green, 3 yellow, 4 blue, 5 magenta, 6 cyan, 7 white, 8 to 15 gray, orange, pink, brown, purple, light green, light blue, light gray. `1 ink` is `red color`. Opaque. |
 | `pen` | `( -- n )` | Value. Current color packed as `r + g<<8 + b<<16 + a<<24`, the layout of an `SDL_Color` passed by value (used by `text`). |
 
 ### Drawing
@@ -64,7 +65,7 @@ Word lists: [alphabetical index](#alphabetical-index).
 | Word | Stack | What it does |
 |------|-------|--------------|
 | `cls` | `( -- )` | Fill the whole screen with the current color. |
-| `dot` | `( x y -- )` | Draw one pixel. |
+| `dot` | `( x y -- )` | Draw one pixel. Also named `plot` (see [Aliases](#aliases)). |
 | `line` | `( x1 y1 x2 y2 -- )` | Draw a line, both ends included. |
 | `box` | `( x y w h -- )` | Filled rectangle. |
 | `frame` | `( x y w h -- )` | Rectangle outline. |
@@ -112,6 +113,12 @@ Word lists: [alphabetical index](#alphabetical-index).
 | `beeping?` | `( -- f )` | True while queued beeps or hits remain. |
 | `wave` | `( n -- )` | Setting. Shape of the next beeps: 0 square, 1 triangle, 2 saw, 3 noise, 4 sine (`wave@` reads it; `to wave` works too). |
 | `beep-volume` | `( n -- )` | Setting (`beep-volume@` reads it), default 3000. Beep amplitude, 0 to 32767. |
+| `square` `triangle` `saw` `noise` `sine` | `( -- )` | Choose the wave of the next beeps by name: `0 wave`, `1 wave`, `2 wave`, `3 wave`, `4 wave`. |
+| `play` | `( a n -- )` | Play a melody written as text (MML, as on the MSX), queued like `beep`: `s" t140 o4 l8 c d e c  e4 g4 r4 >c2" play`. Notes `c d e f g a b`, `#` or `+` sharp, `-` flat, then a length (4 quarter, 8 eighth, a dot lengthens by half); `r` or `p` a rest; `o4` octave, `<` one octave down, `>` one up; `l8` default length; `t120` tempo in quarters a minute; `w1` the wave; `v8` the volume 0 to 15; `n49` a note by number (`n0` a rest, 49 is the middle C); `c4&c8` ties two notes of the same pitch. Spaces are free; the settings stay from one `play` to the next. A comma starts another voice, played together with the others (4 voices, 512 notes each, each begins with the octave, length, tempo, wave and volume the `play` started with). Only in the short words (`sdl2`), not in the mixer: with `sdl2-mixer`, `play` is the word that plays a sound. |
+| `adsr` | `( a d s r -- )` | Envelope of the beeps and of `play`: attack and decay in ms, sustain in percent of the peak, release in ms (the end of the note, not added to it). Hits and ABC tunes are not affected. Off by default. |
+| `adsr@` | `( -- a d s r )` | The four values of `adsr`. |
+| `adsr-off` | `( -- )` | Back to the plain note, without envelope. |
+| `setting` | `( n "name" -- )` | Defines a setting, as `wave`, `beep-volume` and `pitch-drop` are: `3000 beep-volume` stores, `to beep-volume` too, and `beep-volume@` reads it. |
 | `audio-open` | `( -- )` | Open the beep audio device now instead of at the first `beep`. |
 | `audio-open?` | `( -- f )` | True when the beep audio device is open. |
 | `sample-rate` | `( -- n )` | Constant 44100. Beep sample rate. |
@@ -421,7 +428,77 @@ The reader itself lives in the vocabulary `abc-int`, which is not searched by de
 | `tmpl` | `( -- a )` | 64 byte buffer for the template and name of the temporary file. |
 | `tune-code` | `( -- n )` | Value. Error code kept while the temporary file is deleted. |
 
+## Drawing at the prompt, and the boards (rpi, efi, web)
+
+`graphic` makes the drawing words work at the prompt of the bare-metal console (Raspberry Pi, PC UEFI), of the
+console window (`--gui`) and of the web terminal, without `screen`: a drawing area is shown under (web: above) the
+text, which stays usable. `0 0 100 100 line`, `red color`, `cls`. The words below exist in the short words of those
+builds; they are listed here with the others.
+
+### Drawing area
+
+| Word | Stack | What it does |
+|------|-------|--------------|
+| `graphic` | `( -- )` | Puts `sdl2` in the search order and opens the drawing area (`gfx-on`), 640 by 480 logical pixels. |
+| `gfx-on` | `( -- )` | Opens the drawing area under the text of the console (bare metal) and sets `width`, `height` and `gfx-mode`. |
+| `graphic-size` | `( w h -- )` | Opens the drawing area with another size, up to 1920 by 1440. The console screen itself is 640 by 480 times `console-zoom`. Web: `graphic-on` does the same with 640 by 480. |
+| `gfx-mode` | `( -- f )` | Value. True (-1) while the drawing words work under the console. |
+| `gfx-cls` | `( -- )` | At the prompt: clears the drawing area to black, whatever the pen. `cls` calls it. |
+| `graphic-on` | `( -- )` | Web only: `640 480 graphic-size`. |
+
+### Keys on the boards (internal)
+
+The serial line of the boards is read as a stream of characters, without key releases (a USB keyboard is read by C code, see `pressed?`): a key counts as held for `key-hold` milliseconds after its last press.
+
+| Word | Stack | What it does |
+|------|-------|--------------|
+| `key-hold` | `( -- n )` | Value, default 120. How long a key counts as held after its last press, in ms. |
+| `key-times` | `( -- a )` | Array of 256 cells: the time (`ticks`) of the last press of each key code. |
+| `key-hit` | `( k -- )` | Records the press of key k: sets `last-key` and `key-times`. |
+| `forget-keys` | `( -- )` | Marks every key as not pressed. |
+| `key-within` | `( ms -- k\|-1 )` | Waits at most ms for a byte from the serial line: the byte, or -1 if none comes in time. |
+| `one-key` | `( c -- )` | Records one character c received on the serial line as a key press (`key-hit`): letters become lower case, 10 is `key-enter`, 127 `key-backspace`, ESC starts `escape`. |
+| `escape` | `( -- c\|-1 )` | After an ESC: reads what follows, an arrow key or the Esc key. |
+| `arrow` | `( c -- )` | Records the arrow key named by the letter that ends an escape sequence: A `key-up`, B `key-down`, C `key-right`, D `key-left`. |
+| `ticks>ms` | `( ticks -- ms )` | Converts the duration of a note in ticks to milliseconds, from `tune-bpm` (ABC tunes). |
+| `tune-level` | `( -- n )` | Value, default 2500. Amplitude of the notes of a tune, 0 to 32767. |
+| `tune-send` | `( loop -- )` | Sends the notes of the current tune to the mixer, once (0) or looping (-1). Used by `tune-play` and `tune-loop`. |
+
+### Sound on the PC (efi)
+
+| Word | Stack | What it does |
+|------|-------|--------------|
+| `sound-off` | `( -- )` | Stops the sound (the Intel HD Audio controller is reset) and writes `sound = off` in `lugforth.ini` at the root of the stick: read at boot. For a PC whose codec makes noise. |
+| `sound` `sound-on` | `( -- )` | Allows the sound again, writes `sound = on`. The controller starts at the next sound word. |
+| `snd-ok` | `( -- f )` | Starts the sound if needed and tells whether a controller answered. |
+
+## Aliases
+
+Other names for the same word, as other Forths and BASICs call them. An alias is a plain colon definition that calls
+the word, so it works the same everywhere `sdl2` does (Linux, web, rpi, efi). Add new ones here.
+
+Where to change them: an alias is one line, `: plot ( x y -- ) dot ;`, written right after the word it renames in
+each of the three sources of the short words, which must stay equal:
+
+| Build | Source |
+|-------|--------|
+| Linux (and the console window) | `ports/posix/sdl2.fs` |
+| Raspberry Pi and PC (UEFI) | `ports/baremetal/sdl2.fs` |
+| Web | `ports/web/sdl2.fs` (the web build also has a stub below, `: plot graphic s" plot" evaluate ;`, so that the word works at the prompt before `graphic`) |
+
+Then add the row to the table above, and the word to the alphabetical index at the end of this page.
+
+Where the other sections of this page come from: this file is written by hand, section by section, after
+the sources: Core, Images, Text, Sound and Tunes (`ports/posix/sdl2.fs`, `sdl2_image.fs`, `sdl2_ttf.fs`,
+`sdl2_mixer.fs`, `sdl2_abc.fs`); the words of the boards and the web page (`ports/baremetal/sdl2.fs`,
+`ports/web/sdl2.fs`, `ports/web/sdl2_abc.fs`); `sound-off` and `snd-ok` (`ports/efi/sound_ini.fs`, `ports/efi/hda.h`).
+The generated list of the other words is `docs/WORDS.md` (see `docs/dev/PITFALLS.md`, "Adding words").
+
+| Alias | Same as | Why |
+|-------|---------|-----|
+| `plot` | `dot` `( x y -- )` | Forth and BASIC programs say `plot` for one pixel. |
+
 ## Alphabetical index
 
-`abc` `abc-loop` `abc-play` `active-hook` `alpha` `audio-open` `audio-open?` `beep` `beep-volume` `beeping?` `black` `blue` `box` `brown` `c-close` `c-mkstemps` `circle` `close-screen` `cls` `color` `cursor` `cyan` `delay` `disc` `dot` `draw` `draw-part` `draw-size` `dt` `events` `flip` `font` `frame` `free-font` `free-image` `free-music` `free-sound` `fullscreen` `gray` `green` `height` `drum-hit` `hline` `image-alpha` `image-size` `image-tint` `IMG_LoadTexture` `key-backspace` `key-down` `key-enter` `key-esc` `key-left` `key-right` `key-space` `key-tab` `key-up` `last-key` `latency` `LEFT-BUTTON` `line` `load-font` `load-image` `load-music` `load-sound` `magenta` `MIDDLE-BUTTON` `Mix_CloseAudio` `Mix_FreeChunk` `Mix_FreeMusic` `Mix_HaltChannel` `Mix_HaltMusic` `Mix_LoadMUS` `Mix_LoadWAV_RW` `Mix_OpenAudio` `Mix_PlayChannelTimed` `Mix_Playing` `Mix_PlayingMusic` `Mix_PlayMusic` `Mix_SetSoundFonts` `Mix_Volume` `Mix_VolumeMusic` `mouse-x` `mouse-y` `music` `music-once` `music-volume` `music?` `orange` `pen` `pen-a` `pen-b` `pen-g` `pen-r` `pink` `pitch-drop` `pixel@` `play` `pressed?` `purple` `quit!` `quit?` `red` `render-hook` `renderer` `rgb` `rgba` `RIGHT-BUTTON` `sample-rate` `scan?` `screen` `screen-open?` `sdl` `sdl-error` `sdl-shutdown` `SDL_ClearQueuedAudio` `SDL_CloseAudioDevice` `SDL_CreateRenderer` `SDL_CreateTexture` `SDL_CreateTextureFromSurface` `SDL_CreateWindow` `SDL_Delay` `SDL_DestroyRenderer` `SDL_DestroyTexture` `SDL_DestroyWindow` `SDL_FreeSurface` `SDL_GetError` `SDL_GetKeyboardState` `SDL_GetMouseState` `SDL_GetQueuedAudioSize` `SDL_GetTicks` `SDL_Init` `SDL_InitSubSystem` `SDL_OpenAudioDevice` `SDL_PauseAudioDevice` `SDL_PollEvent` `SDL_PushEvent` `SDL_QueryTexture` `SDL_QueueAudio` `SDL_RenderClear` `SDL_RenderCopy` `SDL_RenderDrawLine` `SDL_RenderDrawPoint` `SDL_RenderDrawRect` `SDL_RenderFillRect` `SDL_RenderPresent` `SDL_RenderReadPixels` `SDL_RenderSetLogicalSize` `SDL_RWFromFile` `SDL_SetHint` `SDL_SetRenderDrawBlendMode` `SDL_SetRenderDrawColor` `SDL_SetTextureAlphaMod` `SDL_SetTextureBlendMode` `SDL_SetTextureColorMod` `SDL_SetWindowFullscreen` `SDL_SetWindowTitle` `SDL_ShowCursor` `SDL_UpdateTexture` `SDL_WaitEvent` `sdlimg` `sdlmix` `sdlttf` `silence` `sound-volume` `soundfont` `soundfont?` `sounds-playing` `stop-music` `stop-sounds` `text` `text-size` `ticks` `title` `TTF_CloseFont` `TTF_Init` `TTF_OpenFont` `TTF_Quit` `TTF_RenderUTF8_Blended` `TTF_SizeUTF8` `tune-bpm` `tune-loop` `tune-midi` `tune-ms` `tune-notes` `tune-play` `tune-playing?` `tune-program` `tune-save` `tune-stop` `wait` `wave` `wheel` `white` `width` `window-handle` `yellow` `zoom`
+`abc` `abc-loop` `abc-play` `active-hook` `alpha` `arrow` `audio-open` `audio-open?` `beep` `beep-volume` `beeping?` `black` `blue` `box` `brown` `c-close` `c-mkstemps` `circle` `close-screen` `cls` `color` `cursor` `cyan` `delay` `disc` `dot` `draw` `draw-part` `draw-size` `drum-hit` `dt` `escape` `events` `flip` `font` `forget-keys` `frame` `free-font` `free-image` `free-music` `free-sound` `fullscreen` `gfx-cls` `gfx-mode` `gfx-on` `graphic` `graphic-on` `graphic-size` `gray` `green` `height` `hline` `image-alpha` `image-size` `image-tint` `IMG_LoadTexture` `ink` `key-backspace` `key-down` `key-enter` `key-esc` `key-hit` `key-hold` `key-left` `key-right` `key-space` `key-tab` `key-times` `key-up` `key-within` `last-key` `latency` `LEFT-BUTTON` `line` `load-font` `load-image` `load-music` `load-sound` `magenta` `MIDDLE-BUTTON` `Mix_CloseAudio` `Mix_FreeChunk` `Mix_FreeMusic` `Mix_HaltChannel` `Mix_HaltMusic` `Mix_LoadMUS` `Mix_LoadWAV_RW` `Mix_OpenAudio` `Mix_PlayChannelTimed` `Mix_Playing` `Mix_PlayingMusic` `Mix_PlayMusic` `Mix_SetSoundFonts` `Mix_Volume` `Mix_VolumeMusic` `mouse-x` `mouse-y` `music` `music-once` `music-volume` `music?` `noise` `one-key` `orange` `pen` `pen-a` `pen-b` `pen-g` `pen-r` `pink` `pitch-drop` `pixel@` `play` `plot` `pressed?` `purple` `quit!` `quit?` `red` `render-hook` `renderer` `rgb` `rgba` `RIGHT-BUTTON` `sample-rate` `saw` `scan?` `screen` `screen-open?` `sdl` `sdl-error` `sdl-shutdown` `SDL_ClearQueuedAudio` `SDL_CloseAudioDevice` `SDL_CreateRenderer` `SDL_CreateTexture` `SDL_CreateTextureFromSurface` `SDL_CreateWindow` `SDL_Delay` `SDL_DestroyRenderer` `SDL_DestroyTexture` `SDL_DestroyWindow` `SDL_FreeSurface` `SDL_GetError` `SDL_GetKeyboardState` `SDL_GetMouseState` `SDL_GetQueuedAudioSize` `SDL_GetTicks` `SDL_Init` `SDL_InitSubSystem` `SDL_OpenAudioDevice` `SDL_PauseAudioDevice` `SDL_PollEvent` `SDL_PushEvent` `SDL_QueryTexture` `SDL_QueueAudio` `SDL_RenderClear` `SDL_RenderCopy` `SDL_RenderDrawLine` `SDL_RenderDrawPoint` `SDL_RenderDrawRect` `SDL_RenderFillRect` `SDL_RenderPresent` `SDL_RenderReadPixels` `SDL_RenderSetLogicalSize` `SDL_RWFromFile` `SDL_SetHint` `SDL_SetRenderDrawBlendMode` `SDL_SetRenderDrawColor` `SDL_SetTextureAlphaMod` `SDL_SetTextureBlendMode` `SDL_SetTextureColorMod` `SDL_SetWindowFullscreen` `SDL_SetWindowTitle` `SDL_ShowCursor` `SDL_UpdateTexture` `SDL_WaitEvent` `sdlimg` `sdlmix` `sdlttf` `setting` `silence` `sine` `snd-ok` `sound` `sound-off` `sound-on` `sound-volume` `soundfont` `soundfont?` `sounds-playing` `square` `stop-music` `stop-sounds` `text` `text-size` `ticks` `ticks>ms` `title` `triangle` `TTF_CloseFont` `TTF_Init` `TTF_OpenFont` `TTF_Quit` `TTF_RenderUTF8_Blended` `TTF_SizeUTF8` `tune-bpm` `tune-level` `tune-loop` `tune-midi` `tune-ms` `tune-notes` `tune-play` `tune-playing?` `tune-program` `tune-save` `tune-send` `tune-stop` `wait` `wave` `wheel` `white` `width` `window-handle` `yellow` `zoom`
 

@@ -18,6 +18,7 @@ needs windows_files.fs \
 needs windows_console.fs \
 needs allocation.fs \
 needs ../../common/phase2.fs
+needs ../../common/interpret_control.fs
 needs ../../common/phase_filetools.fs
 needs ../../common/phase_desktop.fs
 needs load_extra.fs \

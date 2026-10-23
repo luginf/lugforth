@@ -539,6 +539,8 @@ def test_sound_play(b):
   b.run('sdl2 440 300 beep 0 200 beep 660 300 beep 1500 ms')
   b.run('1 to wave 300 400 drum-hit 700 ms 0 to wave')
   paste(b, b'sdl2-abc\nr~ X:1\nL:1/4\nQ:1/4=120\nK:C\nC E G c\n~ abc-play 2500 ms\n')
+  b.run('s" o5 a1, o4 a8 r8" play 2600 ms')                      # two voices: 2 s, not 2.5 s
+  b.run('400 0 100 0 adsr 440 1000 beep 1300 ms adsr-off')       # attack over 400 ms
 
 
 def test_varvara_audio(b):
@@ -583,7 +585,7 @@ def check_sound(path):
   segs = [(a, b) for a, b in wav_segments(x, rate) if b - a > rate * 0.05]
   check('sound: %d sounds recorded' % len(segs), [(round(a / rate, 2), round((b - a) / rate, 2)) for a, b in segs],
         len(segs) >= 4)
-  if len(segs) < 4:
+  if len(segs) < 9:
     return
   (a1, b1), (a2, b2), (a3, b3) = segs[:3]
   f1, f2 = wav_freq(x, a1, b1, rate), wav_freq(x, a2, b2, rate)
@@ -601,13 +603,21 @@ def check_sound(path):
   got = [wav_freq(x, t0 + int(rate * (0.5 * k + 0.05)), t0 + int(rate * (0.5 * k + 0.4)), rate) for k in range(4)]
   check('tune C E G c (%s Hz)' % ' '.join('%.0f' % f for f in got), '',
         all(abs(g - f) / f < 0.03 for g, f in zip(got, want)))
+  # Two voices start together (one segment of 2 s, a second voice of 0.5 s inside it) and the ADSR attack rises.
+  (a4, b4), (a5, b5) = segs[7:9]   # the tune is four segments (3 to 6)
+  check('play with two voices lasts as long as the longest (%.2f s)' % ((b4 - a4) / rate),
+        [(round(a / rate, 2), round((b - a) / rate, 2)) for a, b in segs[:9]],
+        abs((b4 - a4) / rate - 2.0) < 0.05)
+  q = int(rate * 0.05)
+  e_head = max(abs(v) for v in x[a5:a5 + q]); e_end = max(abs(v) for v in x[a5 + int(rate * 0.6):a5 + int(rate * 0.65)])
+  check('adsr: the attack rises (%d then %d)' % (e_head, e_end), '', e_head < e_end / 3 and e_end > 1000)
   # varvara's tone.rom: a second of 261.6 Hz, among the later sounds. A loaded
   # machine chops it (the output runs dry between two frames of the ROM), so
   # what is checked is the total length of the pieces at that pitch.
-  pieces = [(a, b) for a, b in segs[4:] if abs(wav_freq(x, a, b, rate) - 261.6) < 8]
+  pieces = [(a, b) for a, b in segs[9:] if abs(wav_freq(x, a, b, rate) - 261.6) < 8]
   total = sum(b - a for a, b in pieces) / rate
   check('varvara audio: tone.rom at 262 Hz (%d pieces, %.2f s)' % (len(pieces), total),
-        [(round(a / rate, 2), round((b - a) / rate, 2)) for a, b in segs[4:]], 0.6 < total < 3)
+        [(round(a / rate, 2), round((b - a) / rate, 2)) for a, b in segs[9:]], 0.6 < total < 3)
 
 
 # ---- files: a FAT disk made here with dosfstools and mtools, used by the

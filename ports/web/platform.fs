@@ -589,7 +589,7 @@ if (!globalObj.write) {
 
   // ---- Built-in keyboard for a phone's browser (not in the Android app, which has its own bar) ----
   // Keys: letters (AZERTY or QWERTY, the button AZ/QW), shift, digits and symbols on two more
-  // pages, arrows, Tab (completion), Esc, Ctrl (sticky, then a letter), paste, space, Enter and
+  // pages, arrows (numbers page), Tab (letters page), Esc (numbers page), Ctrl (sticky, then a letter), paste, space, Enter and
   // backspace. A hold repeats the arrows and backspace. The button "native" hides it and brings the
   // phone's own keyboard back; the small button at the bottom right shows it again. The choices are
   // kept in localStorage.
@@ -641,13 +641,13 @@ if (!globalObj.write) {
     function kbRows() {
       var out = [];
       var top = [
-        key(kbLayout === 'azerty' ? 'AZERTY' : 'QWERTY', 1.6, function() {
+        key(kbPage ? (kbLayout === 'azerty' ? 'AZERTY' : 'QWERTY') : (kbLayout === 'azerty' ? 'az-' : 'qw-'), kbPage ? 1.6 : 1.2, function() {
           kbLayout = kbLayout === 'azerty' ? 'qwerty' : 'azerty';
           try { localStorage.setItem('lugkb-layout', kbLayout); } catch (e) {}
           kbDraw();
         }),
         key('Ctrl', 1.2, function() { KeyDown({key: 'Ctrl', keyCode: 0, ctrlKey: false, preventDefault: function() {}}); kbDraw(); }),
-        key('Esc', 1.1, function() { kbSend(27); }),
+        kbPage ? key('Esc', 1.1, function() { kbSend(27); }) : key('Tab', 1.1, function() { kbSend(9); }),
         key('Paste', 1.4, kbPaste),
         key('native', 1.5, kbHide),
       ];
@@ -667,12 +667,15 @@ if (!globalObj.write) {
         out.push(line);
       }
       var arrow = function(l, name) { return key(l, 1, function() { window.lugkey(name); }, true); };
-      out.push([
-        key(kbPage ? 'ABC' : '?123', 1.4, function() { kbPage = kbPage ? 0 : 1; kbShift = false; kbDraw(); }),
-        key('Tab', 1.2, function() { kbSend(9); }),
-        arrow('←', 'ArrowLeft'), arrow('↓', 'ArrowDown'), arrow('↑', 'ArrowUp'), arrow('→', 'ArrowRight'),
+      out.push(kbPage ? [
+        key('ABC', 1.4, function() { kbPage = 0; kbShift = false; kbDraw(); }),
+        arrow('\u2190', 'ArrowLeft'), arrow('\u2193', 'ArrowDown'), arrow('\u2191', 'ArrowUp'), arrow('\u2192', 'ArrowRight'),
         key('', 2, function() { kbSend(32); }),
-        key('⏎', 1.4, function() { kbSend(13); }),
+        key('\u23CE', 1.4, function() { kbSend(13); }),
+      ] : [
+        key('?123', 1.4, function() { kbPage = 1; kbShift = false; kbDraw(); }),
+        key('', 6, function() { kbSend(32); }),
+        key('\u23CE', 1.4, function() { kbSend(13); }),
       ]);
       return out;
     }

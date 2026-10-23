@@ -22,9 +22,12 @@
 
 needs editor.fs
 
+\ Flag: the code of writhdeck (the string wd-src) has been compiled.
 0 value wd-loaded
+\ Runs writhdeck on the file a n. Set to wd-main when wd-src is compiled.
 defer wd-go ( a n -- )
 
+\ The source of writhdeck, a string compiled the first time writhdeck is used.
 : wd-src r|
 only forth also internals also ansi
 [defined] posix [if] also posix also termios [then]

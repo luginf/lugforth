@@ -67,6 +67,7 @@ $808080 constant gray
   gfx-mode if gfx-cls exit then
   pen-a >r 255 alpha  0 0 width height fb-box  r> alpha ;
 : dot ( x y -- ) 1 1 fb-box ;
+: plot ( x y -- ) dot ;   \ alias of dot, the usual Forth name
 : hline ( x y w -- ) 1 fb-box ;
 : line ( x1 y1 x2 y2 -- ) fb-line ;
 : frame ( x y w h -- )
@@ -195,6 +196,13 @@ forget-keys
 2205 value latency   ( no effect here: the output keeps its own queue )
 44100 constant sample-rate
 : beep ( freq ms -- ) wave@ beep-volume@ snd-beep ;
+\ ADSR envelope of the beeps (and of play): attack, decay in ms, sustain in percent, release in ms
+\ (the release is the end of the note, not added to it). Off by default: no envelope.
+0 value env-on   0 value env-a   0 value env-d   100 value env-s   0 value env-r
+: adsr ( a d s r -- ) 0 max to env-r  0 max 100 min to env-s  0 max to env-d  0 max to env-a  -1 to env-on
+  env-a env-d env-s env-r -1 snd-adsr ;
+: adsr@ ( -- a d s r ) env-a env-d env-s env-r ;
+: adsr-off ( -- ) 0 to env-on  0 0 100 0 0 snd-adsr ;
 
 ( ---- Waves by name, and play: notes typed fast ---- )
 : square 0 wave ;   : triangle 1 wave ;   : saw 2 wave ;   : noise 3 wave ;   : sine 4 wave ;
@@ -245,15 +253,54 @@ defer p-out   ' beep is p-out
   dup [char] r = over [char] p = or if drop p-rest exit then
   dup [char] n = if drop p-number exit then
   dup [char] & = if drop -1 to p-tie exit then
-  dup [char] v = if drop p-num if 0 max 15 min 400 * beep-volume else drop then exit then
+  dup [char] v = if drop p-flush p-num if 0 max 15 min 400 * beep-volume else drop then exit then
   dup [char] o = if drop p-num if 0 max 8 min to p-oct else drop then exit then
   dup [char] l = if drop p-num if 1 max to p-len else drop then exit then
   dup [char] t = if drop p-num if 20 max to p-tempo else drop then exit then
-  dup [char] w = if drop p-num if wave else drop then exit then
+  dup [char] w = if drop p-flush p-num if wave else drop then exit then
   dup [char] < = if drop p-oct 0> if -1 +to p-oct then exit then
   dup [char] > = if drop p-oct 8 < if 1 +to p-oct then exit then
   drop ;
-: play ( a n -- ) to p-n to p-a  begin p-n 0> while p-step repeat p-flush ;
+( ---- Several voices: s" o4 c d e, o3 c2 g2" play ---- )
+\ The voices are separated by commas (4 at most, 512 notes each) and start together. Each one
+\ begins with the octave, length, tempo, wave and volume the play started with.
+4 constant p-voices   512 constant p-max
+create p-evs p-voices p-max * 4 * cells allot      ( by note: frequency, ms, wave, volume )
+create p-cnt p-voices cells allot                  ( notes of each voice )
+0 value p-v   0 value p-nv   0 value p-k
+: p-slot ( v k -- a ) swap p-max * + 4 * cells p-evs + ;
+: p-rec ( freq ms -- )
+  p-v dup cells p-cnt + @ { f m v k }
+  k p-max < if
+    f  m  wave@  beep-volume@  v k p-slot
+    >r r@ 3 cells + ! r@ 2 cells + ! r@ cell+ ! r> !
+    1 v cells p-cnt + +!
+  then ;
+: p-comma ( a n -- i )   ( the index of the first comma, or n )
+  { a n } n 0 ?do a i + c@ [char] , = if i unloop exit then loop n ;
+: p-run ( a n -- ) to p-n to p-a  begin p-n 0> while p-step repeat p-flush ;
+: p-parse ( a n -- )   ( fills p-evs and p-cnt, one voice for each part between commas )
+  p-oct p-len p-tempo wave@ beep-volume@ { a n o l t w vol }
+  p-cnt p-voices cells erase   0 to p-v
+  ['] p-rec is p-out
+  begin n 0> p-v p-voices < and while
+    o to p-oct  l to p-len  t to p-tempo  w wave  vol beep-volume
+    a n p-comma to p-k
+    a p-k p-run
+    p-k 1+ n min to p-k   p-k +to a   p-k negate +to n
+    1 +to p-v
+  repeat
+  p-v to p-nv   ['] beep is p-out ;
+: p-event ( e v -- ) { e v } e @ e cell+ @ e 2 cells + @ e 3 cells + @ v snd-vbeep ;
+: p-mix ( -- )   ( queues each voice on its own channel, started together )
+  snd-sync
+  p-nv 0 ?do
+    i cells p-cnt + @ 0 ?do j i p-slot j p-event loop
+  loop
+  snd-sync ;
+: play ( a n -- )
+  2dup p-comma over = if p-run exit then
+  p-parse p-mix ;
 : drum-hit ( freq ms -- ) wave@ beep-volume@ pitch-drop@ snd-hit ;
 : silence ( -- ) snd-silence ;
 : beeping? ( -- f ) snd-busy ;

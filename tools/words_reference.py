@@ -175,16 +175,49 @@ def group_map():
             result.setdefault(w.lower(), name)
     return result
 
+DEF_RE = re.compile(r'^(?::|defer|variable|create|value|\d+ value|\d+ constant|-?\d+ constant|2variable|fvariable|\S+ constant)\s+(\S+)?')
+
+def comment_of(lines, i):
+    """The comment that explains the definition on lines[i]: after the stack comment on the
+    same line (`: w ( a -- b ) ... \\ text` or `( a -- b ) ( text )`), else the lines of `\\ text`
+    right above it."""
+    line = lines[i].rstrip()
+    m = re.match(r'^:\s+\S+\s+\([^)]*\)\s*\(\s*([^)]+?)\s*\)', line)
+    if m and '--' not in m.group(1):
+        return m.group(1)
+    m = re.search(r'\s\\\s+(.+)$', line)
+    if m and not re.match(r'^\\', line):
+        return m.group(1).strip()
+    above = []
+    j = i - 1
+    while j >= 0 and re.match(r'^\\\s?', lines[j]) and lines[j].strip() != '\\':
+        above.insert(0, re.sub(r'^\\\s?', '', lines[j]).strip())
+        j -= 1
+    text = ' '.join(above).strip()
+    if text and not text.lower().startswith(('copyright', 'licensed', 'unless', 'you may', 'see the', 'http')):
+        return text
+    return ''
+
 def source_info():
     """Stack comments, constants and C bindings found in the Forth and C sources."""
     stack, desc = {}, {}
+    comments = {}
     files = sorted(glob.glob(ROOT + 'common/*.fs') + glob.glob(ROOT + 'ports/posix/*.fs') + glob.glob(ROOT + 'ports/web/*.fs'))
     for f in files:
         base = os.path.basename(f)
         if 'sdl2' in base or base in ('abc.fs',) or base.endswith('_tests.fs'):
             continue
-        for line in open(f, encoding='utf-8', errors='ignore'):
+        flines = open(f, encoding='utf-8', errors='ignore').read().split('\n')
+        for li, line in enumerate(flines):
+            m = re.match(r'^(?::|defer|variable|create|value|\S+ value|\S+ constant|2variable)\s+(\S+)', line)
+            if m and m.group(1) not in ('\\', '('):
+                c = comment_of(flines, li)
+                if c:
+                    comments.setdefault(m.group(1).lower(), c)
             m = re.match(r'^:\s+(\S+)\s+\(([^)]*)\)', line)
+            if m:
+                stack.setdefault(m.group(1).lower(), '( %s )' % m.group(2).strip())
+            m = re.match(r'^:\s+(\S+)\s+\{([^}]*--[^}]*)\}', line)   # locals: { a n -- r } also tells the stack
             if m:
                 stack.setdefault(m.group(1).lower(), '( %s )' % m.group(2).strip())
             m = re.match(r'^z" (\w+)" (\d+) (?:sysfunc|sofunc)\s+(\S+)', line)
@@ -205,7 +238,18 @@ def source_info():
             m = re.match(r'^\s*(?:X|Y|YV)\(\s*(?:\w+,\s*)?"?([^",\s]+)"?\s*,', line)
             if m:
                 tiers.setdefault(m.group(1).lower(), tier)
+    desc_comments.update(comments)
     return stack, desc, tiers
+
+desc_comments = {}
+
+LINEEDIT_VARS = set('cb cl cn cfirst cuniq cand da dl dn dpath ea el en ep fdir fl fmode fname ha hl hist hist-i hist-n hist-save la lf lowc lp lup pa pl pool pool-cnt pool-max pool-ptr pool-used sink sj sk upc wlen wsv'.split())
+PREFIX_NOTES = [
+  ('le-', 'Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called.'),
+  ('pg-', 'Internal helper of the pager (common/pager.fs), which stops the output of a typed line at each screenful. Not meant to be called.'),
+  ('hist', 'Internal state or helper of the history of typed lines (common/lineedit.fs). Not meant to be used.'),
+  ('pool', 'Internal state or helper of the list of candidate words kept by the Tab completion (common/lineedit.fs).'),
+]
 
 def cell(text):
     return text.replace('|', '\\|')
@@ -226,6 +270,14 @@ def main():
 
     def describe(key, vocab='forth'):
         """(stack, description, kind) for a lower case name."""
+        st0, d0, k0 = describe1(key)
+        if not d0:
+            for prefix, text in PREFIX_NOTES:
+                if key.startswith(prefix) or (key in LINEEDIT_VARS and prefix == 'le-' and not key.startswith(('hist', 'pool'))):
+                    return st0, text, 'note'
+        return st0, d0, k0
+
+    def describe1(key, vocab='forth'):
         s = site.get(key)
         n = NOTES.get(key)
         if s and s['desc'] and s['page'] != 'ESP32forth.html':
@@ -236,7 +288,7 @@ def main():
         if s and s['desc']:
             return s['stack'], s['desc'], 'site'
         st = stacks.get(key, '') or (s['stack'] if s else '')
-        d = descs.get(key, '')
+        d = desc_comments.get(key, '') or descs.get(key, '')
         if not d and key in tiers:
             d = 'Primitive defined in C.'
         if key in ANS and not d:
@@ -250,8 +302,8 @@ def main():
 
     T = []
     T.append('# Words of Lugforth\n')
-    T.append('The words of the interpreter, listed from the real thing: %s, for the Linux build (`out/posix/lugforth`)%s.\n' %
-             (version(), ' and the web build (`out/web/lugforth.js`)' if web else ''))
+    T.append('The words of the Linux build (`out/posix/lugforth`)%s, as the interpreters themselves list them.\n' %
+             (' and of the web build (`out/web/lugforth.js`)' if web else ''))
     T.append('''Generated by `tools/words_reference.py`, which asks the interpreters for their
 words, so nothing here can be missing (run it again after adding words: see
 docs/dev/PITFALLS.md). The descriptions come, in this order, from the reference
@@ -277,7 +329,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
   ESP32, so it also covers hardware words that this build does not have.
 * [ANS Forth standard](https://forth-standard.org/standard/words), for the
   standard words.
-* The SDL2 words are in [ports/posix/SDL2-words.md](../ports/posix/SDL2-words.md).
+* The SDL2 words are in [docs/SDL2-words.md](../docs/SDL2-words.md).
 ''')
 
     # ---- forth ----

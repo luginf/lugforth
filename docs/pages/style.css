@@ -26,3 +26,14 @@ footer { max-width:60rem; margin:2rem auto 1rem; padding:0 1rem; color:var(--mut
 .theme-toggle:hover { border-color:var(--accent); color:var(--accent); }
 .theme-toggle::before { content:"\263E"; }
 :root[data-theme="dark"] .theme-toggle::before { content:"\2600"; }
+img, video { max-width:100%; height:auto; }
+main { overflow-wrap:break-word; }
+@media (max-width: 40rem) {
+  header { gap:.3rem .8rem; padding:.5rem .8rem; }
+  header .brand { order:1; }
+  .theme-toggle { order:2; margin-left:auto; }
+  header nav { order:3; flex:1 1 100%; display:flex; flex-wrap:wrap; gap:.1rem 1rem; }
+  header nav a { margin-right:0; padding:.25rem 0; white-space:nowrap; }
+  main { padding:.8rem; }
+  footer { padding:0 .8rem; }
+}

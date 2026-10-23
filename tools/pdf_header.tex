@@ -1,0 +1,7 @@
+\usepackage{fvextra}
+\RecustomVerbatimEnvironment{verbatim}{Verbatim}{breaklines,breakanywhere}
+\usepackage{etoolbox}
+\AtBeginEnvironment{longtable}{\small\sloppy}
+\usepackage{xurl}
+\emergencystretch=3em
+\renewcommand{\texttt}[1]{{\ttfamily\hyphenchar\font=`\-\relax #1}}

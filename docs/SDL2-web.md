@@ -1,7 +1,7 @@
 # sdl2 short words for the Web
 
 The web build has the same `sdl2` short words as the Linux build
-(`ports/posix/SDL2.md`), drawn on an HTML canvas. A game written with them runs
+([SDL2.md](SDL2.md)), drawn on an HTML canvas. A game written with them runs
 unchanged in both: `examples/games/sdl2_breakout.fs` is loaded as is by
 `ports/web/sdl2_breakout.html`, `examples/music/sdl2_drums.fs` by
 `ports/web/sdl2_drums.html`, `examples/music/fm/sdl2_fm.fs` (an FM synthesizer with MIDI input, see `examples/music/fm/README.md`) by
@@ -61,7 +61,7 @@ pointer of the canvas cannot do.
 ## What exists
 
 These words have the same names and stack effects as on Linux, see
-[../posix/SDL2-words.md](../posix/SDL2-words.md) for what each one does:
+[SDL2-words.md](SDL2-words.md) for what each one does:
 
 * Screen: `screen close-screen screen-open? zoom width height title
   fullscreen cursor`
@@ -111,7 +111,7 @@ These words have the same names and stack effects as on Linux, see
   refuse to play sound before. Beeps before that are dropped, and a queue
   more than two seconds long is not extended. A `drum-hit` plays at once over
   the other sounds, with at most 24 sounds alive.
-* **Tunes** (`sdl2-abc`, the reader of ABC notation, see `ports/posix/SDL2.md`) have
+* **Tunes** (`sdl2-abc`, the reader of ABC notation, see [SDL2.md](SDL2.md)) have
   the same words as on Linux: `abc abc-play abc-loop tune-play tune-loop
   tune-stop tune-playing? tune-bpm tune-program tune-ms tune-notes`, but there
   is no MIDI synthesizer or soundfont in a browser. Each note is played by an

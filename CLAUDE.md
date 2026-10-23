@@ -45,7 +45,7 @@ Do not `pkill -f` a pattern that appears in your own command line (it kills your
 
 At each modification, raise the version, even by a fraction: in the root `BUILD`,
 `SetVersions(version='7.0.11.N', date='YYYY-MM-DD')` (the date of the change; `info` shows it under the revision), and the banner of
-`docs/MANUAL.md` (`Lugforth v7.0.11.N`). Now 7.0.11.8 (2026-10-22). A new 7.0.x at a significant step. It stays numeric on purpose
+`docs/MANUAL.md` (`Lugforth v7.0.11.N`). Now 7.0.11.16 (2026-10-23). A new 7.0.x at a significant step. It stays numeric on purpose
 (the release workflow and the packages read it). Do it in the same change set.
 
 ## Layout
@@ -58,13 +58,14 @@ At each modification, raise the version, even by a fraction: in the root `BUILD`
   inherited from uEforth and the tools that read them are archived in `attic/oldsite/` (see its README; `tools/words_reference.py` still reads it for the descriptions).
 - The website copies its demo files by name from `out/web` (`ports/web/BUILD`): adding a web page means a line in `ports/web/BUILD`,
   in the demo list of `tools/make_pages.py` and in the `ninja` targets of `.github/workflows/pages.yml`.
+- `python3 tools/make_pdf.py` builds `docs/lugforth_manual.pdf` (pandoc + xelatex) from every `.md` of `docs/` except `pages/`; run it again after editing the docs.
 - The bare-metal disk and the USB stick keep the folders of `examples/` and carry `MANUAL.md` and `WORDS.md`.
 
 ## Forth pitfalls hit again and again (more in `docs/dev/PITFALLS.md`)
 
 `b@` in the editor takes a *position in the text*, not an address; `{ locals }` inside a conditional or loop body break (declare
 them at the top of the word); a `|` inside an `r|` block ends it; `[char]` only inside definitions; `?do` with start > limit runs
-away; `if`, `do`, `begin` outside a definition silently give a wrong result (wrap in a word). On the web build the cells are 32 bits
+away; `if`, `do`, `begin` outside a definition work (common/interpret_control.fs, a temporary word compiled in a scratch buffer) except on the esp32, pico, pico-ice and gba boots. On the web build the cells are 32 bits
 (`*/` for 16.16 products). Silent "Error including: file" = a throw somewhere: bisect with a scratch file using `.` prints.
 
 ## Other projects to credit
@@ -76,6 +77,6 @@ goes in NOTICE with its text.
 
 The JavaScript of `ports/web/platform.fs` and `sdl2.fs` sits in `r~ ... ~` blocks, themselves inside a JS template string of the built
 `lugforth.js`: a `~` or a backtick in it breaks every page (use `String.fromCharCode(126, 96)`). On a phone (not the Android app, `; wv)` in the
-user agent) platform.fs draws a built-in keyboard (AZERTY/QWERTY button, arrows, Tab, Esc, sticky Ctrl, paste, two symbol pages, "native"
+user agent) platform.fs draws a built-in keyboard (az-/qw- button, Tab on the letters page; arrows and Esc on the numbers page, sticky Ctrl, paste, two symbol pages, "native"
 to get the phone's own keyboard back, choices in localStorage `lugkb-*`). Tested in headless Chrome with a mobile user agent driven over
 the DevTools protocol (mouse events on the buttons), not on a real phone.

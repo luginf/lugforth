@@ -125,7 +125,7 @@ disk:
 	python3 $(ROOT)/tools/baremetal_mkdisk.py $(OUT)/disk.img $(EXAMPLE_FILES) disk/autoexec.fs=autoexec.fs \
 	  $(ROOT)/ports/posix/editor.fs=lib/editor.fs $(ROOT)/ports/posix/writhdeck.fs=lib/writhdeck.fs \
 	  $(ROOT)/ports/posix/eval_copy.fs=lib/eval_copy.fs \
-	  $(ROOT)/docs/MANUAL.md=MANUAL.md $(ROOT)/docs/WORDS.md=WORDS.md \
+	  $(foreach f,MANUAL.md WORDS.md SDL2.md SDL2-words.md SDL2-web.md,$(ROOT)/docs/$(f)=docs/$(f)) \
 	  $(foreach f,$(wildcard $(ROOT)/examples/system/varvara/*.fs $(ROOT)/examples/system/varvara/*.rom),$(f)=system/varvara/$(notdir $(f)))
 
 test: all

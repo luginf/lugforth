@@ -17,6 +17,7 @@ needs ../../common/phase1.fs
 needs posix.fs
 needs allocation.fs
 needs ../../common/phase2.fs
+needs ../../common/interpret_control.fs
 needs ../../common/phase_filetools.fs
 needs ../../common/phase_desktop.fs
 needs termios.fs

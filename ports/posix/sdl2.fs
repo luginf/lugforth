@@ -191,6 +191,7 @@ create ink-table
 
 : cls ( -- ) renderer SDL_RenderClear drop ;
 : dot ( x y -- ) renderer -rot SDL_RenderDrawPoint drop ;
+: plot ( x y -- ) dot ;   \ alias of dot, the usual Forth name
 : line ( x1 y1 x2 y2 -- )
   { x1 y1 x2 y2 } renderer x1 y1 x2 y2 SDL_RenderDrawLine drop ;
 
@@ -359,11 +360,31 @@ make-sine
   32768 < if 32767 else -32767 then
 ;
 
+: ms>smp ( ms -- n ) sample-rate * 1000 / ;
+\ ADSR envelope of the beeps (and of play): attack, decay in ms, sustain in percent, release in ms
+\ (the release is the end of the note, not added to it). Off by default: the old short fade.
+0 value env-on   0 value env-a   0 value env-d   100 value env-s   0 value env-r
+: adsr ( a d s r -- ) 0 max to env-r  0 max 100 min to env-s  0 max to env-d  0 max to env-a  -1 to env-on ;
+: adsr@ ( -- a d s r ) env-a env-d env-s env-r ;
+: adsr-off ( -- ) 0 to env-on ;
+0 value e-a   0 value e-d   0 value e-rs   0 value e-rl   0 value e-n   0 value e-lv
+: env-ad ( i -- g )   ( the level in thousandths at sample i, before the release )
+  dup e-a < if 1000 * e-a / exit then
+  dup e-a e-d + < if e-a - 1000 env-s 10 * - * e-d / 1000 swap - exit then
+  drop env-s 10 * ;
+: env-gain ( i -- g )
+  dup e-rs < if env-ad exit then
+  e-n swap - e-lv * e-rl / ;
+: env-start ( n -- )   ( the samples of a note )
+  dup to e-n  env-a ms>smp to e-a  env-d ms>smp to e-d
+  env-r ms>smp - 0 max to e-rs  e-n e-rs - to e-rl  e-rs env-ad to e-lv ;
+
 : fill-beep { freq n buf }
   0 { phase }
+  env-on if n env-start then
   n 0 ?do
     phase wave-sample beep-volume@ * 15 arshift
-    i n 441 - > if n i - * 441 / then
+    env-on if i env-gain * 1000 / else i n 441 - > if n i - * 441 / then then
     buf i 2* + w!
     freq 65536 * sample-rate / +to phase   phase $ffff and to phase
   loop
@@ -427,15 +448,76 @@ defer p-out   ' beep is p-out
   dup [char] r = over [char] p = or if drop p-rest exit then
   dup [char] n = if drop p-number exit then
   dup [char] & = if drop -1 to p-tie exit then
-  dup [char] v = if drop p-num if 0 max 15 min 400 * beep-volume else drop then exit then
+  dup [char] v = if drop p-flush p-num if 0 max 15 min 400 * beep-volume else drop then exit then
   dup [char] o = if drop p-num if 0 max 8 min to p-oct else drop then exit then
   dup [char] l = if drop p-num if 1 max to p-len else drop then exit then
   dup [char] t = if drop p-num if 20 max to p-tempo else drop then exit then
-  dup [char] w = if drop p-num if wave else drop then exit then
+  dup [char] w = if drop p-flush p-num if wave else drop then exit then
   dup [char] < = if drop p-oct 0> if -1 +to p-oct then exit then
   dup [char] > = if drop p-oct 8 < if 1 +to p-oct then exit then
   drop ;
-: play ( a n -- ) to p-n to p-a  begin p-n 0> while p-step repeat p-flush ;
+( ---- Several voices: s" o4 c d e, o3 c2 g2" play ---- )
+\ The voices are separated by commas (4 at most, 512 notes each) and start together. Each one
+\ begins with the octave, length, tempo, wave and volume the play started with.
+4 constant p-voices   512 constant p-max
+create p-evs p-voices p-max * 4 * cells allot      ( by note: frequency, ms, wave, volume )
+create p-cnt p-voices cells allot                  ( notes of each voice )
+0 value p-v   0 value p-nv   0 value p-k
+: p-slot ( v k -- a ) swap p-max * + 4 * cells p-evs + ;
+: p-rec ( freq ms -- )
+  p-v dup cells p-cnt + @ { f m v k }
+  k p-max < if
+    f  m  wave@  beep-volume@  v k p-slot
+    >r r@ 3 cells + ! r@ 2 cells + ! r@ cell+ ! r> !
+    1 v cells p-cnt + +!
+  then ;
+: p-comma ( a n -- i )   ( the index of the first comma, or n )
+  { a n } n 0 ?do a i + c@ [char] , = if i unloop exit then loop n ;
+: p-run ( a n -- ) to p-n to p-a  begin p-n 0> while p-step repeat p-flush ;
+: p-parse ( a n -- )   ( fills p-evs and p-cnt, one voice for each part between commas )
+  p-oct p-len p-tempo wave@ beep-volume@ { a n o l t w vol }
+  p-cnt p-voices cells erase   0 to p-v
+  ['] p-rec is p-out
+  begin n 0> p-v p-voices < and while
+    o to p-oct  l to p-len  t to p-tempo  w wave  vol beep-volume
+    a n p-comma to p-k
+    a p-k p-run
+    p-k 1+ n min to p-k   p-k +to a   p-k negate +to n
+    1 +to p-v
+  repeat
+  p-v to p-nv   ['] beep is p-out ;
+: w@s ( a -- n )   ( a signed 16-bit sample, little endian )
+  dup c@ swap 1+ c@ 8 lshift or 32768 xor 32768 - ;
+: mix-add { src dst n }
+  n 0 ?do
+    src i 2* + w@s  dst i 2* + w@s +  -32767 max 32767 min  dst i 2* + w!
+  loop ;
+0 value m-off
+: p-vsamples ( v -- n )
+  0 { v n }  v cells p-cnt + @ 0 ?do v i p-slot cell+ @ ms>smp +to n loop n ;
+: p-longest ( -- n ) 0 p-nv 0 ?do i p-vsamples max loop ;
+: p-event { e mixb tmp }
+  e cell+ @ ms>smp { cnt }
+  e 2 cells + @ wave  e 3 cells + @ beep-volume
+  e @ 0= if tmp cnt 2* erase else e @ cnt tmp fill-beep then
+  tmp mixb m-off 2* + cnt mix-add
+  cnt +to m-off ;
+: p-mix ( -- )   ( renders the voices of p-evs into one buffer and queues it )
+  audio-open  audio-open? 0= if exit then
+  p-longest dup 0= if drop exit then { n }
+  n 2* allocate throw { mixb }   n 2* allocate throw { tmp }
+  mixb n 2* erase
+  wave@ beep-volume@ { w0 v0 }
+  p-nv 0 ?do
+    0 to m-off
+    i cells p-cnt + @ 0 ?do j i p-slot mixb tmp p-event loop
+  loop
+  w0 wave  v0 beep-volume
+  audio-dev mixb n 2* SDL_QueueAudio drop
+  mixb free drop  tmp free drop ;
+: play ( a n -- )
+  2dup p-comma over = if p-run exit then
+  p-parse p-mix ;
 
 ( ---- Hits: percussive sounds that overlap, mixed by software ---- )
 \ A beep waits for the ones before it. A hit starts at once and plays over the

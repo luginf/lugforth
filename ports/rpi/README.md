@@ -138,7 +138,7 @@ and `SND-QUEUED` (a queue of stereo frames played with the mixer's sound), `UNIX
 ## Graphics: the sdl2 words
 
 The vocabulary `sdl2` has the same short words as Linux
-(`ports/posix/SDL2-words.md`) and the web (`ports/web/SDL2.md`). So
+(`docs/SDL2-words.md`) and the web (`docs/SDL2-web.md`). So
 `examples/games/sdl2_breakout.fs` runs unchanged, sent over the serial line:
 
 ```sh

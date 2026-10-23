@@ -25,7 +25,6 @@ DEFINED? gui-load [IF]
       s" --gui: cannot open a window (SDL2 or a display is missing)" type cr
       gui-tty? 0= if 1 terminate then exit
    then
-   s" Use the menu (button at the top right), or type: words" type cr
    argc 3 >= if 2 argv ['] included catch drop then
    gui-restore ;
 [ELSE]

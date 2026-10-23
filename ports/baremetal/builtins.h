@@ -62,6 +62,9 @@
 // Sound (sound.h), for beep, drum-hit and the tunes of sdl2-abc.
 #define BM_SOUND_SUPPORT \
   XV(BM_VOC, "SND-BEEP", SND_BEEP, snd_beep(n3, n2, n1, n0); DROPn(4)) \
+  XV(BM_VOC, "SND-VBEEP", SND_VBEEP, snd_vbeep(n4, n3, n2, n1, n0); DROPn(5)) \
+  XV(BM_VOC, "SND-ADSR", SND_ADSR, snd_adsr(n4, n3, n2, n1, n0); DROPn(5)) \
+  XV(BM_VOC, "SND-SYNC", SND_SYNC, snd_sync()) \
   XV(BM_VOC, "SND-HIT", SND_HIT, snd_hit(n4, n3, n2, n1, n0); DROPn(5)) \
   XV(BM_VOC, "SND-QUEUED", SND_QUEUED, PUSH snd_pcm_queued()) \
   XV(BM_VOC, "SND-QUEUE", SND_QUEUE, snd_pcm_put((const int16_t *) a1, n0); DROPn(2)) \

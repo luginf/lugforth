@@ -19,6 +19,7 @@
 ( 'tib, #tib and >in are in the internals vocabulary. )
 
 also internals
+\ Evaluates the string a n after copying it to the heap, then restores the input source. Used for code kept as a string that evaluating would overwrite (the code of ed, writhdeck and the console window).
 : eval-copy ( a n -- )
   { a n }
   'tib @ #tib @ >in @ { t1 t2 t3 }

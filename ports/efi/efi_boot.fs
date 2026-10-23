@@ -15,6 +15,7 @@
 needs ../../common/phase1.fs
 needs ../baremetal/allocation.fs
 needs ../../common/phase2.fs
+needs ../../common/interpret_control.fs
 needs ../baremetal/files.fs
 needs ../../common/phase_filetools.fs
 needs platform.fs

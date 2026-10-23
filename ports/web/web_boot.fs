@@ -16,6 +16,7 @@ needs ../../common/phase1e.fs
 needs platform.fs
 needs ../../common/ansi.fs
 needs ../../common/phase2.fs
+needs ../../common/interpret_control.fs
 needs ../../common/tasks.fs
 needs utils.fs
 needs ../../common/lineedit.fs

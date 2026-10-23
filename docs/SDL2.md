@@ -20,7 +20,7 @@ style of Night Mission, fixed point physics). Breakout, drums, the FM synthesize
 run in the browser.
 
 All words: [SDL2-words.md](SDL2-words.md). The short words also exist in the web
-build, see [../web/SDL2.md](../web/SDL2.md).
+build, see [SDL2-web.md](SDL2-web.md).
 
 ## Packages
 
@@ -85,9 +85,18 @@ and QBasic): `s" t140 o4 l8 c d e c  e4 g4 r4 >c2" play`.
 | `w1` | the wave, as `1 to wave` (not part of the usual MML) |
 
 Spaces are free; the settings stay from one `play` to the next. Differences from the dialects: the octave
-numbering is the MSX one (`o4 c` is the middle C; check a tune written for another dialect, they differ); no chords, no several voices, no
-`m` modes (legato, staccato) and no `x` (play a string variable). It works at the prompt after `sdl2` (the console
+numbering is the MSX one (`o4 c` is the middle C; check a tune written for another dialect, they differ); no chords, no `m` modes (legato, staccato) and no `x` (play a string variable). It works at the prompt after `sdl2` (the console
 window, the boards, the web page).
+
+Several voices: a comma in the string starts another voice, and the voices start together
+(`s" o4 e d c d e e e2, o3 c1 g1" play`). 4 voices at most, 512 notes each; each voice begins with the octave,
+length, tempo, wave and volume the `play` started with. On Linux the voices are mixed into one buffer and
+queued whole (so a very long tune takes a moment to prepare); on the boards each voice has its own queue;
+on the web page the notes of every voice are scheduled from the same moment.
+
+Envelope: `adsr ( attack decay sustain release -- )` (ms, ms, percent, ms) shapes every `beep` and every
+note of `play`; the release is the end of the note, not added to it. `adsr@` reads the values, `adsr-off`
+removes the envelope (the default). Hits and ABC tunes are not affected.
 
 Hits: `drum-hit ( freq ms -- )` starts at once and plays over other sounds (8 at a
 time), fading out; `pitch-drop` (percent) makes the pitch fall, enough for a
@@ -166,7 +175,7 @@ code is part of the binary: `gui-load` loads it, then `desktop console` starts i
 uses `gui-load smooth-font console`). Without SDL2 or a display, `--gui` says so and keeps
 the terminal.
 
-The menu is hidden: the button at the top right, or F10, shows it (a right click on the menu or on the button toggles it too) (Examples, View, Colors,
+The menu is hidden: the button at the top right, or F10, shows it (a right click on the open menu closes it; a right click on the button hides the button, and on its place shows it again) (Examples, only when the folder holds `.fs` files, View, Colors,
 Font, Help). Examples lists the `.fs` files of `LUGFORTH_EXAMPLES` (default: the current
 directory). Colors has a color picker for the text and for the background (a square of saturation and brightness, a strip of hues, the hex value) and a few themes. Alt+Enter, or View, toggles full screen. Font lists the fixed width
 TrueType and OpenType fonts found in `/usr/share/fonts`, `~/.local/share/fonts` and `~/.fonts` (the wheel scrolls a long menu). View also has

@@ -1,8 +1,7 @@
 # Lugforth
 
 A small Forth interpreter: a C kernel plus Forth boot code, in the spirit of
-eForth. Unofficial fork of [uEforth / ESP32forth](https://github.com/flagxor/ueforth)
-by Bradley D. Nelson, not endorsed by him (see [Credits](credits.html)).
+(u)eForth. 
 
 <div class="cards">
 <div class="card"><h3>Download</h3>

@@ -336,10 +336,30 @@ jobs:
           name: rpi
           path: dist/*
 
-  # The macOS binary builds but does not work yet (the start loops, see the
-  # "Where does the start hang?" step), so it is not published.
+  # The manual: every Markdown file of docs/ in one PDF (tools/make_pdf.py). Not essential to the release.
+  manual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc texlive-xetex texlive-latex-recommended texlive-latex-extra lmodern fonts-dejavu
+          VERSION=$(git describe --tags --always)
+          python3 tools/make_pdf.py out-manual.pdf
+          mkdir -p dist
+          cp out-manual.pdf "dist/lugforth-$VERSION-manual.pdf"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: manual
+          path: dist/*
+
   release:
-    needs: [linux, windows, android, efi, rpi]
+    needs: [linux, windows, macos, android, efi, rpi, manual]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
@@ -350,6 +370,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: windows
+          path: dist
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: macos
           path: dist
       - uses: actions/download-artifact@v4
         continue-on-error: true
@@ -365,6 +390,11 @@ jobs:
         continue-on-error: true
         with:
           name: rpi
+          path: dist
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: manual
           path: dist
       - name: Publish
         uses: softprops/action-gh-release@v2

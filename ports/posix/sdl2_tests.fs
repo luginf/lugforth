@@ -316,6 +316,47 @@ create got 64 cells allot   0 value ngot
 : test-play-volume
   beep-volume@ { keep }  s" v0 c" song  beep-volume@ 0 =assert  s" v15" song  beep-volume@ 6000 =assert
   keep beep-volume ;
+: vnote@ ( v k -- freq ms ) p-slot 2@ ;
+: test-play-voices
+  4 to p-oct  4 to p-len  120 to p-tempo
+  s" c d, o3 g2 w2 e, v8 c, r" p-parse
+  p-nv 4 =assert   0 cells p-cnt + @ 2 =assert  1 cells p-cnt + @ 2 =assert
+  2 cells p-cnt + @ 1 =assert   3 cells p-cnt + @ 1 =assert
+  0 0 vnote@ 500 =assert 262 =assert   0 1 vnote@ 500 =assert 294 =assert
+  1 0 vnote@ 1000 =assert 196 =assert   1 1 vnote@ 500 =assert 165 =assert
+  1 0 p-slot 2 cells + @ 0 =assert   1 1 p-slot 2 cells + @ 2 =assert
+  2 0 p-slot 3 cells + @ 3200 =assert   0 0 p-slot 3 cells + @ 3000 =assert
+  3 0 vnote@ 500 =assert 0 =assert
+  0 wave 3000 beep-volume ;
+: test-play-voices-limit
+  s" c,c,c,c,c,c" p-parse  p-nv 4 =assert ;
+: test-play-no-comma-streams
+  s" c d" song  ngot 2 =assert ;
+create mixa 8 allot   create mixb 8 allot
+: test-mix-add
+  30000 mixa w!  -30000 mixa 2 + w!   30000 mixb w!  -30000 mixb 2 + w!
+  mixa mixb 2 mix-add
+  mixb w@s 32767 =assert   mixb 2 + w@s -32767 =assert ;
+: test-adsr
+  0 0 100 0 adsr  adsr@ 0 =assert 100 =assert 0 =assert 0 =assert
+  10 20 50 30 adsr  adsr@ 30 =assert 50 =assert 20 =assert 10 =assert
+  1000 ms>smp 44100 =assert
+  44100 env-start
+  0 env-gain 0 =assert   441 env-gain 1000 =assert   1500 env-gain 500 =assert
+  44099 env-gain 20 < assert
+  adsr-off env-on 0 =assert ;
+create ebuf 9000 allot
+: test-adsr-beep
+  10 10 50 10 adsr  440 4410 ebuf fill-beep  adsr-off
+  ebuf w@s 0 =assert   ebuf 4409 2* + w@s abs 300 < assert
+  ebuf 2200 2* + w@s abs 2000 < assert ;
+: test-voices-queued
+  audio-open? if
+    silence
+    s" o4 c4 e4, o3 c2 g4 r4, o5 c1" play
+    audio-dev SDL_GetQueuedAudioSize dup 170000 > assert 176400 > 0= assert
+    silence
+  then ;
 : test-sine
   4 wave
   0 wave-sample 0 =assert   16384 wave-sample 32767 =assert   49152 wave-sample -32767 =assert

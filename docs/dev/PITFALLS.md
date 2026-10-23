@@ -5,7 +5,7 @@ Read before touching Forth sources, the loaders, the web build or a new platform
 ## Forth, loaders and SDL2
 
 - In a loader (a colon definition compiled at boot), a name such as `sdl2` or `sdl2-mixer` written outside the evaluated string is bound to the loader that existed then: running it again reloads everything and creates a new empty vocabulary. Put such names in a string run by `evaluate`.
-- A control structure (`if`, `do`, `begin`) outside a definition is not valid, even inside an `evaluate`d string: no error, a wrong result (see `CLAUDE.md`, open question). `2swap`, `0>` and `within` do exist (`common/ansi_compat.fs`).
+- A control structure (`if`, `do`, `begin`) outside a definition works since 7.0.11.11 (`common/interpret_control.fs`), but not on esp32, pico, pico-ice, gba boots. `2swap`, `0>` and `within` do exist (`common/ansi_compat.fs`).
 - Locals declared with `{ }` inside an `if` branch corrupt the return stack when the branch is skipped (a silent -9); declare them at the top of the word or use values.
 - `dump-file` takes the data first and the file name last.
 - A nested `( ... )` inside a stack comment closes the comment at the first `)`: `( optional xt ( n -- ): text )` leaves `: text )` to be compiled, which started a definition and gave "n NOT FOUND" when `sdl2` loaded (found while adding `render-hook`). Write `( xt, n -- : text )`. `ninja posix` does not load `sdl2`, so run the SDL tests after touching `ports/posix/sdl2.fs`.
@@ -142,6 +142,12 @@ After adding words to the interpreter, build (`ninja posix web`) and run `python
 interpreters for their words and rewrites `docs/WORDS.md` (descriptions from `attic/oldsite/*.html`, `tools/words_notes.py`,
 the stack comments of the sources; add a note in `words_notes.py` for a word it leaves undescribed). `tools/words_added.py`
 lists what differs from upstream uEforth for the "New words" page of the site.
+
+Write the explanation of a new word in the source: `: name ( stack ) ( what it does )` or `: name ( stack )   \ what it does`
+on the same line, or `\ lines` right above the definition. `words_reference.py` takes them (not from `*sdl2*` files nor
+`_tests.fs`). Helpers with a common prefix (`le-`, `pg-`, `hist`, `pool`) get a note per family (`PREFIX_NOTES` in
+`words_reference.py`). The words of `sdl2` are written by hand in `docs/SDL2-words.md` (`docs/SDL2.md` is the tour,
+`docs/SDL2-web.md` the web build): add a row there when a short word is added in one of the three `sdl2.fs`.
 
 ## Forth pitfalls hit again and again
 

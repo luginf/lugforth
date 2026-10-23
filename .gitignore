@@ -11,3 +11,4 @@ ports/gba/*.gba
 ports/gba/*.elf
 ports/gba/*.o
 ports/gba/*.sav
+docs/lugforth_manual.pdf

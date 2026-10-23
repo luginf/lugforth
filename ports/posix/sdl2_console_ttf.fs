@@ -16,6 +16,7 @@
 ( are found. A string, so that the console works without SDL_ttf. It must not contain )
 ( a vertical bar. Loaded at boot: nothing is evaluated until the console asks. )
 
+\ The source of the TrueType font part of the console window, compiled only when a font is asked for.
 : gui-ttf-src r|
 sdl2-ttf
 sdl2 definitions also posix

@@ -20,10 +20,14 @@
 
 needs eval_copy.fs
 
+\ Flag: the code of ed (the string ed-src) has been compiled.
 0 value ed-loaded
+\ ed-arg, ed-arg-n: the file name typed after ed (a buffer and its length).
 create ed-arg 256 allot   0 value ed-arg-n
+\ Runs the editor on the file a n. Set to ed-main when ed-src is compiled.
 defer ed-go ( a n -- )
 
+\ The source of the editor ed, a string compiled the first time ed is used.
 : ed-src r|
 only forth also internals also ansi
 [defined] posix [if] also posix also termios [then]

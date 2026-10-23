@@ -101,3 +101,19 @@ A prototype with a roguelike. See `ports/gba/README.md`; the boot-chain traps me
 
 The folders of `examples/` are kept (`include games/sdl2_snake.fs`, `system/varvara/varvara_rpi.fs`), with `lib/` (editors),
 `MANUAL.md` and `WORDS.md` (docs/), `autoexec.fs`. Built by the Makefiles of ports/rpi (`disk`) and ports/efi (`usb`, `stage`).
+
+## macOS (ports/posix)
+
+Fixed in 7.0.11.16 with no Mac at hand, by running the `macos` job of `.github/workflows/release.yml` (branch `macos-fix` had a
+job `macos-test.yml` with tracing steps: `fs_usage`, `sample`, a pty session). The start looped because of Apple arm64:
+- a call through a `(...)` pointer puts every argument on the stack, so `common/calls.h` has, for `__APPLE__` + `__aarch64__`, one
+  cast per argument count; `open`, `fcntl` and `ioctl` are variadic, so `DLSYM` (ports/posix/main.c) hands out fixed-argument
+  wrappers for them;
+- arm64 does not trap an integer division by zero: `DIV0_CHECK` (common/tier0_opcodes.h, defined for aarch64 in main.c) raises SIGFPE;
+- the Linux numbers that Darwin changes (open flags, `EAGAIN`, `MAP_ANONYMOUS`, `SIGBUS`, `FNDELAY`, the `termios` layout and flags,
+  `TIOCGWINSZ`, the `dirent` offsets) are chosen with `os ( linux darwin -- n )` (`host-mac?` opcode).
+Checked in CI on macos-latest (arm64): all the tests pass (229), and a pty session (prompt, `1 2 + .`, Tab completion, `bye`). Not
+checked: the SDL2 console, the editors, sockets (sockets.fs has the Linux constants; `sockaddr` has a length byte on Darwin), x86_64
+(only the arm64 half of the universal binary ran), a real terminal size (`form` gave 0 0 in the CI pty). The binary is not signed:
+`xattr -d com.apple.quarantine lugforth` or right click, Open. A `( ... )` comment must hold no inner `)`: it ended a comment
+early and the boot faulted without a message.

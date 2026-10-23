@@ -41,7 +41,7 @@ NAV = [('index.html', 'Home'), ('demo/terminal.html', 'Try it'),
 PAGES = {
   'index.html': ('Lugforth', ['docs/pages/index.md']),
   'words.html': ('Words', ['docs/WORDS.md']),
-  'sdl2.html': ('SDL2 graphics and sound', ['ports/posix/SDL2.md', 'ports/posix/SDL2-words.md']),
+  'sdl2.html': ('SDL2 graphics and sound', ['docs/SDL2.md', 'docs/SDL2-words.md', 'docs/SDL2-web.md']),
   'ports.html': ('Ports', ['docs/pages/ports.md', 'ports/android/README.md', 'ports/gba/README.md']),
   'examples.html': ('Examples', ['examples/README.md']),
   'credits.html': ('Credits', ['NOTICE']),
@@ -50,7 +50,7 @@ SITE_PAGES = set(['index.html', 'words.html', 'new-words.html', 'sdl2.html', 'po
                   'examples.html', 'credits.html'])
 # Markdown sources that have a page: links to them stay on the site
 LINKS = {'docs/WORDS.md': 'words.html', 'WORDS.md': 'words.html',
-         'ports/posix/SDL2-words.md': 'sdl2.html', 'ports/posix/SDL2.md': 'sdl2.html',
+         'docs/SDL2-words.md': 'sdl2.html', 'docs/SDL2.md': 'sdl2.html', 'docs/SDL2-web.md': 'sdl2.html',
          'README.md': 'index.html', 'NOTICE': 'credits.html'}
 
 
@@ -84,8 +84,7 @@ def layout(page, title, body):
 <title>%s - Lugforth</title><script src="theme.js"></script><link rel="stylesheet" href="style.css"></head>
 <body><header><a class="brand" href="index.html">Lugforth</a><nav>%s</nav><button id="theme-toggle" class="theme-toggle" type="button" hidden aria-label="Toggle light/dark theme" title="Toggle light/dark theme"></button></header>
 <main>%s</main>
-<footer>Unofficial fork of <a href="https://github.com/flagxor/ueforth">uEforth</a>
-by Bradley D. Nelson. Source: <a href="https://github.com/luginf/lugforth">github.com/luginf/lugforth</a>.
+<footer>Source: <a href="https://github.com/luginf/lugforth">github.com/luginf/lugforth</a>.
 Apache License 2.0.</footer></body></html>
 """ % (html.escape(title), nav, body)
 
