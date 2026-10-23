@@ -16,5 +16,10 @@ s" C:/Windows/Fonts/arial.ttf" 16 load-font font
 $ffffff color 10 10 s" Hello" text
 ." ttf ok" cr
 close-screen
+gui-load
+s" sdl2 desktop" eval-copy
+also sdl2
+fpath z>s type cr
+ex-list ent-count . cr
 ." ALL PASSED" cr
 bye

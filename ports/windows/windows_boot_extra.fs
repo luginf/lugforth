@@ -14,6 +14,7 @@
 
 needs windows_dirs.fs
 needs ../../common/lineedit.fs
+needs ../posix/eval_copy.fs
 needs windows_sdl2.fs
 needs windows_user.fs
 needs windows_gdi.fs

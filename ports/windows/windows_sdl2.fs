@@ -25,7 +25,27 @@ posix definitions also windows
 : sdl2-ttf-lib ( -- z ) z" SDL2_ttf.dll" ;
 : sdl2-image-lib ( -- z ) z" SDL2_image.dll" ;
 
+
+( What the console window asks for: the C library, directories, no terminal )
+z" msvcrt.dll" dll msvcrt
+: sysfunc ( z n "name" -- ) msvcrt ;
+: dlsym ( h z -- a ) GetProcAddress ;
+: isatty ( n -- f ) drop 0 ;
+0 constant stdin
+: readdir ( dh -- ent|0 ) find-next ;
+: .d_name ( ent -- z ) 44 + ;
+: .d_type ( ent -- n ) @ $10 and if 4 else 8 then ;
+: closedir ( dh -- ior ) close-dir ;
+vocabulary termios
+termios definitions
+0 value form-hook   ( a console that is not the tty gives its own size here )
+posix definitions
 previous forth definitions
 
 : sdl2 ( -- ) s" lib/sdl2.fs" included s" sdl2" evaluate ;
 : sdl2-ttf ( -- ) s" lib/sdl2_ttf.fs" included s" sdl2-ttf" evaluate ;
+: gui-tty? ( -- f ) 0 ;
+\ lugforth --gui, or gui at the prompt: the console window (lib/sdl2_console.fs)
+: gui-load ( -- )
+   s" lib/sdl2_console_ttf.fs" included  s" lib/sdl2_console.fs" included  s" gui-load" evaluate ;
+: gui ( -- ) s" gui-load sdl2 desktop console" eval-copy ;

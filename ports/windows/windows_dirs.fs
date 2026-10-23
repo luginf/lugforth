@@ -34,12 +34,14 @@ forth definitions also windows
    dir-pattern 340 allocate throw >r
    r@ 16 + FindFirstFileA dup -1 = if drop r> free drop 0 1 exit then
    r@ !  1 r@ cell+ !  r> 0 ;
-: read-dir ( dh -- a n )   \ a name, ending with / for a directory, or n = 0 at the end
+: find-next ( dh -- ent|0 )   \ the WIN32_FIND_DATA of the next entry: attributes at 0, the name at 44
    >r
    r@ cell+ @ if 0 r@ cell+ !
-   else r@ @ r@ 16 + FindNextFileA $ffffffff and 0= if rdrop 0 0 exit then then
-   r@ 60 + z>s
-   r> 16 + @ $10 and if 2dup + 47 swap c! 2dup + 1+ 0 swap c! 1+ then ;
+   else r@ @ r@ 16 + FindNextFileA $ffffffff and 0= if rdrop 0 exit then then
+   r> 16 + ;
+: read-dir ( dh -- a n )   \ a name, ending with / for a directory, or n = 0 at the end
+   find-next ?dup 0= if 0 0 exit then
+   dup 44 + z>s rot @ $10 and if 2dup + 47 swap c! 2dup + 1+ 0 swap c! 1+ then ;
 : close-dir ( dh -- ior ) dup @ FindClose drop free drop 0 ;
 : ls ( "path" -- )
    bl parse dup 0= if 2drop s" ." then

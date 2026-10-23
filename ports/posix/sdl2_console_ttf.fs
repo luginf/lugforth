@@ -105,6 +105,7 @@ create gz 4 allot
   spath n sn + scan-root ;
 : scan-fonts ( -- )
   0 to fcount   0 to fused
+  win? if s" C:/Windows/Fonts" scan-root then
   s" /usr/share/fonts" scan-root
   s" /usr/local/share/fonts" scan-root
   z" HOME" c-getenv ?dup if

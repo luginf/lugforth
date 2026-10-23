@@ -58,6 +58,8 @@ also internals ' call0 constant ccall0   ' call1 constant ccall1 previous
 : primary-set ( z -- ) primary-set-fn dup 0= if 2drop exit then ccall1 execute drop ;
 z" SDL_SetRenderTarget" 2 sdl SDL_SetRenderTarget ( a a -- n )
 z" getenv" 1 sysfunc c-getenv ( z -- z )
+: win? ( -- f )   \ Windows sets OS=Windows_NT
+  z" OS" c-getenv ?dup if z>s s" Windows_NT" compare 0= else 0 then ;
 $0303 constant SDL_TEXTINPUT
 
 ( ---- Font: 95 glyphs, from space to tilde, 16 rows of 8 bits each ---- )
@@ -445,7 +447,8 @@ create text-queue q-size allot
 : shift? ( -- f ) kmod 3 and 0<> ;
 
 ( ---- Settings, kept in lugforth.ini ---- )
-z" mkdir" 2 sysfunc c-mkdir
+: mkdir-z ( -- z ) win? if z" _mkdir" else z" mkdir" then ;
+mkdir-z 2 sysfunc c-mkdir
 create fpath 300 allot      ( the TrueType font file, empty for the bitmap font )
 create inipath 400 allot   0 value inin
 create ibuf 1200 allot   0 value ibn
@@ -457,6 +460,7 @@ create obuf 1200 allot   0 value obn
   0 to inin
   z" LUGFORTH_HOME" c-getenv ?dup if z>s ini+ exit then
   z" HOME" c-getenv ?dup if z>s ini+ s" /.local/share/lugforth" ini+ exit then
+  z" APPDATA" c-getenv ?dup if z>s ini+ s" /lugforth" ini+ exit then
   s" ." ini+ ;
 : mkdirs ( -- )   \ the directory of inipath, and its parents
   0 inipath inin + c!
@@ -567,6 +571,7 @@ create fcand 20 cells allot
 : c+ ( a z -- a' ) over ! cell+ ;
 : cands ( -- )
   fcand
+  z" C:/Windows/Fonts/consola.ttf" c+
   z" /usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf" c+
   z" /usr/share/fonts/dejavu/DejaVuSansMono.ttf" c+
   z" /usr/share/fonts/TTF/DejaVuSansMono.ttf" c+
@@ -614,11 +619,11 @@ create spath 520 allot
     dup i m-x >= over i m-x i m-w + < and if nip i swap then
   loop drop ;
 
-128 constant ent-max
+256 constant ent-max
 create ent-a ent-max cells allot
 create ent-n ent-max cells allot
 create ent-id ent-max cells allot
-8192 constant pool-size
+16384 constant pool-size
 create ent-pool pool-size allot
 0 value ent-count   0 value ent-used
 0 value xa   0 value xn   0 value xid
@@ -648,13 +653,43 @@ create ent-pool pool-size allot
   loop ;
 
 : ex-dir ( -- a n ) z" LUGFORTH_EXAMPLES" c-getenv ?dup if z>s exit then s" ." ;
-: ex-ent ( ent -- )
-  .d_name z>s  dup 3 <= if 2drop exit then
-  2dup + 3 - 3 s" .fs" compare if 2drop exit then
-  -1 ent-add ;
-: ex-list ( -- )
-  ex-dir open-dir if drop exit then
-  begin dup readdir dup while ex-ent repeat drop closedir drop ;
+create ex-pbuf 1200 allot   ( the folder path of each depth )
+create ex-fbuf 300 allot    ( the name shown, folder/name.fs )
+create ex-sbuf 900 allot    ( the prefix of each depth )
+: path+ { a n b m dst -- dst k }   \ a n / b m, ended by a 0
+  a dst n cmove   47 dst n + c!   b dst n 1+ + m cmove   0 dst n 1+ m + + c!
+  dst n 1+ m + ;
+: pref+ { a n b m dst -- dst k }   \ a n b m /, ended by a 0
+  a dst n cmove   b dst n + m cmove   47 dst n m + + c!   0 dst n m + 1+ + c!
+  dst n m + 1+ ;
+: fs-name? ( a n -- f )   \ ends with .fs but not _tests.fs
+  dup 4 < if 2drop 0 exit then
+  2dup + 3 - 3 s" .fs" compare if 2drop 0 exit then
+  dup 9 < if 2drop -1 exit then
+  + 9 - 9 s" _tests.fs" compare 0<> ;
+: ex-file { pa pn na nn }   \ shows prefix + name
+  na nn fs-name? 0= if exit then
+  pa ex-fbuf pn cmove   na ex-fbuf pn + nn cmove
+  ex-fbuf pn nn + -1 ent-add ;
+defer ex-walk ( dpa dpn pa pn depth -- )
+: ex-ent { ent dpa dpn pa pn depth }
+  ent .d_name z>s { na nn }
+  na c@ 46 = if exit then
+  ent .d_type 4 = if
+    depth 2 < if
+      dpa dpn na nn depth 1+ 400 * ex-pbuf + path+
+      pa pn na nn depth 1+ 100 * ex-sbuf + pref+
+      depth 1+ ex-walk
+    then
+    exit
+  then
+  pa pn na nn ex-file ;
+: ex-walk1 { dpa dpn pa pn depth }
+  dpa dpn open-dir if drop exit then { dh }
+  begin dh readdir dup while dpa dpn pa pn depth ex-ent repeat drop
+  dh closedir drop ;
+' ex-walk1 is ex-walk
+: ex-list ( -- )   ex-dir s" " 0 ex-walk ;
 : ex-check ( -- )   \ looked at again each time the bar opens: the folder may have changed
   0 to ent-count   0 to ent-used   ex-list   ent-count 0<> to ex-have   0 to ent-count   0 to ent-used ;
 
@@ -704,9 +739,11 @@ defer font-pick ( k -- )   ' drop is font-pick
   drop-w >= if drop -1 exit then
   drop-off + ;
 
+: ex-prefix ( -- )   \ the examples folder, when it is not the current one
+  ex-dir s" ." compare if ex-dir q-str s" /" q-str then ;
 : run-entry ( k -- )
   dup cells ent-id + @
-  dup -1 = if drop ent-str s" include " q-str q-str 13 q-push exit then
+  dup -1 = if drop s" include " q-str ex-prefix ent-str q-str 13 q-push exit then
   nip
   dup 1 = if drop 1 font-step exit then
   dup 2 = if drop -1 font-step exit then
@@ -1085,7 +1122,7 @@ also termios
 : set-form-hook ( -- )   ['] con-form to form-hook ;
 previous
 : con-open ( -- )
-  menu-on if
+  menu-on win? 0= and if
     z" DISPLAY" c-getenv 0=  z" WAYLAND_DISPLAY" c-getenv 0=  and  z" SDL_VIDEODRIVER" c-getenv 0=  and
     if -1 throw then
   then
