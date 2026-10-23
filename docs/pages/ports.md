@@ -2,8 +2,8 @@
 
 | Platform | Directory | Notes |
 |----------|-----------|-------|
-| Linux, macOS | `ports/posix` | main build; macOS does not start yet |
-| Windows | `ports/windows` | MSVC |
+| Linux, macOS | `ports/posix` | main build; macOS universal binary, SDL2 words tested |
+| Windows | `ports/windows` | exe built with MSVC (CI) or MinGW (`ninja windows-mingw`); SDL2 console (`--gui`), `ls`, line editor, `ed`, `writhdeck` |
 | Web | `ports/web` | browser, SDL2 words on a canvas |
 | Android | `ports/android` | one APK: web version or native SDL2 version; command line |
 | ESP32 | `ports/esp32` | Arduino sketch |

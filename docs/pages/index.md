@@ -5,8 +5,10 @@ A small Forth interpreter: a C kernel plus Forth boot code, in the spirit of
 
 <div class="cards">
 <div class="card"><h3>Download</h3>
-Linux (tarball, AppImage) and Windows builds on the
-<a href="https://github.com/luginf/lugforth/releases">releases page</a>.</div>
+<a href="https://github.com/luginf/lugforth/releases/latest/download/lugforth-manual.pdf">The manual (PDF)</a>.
+Builds on the <a href="https://github.com/luginf/lugforth/releases/latest">latest release</a>:
+Linux (tarball, AppImage), Windows (zip, built with MSVC or MinGW, with the SDL2 DLLs, examples and docs),
+macOS (zip), Android (APK), Raspberry Pi and PC UEFI images. The zips carry <code>examples/</code> and <code>docs/</code>.</div>
 <div class="card"><h3>Try it</h3>
 The <a href="demo/terminal.html">web version</a>, with
 <a href="demo/sdl2_breakout.html">Breakout</a>,
@@ -25,7 +27,7 @@ Drawing from HTML buttons: <a href="demo/button.html">Forth word called by a but
 <a href="new-words.html">words added by Lugforth</a>,
 <a href="sdl2.html">SDL2 graphics and sound</a>.</div>
 <div class="card"><h3>Platforms</h3>
-Linux, Windows, web, Android, ESP32, Raspberry Pi Pico, pico-ice, Game Boy
+Linux, macOS, Windows, web, Android, Raspberry Pi, PC (UEFI), ESP32, Raspberry Pi Pico, pico-ice, Game Boy
 Advance. See <a href="ports.html">ports</a>.</div>
 </div>
 
@@ -37,7 +39,8 @@ Advance. See <a href="ports.html">ports</a>.</div>
 * A terminal line editor: history, cursor keys, Tab completion of words and
   file names. A pager (`common/pager.fs`) stops long output at each screenful
   on a terminal and on the bare-metal consoles: space, Enter, `q`; `pager-off`.
-* New ports: Android, Game Boy Advance, Raspberry Pi Pico.
+* New ports: Android, Game Boy Advance, Raspberry Pi Pico, Raspberry Pi and PC UEFI (bare metal), SDL2 on Windows and macOS, a console window in SDL2 (<code>lugforth --gui</code>).
+* Two text editors, <code>ed</code> and <code>writhdeck</code> (Linux, macOS, Windows; also under gforth).
 * Examples: games (Breakout, roguelike, 2048 with animation), turning 3D wireframes, a rule based inference engine, benchmarks, a txt2tags converter.
 
 ## Quick start

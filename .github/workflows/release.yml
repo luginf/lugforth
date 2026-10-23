@@ -503,6 +503,7 @@ jobs:
           python3 tools/make_pdf.py out-manual.pdf
           mkdir -p dist
           cp out-manual.pdf "dist/lugforth-$VERSION-manual.pdf"
+          cp out-manual.pdf dist/lugforth-manual.pdf   # a fixed name: releases/latest/download/lugforth-manual.pdf
       - uses: actions/upload-artifact@v4
         with:
           name: manual
