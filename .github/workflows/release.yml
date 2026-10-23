@@ -195,6 +195,7 @@ jobs:
           mkdir -p "release/$D"
           cp dist/lugforth README.md "release/$D/"
           sh tools/release_examples.sh "release/$D/examples"
+          sh tools/release_docs.sh "release/$D/docs"
           (cd release && zip -qr "../dist/$D.zip" "$D")
           rm dist/lugforth
 
@@ -290,6 +291,7 @@ jobs:
           cp ports/windows/lugforth-gui.bat "release/$D/"
           rm -f "release/$D/sdl2_test.fs"
           sh tools/release_examples.sh "release/$D/examples"
+          sh tools/release_docs.sh "release/$D/docs"
           (cd release && 7z a -tzip "../dist/$D.zip" "$D" > /dev/null)
           rm dist/lugforth.exe
 
@@ -377,6 +379,7 @@ jobs:
           cp ports/windows/lugforth-gui.bat "release/$D/"
           rm -f "release/$D/sdl2_test.fs"
           sh tools/release_examples.sh "release/$D/examples"
+          sh tools/release_docs.sh "release/$D/docs"
           (cd release && 7z a -tzip "../dist/$D.zip" "$D" > /dev/null)
           rm dist/lugforth.exe
 
