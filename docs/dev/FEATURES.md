@@ -125,8 +125,8 @@ from the file manager) closes the desktop, runs with `argc` set to 1 (so `script
 desktop words out of the search order (all of them are in the vocabulary `fm`, `desk` and `filer` are in forth).
 Tested under Xvfb with xdotool (mousedown/mouseup with a pause, keydown/keyup): icons, file manager window, drag, writhdeck in a window (new file, typing with accents,
 Ctrl+S, x), ed, README.md opened from the file manager, Snake, 2048 and the demo launched and left with Esc, Quit. Idle CPU about 5 percent (a frame is drawn only when something changed).
-Not tested: Windows, the web build, the Android app, a second terminal, ed/writhdeck mouse use, wide characters (a character is one cell).
+The Forth icon (`repl`) runs the line editor of the console (`edit-accept` with `le-force`, history, arrows, Tab) and `evaluate` in a terminal window; the x types `bye`; `screen` or `graphic` typed there would replace the desktop window (not handled). Not tested: Windows, the web build, the Android app, a second terminal, ed/writhdeck mouse use, wide characters (a character is one cell).
 Traps met: a word named `scan`, `top`, `step`, `frame` or `key-down` replaces the system or sdl2 word of the same name, even for the programs that are loaded later (the games use `key-down`);
 `{ locals }` in a loop body; `!` writes 8 bytes (use `l!` and `ul@` for 32-bit cells of an array); `0 { x }` is the way to add locals after the arguments;
 `catch` does not restore locals; a program that touches the real tty (editor-raw) is stopped when started in a pipeline: use `timeout --foreground` and `< /dev/null` in tests.
-Next steps: rename, copy, new folder in the file manager (needs a text field), a `Forth console` icon (a REPL line in a terminal window), mouse selection in terminal windows.
+Next steps: rename, copy, new folder in the file manager (needs a text field), mouse selection in terminal windows.

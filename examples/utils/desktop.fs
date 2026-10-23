@@ -190,6 +190,8 @@ create tq tq-size allot
 : tq-push ( c -- ) tq-t tq-h - tq-size < if tq tq-t tq-size 1- and + c! 1 +to tq-t else drop then ;
 : tq-pop ( -- c ) tq tq-h tq-size 1- and + c@ 1 +to tq-h ;
 : tq-any? ( -- f ) tq-h tq-t <> ;
+0 value repl-active   ( the terminal runs the Forth line editor: closing it types bye )
+: bye-keys ( -- ) 21 tq-push [char] b tq-push [char] y tq-push [char] e tq-push 13 tq-push ;
 : tq-csi ( c -- ) 27 tq-push [char] [ tq-push tq-push ;
 : tq-tilde ( n -- ) 27 tq-push [char] [ tq-push [char] 0 + tq-push [char] ~ tq-push ;
 
@@ -312,7 +314,7 @@ defer dk-frame
   ui-font font ;
 
 ( ---- Icons: kind 0 the file manager, 1 a command in a terminal, 2 a Forth program ---- )
-8 constant max-icon
+12 constant max-icon
 96 constant icon-size
 create icons max-icon icon-size * allot   0 value nicon
 : icon ( kind la ln ca cn -- )   \ label and command, the command of a program is a path from the folder where desk was started
@@ -383,7 +385,7 @@ create dk-msg 80 allot   0 value dk-msg-n   0 value dk-msg-t
 -1 value want-launch   ( an icon asked for: started from the main loop )
 : file-win ( -- id )   -1 { r }  max-win 0 ?do i w-on @ i w-kind @ 1 = and if i to r then loop r ;
 : close-win ( id -- )
-  dup w-kind @ 2 = if drop 17 tq-push exit then
+  dup w-kind @ 2 = if drop repl-active if bye-keys else 17 tq-push then exit then
   dup w-kind @ 1 = if 0 to fl-quit then
   win-close ;
 : open-files ( -- )
@@ -482,7 +484,8 @@ previous
 0 value q-flip
 : t-key ( -- c )
   begin tq-any? 0= quit? 0= and while dk-frame repeat
-  quit? if q-flip 1 xor to q-flip  q-flip if 17 else 113 then exit then   ( the window is closed: Ctrl+Q for an editor, q for a browser )
+  quit? tq-any? 0= and if
+    repl-active if bye-keys else q-flip 1 xor to q-flip  q-flip if 17 else 113 then exit then then   ( the window is closed: Ctrl+Q for an editor, q for a browser )
   tq-pop ;
 
 : run-in-terminal ( a n ta tn -- )
@@ -505,6 +508,29 @@ previous
   ?dup if ." terminal ended with exception " . cr then
   0 to dk-nested
   id win-close ;
+
+( ---- A Forth terminal: the line editor of the console, with history, arrows and Tab, and evaluate ---- )
+256 constant repl-max
+create repl-buf repl-max allot
+0 value repl-n   0 value repl-done
+: crlf ( -- ) 13 emit 10 emit ;
+: edit-line ( a n -- n ) [ also internals ] edit-accept [ previous ] ;
+: repl-on ( -- ) [ also internals ] -1 le-force !  -1 echo ! [ previous ] ;
+: repl-eval ( -- )
+  previous
+  repl-buf repl-n ['] evaluate catch
+  also fm
+  ?dup if ." error " . else ."  ok" then crlf ;
+: repl ( -- )
+  0 to repl-done  -1 to repl-active  repl-on
+  s" Forth terminal: bye or the x closes it. Up and Down: history, Tab: completion." type crlf
+  begin
+    repl-buf repl-max edit-line to repl-n
+    repl-buf repl-n s" bye" compare 0= if -1 to repl-done then
+    repl-done 0= if repl-n if repl-eval then then
+    repl-done
+  until
+  0 to repl-active ;
 
 create line-buf 400 allot
 : ends-fs? ( a n -- f ) dup 3 < if 2drop 0 exit then + 3 - 3 s" .fs" compare 0= ;
@@ -564,6 +590,7 @@ create line-buf 400 allot
 : default-icons ( -- )
   nicon if exit then
   0 s" Files" s" " icon
+  1 s" Forth" s" repl" icon
   1 s" Writhdeck" s" writhdeck" icon
   1 s" Ed" s" ed" icon
   2 s" Snake" s" examples/games/sdl2_snake.fs" icon
