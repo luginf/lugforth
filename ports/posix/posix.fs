@@ -72,13 +72,18 @@ z" getcwd" 2 sysfunc getcwd
 z" opendir" 1 sysfunc opendir
 z" closedir" 1 sysfunc closedir
 z" readdir" 1 sysfunc readdir
-: .d_type ( a -- n ) 18 + c@ ;
-: .d_name ( a -- z ) 19 + ;
 
 ( Errno )
 also internals
 : errno ( -- n ) errno ;
 previous
+
+
+( The system: values that macOS numbers differently from Linux )
+also internals host-mac? previous constant on-mac?
+: os ( linux darwin -- n ) on-mac? if swap drop else drop then ;
+: .d_type ( a -- n ) 18 20 os + c@ ;
+: .d_name ( a -- z ) 19 21 os + ;
 
 ( Default Pipes )
 0 constant stdin
@@ -97,19 +102,19 @@ previous
 4 constant PROT_EXEC
 $2 constant MAP_PRIVATE
 $10 constant MAP_FIXED
-$20 constant MAP_ANONYMOUS
+$20 $1000 os constant MAP_ANONYMOUS
 
 ( open )
 octal
 0 constant O_RDONLY
 1 constant O_WRONLY
 2 constant O_RDWR
-100 constant O_CREAT
-200 constant O_EXCL
-1000 constant O_TRUNC
-2000 constant O_APPEND
-4000 constant O_NONBLOCK
 decimal
+$40 $200 os constant O_CREAT
+$80 $800 os constant O_EXCL
+$200 $400 os constant O_TRUNC
+$400 $8 os constant O_APPEND
+$800 $4 os constant O_NONBLOCK
 
 ( Hookup I/O )
 : stdout-write ( a n -- ) stdout -rot write drop ;
@@ -130,7 +135,7 @@ only posix definitions
 : d0=ior ( n -- n ior ) dup 0=ior ;
 
 ( errno.h )
-11 constant EAGAIN
+11 35 os constant EAGAIN
 32 constant EPIPE
 
 ( Signal Handling )
@@ -141,7 +146,7 @@ only posix definitions
 1 constant SIGHUP
 2 constant SIGINT
 9 constant SIGKILL
-7 constant SIGBUS
+7 10 os constant SIGBUS
 13 constant SIGPIPE
 
 ( Ignore SIGPIPE )
@@ -167,7 +172,7 @@ z" clock_gettime" 2 sysfunc clock_gettime
 ( File control )
 z" fcntl" 3 sysfunc fcntl
 4 constant F_SETFL
-2048 constant FNDELAY ( 04000 )
+2048 4 os constant FNDELAY ( O_NONBLOCK )
 
 forth definitions posix
 

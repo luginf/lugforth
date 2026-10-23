@@ -33,8 +33,36 @@
 
 // NOTE: errno implemented as opcode to avoid a Linux platform dependency.
 
+// Apple arm64 passes the variadic arguments of open, fcntl and ioctl on the stack, not in registers
+// like the other arguments: called through a plain function pointer, as sysfunc does, they read
+// garbage (the start looped on a failing fcntl). These wrappers take fixed arguments and make the
+// real variadic call.
+#if defined(__APPLE__) && defined(__aarch64__)
+#include <stdio.h>
+#include <string.h>
+#include <sys/ioctl.h>
+static long lug_open(const char *p, long f, long m) { return open(p, (int) f, (int) m); }
+static long lug_fcntl(long fd, long c, long a) { return fcntl((int) fd, (int) c, a); }
+static long lug_ioctl(long fd, unsigned long r, void *a) { return ioctl((int) fd, r, a); }
+static void *lug_dlsym(void *h, const char *n) {
+  if (!strcmp(n, "open")) return (void *) lug_open;
+  if (!strcmp(n, "fcntl")) return (void *) lug_fcntl;
+  if (!strcmp(n, "ioctl")) return (void *) lug_ioctl;
+  return dlsym(h, n);
+}
+#define LUG_DLSYM lug_dlsym
+#else
+#define LUG_DLSYM dlsym
+#endif
+#ifdef __APPLE__
+#define LUG_DARWIN 1
+#else
+#define LUG_DARWIN 0
+#endif
+
 #define PLATFORM_OPCODE_LIST \
-  Y(DLSYM, tos = (cell_t) dlsym(a1 ? a1 : RTLD_DEFAULT, c0); NIP) \
+  Y(DLSYM, tos = (cell_t) LUG_DLSYM(a1 ? a1 : RTLD_DEFAULT, c0); NIP) \
+  XV(internals, "host-mac?", DARWIN_P, DUP; tos = LUG_DARWIN ? -1 : 0) \
   XV(internals, "errno", ERRNO_INTERNAL, DUP; tos = (cell_t) errno) \
   CALLING_OPCODE_LIST \
   FLOATING_POINT_LIST
@@ -71,6 +99,12 @@ static void restore_and_die(int sig) {
 }
 
 int main(int argc, char *argv[]) {
+  // lugforth --gui & : a background job is stopped by SIGTTOU/SIGTTIN as soon as it touches the
+  // terminal (tcsetattr, a read), and the window never opens. The window does not need the terminal.
+  if (argc >= 2 && strcmp(argv[1], "--gui") == 0) {
+    signal(SIGTTOU, SIG_IGN);
+    signal(SIGTTIN, SIG_IGN);
+  }
   if (isatty(0) && tcgetattr(0, &g_saved_termios) == 0) {
     g_have_termios = 1;
     atexit(restore_terminal);

@@ -1,0 +1,64 @@
+name: macOS test
+
+# Only the macOS build and its checks (branch macos-fix), run by hand.
+on:
+  workflow_dispatch:
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate the boot header
+        run: |
+          brew install ninja
+          ./configure.py
+          ninja out/gen/posix_boot.h
+
+      # Universal binary (Apple silicon and Intel), macOS 11 or later.
+      # Not signed or notarized: on first run, right click -> Open, or
+      # xattr -d com.apple.quarantine lugforth
+      - name: Build
+        run: |
+          mkdir -p dist
+          clang++ -arch arm64 -arch x86_64 -mmacosx-version-min=11.0 -O2 \
+            -I . -I out -DLUGFORTH_MINIMAL -fno-exceptions -std=c++11 -w \
+            ports/posix/main.c -o dist/lugforth -ldl
+          lipo -info dist/lugforth
+
+      # The boot code looks up its C functions with dlsym; list the ones this
+      # system does not have (a missing one stops the start silently).
+      - name: Check the C functions used by ports/posix
+        continue-on-error: true
+        timeout-minutes: 3
+        run: |
+          grep -ohE 'z" [A-Za-z_0-9]+" [0-9]+ sysfunc' ports/posix/*.fs | sed -E 's/z" ([A-Za-z_0-9]+)".*/\1/' | sort -u > /tmp/names.txt
+          { echo '#include <dlfcn.h>'; echo '#include <stdio.h>';
+            echo 'int main(){ const char *n[]={'; sed 's/.*/"&",/' /tmp/names.txt; echo '0};';
+            echo 'for(int i=0;n[i];i++) if(!dlsym(RTLD_DEFAULT,n[i])) printf("MISSING %s\n",n[i]); return 0;}'; } > /tmp/symtest.c
+          clang /tmp/symtest.c -o /tmp/symtest && /tmp/symtest
+
+      - name: Where does the start hang?
+        continue-on-error: true
+        timeout-minutes: 3
+        run: |
+          cd /tmp
+          (LUGFORTH_FAULTS=1 "$GITHUB_WORKSPACE/dist/lugforth" < /dev/null > /tmp/out.txt 2>&1 &)
+          sleep 3
+          head -c 300 /tmp/out.txt || true
+          sample lugforth 1 -file /tmp/sample.txt || true
+          grep -A25 "Call graph" /tmp/sample.txt | head -40 || true
+          pkill -x lugforth || true
+
+      - name: Test
+        continue-on-error: true
+        timeout-minutes: 3
+        run: |
+          cd /tmp
+          LUGFORTH_FAULTS=1 perl -e 'alarm 10; exec @ARGV' "$GITHUB_WORKSPACE/dist/lugforth" < /dev/null 2>&1 | head -c 600
+          echo '1 2 + . bye' | perl -e 'alarm 20; exec @ARGV' "$GITHUB_WORKSPACE/dist/lugforth" | tail -3
+          perl -e 'alarm 150; exec @ARGV' "$GITHUB_WORKSPACE/dist/lugforth" "$GITHUB_WORKSPACE/common/all_tests.fs" < /dev/null | tail -5

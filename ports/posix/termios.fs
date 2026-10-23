@@ -29,13 +29,13 @@ z" ioctl" 3 sysfunc ioctl
 4 16 * 20 + constant sizeof(termios)
 create old-termios sizeof(termios) allot
 create new-termios sizeof(termios) allot
-: .c_lflag   3 4 * + ;
-: .c_cc[]   4 4 * + + ;
-2 constant ICANON
+: .c_lflag   12 24 os + ;   ( on macOS the flags are 8 bytes, the low half counts )
+: .c_cc[]   16 32 os + + ;
+2 $100 os constant ICANON
 8 constant _ECHO
 2 constant TCSAFLUSH
-5 constant VTIME
-6 constant VMIN
+5 17 os constant VTIME
+6 16 os constant VMIN
 : termios@ ( a -- ) stdin swap tcgetattr drop ;
 : termios! ( a -- ) stdin TCSAFLUSH rot tcsetattr throw ;
 old-termios termios@
@@ -50,7 +50,7 @@ old-termios termios@
                 old-termios termios! ;
 
 ( Screen Size )
-$5413 constant TIOCGWINSZ
+$5413 $40087468 os constant TIOCGWINSZ
 4 2 * constant sizeof(winsize)
 create winsize sizeof(winsize) allot
 0 value form-hook   ( a console that is not the tty gives its own size here )
