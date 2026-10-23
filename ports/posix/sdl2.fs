@@ -30,7 +30,7 @@
 forth also posix also structures
 vocabulary sdl2   also sdl2 definitions
 
-z" libSDL2-2.0.so.0" shared-library sdl
+sdl2-lib shared-library sdl
 
 ( Raw bindings, same names and argument order as the C API )
 z" SDL_Init" 1 sdl SDL_Init ( n -- n )

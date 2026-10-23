@@ -25,7 +25,7 @@
 
 sdl2 definitions also posix
 
-z" libSDL2_image-2.0.so.0" shared-library sdlimg
+sdl2-image-lib shared-library sdlimg
 
 z" IMG_LoadTexture" 2 sdlimg IMG_LoadTexture ( a z -- a )
 

@@ -40,6 +40,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: The tag must be the version of the BUILD file
+        run: |
+          V=$(sed -n "s/.*version='\([0-9.]*\)'.*/\1/p" BUILD | head -1)
+          case "$GITHUB_REF" in
+            refs/tags/*) [ "$GITHUB_REF_NAME" = "v$V" ] || { echo "tag $GITHUB_REF_NAME but BUILD says v$V"; exit 1; } ;;
+          esac
+
       - name: Generate the boot header
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -78,7 +85,8 @@ jobs:
         run: |
           VERSION=$(git describe --tags --always)
           mkdir -p "release/lugforth-$VERSION-linux-x86_64"
-          cp dist/lugforth dist/lugforth-mini LICENSE NOTICE README.md "release/lugforth-$VERSION-linux-x86_64/"
+          cp dist/lugforth dist/lugforth-mini README.md "release/lugforth-$VERSION-linux-x86_64/"
+          sh tools/release_examples.sh "release/lugforth-$VERSION-linux-x86_64/examples"
           tar -C release -czf "dist/lugforth-$VERSION-linux-x86_64.tar.gz" "lugforth-$VERSION-linux-x86_64"
           # AppImage: also carries the SDL2 libraries Lugforth loads at run time, and the
           # examples (AppRun copies them to ~/.local/share/lugforth/examples on first run)
@@ -166,12 +174,27 @@ jobs:
           echo '1 2 + . bye' | perl -e 'alarm 20; exec @ARGV' "$GITHUB_WORKSPACE/dist/lugforth" | tail -3
           perl -e 'alarm 150; exec @ARGV' "$GITHUB_WORKSPACE/dist/lugforth" "$GITHUB_WORKSPACE/common/all_tests.fs" < /dev/null | tail -5
 
+      # SDL2 is not bundled on the Mac: brew install sdl2 sdl2_ttf (the bindings look in the system and in
+      # /opt/homebrew/lib and /usr/local/lib). Headless here, with the dummy video and audio drivers.
+      - name: Test the SDL2 words
+        continue-on-error: true
+        timeout-minutes: 5
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+        run: |
+          brew install sdl2 sdl2_ttf
+          ls /opt/homebrew/lib | grep -i sdl2 || true
+          cd "$GITHUB_WORKSPACE"
+          perl -e 'alarm 120; exec @ARGV' dist/lugforth ports/posix/sdl2_tests.fs < /dev/null 2>&1 | tail -15
+
       - name: Package
         run: |
           VERSION=$(git describe --tags --always)
           D="lugforth-$VERSION-macos-universal"
           mkdir -p "release/$D"
-          cp dist/lugforth LICENSE NOTICE README.md "release/$D/"
+          cp dist/lugforth README.md "release/$D/"
+          sh tools/release_examples.sh "release/$D/examples"
           (cd release && zip -qr "../dist/$D.zip" "$D")
           rm dist/lugforth
 
@@ -223,13 +246,44 @@ jobs:
           cl /nologo /O2 /I . /I out /Fo:out\main.obj /c ports\windows\main.c
           link /nologo /OUT:dist\lugforth.exe out\main.obj out\res64.res user32.lib
 
+      # SDL2 and SDL2_ttf for the SDL2 words (zlib license, FreeType in SDL2_ttf): the DLLs of the
+      # official releases beside the exe, and the Forth bindings of the POSIX port in lib/
+      - name: SDL2 libraries
+        shell: bash
+        run: |
+          mkdir -p sdl2dl pkg/lib
+          curl -sL -o sdl2dl/sdl2.zip https://github.com/libsdl-org/SDL/releases/download/release-2.32.10/SDL2-2.32.10-win32-x64.zip
+          curl -sL -o sdl2dl/ttf.zip https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.24.0/SDL2_ttf-2.24.0-win32-x64.zip
+          (cd sdl2dl && 7z x -y sdl2.zip > /dev/null && 7z x -y ttf.zip > /dev/null)
+          cp sdl2dl/SDL2.dll sdl2dl/SDL2_ttf.dll pkg/
+          cp sdl2dl/LICENSE.txt pkg/SDL2-LICENSE.txt 2>/dev/null || true
+          cp sdl2dl/README-SDL.txt pkg/ 2>/dev/null || true
+          cp sdl2dl/LICENSE.*.txt pkg/ 2>/dev/null || true
+          cp ports/posix/sdl2.fs ports/posix/sdl2_ttf.fs pkg/lib/
+          ls -R pkg
+
+      - name: Test the SDL2 words
+        shell: bash
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+        run: |
+          cp dist/lugforth.exe pkg/
+          cp ports/windows/sdl2_test.fs pkg/
+          cd pkg
+          timeout 120 ./lugforth.exe sdl2_test.fs < /dev/null 2>&1 | tee ../sdl2_test.log || true
+          grep -q "ALL PASSED" ../sdl2_test.log
+
       - name: Package
         shell: bash
         run: |
           VERSION=$(git describe --tags --always)
           D="lugforth-$VERSION-windows-x64"
           mkdir -p "release/$D"
-          cp dist/lugforth.exe LICENSE NOTICE README.md "release/$D/"
+          cp dist/lugforth.exe README.md "release/$D/"
+          cp -R pkg/lib pkg/*.dll pkg/*.txt "release/$D/" 2>/dev/null || true
+          rm -f "release/$D/sdl2_test.fs"
+          sh tools/release_examples.sh "release/$D/examples"
           (cd release && 7z a -tzip "../dist/$D.zip" "$D" > /dev/null)
           rm dist/lugforth.exe
 

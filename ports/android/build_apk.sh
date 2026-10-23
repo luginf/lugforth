@@ -80,8 +80,11 @@ fi
 
 # 5. Package and sign
 $BT/aapt2 compile --dir ports/android/app/res -o $W/res.zip
+# the version of the root BUILD file (YYYY.MM.DD.N) gives the name and, as digits, the code (it must grow)
+LUGVER=$(sed -n "s/.*version='\([0-9.]*\)'.*/\1/p" BUILD | head -1)
+LUGCODE=$(printf '%s' "$LUGVER" | awk -F. '{printf "%d%02d%02d%02d", $1, $2, $3, $4}')
 $BT/aapt2 link -o $W/base.apk -I $JAR --manifest ports/android/app/AndroidManifest.xml \
-  --min-sdk-version $API --target-sdk-version 35 -A $W/assets $W/res.zip
+  --version-name "$LUGVER" --version-code "$LUGCODE" --min-sdk-version $API --target-sdk-version 35 -A $W/assets $W/res.zip
 mkdir -p $W/pack/lib/$ABI
 cp $O/ndk/libs/$ABI/libSDL2.so $O/ndk/libs/$ABI/libSDL2_ttf.so $O/lib/$ABI/libmain.so $W/pack/lib/$ABI/
 (cd $W && zip -q base.apk classes.dex && cd pack && zip -q -r ../base.apk lib)

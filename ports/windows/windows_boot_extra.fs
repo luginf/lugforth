@@ -12,6 +12,7 @@
 \ See the License for the specific language governing permissions and
 \ limitations under the License.
 
+needs windows_sdl2.fs
 needs windows_user.fs
 needs windows_gdi.fs
 needs windows_messages.fs

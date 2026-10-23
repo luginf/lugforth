@@ -25,7 +25,7 @@
 
 sdl2 definitions also posix
 
-z" libSDL2_ttf-2.0.so.0" shared-library sdlttf
+sdl2-ttf-lib shared-library sdlttf
 
 z" TTF_Init" 0 sdlttf TTF_Init ( -- n )
 z" TTF_Quit" 0 sdlttf TTF_Quit ( -- void )

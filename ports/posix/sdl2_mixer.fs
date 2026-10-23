@@ -27,7 +27,7 @@
 
 sdl2 definitions also posix
 
-z" libSDL2_mixer-2.0.so.0" shared-library sdlmix
+sdl2-mixer-lib shared-library sdlmix
 
 z" Mix_OpenAudio" 4 sdlmix Mix_OpenAudio ( n n n n -- n )
 z" Mix_CloseAudio" 0 sdlmix Mix_CloseAudio ( -- void )

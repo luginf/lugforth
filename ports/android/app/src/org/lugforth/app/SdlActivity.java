@@ -81,28 +81,50 @@ public class SdlActivity extends SDLActivity implements MenuBar.Target {
     onNativeKeyUp(code);
   }
 
-  // The .fs files of the folders of the examples folder (games/, graphics/...), as
-  // "folder/name.fs", sorted
+  // The .fs files of the examples folder and of its folders (games/, music/fm/...), as
+  // "folder/name.fs", sorted; the tests are left out
   @Override public String[] examples() {
     java.util.ArrayList<String> out = new java.util.ArrayList<String>();
-    File[] dirs = new File(home, "examples").listFiles();
-    if (dirs != null) for (File d : dirs) {
-      if (!d.isDirectory()) continue;
-      String[] l = d.list(new java.io.FilenameFilter() {
-        @Override public boolean accept(File dd, String n) { return n.endsWith(".fs"); }
-      });
-      if (l != null) for (String n : l) out.add(d.getName() + "/" + n);
-    }
+    scan(new File(home, "examples"), "", 0, out);
     String[] l = out.toArray(new String[0]);
     java.util.Arrays.sort(l);
     return l;
   }
 
-  // Types "include name" and Enter, through the key events of a keyboard
+  private static void scan(File dir, String prefix, int depth, java.util.ArrayList<String> out) {
+    File[] fs = dir.listFiles();
+    if (fs == null) return;
+    for (File f : fs) {
+      String n = f.getName();
+      if (f.isDirectory()) {
+        if (depth < 3) scan(f, prefix + n + "/", depth + 1, out);
+      } else if (n.endsWith(".fs") && !n.endsWith("_tests.fs")) {
+        out.add(prefix + n);
+      }
+    }
+  }
+
+  // Types "include name" and Enter. The text goes to SDL as a committed text (any character,
+  // as '/' of games/x.fs, whatever the keyboard layout); the key events of a virtual keyboard are
+  // the fallback.
   @Override public void run(String name) {
-    KeyEvent[] ev = android.view.KeyCharacterMap.load(
-        android.view.KeyCharacterMap.VIRTUAL_KEYBOARD).getEvents(("include " + name).toCharArray());
-    if (ev != null) for (KeyEvent e : ev) dispatchKeyEvent(e);
+    String line = "include " + name;
+    boolean typed = false;
+    try {
+      Class<?> c = Class.forName("org.libsdl.app.SDLInputConnection");
+      java.lang.reflect.Method m = c.getDeclaredMethod("nativeCommitText", String.class, int.class);
+      m.setAccessible(true);
+      m.invoke(null, line, 1);
+      typed = true;
+    } catch (Throwable e) {
+      android.util.Log.e("lugforth", "commit text failed, typing keys", e);
+    }
+    if (!typed) {
+      KeyEvent[] ev = android.view.KeyCharacterMap.load(
+          android.view.KeyCharacterMap.VIRTUAL_KEYBOARD).getEvents(line.toCharArray());
+      if (ev != null) for (KeyEvent e : ev) dispatchKeyEvent(e);
+      else android.util.Log.e("lugforth", "no key events for: " + line);
+    }
     long t = android.os.SystemClock.uptimeMillis();
     dispatchKeyEvent(new KeyEvent(t, t, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER, 0));
     dispatchKeyEvent(new KeyEvent(t, t, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER, 0));
