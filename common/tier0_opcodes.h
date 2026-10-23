@@ -57,6 +57,12 @@ typedef uintptr_t ucell_t;
 # define UNSMUDGE() *TOFLAGS(*g_sys->current) &= ~SMUDGE; finish()
 #endif
 
+// A division by zero raises SIGFPE on x86, where the fault handler of the port turns it into a throw
+// (-10). arm64 does not trap: a port there defines DIV0_CHECK to raise it by hand.
+#ifndef DIV0_CHECK
+# define DIV0_CHECK
+#endif
+
 #ifndef SSMOD_FUNC
 # if __SIZEOF_POINTER__ == 8
 typedef __int128_t dcell_t;
@@ -65,7 +71,7 @@ typedef int64_t dcell_t;
 # else
 #  error "unsupported cell size"
 # endif
-# define SSMOD_FUNC dcell_t d = (dcell_t) *sp * (dcell_t) sp[-1]; \
+# define SSMOD_FUNC DIV0_CHECK dcell_t d = (dcell_t) *sp * (dcell_t) sp[-1]; \
                     --sp; cell_t a = (cell_t) (d / tos); \
                     a = a * tos == d ? a : a - ((d < 0) ^ (tos < 0)); \
                     *sp = (cell_t) (d - ((dcell_t) a) * tos); tos = a
@@ -79,12 +85,12 @@ typedef int64_t dcell_t;
 # define CELLSLASH_FUNC DUP; tos = sizeof(cell_t); SLASH_FUNC
 #else
 // Use separate versions for non-web so throw has the right depth.
-# define SLASHMOD_FUNC cell_t d = *sp; cell_t a = d / tos; \
+# define SLASHMOD_FUNC DIV0_CHECK cell_t d = *sp; cell_t a = d / tos; \
                        cell_t b = a * tos == d ? a : a - ((d < 0) ^ (tos < 0)); \
                        *sp = d - b * tos; tos = b
-# define SLASH_FUNC cell_t d = *sp; cell_t a = d / tos; NIP; \
+# define SLASH_FUNC DIV0_CHECK cell_t d = *sp; cell_t a = d / tos; NIP; \
                     tos = a * tos == d ? a : a - ((d < 0) ^ (tos < 0))
-# define MOD_FUNC cell_t d = *sp; cell_t a = d / tos; \
+# define MOD_FUNC DIV0_CHECK cell_t d = *sp; cell_t a = d / tos; \
                   cell_t b = a * tos == d ? a : a - ((d < 0) ^ (tos < 0)); \
                   NIP; tos = d - b * tos
 # define CELLSLASH_FUNC tos = tos < 0 ? ~(~tos / sizeof(cell_t)) : tos / sizeof(cell_t)
@@ -108,7 +114,7 @@ typedef struct {
   X("0<", ZLESS, tos = (tos|0) < 0 ? -1 : 0) \
   X("U<", ULESS, tos = ((ucell_t) *sp) < ((ucell_t) tos) ? -1 : 0; --sp) \
   X("+", PLUS, tos += *sp--) \
-  X("U/MOD", USMOD, w = *sp; *sp = (ucell_t) w % (ucell_t) tos; \
+  X("U/MOD", USMOD, DIV0_CHECK w = *sp; *sp = (ucell_t) w % (ucell_t) tos; \
                     tos = (ucell_t) w / (ucell_t) tos) \
   X("*/MOD", SSMOD, SSMOD_FUNC) \
   Y(LSHIFT, tos = (*sp << tos); --sp) \

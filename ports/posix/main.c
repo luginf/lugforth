@@ -14,6 +14,11 @@
 // limitations under the License.
 
 #include <dlfcn.h>
+#include <signal.h>
+#if defined(__aarch64__)
+// arm64 does not trap an integer division by zero: raise the signal that x86 gets (see faults.h).
+# define DIV0_CHECK if (tos == 0) raise(SIGFPE);
+#endif
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
