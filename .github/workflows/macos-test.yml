@@ -2,6 +2,8 @@ name: macOS test
 
 # Only the macOS build and its checks (branch macos-fix), run by hand.
 on:
+  push:
+    branches: [ macos-fix ]
   workflow_dispatch:
 
 jobs:
