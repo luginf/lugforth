@@ -68,3 +68,30 @@ jobs:
           echo 's" ." open-dir drop dup read-dir type cr read-dir type cr bye' | perl -e 'alarm 10; exec @ARGV' "$GITHUB_WORKSPACE/dist/lugforth" 2>&1 | head -c 300
           echo 'see ls bye' | perl -e 'alarm 10; exec @ARGV' "$GITHUB_WORKSPACE/dist/lugforth" 2>&1 | head -c 1200
           echo 'ls bye' | perl -e 'alarm 10; exec @ARGV' "$GITHUB_WORKSPACE/dist/lugforth" 2>&1 | head -c 400
+
+      - name: In a terminal (pty)
+        continue-on-error: true
+        timeout-minutes: 2
+        run: |
+          cat > /tmp/pty.py <<'PY'
+          import os, pty, select, sys, time
+          pid, fd = pty.fork()
+          if pid == 0:
+              os.execv(sys.argv[1], [sys.argv[1]])
+          def rd(t):
+              out = b''
+              end = time.time() + t
+              while time.time() < end:
+                  r, _, _ = select.select([fd], [], [], 0.2)
+                  if r:
+                      try: out += os.read(fd, 4096)
+                      except OSError: break
+              return out
+          print('banner:', rd(2)[-120:])
+          os.write(fd, b'1 2 + .\r'); print('sum:', rd(1.5)[-80:])
+          os.write(fd, b'wor\t'); print('tab:', rd(1.5)[-80:])
+          os.write(fd, b'\r'); rd(1)
+          os.write(fd, b'form . . cr\r'); print('form:', rd(1.5)[-80:])
+          os.write(fd, b'bye\r'); print('bye:', rd(1.5)[-80:])
+          PY
+          python3 /tmp/pty.py "$GITHUB_WORKSPACE/dist/lugforth"
