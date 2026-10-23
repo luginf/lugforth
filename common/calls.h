@@ -24,6 +24,30 @@ typedef cell_t (CALLTYPE *call_t)();
 
 #define ct0 ((call_t) n0)
 
+#if defined(__APPLE__) && defined(__aarch64__)
+// Apple arm64 passes the arguments of a call through a (...) pointer on the stack, not in registers:
+// each call is made through a pointer typed with its exact number of arguments.
+#define CALLING_OPCODE_LIST \
+  YV(internals, CALLCODE, float *t_fp = fp; DUP; \
+      sp = (cell_t *) (*(call_t*) (w + sizeof(cell_t)))(sp, &t_fp); \
+      fp = t_fp; DROP) \
+  YV(internals, CALL0, n0 = ((cell_t (*)(void)) n0)()) \
+  YV(internals, CALL1, n0 = ((cell_t (*)(cell_t)) n0)(n1); sp -= 1) \
+  YV(internals, CALL2, n0 = ((cell_t (*)(cell_t, cell_t)) n0)(n2, n1); sp -= 2) \
+  YV(internals, CALL3, n0 = ((cell_t (*)(cell_t, cell_t, cell_t)) n0)(n3, n2, n1); sp -= 3) \
+  YV(internals, CALL4, n0 = ((cell_t (*)(cell_t, cell_t, cell_t, cell_t)) n0)(n4, n3, n2, n1); sp -= 4) \
+  YV(internals, CALL5, n0 = ((cell_t (*)(cell_t, cell_t, cell_t, cell_t, cell_t)) n0)(n5, n4, n3, n2, n1); sp -= 5) \
+  YV(internals, CALL6, n0 = ((cell_t (*)(cell_t, cell_t, cell_t, cell_t, cell_t, cell_t)) n0)(n6, n5, n4, n3, n2, n1); sp -= 6) \
+  YV(internals, CALL7, n0 = ((cell_t (*)(cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t)) n0)(n7, n6, n5, n4, n3, n2, n1); sp -= 7) \
+  YV(internals, CALL8, n0 = ((cell_t (*)(cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t)) n0)(n8, n7, n6, n5, n4, n3, n2, n1); sp -= 8) \
+  YV(internals, CALL9, n0 = ((cell_t (*)(cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t)) n0)(n9, n8, n7, n6, n5, n4, n3, n2, n1); sp -= 9) \
+  YV(internals, CALL10, n0 = ((cell_t (*)(cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t)) n0)(n10, n9, n8, n7, n6, n5, n4, n3, n2, n1); sp -= 10) \
+  YV(internals, CALL11, n0 = ((cell_t (*)(cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t)) n0)(n11, n10, n9, n8, n7, n6, n5, n4, n3, n2, n1); sp -= 11) \
+  YV(internals, CALL12, n0 = ((cell_t (*)(cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t)) n0)(n12, n11, n10, n9, n8, n7, n6, n5, n4, n3, n2, n1); sp -= 12) \
+  YV(internals, CALL13, n0 = ((cell_t (*)(cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t)) n0)(n13, n12, n11, n10, n9, n8, n7, n6, n5, n4, n3, n2, n1); sp -= 13) \
+  YV(internals, CALL14, n0 = ((cell_t (*)(cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t)) n0)(n14, n13, n12, n11, n10, n9, n8, n7, n6, n5, n4, n3, n2, n1); sp -= 14) \
+  YV(internals, CALL15, n0 = ((cell_t (*)(cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t, cell_t)) n0)(n15, n14, n13, n12, n11, n10, n9, n8, n7, n6, n5, n4, n3, n2, n1); sp -= 15)
+#else
 #define CALLING_OPCODE_LIST \
   YV(internals, CALLCODE, float *t_fp = fp; DUP; \
       sp = (cell_t *) (*(call_t*) (w + sizeof(cell_t)))(sp, &t_fp); \
@@ -44,3 +68,4 @@ typedef cell_t (CALLTYPE *call_t)();
   YV(internals, CALL13, n0 = ct0(n13, n12, n11, n10, n9, n8, n7, n6, n5, n4, n3, n2, n1); sp -= 13) \
   YV(internals, CALL14, n0 = ct0(n14, n13, n12, n11, n10, n9, n8, n7, n6, n5, n4, n3, n2, n1); sp -= 14) \
   YV(internals, CALL15, n0 = ct0(n15, n14, n13, n12, n11, n10, n9, n8, n7, n6, n5, n4, n3, n2, n1); sp -= 15)
+#endif
