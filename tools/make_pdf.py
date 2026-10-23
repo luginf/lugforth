@@ -23,7 +23,7 @@ def files():
 
 
 def main():
-  out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(DOCS, 'lugforth_manual.pdf')
+  out = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.path.join(DOCS, 'lugforth_manual.pdf')
   version = re.search(r"version='([^']+)'", open(os.path.join(ROOT, 'BUILD')).read()).group(1)
   cmd = ['pandoc', '-f', 'gfm', '--pdf-engine=xelatex', '--toc', '--toc-depth=2', '-V', 'geometry:margin=2cm',
          '-V', 'fontsize=10pt', '-V', 'mainfont=DejaVu Sans', '-V', 'monofont=DejaVu Sans Mono',
