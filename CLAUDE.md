@@ -45,7 +45,7 @@ Do not `pkill -f` a pattern that appears in your own command line (it kills your
 
 At each modification, raise the version, even by a fraction: in the root `BUILD`,
 `SetVersions(version='7.0.11.N', date='YYYY-MM-DD')` (the date of the change; `info` shows it under the revision), and the banner of
-`docs/MANUAL.md` (`Lugforth v7.0.11.N`). Now 7.0.11.16 (2026-10-23). A new 7.0.x at a significant step. It stays numeric on purpose
+`docs/MANUAL.md` (`Lugforth v7.0.11.N`). Now 7.0.11.17 (2026-10-23). A new 7.0.x at a significant step. It stays numeric on purpose
 (the release workflow and the packages read it). Do it in the same change set.
 
 ## Layout

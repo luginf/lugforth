@@ -12,6 +12,11 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <signal.h>
+#if defined(__aarch64__)
+// arm64 does not trap an integer division by zero: raise the signal that x86 gets.
+# define DIV0_CHECK if (tos == 0) raise(SIGFPE);
+#endif
 
 #include "common/tier0_opcodes.h"
 #include "common/tier1_opcodes.h"
@@ -42,6 +47,7 @@ static void *android_dlsym(void *h, const char *name) {
 #define PLATFORM_OPCODE_LIST \
   Y(DLSYM, tos = (cell_t) android_dlsym(a1 ? a1 : RTLD_DEFAULT, c0); NIP) \
   XV(internals, "errno", ERRNO_INTERNAL, DUP; tos = (cell_t) errno) \
+  XV(internals, "host-mac?", DARWIN_P, DUP; tos = 0) \
   CALLING_OPCODE_LIST \
   FLOATING_POINT_LIST
 

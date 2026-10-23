@@ -155,3 +155,5 @@ on the same line, or `\ lines` right above the definition. `words_reference.py` 
 - `{ locals }` inside a conditional or loop body break: declare them at the top of the word.
 - A `|` inside an `r|` block ends it. `[char]` only inside definitions. `?do` with start > limit runs away.
 - A silent "Error including: file" is a throw somewhere: bisect with a scratch file using `.` prints.
+
+- An opcode used by a shared Forth file must exist in every `main*.c` that loads it: the Android app has its own list (ports/android/app/native/main_android.cpp). `host-mac?` (used by `os` in ports/posix/posix.fs) was missing there in v0.5.0 and the SDL2 console stayed black, with no message. After adding an opcode to ports/posix/main.c, add it to main_android.cpp too, and try the APK on a phone (`adb logcat` shows nothing from the Forth side).
