@@ -73,7 +73,7 @@ jobs:
         continue-on-error: true
         timeout-minutes: 2
         run: |
-          cat > /tmp/pty.py <<'PY'
+          cat > /tmp/ptytest.py <<'PY'
           import os, pty, select, sys, time
           pid, fd = pty.fork()
           if pid == 0:
@@ -94,4 +94,4 @@ jobs:
           os.write(fd, b'form . . cr\r'); print('form:', rd(1.5)[-80:])
           os.write(fd, b'bye\r'); print('bye:', rd(1.5)[-80:])
           PY
-          python3 /tmp/pty.py "$GITHUB_WORKSPACE/dist/lugforth"
+          python3 /tmp/ptytest.py "$GITHUB_WORKSPACE/dist/lugforth"
