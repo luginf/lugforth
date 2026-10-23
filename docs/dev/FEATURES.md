@@ -108,3 +108,25 @@ written in the three sdl2.fs: ports/posix (tests in sdl2_tests.fs), ports/bareme
 `wave`, `beep-volume`, `pitch-drop` are settings (`: setting` = `create , does> !`: `1 wave` and `1 to wave` both store; read with `wave@` etc.), like `color` takes its value; `square triangle saw noise sine` set `wave`. Sine is wave 4 (table in sdl2.fs posix,
 `snd_wave` in ports/rpi/sound.h, 'sine' oscillator on the web). A rest is a beep of frequency 0 (silent). Not heard on the
 boards or in the browser, only the parsing is tested (posix).
+
+## File manager (`filer`) and desktop (`desk`) - first versions 2026-10-24
+
+`examples/utils/filer.fs` (SDL2 + SDL2_ttf, DejaVuSans path in `font-file`): list of the current folder (folders first, yellow), click or arrows to select,
+double click or Enter to open (folder: chdir; `.fs`: `included` after the window closes; other file: `ed`), Backspace = parent, `D` then `Y` deletes a file, wheel scrolls.
+The list draws in a rectangle (`fl-w` `fl-h`, origin 0 0) and takes events as calls (`fl-click`, `fl-key`, `fl-wheel`, `fl-open` is a defer), so a desktop can host it.
+
+`examples/utils/desktop.fs` (`lugforth examples/utils/desktop.fs`, or `desk`): 800x600, icons in two columns (`icon`: kind 0 file manager window, 1 a command in a terminal window,
+2 a Forth program), double click starts one; windows with title bar, drag, raise, x; taskbar with the windows and Quit. A text window is a small terminal emulator
+(`t-*` words: grid of code points + attributes, UTF-8, CSI H J K A B C D G s u m with 16/256 colors, `?25l/h`): `ed` and `writhdeck` run unchanged inside it.
+How: `type`, `key`, `key?` and `form-hook` are redirected while the editor runs (`run-in-terminal`), and `key`/`key?` run one frame of the desktop (events, draw, flip)
+whenever the queue of keys is empty. So one terminal at a time (a second launch says so in the taskbar), the other windows stay alive. Keys: `on-key` for specials and
+Ctrl+letter, SDL_TEXTINPUT for the rest (AZERTY, accents). The x of a terminal sends Ctrl+Q (an unsaved text asks twice). A Forth program (`.fs` from an icon or
+from the file manager) closes the desktop, runs with `argc` set to 1 (so `script-bye` does not exit) and the desktop comes back; the program is started with the
+desktop words out of the search order (all of them are in the vocabulary `fm`, `desk` and `filer` are in forth).
+Tested under Xvfb with xdotool (mousedown/mouseup with a pause, keydown/keyup): icons, file manager window, drag, writhdeck in a window (new file, typing with accents,
+Ctrl+S, x), ed, README.md opened from the file manager, Snake, 2048 and the demo launched and left with Esc, Quit. Idle CPU about 5 percent (a frame is drawn only when something changed).
+Not tested: Windows, the web build, the Android app, a second terminal, ed/writhdeck mouse use, wide characters (a character is one cell).
+Traps met: a word named `scan`, `top`, `step`, `frame` or `key-down` replaces the system or sdl2 word of the same name, even for the programs that are loaded later (the games use `key-down`);
+`{ locals }` in a loop body; `!` writes 8 bytes (use `l!` and `ul@` for 32-bit cells of an array); `0 { x }` is the way to add locals after the arguments;
+`catch` does not restore locals; a program that touches the real tty (editor-raw) is stopped when started in a pipeline: use `timeout --foreground` and `< /dev/null` in tests.
+Next steps: rename, copy, new folder in the file manager (needs a text field), a `Forth console` icon (a REPL line in a terminal window), mouse selection in terminal windows.
