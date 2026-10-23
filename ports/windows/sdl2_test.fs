@@ -21,6 +21,7 @@ s" sdl2 desktop" eval-copy
 also sdl2
 fpath z>s type cr
 ex-list ent-count . cr
+only forth definitions
 s" lib/editor.fs" included
 ed-src eval-copy
 s" lib/writhdeck.fs" included
