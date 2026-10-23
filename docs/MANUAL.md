@@ -50,7 +50,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with `ninja posix`). You
 prompt:
 
 ```
-Lugforth v2026.10.23.1
+Lugforth v2026.10.23.2
 :; ===========>/>
 type 'info' for help
  ok
@@ -551,8 +551,8 @@ Pushing a tag such as `v7.0.8.1` (or running `.github/workflows/release.yml` by 
 |---|---|
 | Linux | Tarball and AppImage, built on Debian 10 (glibc 2.27 or newer). The AppImage carries the SDL2 libraries, the examples and a font. From a console it gives the terminal interface; a click on the desktop opens the window of `lugforth --gui` (a terminal if it cannot open). Examples are copied on first run to `~/.local/share/lugforth/examples` (`LUGFORTH_HOME` changes the directory), never overwritten. |
 | Android | `lugforth-VERSION-android.apk` (arm64), built by hand with `ports/android/build_apk.sh` and attached to the release. Signed with a debug key kept in `out/android/debug.keystore`: keep that file to be able to update an installed copy. |
-| Windows x64 | MSVC build, not in CI yet. No SDL2: the SDL2 examples, `ed`, `writhdeck` and the console window are POSIX (Linux) only. |
-| macOS | `lugforth-<version>-macos-universal.zip` (Apple silicon and Intel, macOS 11 or later). Not signed: right click, Open, or `xattr -d com.apple.quarantine lugforth`. Tested in CI on Apple silicon: the prompt, the tests and Tab completion; the console window, the editors and sockets have not been tried. |
+| Windows x64 | `lugforth-<version>-windows-x64.zip`: `lugforth.exe`, `SDL2.dll` and `SDL2_ttf.dll` (zlib and FreeType licenses), the Forth bindings in `lib/` and `examples/`. `sdl2` and `sdl2-ttf` load them (tested in CI with the dummy video driver); run lugforth from its folder. `ed`, `writhdeck`, the console window and the sound (`play`) are POSIX only. |
+| macOS | `lugforth-<version>-macos-universal.zip` (Apple silicon and Intel, macOS 11 or later). Not signed: right click, Open, or `xattr -d com.apple.quarantine lugforth`. Tested in CI on Apple silicon: the prompt, the tests, Tab completion and the SDL2 words (38 tests, headless) after `brew install sdl2 sdl2_ttf` (the libraries are looked up in the system and in `/opt/homebrew/lib`, `/usr/local/lib`); the console window, the editors and sockets have not been tried. |
 
 Static binaries are not possible: Lugforth reaches libc, SDL2 and X11 through `dlopen`/`dlsym`.
 

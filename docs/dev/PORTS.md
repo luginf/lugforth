@@ -102,6 +102,15 @@ A prototype with a roguelike. See `ports/gba/README.md`; the boot-chain traps me
 The folders of `examples/` are kept (`include games/sdl2_snake.fs`, `system/varvara/varvara_rpi.fs`), with `lib/` (editors),
 `MANUAL.md` and `WORDS.md` (docs/), `autoexec.fs`. Built by the Makefiles of ports/rpi (`disk`) and ports/efi (`usb`, `stage`).
 
+## SDL2 on Windows and macOS
+
+The bindings of `ports/posix/sdl2*.fs` ask for their library by a word (`sdl2-lib`, `sdl2-ttf-lib`... in `ports/posix/posix.fs`:
+Linux `.so.0` names, macOS `.dylib` looked up in the system then in the Homebrew folders). On Windows `ports/windows/windows_sdl2.fs`
+makes a small `posix` vocabulary (`shared-library` = `dll`, `sign-extend`, `SDL2.dll`...) and `sdl2` / `sdl2-ttf` include `lib/sdl2.fs`,
+`lib/sdl2_ttf.fs` (copies of the posix files, put in the zip by the `windows` job: the sources are too big for the MSVC string of the
+boot). That job downloads the official SDL2 and SDL2_ttf DLLs and runs `ports/windows/sdl2_test.fs` (dummy drivers). Tested: Windows
+(window, pixel, TTF) and macOS (`sdl2_tests.fs`, 38) in CI on 2026-10-23, version 2026.10.23.2. Not bundled: SDL2_image, SDL2_mixer.
+
 ## macOS (ports/posix)
 
 Fixed in 7.0.11.16 with no Mac at hand, by running the `macos` job of `.github/workflows/release.yml` (branch `macos-fix` had a
