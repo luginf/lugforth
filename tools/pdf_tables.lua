@@ -1,7 +1,7 @@
 -- Pandoc filter for tools/make_pdf.py: gives every table column a width (so the PDF wraps the
 -- cells instead of running off the page), in proportion to the text of the column.
 local function len(cell)
-  return #pandoc.utils.stringify(cell)
+  return #pandoc.utils.stringify(cell.contents or cell)
 end
 
 function Table(tbl)
