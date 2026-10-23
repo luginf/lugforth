@@ -298,6 +298,93 @@ jobs:
           name: windows
           path: dist/*
 
+  # The same program built with MinGW on Linux (ninja windows-mingw), tested and packaged on Windows
+  # like the MSVC one above. Both are published: the zips differ by -mingw in the name.
+  mingw-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build lugforth.exe with MinGW
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build gcc-mingw-w64-x86-64 binutils-mingw-w64-x86-64
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ./configure.py
+          ninja out/windows-mingw/lugforth.exe
+          mkdir -p dist && cp out/windows-mingw/lugforth.exe dist/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mingw-exe
+          path: dist/lugforth.exe
+
+  windows-mingw:
+    needs: [mingw-build]
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: mingw-exe
+          path: dist
+
+      # SDL2 and SDL2_ttf for the SDL2 words (zlib license, FreeType in SDL2_ttf): the DLLs of the
+      # official releases beside the exe, and the Forth bindings of the POSIX port in lib/
+      - name: SDL2 libraries
+        shell: bash
+        run: |
+          mkdir -p sdl2dl pkg/lib
+          curl -sL -o sdl2dl/sdl2.zip https://github.com/libsdl-org/SDL/releases/download/release-2.32.10/SDL2-2.32.10-win32-x64.zip
+          curl -sL -o sdl2dl/ttf.zip https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.24.0/SDL2_ttf-2.24.0-win32-x64.zip
+          (cd sdl2dl && 7z x -y sdl2.zip > /dev/null && 7z x -y ttf.zip > /dev/null)
+          cp sdl2dl/SDL2.dll sdl2dl/SDL2_ttf.dll pkg/
+          cp sdl2dl/LICENSE.txt pkg/SDL2-LICENSE.txt 2>/dev/null || true
+          cp sdl2dl/README-SDL.txt pkg/ 2>/dev/null || true
+          cp sdl2dl/LICENSE.*.txt pkg/ 2>/dev/null || true
+          cp ports/posix/sdl2.fs ports/posix/sdl2_ttf.fs ports/posix/sdl2_console.fs ports/posix/sdl2_console_ttf.fs ports/posix/eval_copy.fs ports/posix/editor.fs ports/posix/writhdeck.fs pkg/lib/
+          ls -R pkg
+
+      - name: Test the SDL2 words
+        shell: bash
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+        run: |
+          cp dist/lugforth.exe pkg/
+          cp ports/windows/sdl2_test.fs pkg/
+          echo '." include ok" cr' > pkg/sdl2_test2.fs
+          cd pkg
+          timeout 120 ./lugforth.exe sdl2_test.fs < /dev/null 2>&1 | tee ../sdl2_test.log || true
+          grep -q "ALL PASSED" ../sdl2_test.log
+          grep -q "SDL2.dll" ../sdl2_test.log
+          grep -q "editors ok" ../sdl2_test.log
+          grep -qi "fonts/.*ttf" ../sdl2_test.log
+          test "$(grep -c "include ok" ../sdl2_test.log)" = 2
+
+      - name: Package
+        shell: bash
+        run: |
+          VERSION=$(git describe --tags --always)
+          D="lugforth-$VERSION-windows-x64-mingw"
+          mkdir -p "release/$D"
+          cp dist/lugforth.exe README.md "release/$D/"
+          cp -R pkg/lib pkg/*.dll pkg/*.txt "release/$D/" 2>/dev/null || true
+          cp ports/windows/lugforth-gui.bat "release/$D/"
+          rm -f "release/$D/sdl2_test.fs"
+          sh tools/release_examples.sh "release/$D/examples"
+          (cd release && 7z a -tzip "../dist/$D.zip" "$D" > /dev/null)
+          rm dist/lugforth.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-mingw
+          path: dist/*
+
   # The APK is built with the SDK and NDK of the runner and the SDL2 sources. It is signed
   # with the key of the repository secrets ANDROID_KEYSTORE_B64 (the keystore in base64),
   # ANDROID_KEYSTORE_PASS and ANDROID_KEY_ALIAS when they exist, else with a new debug key:
@@ -419,7 +506,7 @@ jobs:
           path: dist/*
 
   release:
-    needs: [linux, windows, macos, android, efi, rpi, manual]
+    needs: [linux, windows, windows-mingw, macos, android, efi, rpi, manual]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
@@ -430,6 +517,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: windows
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-mingw
           path: dist
       - uses: actions/download-artifact@v4
         continue-on-error: true
