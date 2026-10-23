@@ -110,6 +110,7 @@ makes a small `posix` vocabulary (`shared-library` = `dll`, `sign-extend`, `SDL2
 `lib/sdl2_ttf.fs` (copies of the posix files, put in the zip by the `windows` job: the sources are too big for the MSVC string of the
 boot). That job downloads the official SDL2 and SDL2_ttf DLLs and runs `ports/windows/sdl2_test.fs` (dummy drivers). Tested: Windows
 (window, pixel, TTF) and macOS (`sdl2_tests.fs`, 38) in CI on 2026-10-23, version 2026.10.23.2. Not bundled: SDL2_image, SDL2_mixer.
+The console window (`--gui`, `gui`) is the posix `sdl2_console.fs` and `sdl2_console_ttf.fs`, copied in `lib/`, with more words in the `posix` shim (`sysfunc` through msvcrt.dll, `dlsym`, `readdir`, `.d_name`, `.d_type`, `isatty`, a `termios` with `form-hook`) and `win?` in the console (OS=Windows_NT: no DISPLAY test, `%APPDATA%\lugforth`, `C:/Windows/Fonts`). The Examples menu walks three levels of folders on every platform. Windows directories: `ports/windows/windows_dirs.fs` (FindFirstFile); paths: `/` becomes a backslash in `open-file`, `ends/` knows both. Traps met testing under wine (`wine lugforth.exe t.fs` with output written to a file: the console output is not on stdout): `[']` does not work at the prompt (use `'`), and `<# #s #>` takes a single cell here.
 
 ## macOS (ports/posix)
 
