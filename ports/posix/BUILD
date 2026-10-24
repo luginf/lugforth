@@ -22,6 +22,21 @@ Importation('$dst/gen/posix_mini_boot.h', '$src/ports/posix/posix_mini_boot.fs',
 CompileMini('$dst/posix/lugforth-mini', '$src/ports/posix/main.c',
             implicit=['$dst/gen/posix_mini_boot.h'])
 
+# lugforth-static: one executable with no library (musl), for any Linux whatever its libc.
+# No SDL2, sound or window (they are shared libraries loaded at run time): the terminal Forth, ed, writhdeck.
+# ninja posix-static; needs the package musl-dev (x86_64-linux-musl-gcc).
+if MUSL_ENABLED:
+  CompileStatic('$dst/posix/lugforth-static', '$src/ports/posix/main.c',
+                implicit=['$dst/gen/posix_boot.h'])
+  Alias('posix-static', ' '.join([
+    ForthTest('$dst/tests/posix_static_all_tests.out',
+              '$dst/posix/lugforth-static', '$src/common/all_tests.fs'),
+    ForthTest('$dst/tests/posix_static_editor_tests.out',
+              '$dst/posix/lugforth-static', '$src/ports/posix/editor_tests.fs'),
+    ForthTest('$dst/tests/posix_static_writhdeck_tests.out',
+              '$dst/posix/lugforth-static', '$src/ports/posix/writhdeck_tests.fs'),
+  ]))
+
 Alias('posix', ' '.join([
   ForthTest('$dst/tests/posix_all_tests.out',
             '$dst/posix/lugforth', '$src/common/all_tests.fs'),

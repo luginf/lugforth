@@ -148,3 +148,18 @@ loses the vocabularies); `{ locals }` are refused outside a definition; `include
 `WinMain`), so stdout, pipes and wine output work. The CI still builds with MSVC. With this exe the whole `ports/windows/sdl2_test.fs`
 of the CI passes under wine (SDL2.dll and SDL2_ttf.dll of the CI package, any TTF copied to `drive_c/windows/Fonts/arial.ttf`
 and `consola.ttf`). The MSVC exe prints nothing under wine (GUI subsystem).
+
+## Static executable, musl (ports/posix)
+
+`ninja posix-static` -> `out/posix/lugforth-static` (about 400 KB, no library at all, runs on any Linux whatever its libc). Needs
+the package `musl-dev` (`x86_64-linux-musl-gcc`; configure.py says when it is missing). Same `main.c` and boot as `lugforth`, compiled
+with `-DLUGFORTH_STATIC`: the terminal Forth, `ed`, `writhdeck`, files, sockets, `-e`.
+
+- A static executable has no dynamic symbol table, so `dlsym(RTLD_DEFAULT, "open")` finds nothing and the first `sysfunc` made the
+  start loop. `main.c` holds a table (`lug_syms`) of the C functions that the `.fs` sources look up by name, searched before `dlsym`.
+  **A new `z" name" n sysfunc` needs its name in that table** (the tests of `posix-static` then fail at load, error -38).
+- No SDL2, sound, window (`--gui`) or `graphic`: they `dlopen` shared libraries, which a static musl executable cannot do.
+  The distribution's `libSDL2.a` is built for glibc and pulls about twenty libraries (X11, ALSA, Pulse, Wayland), it cannot be
+  linked with musl. SDL inside the static binary would mean building SDL2 and the X11 libraries against musl: not done.
+- Tested: `common/all_tests.fs`, the editor and writhdeck tests, `tools/editors_pty_test.py out/posix/lugforth-static`.
+  Not in the release workflow yet (the Debian 10 container has no `x86_64-linux-musl-gcc`).

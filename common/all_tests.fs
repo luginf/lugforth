@@ -23,7 +23,7 @@ needs case_tests.fs
 needs ansi_compat_tests.fs
 needs doloop_tests.fs
 needs conditionals_tests.fs
-needs interpret_control_tests.fs
+[defined] ctl-live? [if] needs interpret_control_tests.fs [then]   \ not loaded by the esp32, pico, pico-ice and gba boots
 needs float_tests.fs
 needs recognizer_tests.fs
 needs forth_namespace_tests.fs

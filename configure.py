@@ -104,6 +104,8 @@ D8 = 'UNSUPPORTED'
 WINDOWS_ENABLED = False
 MINGW_ENABLED = False
 MINGW_CC = 'x86_64-w64-mingw32-gcc'
+MUSL_ENABLED = False
+MUSL_CC = 'x86_64-linux-musl-gcc'
 MINGW_RC = 'x86_64-w64-mingw32-windres'
 WINTMP = '/UNSUPPORTED'
 WIN_CL32 = 'UNSUPPORTED'
@@ -197,7 +199,11 @@ def DetectGenericTools(args):
     if not args.quiet:
       sys.stderr.write('V8 checkout in $HOME/src/v8 not found, '
                        'disabling asm.js tests.\n')
-  global MINGW_ENABLED
+  global MINGW_ENABLED, MUSL_ENABLED
+  if shutil.which(MUSL_CC):
+    MUSL_ENABLED = True
+  elif not args.quiet:
+    sys.stderr.write('musl (x86_64-linux-musl-gcc, package musl-dev) not found, posix-static disabled.\n')
   if shutil.which(MINGW_CC) and shutil.which(MINGW_RC):
     MINGW_ENABLED = True
   elif not args.quiet:
@@ -254,6 +260,7 @@ CXX = g++
 WIN_CL32 = {WIN_CL32}
 WIN_CL64 = {WIN_CL64}
 MINGW_CC = {MINGW_CC}
+MUSL_CC = {MUSL_CC}
 MINGW_RC = {MINGW_RC}
 WIN_LINK32 = {WIN_LINK32}
 WIN_LINK64 = {WIN_LINK64}
@@ -328,6 +335,12 @@ rule link_win64
 rule rc_win32
   description = WIN_RC32 $in
   command = $WIN_RC32 /nologo /i $src /fo $out $in && touch $out
+
+rule compile_static
+  description = MUSL_CC $in
+  depfile = $out.d
+  deps = gcc
+  command = $MUSL_CC -O2 -w -DLUGFORTH_MINIMAL -DLUGFORTH_STATIC -I $src -I $dst -static -no-pie -fno-stack-protector -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,--build-id=none -s $in -o $out -lm -MD -MF $depfile
 
 rule cc_mingw
   description = MINGW_CC $in
@@ -470,6 +483,10 @@ def ResizeImage(target, source, size, implicit=[]):
 
 def ConvertImage(target, source, implicit=[]):
   return Simple('convert_image', target, source, implicit)
+
+
+def CompileStatic(target, source, implicit=[]):
+  return Simple('compile_static', target, source, implicit)
 
 
 def CompileMingw(target, source, implicit=[]):

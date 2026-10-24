@@ -27,6 +27,89 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
+#ifdef LUGFORTH_STATIC
+// A static executable (musl) has no dynamic symbol table: dlsym(RTLD_DEFAULT, "open") finds nothing.
+// The C functions that the Forth looks up by name (z" open" 3 sysfunc open...) are listed here.
+// A new sysfunc in a .fs file needs its name here too (the static tests fail at load: -38).
+#include <dirent.h>
+#include <netdb.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <poll.h>
+#include <string.h>
+#include <time.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
+
+#define SYM(x) {#x, (void *) x},
+static const struct { const char *name; void *addr; } lug_syms[] = {
+  SYM(accept)
+  SYM(bind)
+  SYM(chdir)
+  SYM(clock_gettime)
+  SYM(close)
+  SYM(closedir)
+  SYM(connect)
+  SYM(creat)
+  SYM(dlopen)
+  SYM(dup2)
+  SYM(execvp)
+  SYM(exit)
+  SYM(fcntl)
+  SYM(fork)
+  SYM(free)
+  SYM(fsync)
+  SYM(ftruncate)
+  SYM(getcwd)
+  SYM(getenv)
+  SYM(gethostbyname)
+  SYM(ioctl)
+  SYM(isatty)
+  SYM(listen)
+  SYM(lseek)
+  SYM(malloc)
+  SYM(mkdir)
+  SYM(mkstemps)
+  SYM(mmap)
+  SYM(mprotect)
+  SYM(munmap)
+  SYM(open)
+  SYM(opendir)
+  SYM(pipe)
+  SYM(poll)
+  SYM(read)
+  SYM(readdir)
+  SYM(realloc)
+  SYM(recv)
+  SYM(recvfrom)
+  SYM(recvmsg)
+  SYM(remove)
+  SYM(rename)
+  SYM(rmdir)
+  SYM(send)
+  SYM(sendmsg)
+  SYM(sendto)
+  SYM(setsockopt)
+  SYM(signal)
+  SYM(socket)
+  SYM(tcgetattr)
+  SYM(tcsetattr)
+  SYM(time)
+  SYM(unlink)
+  SYM(usleep)
+  SYM(wait)
+  SYM(waitpid)
+  SYM(write)
+};
+static void *lug_static_dlsym(void *h, const char *n) {
+  for (unsigned i = 0; i < sizeof(lug_syms) / sizeof(lug_syms[0]); ++i)
+    if (!strcmp(n, lug_syms[i].name)) return lug_syms[i].addr;
+  return dlsym(h, n);
+}
+#define LUG_DLSYM lug_static_dlsym
+#endif
+
 #include "common/tier0_opcodes.h"
 #include "common/tier1_opcodes.h"
 #include "common/tier2_opcodes.h"
@@ -56,7 +139,7 @@ static void *lug_dlsym(void *h, const char *n) {
   return dlsym(h, n);
 }
 #define LUG_DLSYM lug_dlsym
-#else
+#elif !defined(LUGFORTH_STATIC)
 #define LUG_DLSYM dlsym
 #endif
 #ifdef __APPLE__

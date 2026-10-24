@@ -138,6 +138,8 @@ platform's `builtins.h`/`platform.fs`/boot-chain `.fs` file, not just GBA:
 
 ## Adding words
 
+A new C function looked up by `sysfunc` also goes in the table of `ports/posix/main.c` (static build, see PORTS.md).
+
 After adding words to the interpreter, build (`ninja posix web`) and run `python3 tools/words_reference.py`: it asks the real
 interpreters for their words and rewrites `docs/WORDS.md` (descriptions from `attic/oldsite/*.html`, `tools/words_notes.py`,
 the stack comments of the sources; add a note in `words_notes.py` for a word it leaves undescribed). `tools/words_added.py`
