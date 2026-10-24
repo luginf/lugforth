@@ -31,6 +31,8 @@ and countdown, outline (Esc o), replace all, autosave, txt2tags/Markdown highlig
 (`writhdeck` alone or Ctrl+O: Enter, n new, / filter, r rename, d delete, b backup to `backups/`, f favorite, v cycles folder / favorites / recent files; both lists are kept in `writhdeck.rec` beside the ini, lines `F path` and `R path`, 20 favorites and 10 recent files, the files chosen in the browser are noted as recent; `*` marks a favorite in the folder view).
 Speed on a big text (670 KB): Markdown colors are computed for the lines on the screen only (`md-window`; a mark never leaves its line; `wd-scroll` marks the colors stale when `top` or the number of rows changes), not for the whole text at each key (that was 0.56 s); the word count of the status bar is recounted at most every 20 times its own cost (`word-count`, the exact `word-count!` serves the statistics). Ini key `highlight` (yes/no) turns the colors off.
 
+No flicker: `tick` (once a second) redraws only when the timer runs, a message was set, the word count is stale or the size changed (idle = 0 bytes sent to the terminal; it used to redraw the whole screen each second), and `wrap-row` writes the text first and clears the rest of the row after (it cleared the row before writing).
+
 Line numbers (Ctrl+L, ini key `line_numbers`, wrapped view only): shown on the first row of each paragraph, in a 6-column margin; the count of the first line shown is kept from the last draw (`line-at`, `cl-pos`/`cl-line`/`cl-len`), so a key costs a few lines, not a scan of the text (the cache is dropped when the text changes before the cursor, on load and after replace all).
 Cursor position: `writhdeck.rec` also keeps lines `P position path` (byte position, 50 files, the oldest dropped), so a file opens where it was left (`cp-start` at load, `cur-mem` follows the cursor, saved by `stats-hook` and by `cp-flush` at the end of each editing session). The Tcl WrithDeck keeps its own `.writhdeck.json` (cursors as line/column, favorites, recents); Lugforth does not read or write it, on purpose, so as not to risk corrupting it.
 
@@ -134,3 +136,12 @@ Traps met: a word named `scan`, `top`, `step`, `frame` or `key-down` replaces th
 `catch` does not restore locals; a program that touches the real tty (editor-raw) is stopped when started in a pipeline: use `timeout --foreground` and `< /dev/null` in tests.
 Settings (2026-10-24): icons are dragged and their places, the background color (8 swatches) and the size of the desktop (4 sizes, the screen is opened again) are saved as Forth lines in `$HOME/.config/lugforth/desktop.ini` (folders made when missing, room for other settings later) (`dk-bg!`, `dk-size!`, `icon@`, loaded with `included`). One line per icon: `kind s" label" s" command" x y icon@`; kinds 0 file manager, 1 command in a terminal window (`ed`, `writhdeck`, `repl`), 2 Forth program (path from the project folder, absolute if it starts with `/`), 3 settings, 4 SDL Forth console (the desktop closes, the console opens as with `--gui`, `desk` brings the desktop back); the file may be edited by hand. The project folder is found by looking for `examples/utils/desktop.fs` in `./`, `../`, `../../`, `../../../`, so `desk` starts from examples/utils as from the root. Tested under Xvfb (drag, swatch, size, restart from the root, Snake).
 Next steps: rename, copy, new folder in the file manager (needs a text field), mouse selection in terminal windows.
+
+## Accents in the console window (`lugforth --gui`)
+
+The grid holds one byte a cell. `con-putc` decodes the UTF-8 that programs `type` (`u-byte`): Latin-1 (U+00A0 to U+00FF) is
+stored as its own code (160 to 255), and 20 other signs (euro, oe, quotes, dashes, ellipsis, arrows... `extra-cp`) as 128 to 159; any
+other letter shows `?`. Glyph index = `cell-glyph` (0 to 94 ASCII, 95 to 222 the others); the TrueType atlas (`sdl2_console_ttf.fs`)
+renders 223 glyphs; the bitmap font has no accents and draws the plain letter (`base-map`). A selection is copied as UTF-8
+(`sel-cell`). Typed letters already arrived as UTF-8 bytes (SDL text input). Tested in `sdl2_console_tests.fs` (headless) and by
+screenshot under Xvfb with DejaVu Sans Mono.

@@ -200,19 +200,24 @@ wd-defaults
   0 ;
 : two ( n -- )   dup 10 < if s" 0" stype then num-type ;
 : mmss ( s -- )   60 /mod two  s" :" stype  two ;
-: tick ( -- )
+0 value tk-draw
+: tick ( -- )   \ once a second; the screen is drawn again only if something on it can have changed
   now-ms 1000 / dup last-sec = if drop exit then  to last-sec
+  0 to tk-draw
   timer-mode 2 = if
     timer-secs 0= alerted 0= and if
-      -1 to alerted  7 emit  s" Time is up" say
+      -1 to alerted  -1 to tk-draw  7 emit  s" Time is up" say
     then
   then
   autosave if modified if flen if now-ms last-auto - auto-min 60000 * > if
     ['] save-file catch if s" Autosave failed" say else s" Autosaved" say then
-    now-ms to last-auto
+    now-ms to last-auto  -1 to tk-draw
   then then then then
   modified if now-ms st-last - 10000 > if now-ms to st-last stats-hook then then
-  refresh-size scroll draw ;
+  timer-mode if -1 to tk-draw then
+  edits words-edits <> if -1 to tk-draw then
+  cols 1000 * rows +  refresh-size  cols 1000 * rows + <> if -1 to tk-draw then
+  tk-draw if scroll draw then ;
 
 ( ---- Highlighting of txt2tags and Markdown: classes 1 comment, 3 heading, 4 list, 5 underline, 6 bold, 7 italic ---- )
 : pair-at? ( p e c -- f )
@@ -316,15 +321,16 @@ wd-defaults
     1 +to dp
   repeat
   normal ;
-: wrap-row ( r -- )
+: wrap-row ( r -- )   \ text first, then the rest of the row cleared: a row is never blank for a moment
   to wrow
-  0 wrow at-xy clear-to-eol
-  rp len > if exit then
+  0 wrow at-xy
+  rp len > if clear-to-eol exit then
+  normal  pad 0 ?do 32 emit loop
   nums-on if rp 0= rp 1- b@ 10 = or if
     normal theme-dim fg  pad 6 - 0 max wrow at-xy  lno lno-type  normal then then
   pad wrow at-xy
   rp seg to rnext to de
-  rp de draw-seg
+  rp de draw-seg  clear-to-eol
   nums-on if rnext 0> if rnext 1- b@ 10 = if 1 +to lno then then then
   rnext to rp ;
 : wrap-scroll ( -- )

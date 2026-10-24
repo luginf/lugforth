@@ -292,6 +292,33 @@ create prm 8 cells allot
     prm @ to p1   prm cell+ @ to p2
     csi-done exit then
   drop ;
+( ---- Accents: the grid holds one byte a cell. 32 to 126 ASCII, 160 to 255 Latin-1, and 128 to 159 a few more signs ---- )
+create extra-cp
+  $20ac , $152 , $153 , $178 , $2018 , $2019 , $201c , $201d , $2013 , $2014 , $2026 , $2022 , $2192 , $2190 , $160 , $161 , $17d , $17e , $2122 , $2260 ,
+20 constant extras
+create base-map   ( the plain letter for each byte 128 to 255, for the bitmap font which has no accents )
+  69 c, 79 c, 111 c, 89 c, 39 c, 39 c, 39 c, 39 c, 45 c, 45 c, 46 c, 42 c, 62 c, 60 c, 83 c, 115 c,
+  90 c, 122 c, 84 c, 61 c, 63 c, 63 c, 63 c, 63 c, 63 c, 63 c, 63 c, 63 c, 63 c, 63 c, 63 c, 63 c,
+  32 c, 33 c, 99 c, 76 c, 111 c, 89 c, 124 c, 83 c, 39 c, 99 c, 97 c, 60 c, 45 c, 45 c, 82 c, 45 c,
+  111 c, 43 c, 50 c, 51 c, 39 c, 117 c, 80 c, 46 c, 44 c, 49 c, 111 c, 62 c, 49 c, 49 c, 51 c, 63 c,
+  65 c, 65 c, 65 c, 65 c, 65 c, 65 c, 65 c, 67 c, 69 c, 69 c, 69 c, 69 c, 73 c, 73 c, 73 c, 73 c,
+  68 c, 78 c, 79 c, 79 c, 79 c, 79 c, 79 c, 120 c, 79 c, 85 c, 85 c, 85 c, 85 c, 89 c, 80 c, 115 c,
+  97 c, 97 c, 97 c, 97 c, 97 c, 97 c, 97 c, 99 c, 101 c, 101 c, 101 c, 101 c, 105 c, 105 c, 105 c, 105 c,
+  100 c, 110 c, 111 c, 111 c, 111 c, 111 c, 111 c, 47 c, 111 c, 117 c, 117 c, 117 c, 117 c, 121 c, 112 c, 121 c,
+: cp>cell ( codepoint -- byte )
+  dup 160 >= over 255 <= and if exit then
+  extras 0 ?do dup i cells extra-cp + @ = if drop i 128 + unloop exit then loop
+  drop 63 ;
+: cell>cp ( byte -- codepoint )   dup 160 >= if exit then  128 - cells extra-cp + @ ;
+: cell-glyph ( byte -- g )   dup 128 >= if 33 - else 32 - then ;   ( 0 to 94 ASCII, 95 to 222 the others )
+0 value u-need   0 value u-cp
+: u-byte ( c -- )   \ a byte of UTF-8 text: the first one of a letter, or one that follows
+  dup 192 >= if
+    dup 224 < if 31 and 1 else dup 240 < if 15 and 2 else 7 and 3 then then
+    to u-need to u-cp exit then
+  u-need 0= if drop exit then
+  63 and u-cp 6 lshift or to u-cp  -1 +to u-need
+  u-need 0= if u-cp cp>cell put-char then ;
 : con-putc ( c -- )
   esc-state 2 = if csi-char exit then
   esc-state 3 = if 7 = if 0 to esc-state then exit then   ( title, ends with bell )
@@ -299,12 +326,13 @@ create prm 8 cells allot
     dup [char] [ = if drop 2 to esc-state prm-reset exit then
     [char] ] = if 3 to esc-state else 0 to esc-state then
     exit then
+  dup 128 < if 0 to u-need then
   dup 27 = if drop 1 to esc-state exit then
   dup 10 = if drop con-nl exit then
   dup 13 = if drop 0 to cx exit then
   dup 8 = if drop cx 1- 0 max to cx -1 to dirty exit then
   dup 9 = if drop begin 32 put-char cx 7 and 0= until exit then
-  dup 128 >= if 192 >= if 63 put-char then exit then
+  dup 128 >= if u-byte exit then
   dup 32 < if drop exit then
   put-char ;
 : con-type ( a n -- ) 0 ?do dup i + c@ con-putc loop drop ;
@@ -337,6 +365,7 @@ create gdst 16 allot
 : bm-build ( -- ) make-atlas ;
 : bm-glyph ( g x y -- )
   { g x y }
+  g 95 >= if g 33 + 128 - base-map + c@ 32 - to g then   ( no accent in the bitmap: the plain letter )
   g 8 * 0 8 16 gsrc rect-at!
   x y con-cw con-ch gdst rect-at!
   renderer atlas gsrc gdst SDL_RenderCopy drop ;
@@ -392,10 +421,15 @@ create selbuf 20000 allot
 0 value sr   0 value sc1   0 value sc2   0 value lastc
 0 value r1   0 value c1   0 value r2   0 value c2
 : sel-put ( c -- ) sl 19990 < if selbuf sl + c! 1 +to sl else drop then ;
+: sel-cell ( byte -- )   \ copied as UTF-8
+  dup 128 < if sel-put exit then
+  cell>cp
+  dup $800 < if dup 6 rshift $c0 or sel-put $3f and $80 or sel-put exit then
+  dup 12 rshift $e0 or sel-put  dup 6 rshift $3f and $80 or sel-put  $3f and $80 or sel-put ;
 : sel-row ( r c1 c2 -- )   \ the cells c1 to c2 of a row, trailing spaces dropped
   to sc2 to sc1 to sr
   sc2 begin dup sc1 >= if dup sr grid c@ 32 = else 0 then while 1- repeat to lastc
-  lastc 1+ sc1 ?do  i sr grid c@ dup 32 < if drop 32 then sel-put  loop ;
+  lastc 1+ sc1 ?do  i sr grid c@ dup 32 < if drop 32 then sel-cell  loop ;
 : sel-copy ( -- )
   sel-on 0= if exit then
   0 to sl
@@ -946,7 +980,7 @@ defer font-pick ( k -- )   ' drop is font-pick
   then
   cell-b bg-col <> if cell-b color px py con-cw con-ch box then
   ca $200000 and if cell-f color px py con-ch + 2 - con-cw 1 box then
-  cc 32 > cc 127 < and if cc 32 - px py glyph-at then ;
+  cc 32 > cc 127 < and cc 128 >= or if cc cell-glyph px py glyph-at then ;
 ( ---- Graphics under the text: after `graphic`, the drawing words work at the prompt ---- )
 \ A texture of 640x480 receives the drawing (the renderer targets it while the program runs);
 \ the console draws it first, stretched to the window, then the text over it: the cells

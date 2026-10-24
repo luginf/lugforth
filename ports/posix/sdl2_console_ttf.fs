@@ -21,7 +21,7 @@
 sdl2-ttf
 sdl2 definitions also posix
 0 value tfont   0 value font-file   0 value tex-gen
-create tex-t 100 cells allot
+create tex-t 230 cells allot
 z" TTF_FontFaceIsFixedWidth" 1 sdlttf TTF_FaceFixed ( a -- n )
 0 value cur   0 value ca   0 value cn
 create gz 4 allot
@@ -131,11 +131,16 @@ create gz 4 allot
   tsize sl@ tsize 4 + sl@ ;
 : ttf-free ( -- )
   tex-gen con-gen = if
-    95 0 do tex-t i cells + @ ?dup if SDL_DestroyTexture drop then loop
+    223 0 do tex-t i cells + @ ?dup if SDL_DestroyTexture drop then loop
   then
-  tex-t 100 cells 0 fill ;
+  tex-t 230 cells 0 fill ;
+: utf8! ( cp -- )   \ the letter at gz, ended by 0
+  dup $80 < if gz c! 0 gz 1+ c! exit then
+  dup $800 < if
+    dup 6 rshift $c0 or gz c!  $3f and $80 or gz 1+ c!  0 gz 2 + c! exit then
+  dup 12 rshift $e0 or gz c!  dup 6 rshift $3f and $80 or gz 1+ c!  $3f and $80 or gz 2 + c!  0 gz 3 + c! ;
 : ttf-one ( i -- )
-  dup 32 + gz c!  0 gz 1+ c!
+  dup  dup 95 < if 32 + else 33 + cell>cp then  utf8!
   tfont gz $ffffffff TTF_RenderUTF8_Blended
   dup 0= if drop drop exit then
   dup renderer swap SDL_CreateTextureFromSurface
@@ -143,18 +148,18 @@ create gz 4 allot
   swap cells tex-t + ! ;
 : ttf-build ( -- )
   ttf-free
-  95 0 do i ttf-one loop
+  223 0 do i ttf-one loop
   con-gen to tex-gen ;
 : ttf-glyph ( g x y -- )
   { g x y }
-  g 0< g 94 > or if exit then
+  g 0< g 222 > or if exit then
   g cells tex-t + @ ?dup if
     x y con-cw con-ch gdst rect-at!
     renderer swap 0 gdst SDL_RenderCopy drop
   then ;
 : ttf-tint ( r g b -- )
   { r g b }
-  95 0 do tex-t i cells + @ ?dup if r g b SDL_SetTextureColorMod drop then loop ;
+  223 0 do tex-t i cells + @ ?dup if r g b SDL_SetTextureColorMod drop then loop ;
 : ttf-install ( -- )
   TTF_Init drop
   font-find if

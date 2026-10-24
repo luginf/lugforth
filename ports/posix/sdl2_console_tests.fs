@@ -30,6 +30,19 @@ sdl2 definitions
   s" # fg=123456" ini-line   fg-col $ff8800 =assert
   s" nothing" ini-line   fg-col $ff8800 =assert ;
 
+: test-accents
+  80 to con-cols  0 to cx  0 to cy  0 to u-need
+  s" aé€’z" con-type
+  0 0 grid c@ 97 =assert   1 0 grid c@ 233 =assert   2 0 grid c@ 128 =assert
+  3 0 grid c@ 133 =assert   4 0 grid c@ 122 =assert   cx 5 =assert
+  233 cell>cp 233 =assert   128 cell>cp $20ac =assert
+  233 cell-glyph 200 =assert
+  $4e2d cp>cell 63 =assert
+  233 128 - base-map + c@ 101 =assert   128 128 - base-map + c@ 69 =assert   201 128 - base-map + c@ 69 =assert
+  0 to sl  1 0 grid c@ sel-cell  2 0 grid c@ sel-cell
+  sl 5 =assert   selbuf c@ $c3 =assert   selbuf 1+ c@ $a9 =assert   selbuf 2 + c@ $e2 =assert
+  con-clear ;
+
 : test-hex6
   $ff hex6 s" 0000FF" compare 0 =assert
   $d2d2d2 hex6 s" D2D2D2" compare 0 =assert ;
