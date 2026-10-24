@@ -20,6 +20,10 @@
 \                  (the desktop closes, the program runs, the desktop comes back)
 \   icons          drag them to place them; Settings: color of the background, size of the desktop
 \                  (places, color and size are kept in $HOME/.config/lugforth/desktop.ini, Forth lines)
+\   icon format    one line per icon: `kind s" label" s" command" x y icon@`, kinds: 0 file manager,
+\                  1 command run in a terminal window (ed, writhdeck, repl), 2 Forth program (path from the
+\                  project folder, or absolute when it starts with /), 3 settings, 4 SDL Forth console
+\                  (`desk` brings the desktop back). The file can be edited by hand.
 \   windows        drag the title bar, click to raise, x closes (a terminal gets Ctrl+Q)
 \   file manager   a double click on a .fs runs it, any other file opens in writhdeck
 \   taskbar        the open windows, and Quit
@@ -43,7 +47,7 @@ $0303 constant SDL_TEXTINPUT
 
 800 value dk-w   600 value dk-h     ( the size of the desktop, set in the settings )
 $2a5070 value dk-bg                    ( the color of the background )
-0 value resize?                        ( the screen has to be opened again )
+0 value resize?   0 value console?                        ( the screen has to be opened again )
 28 constant bar-h        ( the taskbar )
 20 constant title-h
 0 value ui-font   0 value term-font
@@ -322,7 +326,7 @@ defer set-draw ( w h -- )   ( the settings window, further down )
   no-viewport
   ui-font font ;
 
-( ---- Icons: kind 0 the file manager, 1 a command in a terminal, 2 a Forth program ---- )
+( ---- Icons: kind 0 the file manager, 1 a command in a terminal window, 2 a Forth program, 3 the settings, 4 the SDL console ---- )
 12 constant max-icon
 104 constant icon-size    ( byte 0 kind, 1 to 20 label, 21 to 94 command, 96 and 98 the place )
 create icons max-icon icon-size * allot   0 value nicon
@@ -345,6 +349,10 @@ create icons max-icon icon-size * allot   0 value nicon
   { x y i }
   x 0 max dk-w 74 - min  i icon-at 96 + w!
   y 0 max dk-h bar-h - 80 - min  i icon-at 98 + w! ;
+: icon@ ( kind la ln ca cn x y -- )   \ one icon of the settings file, with its place
+  { kind la ln ca cn x y }
+  nicon max-icon >= if exit then
+  kind la ln ca cn icon  x y nicon 1- icon-xy! ;
 : icon-place ( la ln x y -- )   \ from the settings file: the icon with this label goes there
   { la ln x y }
   nicon 0 ?do i icon-label la ln compare 0= if x y i icon-xy! then loop ;
@@ -356,11 +364,12 @@ create icons max-icon icon-size * allot   0 value nicon
     py i icon-y >=  py i icon-y 76 + < and and if i to r then
   loop r ;
 -1 value icon-sel   0 value icon-time
+create kind-colors $e0c050 , $60c0a0 , $d07060 , $a090d0 , $50b0e0 ,   ( by kind )
 
 : draw-icon ( i -- )
   { i }
   i icon-sel = if $4070b0 color i icon-x 4 - i icon-y 4 - 78 80 box then
-  i icon-kind 0 = if $e0c050 else i icon-kind 1 = if $60c0a0 else i icon-kind 2 = if $d07060 else $a090d0 then then then color
+  kind-colors i icon-kind cells + @ color
   i icon-x i icon-y 64 48 box
   $202030 color i icon-x 2 + i icon-y 2 + 60 44 frame
   $202030 color i icon-x 22 + i icon-y 12 + i icon-label 1 min text
@@ -423,8 +432,10 @@ create nl-str 10 c,
   dk-bg ib-num s" dk-bg!" ib+ nl-str 1 ib+
   dk-w ib-num dk-h ib-num s" dk-size!" ib+ nl-str 1 ib+
   nicon 0 ?do
+    i icon-kind ib-num
     q-str 3 ib+  i icon-label ib+  q-end 2 ib+
-    i icon-x ib-num  i icon-y ib-num  s" icon-place" ib+ nl-str 1 ib+
+    q-str 3 ib+  i icon-cmd ib+  q-end 2 ib+
+    i icon-x ib-num  i icon-y ib-num  s" icon@" ib+ nl-str 1 ib+
   loop
   ini-dirs
   ini-path z>s w/o create-file if drop exit then
@@ -683,14 +694,20 @@ create line-buf 400 allot
   line-buf nn 10 + na nn run-in-terminal ;
 : do-launch ( i -- )
   { i }
+  i icon-cmd { ca cn }
+  dk-home z>s { ha hn }
+  cn 0> if ca c@ [char] / = else 0 then { abs? }
   i icon-kind 0 = if open-files exit then
   i icon-kind 3 = if open-settings exit then
-  i icon-kind 1 = if i icon-cmd i icon-label run-in-terminal exit then
+  i icon-kind 1 = if ca cn i icon-label run-in-terminal exit then
   dk-nested if s" Close the editor first" dk-say exit then
-  dk-home z>s { ha hn }
-  ha line-buf hn cmove  [char] / line-buf hn + c!
-  i icon-cmd { ca cn }
-  ca line-buf hn 1+ + cn cmove  0 line-buf hn 1+ cn + + c!
+  i icon-kind 4 = if -1 to console?  quit! exit then
+  abs? if
+    ca line-buf cn cmove  0 line-buf cn + c!
+  else
+    ha line-buf hn cmove  [char] / line-buf hn + c!
+    ca line-buf hn 1+ + cn cmove  0 line-buf hn 1+ cn + + c!
+  then
   line-buf prog-cmd 300 cmove  -1 to prog?  quit! ;
 : do-pending ( -- )
   want-launch 0< 0= if want-launch -1 to want-launch do-launch exit then
@@ -723,6 +740,7 @@ create line-buf 400 allot
   nicon if exit then
   0 s" Files" s" " icon
   1 s" Forth" s" repl" icon
+  4 s" Console" s" " icon
   1 s" Writhdeck" s" writhdeck" icon
   1 s" Ed" s" ed" icon
   3 s" Settings" s" " icon
@@ -754,21 +772,24 @@ create line-buf 400 allot
   begin dk-frame quit? until
   close-screen ;
 
-: desk-main ( -- )
-  find-home  ini-name
-  default-icons  ini-load
+: open-console ( -- )   \ the console window of lugforth --gui, with the prompt of lugforth: `desk` comes back
+  [ also internals ] gui-open gui-restore [ previous ] ;
+: desk-main ( -- console? )
+  find-home  ini-name  0 to nicon
+  ini-load  nicon 0= if default-icons ini-load then
   ['] queue-open is fl-open
   begin
-    0 to prog?  0 to resize?
+    0 to prog?  0 to resize?  0 to console?
     desk-once
-    prog? if run-program -1 else resize? then
-  while repeat ;
+    console? if 0 else prog? if run-program -1 else resize? then then
+  while repeat
+  console? ;
 
 previous also forth definitions previous
-also fm ' desk-main previous constant desk-xt
-: desk ( -- ) also fm desk-xt execute previous ;
+also fm ' desk-main ' open-console previous constant console-xt constant desk-xt
+: desk ( -- ) also fm desk-xt execute previous if console-xt execute then ;
 
 [defined] desk-no-run [if] [else]
-desk
-script-bye
+also fm desk-xt execute previous
+[if] console-xt execute [else] script-bye [then]
 [then]

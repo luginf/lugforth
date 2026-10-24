@@ -111,6 +111,39 @@ def idle_cpu():
     t.close()
 
 
+def line_numbers():
+  with tempfile.TemporaryDirectory() as home:
+    path = os.path.join(home, 'n.txt')
+    t = Term(home)
+    t.wait_for('ok')
+    t.send('writhdeck %s\r' % path, 1.5)
+    t.send('aa\rbb\rcc', 0.5)
+    t.buf = b''
+    t.send(b'\x0c', 0.8)
+    out = t.buf.decode(errors='replace')
+    check('line numbers: Ctrl+L shows 1 and 3', '    1' in out and '    3' in out and '    4' not in out, repr(out[-200:]))
+    t.send('\r' + 'dd', 0.5)
+    check('line numbers: a new line gets 4', '    4' in t.buf.decode(errors='replace'))
+    t.close()
+
+
+def daily_stats():
+  with tempfile.TemporaryDirectory() as home:
+    path = os.path.join(home, 's.txt')
+    t = Term(home)
+    t.wait_for('ok')
+    t.send('writhdeck %s\r' % path, 1.5)
+    t.send('one two three', 0.5)
+    t.send(b'\x13', 0.8)
+    rec = open(os.path.join(home, 'writhdeck.rec')).read() if os.path.exists(os.path.join(home, 'writhdeck.rec')) else ''
+    check('stats: Ctrl+S writes the words of the day', rec.startswith('S ') and rec.rstrip().endswith(' 3 ' + os.path.realpath(path)) or (' 3 ' + path) in rec, repr(rec))
+    t.buf = b''
+    t.send(b'\x1b', 0.6)
+    t.send('s', 0.8)
+    check('stats: Esc s shows today', 'Today, all files' in t.buf.decode(errors='replace'))
+    t.close()
+
+
 def browser():
   with tempfile.TemporaryDirectory() as home:
     open(os.path.join(home, 'a.txt'), 'w').write('alpha\n')
@@ -124,6 +157,17 @@ def browser():
     t.send('X', 0.3)
     t.send(b'\x0f', 1.0)
     check('browser: Ctrl+O saves and comes back', 'X' in open('a.txt').read() and t.wait_for('Enter open'))
+    t.send(b'\x1b[B', 0.3)
+    t.send('f', 0.5)
+    check('browser: f marks a favorite', t.wait_for('Added to the favorites'))
+    rec = open(os.path.join(home, 'writhdeck.rec')).read()
+    check('browser: writhdeck.rec keeps the favorite and the recent file',
+          ('F ' + os.path.realpath(home) + '/a.txt') in rec and ('R ' + os.path.realpath(home) + '/a.txt') in rec, repr(rec))
+    t.send('v', 0.5)
+    check('browser: v shows the favorites', t.wait_for('Favorites'))
+    t.send('v', 0.5)
+    check('browser: v again shows the recent files', t.wait_for('Recent files'))
+    t.send('\x1b', 0.5)
     t.send('q', 0.5)
     check('browser: q leaves', t.wait_for('ok'))
     t.close()
@@ -133,6 +177,8 @@ def browser():
 run_editor('ed', 'hello world', 'ed')
 run_editor('writhdeck', 'hello world', 'writhdeck')
 idle_cpu()
+line_numbers()
+daily_stats()
 browser()
 print('FAILED: %d' % failed if failed else 'ALL OK')
 sys.exit(1 if failed else 0)

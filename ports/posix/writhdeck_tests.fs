@@ -95,4 +95,44 @@ x" fresh   500 cells bytes to toc-pos   toc-collect
   0 to theme   72 to colw   500 to goal   -1 to wrap-on   0 to hem-cfg   0 to hem-on   0 to auto-cfg   0 to autosave   1 to auto-min
   wd-defaults ;
 
+: test-wd-lists
+  0 fav-cnt !   0 rec-cnt !
+  s" /a/one" fav-flip assert   s" /a/two" fav-flip assert   fav-cnt @ 2 =assert
+  s" /a/one" fav? assert   s" /a/zzz" fav? 0 =assert
+  s" /a/one" fav-flip 0 =assert   fav-cnt @ 1 =assert   s" /a/one" fav? 0 =assert   s" /a/two" fav? assert
+  s" /r/1" rec-tab rec-cnt 3 sl-front   s" /r/2" rec-tab rec-cnt 3 sl-front   s" /r/3" rec-tab rec-cnt 3 sl-front
+  s" /r/2" rec-tab rec-cnt 3 sl-front
+  rec-cnt @ 3 =assert
+  rec-tab 0 sl-a z>s s" /r/2" compare 0 =assert   rec-tab 1 sl-a z>s s" /r/3" compare 0 =assert   rec-tab 2 sl-a z>s s" /r/1" compare 0 =assert
+  s" /r/4" rec-tab rec-cnt 3 sl-front
+  rec-cnt @ 3 =assert   rec-tab 0 sl-a z>s s" /r/4" compare 0 =assert   rec-tab 2 sl-a z>s s" /r/3" compare 0 =assert
+  0 fav-cnt !   0 rec-cnt !
+  s" F /x/y" lst-line   s" R /x/z" lst-line   s" junk" lst-line   s" F " lst-line
+  fav-cnt @ 1 =assert   rec-cnt @ 1 =assert   s" /x/y" fav? assert
+  0 fav-cnt !   0 rec-cnt ! ;
+
+: test-line-at
+  s" a
+bb
+ccc
+
+e" fresh   -1 to cl-len
+  0 line-at 1 =assert   5 line-at 3 =assert   9 line-at 4 =assert   10 line-at 5 =assert
+  3 line-at 2 =assert   0 line-at 1 =assert
+  s" a
+b" fresh   0 to cur   2 line-at 2 =assert
+  s" x
+a
+b" fresh   0 to cur   4 line-at 3 =assert   -1 to cl-len ;
+
+: test-daily-stats
+  0 dstr s" 1970-01-01" compare 0 =assert   19782 dstr s" 2024-02-29" compare 0 =assert
+  20000 dstr s" 2024-10-04" compare 0 =assert   20750 dstr s" 2026-10-24" compare 0 =assert
+  0 st-cnt !
+  s" /a/f" 100 40 st-put   s" /a/f" 100 25 st-put   s" /a/f" 101 10 st-put   s" /a/g" 100 5 st-put
+  st-cnt @ 3 =assert
+  s" /a/f" 100 st-find 0 =assert   0 cells st-w + @ 40 =assert   100 day-total 45 =assert   101 day-total 10 =assert
+  s" S 100 7 /a/h x" lst-line   s" /a/h x" 100 st-find 3 =assert   3 cells st-w + @ 7 =assert
+  0 st-cnt ! ;
+
 run-tests

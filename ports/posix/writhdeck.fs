@@ -41,10 +41,14 @@ also editor definitions
 0 value last-sec   0 value ww   0 value pad
 0 value toc-pos   0 value toc-n   0 value toc-sel   0 value toc-top
 0 value repl   0 value repl-n
-0 value wrow
+defer stats-hook ( -- )   defer stats-extra ( -- )   ( set once the browser words exist )
+0 value st-dirty   0 value st-last   0 value tz-hours   0 value st-base
+0 value wrow   0 value nums-on   0 value lno
+0 value cl-pos   0 value cl-line   -1 value cl-len   ( the last line count asked: where, which line, text length )
 
 : now-ms ( -- n )   ms-ticks ;
 : layout-update ( -- )
+  wrap-on nums-on and if colw cols 8 - min 20 max to ww  cols 6 - ww - 2/ 6 + to pad exit then
   wrap-on if colw cols 2 - min 20 max else cols then to ww
   wrap-on if cols ww - 2/ else 0 then to pad ;
 
@@ -56,7 +60,7 @@ create zl 128 allot   create zc 128 allot   create zr 128 allot   create hbar 12
 : zget ( z -- a n )   dup cell+ swap @ ;
 : wd-defaults ( -- )
   s" filename dirty words session goal timer modes help_bar" zl zset
-  s" " zc zset   s" " zr zset   s" Esc: menu" hbar zset   -1 to bar-on ;
+  s" " zc zset   s" " zr zset   s" Esc: menu" hbar zset   -1 to bar-on   0 to nums-on ;
 wd-defaults
 : wd-defname ( -- a n )   s" writhdeck.ini" ;
 : wd-ini-kv ( ka kn va vn -- )
@@ -65,6 +69,8 @@ wd-defaults
   ka kn s" autosave_enabled" compare 0= if va vn yes? dup to auto-cfg to autosave exit then
   ka kn s" autosave_interval" compare 0= if va vn to-number 1 max 60 min to auto-min exit then
   ka kn s" bar" compare 0= if va vn yes? to bar-on exit then
+  ka kn s" line_numbers" compare 0= if va vn yes? to nums-on exit then
+  ka kn s" utc_offset" compare 0= if va vn to-number -12 max 14 min to tz-hours exit then
   ka kn s" help_bar" compare 0= if va vn hbar zset exit then
   ka kn s" status_left" compare 0= if va vn zl zset exit then
   ka kn s" status_center" compare 0= if va vn zc zset exit then
@@ -86,6 +92,10 @@ wd-defaults
   s" hemingway_mode" key= hem-cfg wyes eol+
   s" % word_goal: daily target of words, 0 for none" wl
   s" word_goal" key= goal wn eol+
+  s" % line_numbers: numbers in the margin of the wrapped view, Ctrl+L" wl
+  s" line_numbers" key= nums-on wyes eol+
+  s" % utc_offset: hours added to UTC to find the day of the daily statistics" wl
+  s" utc_offset" key= tz-hours wn eol+
   s" % bar: show the status bar (a message still shows in it)" wl
   s" bar" key= bar-on wyes eol+
   s" % help_bar: text of the help_bar token when there is no message" wl
@@ -191,6 +201,7 @@ wd-defaults
     ['] save-file catch if s" Autosave failed" say else s" Autosaved" say then
     now-ms to last-auto
   then then then then
+  modified if now-ms st-last - 10000 > if now-ms to st-last stats-hook then then
   refresh-size scroll draw ;
 
 ( ---- Highlighting of txt2tags and Markdown: classes 1 comment, 3 heading, 4 list, 5 underline, 6 bold, 7 italic ---- )
@@ -238,6 +249,23 @@ wd-defaults
   forth-name? if forth-scan exit then
   md-scan ;
 
+( ---- Line numbers: the count is kept from the last draw, so a key costs a few lines, not the whole text ---- )
+: cl-ok? ( -- f )   cl-len 0< if 0 exit then  cl-len len = cl-pos cur < or ;
+: line-at ( p -- n )   \ the number of the line holding position p, from 1
+  { p }  0 { n }
+  cl-ok? 0= if 0 to cl-pos  1 to cl-line then
+  p cl-pos > if
+    p cl-pos ?do i b@ 10 = if 1 +to n then loop  n +to cl-line
+  else
+    cl-pos p ?do i b@ 10 = if 1 +to n then loop  n negate +to cl-line
+  then
+  p to cl-pos  len to cl-len  cl-line ;
+: lno-type ( n -- )   <# #s #> dup 5 swap - 0 max 0 ?do 32 emit loop type ;
+: nums-flip ( -- )
+  wrap-on 0= if s" Line numbers need the wrapped view (Esc w)" say exit then
+  nums-on 0= to nums-on  layout-update  ini-save
+  nums-on if s" Line numbers on" else s" Line numbers off" then say ;
+
 ( ---- The wrapped view ---- )
 0 value fs   0 value fe   0 value de   0 value rnext
 : dim? ( p -- f )   focus-on if dup fs < swap fe > or else drop 0 then ;
@@ -274,9 +302,12 @@ wd-defaults
   to wrow
   0 wrow at-xy clear-to-eol
   rp len > if exit then
+  nums-on if rp 0= rp 1- b@ 10 = or if
+    normal theme-dim fg  pad 6 - 0 max wrow at-xy  lno lno-type  normal then then
   pad wrow at-xy
   rp seg to rnext to de
   rp de draw-seg
+  nums-on if rnext 0> if rnext 1- b@ 10 = if 1 +to lno then then then
   rnext to rp ;
 : wrap-scroll ( -- )
   layout-update
@@ -300,6 +331,7 @@ wd-defaults
   cur bol to fs   cur eol to fe
   hide
   top to rp
+  nums-on if top line-at to lno then
   text-rows 0 ?do i wrap-row loop
   draw-status
   ccol crow at-xy
@@ -383,7 +415,7 @@ wd-defaults
   s"   s statistics   r replace all   g daily goal   a autosave   + - width   c theme   x run the file" pl  1 +to orow
   s" Keys as in ed: Ctrl+S save, Ctrl+Q quit, Ctrl+F find, Ctrl+N next, Ctrl+G line," pl
   s" Ctrl+Z undo, Ctrl+Y redo, Ctrl+C X V copy cut paste, Ctrl+K mark, Shift+arrows select," pl
-  s" Ctrl+O save and back to the file browser, Ctrl+T next color theme (default colorforth light solarized mono), Ctrl+R run." pl
+  s" Ctrl+O save and back to the file browser, Ctrl+L line numbers, Ctrl+T next color theme (default colorforth light solarized mono), Ctrl+R run." pl
   wait-any ;
 : stat-page ( -- )
   page 0 to orow
@@ -393,6 +425,7 @@ wd-defaults
   s" This session" word-count words0 - kv
   s" Daily goal" goal kv
   s" Reading minutes" word-count 200 / 1+ kv
+  stats-extra
   0 0 { lines paras }
   len 0 ?do i b@ 10 = if 1 +to lines then loop
   s" Lines" lines 1+ kv
@@ -460,7 +493,7 @@ wd-defaults
     repl-n if repl repl-n p put then
     repl-n +to p  1 +to n
   repeat
-  drop
+  drop  -1 to cl-len
   n if n num-type-say else s" Not found" say then ;
 
 ( ---- Word occurrences: the words of the text by frequency ---- )
@@ -590,15 +623,16 @@ also rpi
 previous
 [then]
 0 value bpool   0 value bpn   0 value btab   0 value bn   0 value bsel   0 value btop
-0 value bfilt   0 value bfilt-n   0 value bz1   0 value bz2   0 value bcwd
+0 value bfilt   0 value bfilt-n   0 value bz1   0 value bz2
+create bcwd 300 allot
 0 value bdone   0 value bname   0 value bnl   0 value ba   0 value bnn
 0 value want-browser   0 value werr
 : b-alloc ( -- )
   60000 bytes to bpool   3000 cells bytes to btab   64 bytes to bfilt
-  300 bytes to bz1   300 bytes to bz2   300 bytes to bcwd   300 bytes to bname
+  300 bytes to bz1   300 bytes to bz2   300 bytes to bname
   0 to bfilt-n  0 to bsel  0 to btop ;
 : b-free ( -- )   bpool free drop  btab free drop  bfilt free drop
-  bz1 free drop  bz2 free drop  bcwd free drop  bname free drop ;
+  bz1 free drop  bz2 free drop  bname free drop ;
 : zcopy ( a n buf -- buf )   dup >r swap dup >r cmove  0 r> r@ + c!  r> ;
 : b-e ( i -- a )   3 * cells btab + ;
 : b-name ( i -- a n )   b-e dup @ bpool + swap cell+ @ ;
@@ -632,7 +666,7 @@ previous
     i m <> if i m b-swap then
   loop ;
 [defined] posix [if]
-: b-scan ( -- )
+: b-scan-dir ( -- )
   0 to bn  0 to bpn  0 { dh }  0 { ent }
   s" .." -1 b-add
   s" ." open-dir if drop exit then  to dh
@@ -647,7 +681,7 @@ previous
   drop dh closedir drop
   b-sort ;
 [else]
-: b-scan ( -- )
+: b-scan-dir ( -- )
   0 to bn  0 to bpn  0 { dh }  0 { ent }
   s" .." -1 b-add
   s" ." open-dir if drop exit then  to dh
@@ -663,25 +697,164 @@ previous
   b-sort ;
 [then]
 : b-cwd ( -- a n )   bcwd 290 wd-getcwd drop  bcwd dup begin dup c@ while 1+ repeat over - ;
+( ---- Favorites and recent files: writhdeck.rec in the settings folder, lines "F path" and "R path" ---- )
+256 constant sl-sz
+create fav-tab 20 sl-sz * allot   create rec-tab 10 sl-sz * allot
+variable fav-cnt   variable rec-cnt   0 fav-cnt !   0 rec-cnt !
+: sl-a ( tab k -- z )   sl-sz * + ;
+( Daily statistics: the words written in a file in a day, never lowered; the day is the number of days since 1970 )
+100 constant st-max
+create st-tab st-max sl-sz * allot   create st-d st-max cells allot   create st-w st-max cells allot
+variable st-cnt   0 st-cnt !
+: st-find ( a n day -- k )   \ the entry of that path that day, or -1
+  { a n day }  -1 { r }
+  st-cnt @ 0 ?do  st-d i cells + @ day = if st-tab i sl-a z>s a n compare 0= if i to r leave then then  loop
+  r ;
+: st-put ( a n day w -- )   \ keeps the highest count
+  { a n day w }
+  a n day st-find { k }
+  k 0< if
+    st-cnt @ st-max >= if exit then
+    st-cnt @ to k  1 st-cnt +!
+    a n 255 min st-tab k sl-a zcopy drop  day st-d k cells + !  0 st-w k cells + !
+  then
+  st-w k cells + @ w max  st-w k cells + ! ;
+: today ( -- day )   0 wd-time  tz-hours 3600 * +  86400 / ;
+: st-today-all ( -- n )   0 { t }  st-cnt @ 0 ?do  st-d i cells + @ today = if st-w i cells + @ +to t then  loop  t ;
+create babs 700 allot   0 value bal   0 value bview   ( bview: 0 folder, 1 favorites, 2 recent files )
+: sl-find ( a n tab cnt -- k )   \ the slot holding that path, or -1
+  { a n tab cnt }  -1 { r }
+  cnt 0 ?do  tab i sl-a z>s a n compare 0= if i to r leave then  loop
+  r ;
+: sl-del ( k tab cp -- )   \ cp is the address of the count
+  { k tab cp }
+  cp @ 1- k ?do  tab i 1+ sl-a  tab i sl-a  sl-sz cmove  loop
+  -1 cp +! ;
+: sl-add ( a n tab cp mx -- )   \ at the end, when there is room
+  { a n tab cp mx }
+  cp @ mx >= if exit then
+  a n 255 min tab cp @ sl-a zcopy drop  1 cp +! ;
+: sl-front ( a n tab cp mx -- )   \ first of the list, the oldest one dropped when it is full
+  { a n tab cp mx }
+  a n tab cp @ sl-find dup 0< if drop else tab cp sl-del then
+  cp @ mx >= if -1 cp +! then
+  cp @ 0 ?do  tab cp @ i - 1- sl-a  tab cp @ i - sl-a  sl-sz cmove  loop
+  a n 255 min tab 0 sl-a zcopy drop  1 cp +! ;
+: fav? ( a n -- f )   fav-tab fav-cnt @ sl-find 0< 0= ;
+: fav-flip ( a n -- f )   \ toggles, true when it is a favorite now
+  2dup fav? if fav-tab fav-cnt @ sl-find fav-tab fav-cnt sl-del 0 exit then
+  fav-tab fav-cnt 20 sl-add -1 ;
+: field ( a n -- rest-a rest-n a' n' )   \ the text up to the first blank, and what follows it
+  { a n }  0 { k }
+  begin k n < if a k + c@ 32 <> else 0 then while 1 +to k repeat
+  a k + 1+  n k - 1- 0 max  a k ;
+: st-line ( a n -- )   \ day, words, path
+  field to-number { d }  field to-number { w }
+  dup 0= if 2drop drop exit then
+  d w st-put ;
+: lst-line ( a n -- )
+  dup 3 < if 2drop exit then
+  over c@ [char] F = if 2 /string fav-tab fav-cnt 20 sl-add exit then
+  over c@ [char] R = if 2 /string rec-tab rec-cnt 10 sl-add exit then
+  over c@ [char] S = if 2 /string st-line exit then
+  2drop ;
+: each-line ( b n -- )
+  { b n }  0 { s }  0 { e }
+  begin s n < while
+    s begin dup n < if b over + c@ 10 <> else 0 then while 1+ repeat to e
+    b s +  e s -  lst-line
+    e 1+ to s
+  repeat ;
+: lst-load ( -- )
+  0 fav-cnt !  0 rec-cnt !  0 st-cnt !  ini-init
+  s" writhdeck.rec" ini-in-dir r/o open-file if drop exit then  { fh }
+  fh file-size throw { sz }
+  sz 1+ bytes { b }
+  b sz fh read-file throw { got }
+  fh close-file drop
+  b got each-line  b free drop ;
+: st-write ( k -- )   \ today's entries, and those of the favorites
+  { k }  st-d k cells + @ { d }  st-tab k sl-a z>s { pa pn }
+  d today =  pa pn fav? or 0= if exit then
+  s" S " w+  d wn s"  " w+  st-w k cells + @ wn s"  " w+  pa pn wl ;
+: lst-save ( -- )
+  ini-init  ini-dir mk-dirs
+  s" writhdeck.rec" ini-in-dir w/o create-file if drop exit then  to fhs
+  fav-cnt @ 0 ?do  s" F " w+  fav-tab i sl-a z>s wl  loop
+  rec-cnt @ 0 ?do  s" R " w+  rec-tab i sl-a z>s wl  loop
+  st-cnt @ 0 ?do i st-write loop
+  fhs close-file drop ;
+: b-abs ( a n -- a' n' )   \ the path of a name of the folder
+  { a n }  b-cwd { ca cn }
+  ca babs cn cmove  cn to bal
+  bal 1 > if [char] / babs bal + c!  1 +to bal then
+  a babs bal + n 200 min cmove  n 200 min +to bal
+  babs bal ;
+: abs-name ( -- a n )   fname c@ [char] / = if fname flen else fname flen b-abs then ;
+: st-note ( -- )   \ today's words of the open file, kept when they grew
+  flen 0= if exit then
+  st-base word-count words0 - 0 max + { w }
+  w 0= if exit then
+  abs-name today w st-put   -1 to st-dirty ;
+: st-hook ( -- )   st-note  st-dirty if 0 to st-dirty lst-save then ;
+' st-hook is stats-hook
+: st-start ( -- )   \ at load: what was already written today in that file
+  0 to st-base  flen 0= if exit then
+  lst-load  abs-name today st-find dup 0< if drop else cells st-w + @ to st-base then ;
+: st-extra ( -- )
+  st-note
+  s" Today, this file" st-base word-count words0 - 0 max + kv
+  s" Today, all files" st-today-all kv ;
+' st-extra is stats-extra
+create dbuf 12 allot
+: digits ( n k a -- )   \ k digits of n at a
+  { n k a }  k 0 ?do  n 10 /mod to n [char] 0 + a k 1- i - + c!  loop ;
+: dstr ( day -- a n )   \ yyyy-mm-dd
+  719468 + { z }
+  z 146097 / { era }  z era 146097 * - { doe }
+  doe  doe 1460 / -  doe 36524 / +  doe 146096 / -  365 / { yoe }
+  yoe era 400 * + { y }
+  doe  365 yoe * yoe 4 / + yoe 100 / -  - { doy }
+  5 doy * 2 + 153 / { mp }
+  doy 153 mp * 2 + 5 / - 1+ { d }
+  mp 10 < if mp 3 + else mp 9 - then { m }
+  m 2 <= if 1 +to y then
+  y 4 dbuf digits  [char] - dbuf 4 + c!  m 2 dbuf 5 + digits  [char] - dbuf 7 + c!  d 2 dbuf 8 + digits
+  dbuf 10 ;
+: day-total ( day -- n )   { day }  0 { t }  st-cnt @ 0 ?do  st-d i cells + @ day = if st-w i cells + @ +to t then  loop  t ;
+: st-page ( -- )
+  st-note  page 0 to orow
+  s" Writing statistics: words written per day, all files" pl  1 +to orow
+  14 0 ?do  today i - day-total ?dup if today i - dstr rot kv then  loop
+  wait-any ;
+: b-scan-list ( -- )
+  0 to bn  0 to bpn
+  bview 1 = if fav-tab fav-cnt @ else rec-tab rec-cnt @ then { tab cnt }
+  cnt 0 ?do  tab i sl-a z>s 2dup b-match? if 0 b-add else 2drop then  loop ;
+: b-scan ( -- )   bview if b-scan-list else b-scan-dir then ;
 : b-row ( i -- )
   dup btop - 1+ { i r }
   0 r at-xy clear-to-eol
+  bview 0= if i b-dir? 0= if i b-name b-abs fav? if 0 r at-xy ." *" then then then
   i bsel = if esc ." [7m" then
   2 r at-xy  i b-name cols 8 - min type  i b-dir? if ." /" then
   normal ;
 : b-draw ( -- )
   page  0 0 at-xy  esc ." [7m"  0 to outcol
-  s"  " stype  b-cwd cols 30 - 10 max min stype
+  s"  " stype
+  bview 0= if b-cwd cols 30 - 10 max min else bview 1 = if s" Favorites" else s" Recent files" then then stype
   bfilt-n if s"   [" stype bfilt bfilt-n stype s" ]" stype then
   cols outcol - 0 max 0 ?do 32 emit loop  normal
   bn btop - text-rows 1- min 0 ?do btop i + b-row loop
   0 text-rows at-xy  esc ." [7m"  0 to outcol
-  s"  Enter open  n new  / filter  r rename  d delete  b backup  q quit" stype
-  mlen if s"   " stype msg mlen stype 0 to mlen then
+  mlen if s"  " stype msg mlen stype 0 to mlen
+  else s"  Enter open  n new  / filter  r rename  d del  b backup  f fav  v view  q quit" stype then
   cols outcol - 0 max 0 ?do 32 emit loop  normal ;
 : b-cd ( i -- )   b-name bz1 zcopy wd-chdir drop  0 to bsel 0 to btop  b-scan ;
-: b-pick ( a n -- )   \ choose this file
-  255 min dup to ed-arg-n  ed-arg swap cmove  -1 to bdone ;
+: b-pick ( a n -- )   \ choose this file, noted in the recent files
+  { a n }
+  bview 0= if a n b-abs else a n then  rec-tab rec-cnt 10 sl-front  lst-save
+  n 255 min dup to ed-arg-n  a ed-arg rot cmove  -1 to bdone ;
 : b-sel-name ( -- a n )   bsel b-name ;
 : b-ask-name ( a n -- f )   \ a name typed in pbuf, f true when given
   ask 0= if drop 0 exit then  0<> ;
@@ -690,14 +863,14 @@ previous
   dup 0= if drop exit then
   pbuf swap b-pick ;
 : b-delete ( -- )
-  bn 0= bsel b-dir? or if exit then
+  bn 0= bsel b-dir? or bview 0<> or if exit then
   0 text-rows at-xy esc ." [7m" s"  Delete " stype b-sel-name stype s"  ? (y/n)" stype
   cols outcol - 0 max 0 ?do 32 emit loop normal
   key [char] y <> if exit then
   b-sel-name bz1 zcopy wd-remove if s" Cannot delete" say else s" Deleted" say then
   b-scan  bsel bn 1- min 0 max to bsel ;
 : b-rename ( -- )
-  bn 0= bsel b-dir? or if exit then
+  bn 0= bsel b-dir? or bview 0<> or if exit then
   s" New name: " ask 0= if drop exit then
   dup 0= if drop exit then
   pbuf swap bz2 zcopy drop
@@ -705,7 +878,7 @@ previous
   b-scan ;
 : bn+ ( a n -- )   dup >r bname bnl + swap cmove  r> +to bnl ;
 : b-backup ( -- )
-  bn 0= bsel b-dir? or if exit then
+  bn 0= bsel b-dir? or bview 0<> or if exit then
   b-sel-name { a n }
   s" backups" bname zcopy drop  bname 493 ed-mkdir drop
   0 to bnl  s" backups/" bn+  a n bn+  s" _" bn+  0 wd-time <# #s #> bn+
@@ -718,6 +891,13 @@ previous
   { out }
   buf size out write-file drop  out close-file drop  buf free drop
   s" Backed up in backups/" say ;
+: b-fav ( -- )
+  bn 0= bsel b-dir? or if exit then
+  bview 0= if b-sel-name b-abs else b-sel-name then
+  fav-flip if s" Added to the favorites" else s" Removed from the favorites" then say
+  lst-save
+  bview 1 = if b-scan  bsel bn 1- min 0 max to bsel then ;
+: b-view ( -- )   bview 1+ 3 mod to bview  0 to bsel  0 to btop  b-scan ;
 : b-key ( code -- )
   dup k-up = if drop bsel 1- 0 max to bsel exit then
   dup k-down = if drop bsel 1+ bn 1- min 0 max to bsel exit then
@@ -732,14 +912,18 @@ previous
   dup [char] d = if drop b-delete exit then
   dup [char] r = if drop b-rename exit then
   dup [char] b = if drop b-backup exit then
+  dup [char] f = if drop b-fav exit then
+  dup [char] s = if drop st-page exit then
+  dup [char] v = if drop b-view exit then
   dup [char] / = if drop
     s" Filter: " ask if dup to bfilt-n pbuf bfilt rot cmove  0 to bsel 0 to btop  b-scan else drop then exit then
   dup 27 = if drop
+    bview if 0 to bview  0 to bsel 0 to btop  b-scan exit then
     bfilt-n if 0 to bfilt-n  0 to bsel 0 to btop  b-scan else -1 to bdone then exit then
   dup [char] q = if drop -1 to bdone  0 to ed-arg-n exit then
   drop ;
 : b-loop ( -- )
-  0 to bdone  0 to ed-arg-n  b-scan
+  0 to bdone  0 to ed-arg-n  0 to mlen  b-scan
   begin
     refresh-size
     bsel btop < if bsel to btop then
@@ -749,7 +933,7 @@ previous
     bdone
   until ;
 : browse ( -- f )   \ choose a file, which is left in ed-arg; false when none
-  ed-init  b-alloc
+  ed-init  b-alloc  lst-load  0 to bview
   editor-raw  terminal-save  page
   ['] b-loop catch { err }
   terminal-restore  normal  show  restore-tty  page
@@ -763,7 +947,9 @@ previous
   over k-up = or over k-pgup = or over k-home = or over k-chome = or
   over 24 = or over 26 = or over 25 = or over 1 = or nip ;
 : wd-pre ( code -- code' )
+  dup 17 = over 19 = or over 15 = or if stats-hook then
   dup 27 = if drop wd-menu 0 exit then
+  dup 12 = if drop nums-flip 0 exit then
   dup 15 = if drop do-save modified 0= if -1 to want-browser -1 to done then 0 exit then
   hem-on if dup hem-block? if drop s" Hemingway: only forward" say 0 exit then then ;
 : wd-wait ( -- code )
@@ -772,6 +958,7 @@ previous
 
 ( ---- Running ---- )
 : wd-after-load ( -- )
+  -1 to cl-len  st-start
   -1 to hl-on  layout-update
   repl 0= if 80 bytes to repl then
   toc-pos 0= if 500 cells bytes to toc-pos then

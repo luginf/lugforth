@@ -28,17 +28,16 @@ manual `writhdeck_MANUAL.md`) built on top of it. Both are strings compiled on f
 Done in writhdeck: wrapped lines in a centered column, focus mode, Hemingway, words and daily goal, stopwatch
 and countdown, outline (Esc o), replace all, autosave, txt2tags/Markdown highlighting, themes, Esc menu
 (`w f h t o v s r g a + - c x q ?`), word occurrences (Esc v), redo (Ctrl+Y, also in ed), file browser
-(`writhdeck` alone or Ctrl+O: Enter, n new, / filter, r rename, d delete, b backup to `backups/`).
+(`writhdeck` alone or Ctrl+O: Enter, n new, / filter, r rename, d delete, b backup to `backups/`, f favorite, v cycles folder / favorites / recent files; both lists are kept in `writhdeck.rec` beside the ini, lines `F path` and `R path`, 20 favorites and 10 recent files, the files chosen in the browser are noted as recent; `*` marks a favorite in the folder view).
+Line numbers (Ctrl+L, ini key `line_numbers`, wrapped view only): shown on the first row of each paragraph, in a 6-column margin; the count of the first line shown is kept from the last draw (`line-at`, `cl-pos`/`cl-line`/`cl-len`), so a key costs a few lines, not a scan of the text (the cache is dropped when the text changes before the cursor, on load and after replace all).
+Daily statistics: the words written in each file each day (never lowered, today's earlier sessions included) are kept as lines `S day words path` in `writhdeck.rec` (day = days since 1970, shifted by the ini key `utc_offset` in hours; only today's entries and those of favorites are kept). Noted every 10 s while editing and on Ctrl+S, Ctrl+O, Ctrl+Q. `Esc s` adds "Today, this file / all files"; `s` in the browser lists the last 14 days. Tested in the unit tests (`dstr`, `st-put`) and the pty test, natively and under gforth (`python3 tools/editors_pty_test.py ports/gforth/writhdeck-gforth.fs`: the editors must keep loading there, run it after each change of writhdeck.fs or editor.fs).
 PageUp/PageDown work (checked in a pty, ed and writhdeck).
 
 Still to do, from the original (priority order):
-1. Favorites and recent files in the browser (kept in `editor.ini` or a `recent.txt` beside it).
-2. Line numbers (Ctrl+L), Ctrl+Left/Right already move by word.
-3. Daily statistics kept on disk (per file, high-water mark) and shown by `s` in the browser too.
-4. Repetition detection (same word within a range) and spell check (Hunspell via `hunspell -a` pipe?).
-5. Second workspace (F10) and vertical split view (F3/F4).
-6. Ctrl+Q in an edited text returns to the browser (now it quits); modal commands `t s w q` of the original.
-7. INI profiles/schemes, i18n.
+1. Repetition detection (same word within a range) and spell check (Hunspell via `hunspell -a` pipe?).
+2. Second workspace (F10) and vertical split view (F3/F4).
+3. Ctrl+Q in an edited text returns to the browser (now it quits); modal commands `t s w q` of the original.
+4. INI profiles/schemes, i18n.
 Esc followed at once by a letter is read as Alt+letter: the pty tests wait 0.5 s between them.
 Settings: `ed` keeps `editor.ini`, `writhdeck` `writhdeck.ini`, both in the ini format of WrithDeck (Tcl): `key = value`,
 `%`/`#` comments, `[sections]` ignored, parser `ini-text` in editor.fs, `ini-kv` / `ini-body` / `ini-defname` / `ini-load` are
@@ -129,5 +128,5 @@ The Forth icon (`repl`) runs the line editor of the console (`edit-accept` with 
 Traps met: a word named `scan`, `top`, `step`, `frame` or `key-down` replaces the system or sdl2 word of the same name, even for the programs that are loaded later (the games use `key-down`);
 `{ locals }` in a loop body; `!` writes 8 bytes (use `l!` and `ul@` for 32-bit cells of an array); `0 { x }` is the way to add locals after the arguments;
 `catch` does not restore locals; a program that touches the real tty (editor-raw) is stopped when started in a pipeline: use `timeout --foreground` and `< /dev/null` in tests.
-Settings (2026-10-24): icons are dragged and their places, the background color (8 swatches) and the size of the desktop (4 sizes, the screen is opened again) are saved as Forth lines in `$HOME/.config/lugforth/desktop.ini` (folders made when missing, room for other settings later) (`dk-bg!`, `dk-size!`, `icon-place`, loaded with `included`). The project folder is found by looking for `examples/utils/desktop.fs` in `./`, `../`, `../../`, `../../../`, so `desk` starts from examples/utils as from the root. Tested under Xvfb (drag, swatch, size, restart from the root, Snake).
+Settings (2026-10-24): icons are dragged and their places, the background color (8 swatches) and the size of the desktop (4 sizes, the screen is opened again) are saved as Forth lines in `$HOME/.config/lugforth/desktop.ini` (folders made when missing, room for other settings later) (`dk-bg!`, `dk-size!`, `icon@`, loaded with `included`). One line per icon: `kind s" label" s" command" x y icon@`; kinds 0 file manager, 1 command in a terminal window (`ed`, `writhdeck`, `repl`), 2 Forth program (path from the project folder, absolute if it starts with `/`), 3 settings, 4 SDL Forth console (the desktop closes, the console opens as with `--gui`, `desk` brings the desktop back); the file may be edited by hand. The project folder is found by looking for `examples/utils/desktop.fs` in `./`, `../`, `../../`, `../../../`, so `desk` starts from examples/utils as from the root. Tested under Xvfb (drag, swatch, size, restart from the root, Snake).
 Next steps: rename, copy, new folder in the file manager (needs a text field), mouse selection in terminal windows.
