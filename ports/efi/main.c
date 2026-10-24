@@ -346,7 +346,7 @@ static void key_press(int code, int shift, int ctrl, int alt, int altgr) {
 static EFI_SIMPLE_POINTER_PROTOCOL *rel_ptr[PTR_MAX];
 static EFI_ABSOLUTE_POINTER_PROTOCOL *abs_ptr[PTR_MAX];
 static int rel_count, abs_count;
-static int ptr_gain = 40;             // device counts -> screen pixels, in percent (MOUSE-SPEED)
+static int ptr_gain = 20;             // device counts -> screen pixels, in percent (MOUSE-SPEED)
 static int64_t ptr_acc[2];
 static int ptr_left, ptr_right;
 

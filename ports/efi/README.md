@@ -173,7 +173,7 @@ Limits, by design:
   starts it again and writes `sound = on`. `ports/efi/sound_ini.fs`.
 * Mouse: `main.c` connects all the firmware's drivers at start (as the shell's
   `connect -r`) and polls every simple and absolute pointer. A relative device
-  moves 0.40 screen pixel per count; `n mouse-speed` sets it in percent. OVMF
+  moves 0.20 screen pixel per count; `n mouse-speed` sets it in percent (put `15 mouse-speed` in `autoexec.fs` to keep it; the default was lowered from 40 to 20 on 2026-10-24, a real mouse was too fast, the right value depends on the dpi of the mouse and is not measured). OVMF
   never polls the USB mouse or tablet (QEMU keeps the PS/2 mouse as the active
   one), so there is no mouse under QEMU and `make test` does not check it.
 * The console shows its pixels when it waits for a key, or every 100 ms during

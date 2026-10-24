@@ -37,7 +37,7 @@ dosfstools mtools); make test checks them afterwards with mtools and fsck.fat.
 
 Decision (2026-10-18): no x86 port without UEFI (own boot, VBE/Multiboot2 framebuffer, PS/2, AHCI/NVMe drivers and
 FAT on them): too much work for a narrow target. If ever wanted, Multiboot2 through GRUB is the shortcut.
-Known limits: OVMF never polls USB mice (no mouse under QEMU, only on hardware: `n mouse-speed`, default 40 = 0.40
+Known limits: OVMF never polls USB mice (no mouse under QEMU, only on hardware: `n mouse-speed`, default 20 = 0.20
 pixel per count); no key releases from UEFI, the firmware repeat starts 500 ms after the press (breakout stutters on the
 keyboard at first). Video memory is write-combining: keep the `sfence` in `dcache_clean` (screen.h). The console syncs
 at most every 100 ms during output (console.h), else when waiting for a key: shorter shows editors' redraws half done.

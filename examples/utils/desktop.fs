@@ -18,9 +18,13 @@
 \   icons          double click: the file manager (a window of the desktop), the editors
 \                  writhdeck and ed (a text terminal in a window), or a Forth program
 \                  (the desktop closes, the program runs, the desktop comes back)
+\   icons          drag them to place them; Settings: color of the background, size of the desktop
+\                  (places, color and size are kept in $HOME/.config/lugforth/desktop.ini, Forth lines)
 \   windows        drag the title bar, click to raise, x closes (a terminal gets Ctrl+Q)
 \   file manager   a double click on a .fs runs it, any other file opens in writhdeck
 \   taskbar        the open windows, and Quit
+\ It can be started from any folder of the project (examples/utils too): the folder of the project is looked for
+\ from where it starts, the programs of the icons are found from there.
 \ One text terminal at a time: it is the editor, running in a loop that draws the desktop
 \ whenever it waits for a key. Needs libSDL2, libSDL2_ttf, DejaVu fonts (see term-font-file).
 
@@ -37,7 +41,9 @@ z" SDL_StopTextInput" 0 sdl SDL_StopTextInput ( -- void )
 z" SDL_GetModState" 0 sdl SDL_GetModState ( -- n )
 $0303 constant SDL_TEXTINPUT
 
-800 constant dk-w   600 constant dk-h
+800 value dk-w   600 value dk-h     ( the size of the desktop, set in the settings )
+$2a5070 value dk-bg                    ( the color of the background )
+0 value resize?                        ( the screen has to be opened again )
 28 constant bar-h        ( the taskbar )
 20 constant title-h
 0 value ui-font   0 value term-font
@@ -295,6 +301,7 @@ create zord max-win allot   0 value nz
 
 ( the program's terminal, further down: the loop that draws everything while it waits for a key )
 defer dk-frame
+defer set-draw ( w h -- )   ( the settings window, further down )
 
 : draw-win ( id -- )
   { id }
@@ -310,12 +317,14 @@ defer dk-frame
     id cont-w to fl-w  id cont-h to fl-h  fl-draw then
   id w-kind @ 2 = if
     id cont-w id cont-h t-draw then
+  id w-kind @ 3 = if
+    id cont-w id cont-h set-draw then
   no-viewport
   ui-font font ;
 
 ( ---- Icons: kind 0 the file manager, 1 a command in a terminal, 2 a Forth program ---- )
 12 constant max-icon
-96 constant icon-size
+104 constant icon-size    ( byte 0 kind, 1 to 20 label, 21 to 94 command, 96 and 98 the place )
 create icons max-icon icon-size * allot   0 value nicon
 : icon ( kind la ln ca cn -- )   \ label and command, the command of a program is a path from the folder where desk was started
   { kind la ln ca cn }
@@ -324,13 +333,21 @@ create icons max-icon icon-size * allot   0 value nicon
   p icon-size erase  kind p c!
   la p 1+ ln 19 min cmove
   ca p 21 + cn 72 min cmove
+  nicon 6 / 90 * 20 + p 96 + w!   nicon 6 mod 88 * 16 + p 98 + w!
   1 +to nicon ;
 : icon-at ( i -- a ) icon-size * icons + ;
 : icon-label ( i -- a n ) icon-at 1+ z>s ;
 : icon-cmd ( i -- a n ) icon-at 21 + z>s ;
 : icon-kind ( i -- n ) icon-at c@ ;
-: icon-x ( i -- n ) 6 / 90 * 20 + ;
-: icon-y ( i -- n ) 6 mod 88 * 16 + ;
+: icon-x ( i -- n ) icon-at 96 + uw@ ;
+: icon-y ( i -- n ) icon-at 98 + uw@ ;
+: icon-xy! ( x y i -- )   \ kept inside the desktop
+  { x y i }
+  x 0 max dk-w 74 - min  i icon-at 96 + w!
+  y 0 max dk-h bar-h - 80 - min  i icon-at 98 + w! ;
+: icon-place ( la ln x y -- )   \ from the settings file: the icon with this label goes there
+  { la ln x y }
+  nicon 0 ?do i icon-label la ln compare 0= if x y i icon-xy! then loop ;
 : icon-hit ( x y -- i )
   { px py }
   -1 { r }
@@ -343,7 +360,7 @@ create icons max-icon icon-size * allot   0 value nicon
 : draw-icon ( i -- )
   { i }
   i icon-sel = if $4070b0 color i icon-x 4 - i icon-y 4 - 78 80 box then
-  i icon-kind 0 = if $e0c050 else i icon-kind 1 = if $60c0a0 else $d07060 then then color
+  i icon-kind 0 = if $e0c050 else i icon-kind 1 = if $60c0a0 else i icon-kind 2 = if $d07060 else $a090d0 then then then color
   i icon-x i icon-y 64 48 box
   $202030 color i icon-x 2 + i icon-y 2 + 60 44 frame
   $202030 color i icon-x 22 + i icon-y 12 + i icon-label 1 min text
@@ -373,14 +390,119 @@ create dk-msg 80 allot   0 value dk-msg-n   0 value dk-msg-t
   white color dk-w 52 - dk-h bar-h - 6 + s" Quit" text ;
 
 : draw-all ( -- )
-  $2a5070 color 0 0 dk-w dk-h box
+  dk-bg color 0 0 dk-w dk-h box
   ui-font font
   nicon 0 ?do i draw-icon loop
   nz 0 ?do zord i + c@ draw-win loop
   draw-bar ;
 
+( ---- Settings, kept in a file of Forth lines that desk loads when it starts ---- )
+also posix z" getenv" 1 sysfunc dk-getenv
+z" mkdir" 2 sysfunc dk-mkdir previous
+create ini-path 300 allot   0 value ip-n   0 value cfg-d1   0 value cfg-d2
+: ip+ ( a n -- ) { a n } a ini-path ip-n + n cmove  n +to ip-n  0 ini-path ip-n + c! ;
+: ini-name ( -- )   \ $HOME/.config/lugforth/desktop.ini, or desktop.ini here without HOME
+  0 to ip-n
+  z" HOME" dk-getenv ?dup if
+    z>s 200 min ip+  s" /.config" ip+ ip-n to cfg-d1  s" /lugforth" ip+ ip-n to cfg-d2  s" /desktop.ini" ip+
+  else 0 to cfg-d1  s" desktop.ini" ip+ then ;
+: ini-dirs ( -- )   \ the two folders, made when missing
+  cfg-d1 0= if exit then
+  0 ini-path cfg-d1 + c!  ini-path 493 dk-mkdir drop  47 ini-path cfg-d1 + c!
+  0 ini-path cfg-d2 + c!  ini-path 493 dk-mkdir drop  47 ini-path cfg-d2 + c! ;
+create ini-buf 3000 allot   0 value ini-n
+create q-str 115 c, 34 c, 32 c,    ( s" and a space )
+create q-end 34 c, 32 c,
+create nl-str 10 c,
+: ib+ ( a n -- ) { a n } a ini-buf ini-n + n cmove  n +to ini-n ;
+: ib-num ( n -- ) base @ >r decimal  <# #s #> ib+  s"  " ib+  r> base ! ;
+: dk-bg! ( n -- ) to dk-bg ;
+: dk-size! ( w h -- ) 480 max to dk-h  640 max to dk-w ;
+: ini-save ( -- )
+  0 to ini-n
+  dk-bg ib-num s" dk-bg!" ib+ nl-str 1 ib+
+  dk-w ib-num dk-h ib-num s" dk-size!" ib+ nl-str 1 ib+
+  nicon 0 ?do
+    q-str 3 ib+  i icon-label ib+  q-end 2 ib+
+    i icon-x ib-num  i icon-y ib-num  s" icon-place" ib+ nl-str 1 ib+
+  loop
+  ini-dirs
+  ini-path z>s w/o create-file if drop exit then
+  { fid }
+  ini-buf ini-n fid write-file drop
+  fid close-file drop ;
+: ini-load ( -- )
+  ini-path z>s r/o open-file if drop exit then
+  close-file drop
+  ini-path z>s ['] included catch drop ;
+
+( the folder of the project, found from where desk was started: here, one level up, two or three )
+create start-dir 300 allot   create try-path 300 allot   0 value tp-n
+: tp+ ( a n -- ) { a n } a try-path tp-n + n cmove  n +to tp-n  0 try-path tp-n + c! ;
+: root? ( a n -- f )
+  0 to tp-n  tp+ s" examples/utils/desktop.fs" tp+
+  try-path z>s r/o open-file if drop 0 else close-file drop -1 then ;
+: find-home ( -- )
+  start-dir 290 fl-getcwd drop
+  s" ./" root? if s" ./" else
+  s" ../" root? if s" ../" else
+  s" ../../" root? if s" ../../" else s" ../../../" then then then
+  0 to tp-n tp+  try-path fl-chdir drop
+  dk-home 290 fl-getcwd drop
+  start-dir fl-chdir drop ;
+
+( ---- The settings window: colors of the background, size of the desktop ---- )
+create bg-list $2a5070 , $1e1e2e , $2e5e3e , $5a3a5a , $5c5c5c , $0b3d4d , $703030 , $8a6a2a ,
+8 constant nbg
+create size-list 640 , 480 , 800 , 600 , 1024 , 768 , 1280 , 800 ,
+4 constant nsize
+: size-label ( i -- a n )
+  dup 0= if drop s" 640x480" exit then
+  dup 1 = if drop s" 800x600" exit then
+  2 = if s" 1024x768" else s" 1280x800" then ;
+: size-w ( i -- n ) 2 * cells size-list + @ ;
+: size-h ( i -- n ) 2 * 1+ cells size-list + @ ;
+: apply-size ( w h -- )
+  { w h }
+  dk-nested if s" Close the editor first" dk-say exit then
+  w dk-w = h dk-h = and if exit then
+  w h dk-size!
+  nicon 0 ?do i icon-x i icon-y i icon-xy! loop
+  -1 to resize?  ini-save  quit! ;
+: set-draw-body ( w h -- )
+  { w h }
+  $303040 color 0 0 w h box
+  white color 10 8 s" Background" text
+  nbg 0 ?do
+    bg-list i cells + @ color  10 i 38 * +  30 32 32 box
+    bg-list i cells + @ dk-bg = if white color 8 i 38 * +  28 36 36 frame then
+  loop
+  white color 10 78 s" Desktop size" text
+  nsize 0 ?do
+    i size-w dk-w = i size-h dk-h = and if $305890 else $505060 then color
+    10 i 2 mod 155 * +  104 i 2 / 34 * +  150 28 box
+    white color 18 i 2 mod 155 * +  107 i 2 / 34 * + i size-label text
+  loop
+  gray color 10 h 24 - s" Saved for the next time" text ;
+' set-draw-body is set-draw
+: set-click ( px py -- )
+  { px py }
+  0 { k }
+  px 10 < if exit then
+  py 30 >= py 62 < and if
+    px 10 - 38 / to k
+    k nbg < px 10 - 38 mod 32 < and if bg-list k cells + @ dk-bg! ini-save then exit then
+  py 104 >= if
+    py 104 - 34 / 2 * px 10 - 155 / + to k
+    px 10 - 155 mod 150 < py 104 - 34 mod 28 < and k nsize < and if
+      k size-w k size-h apply-size then then ;
+: open-settings ( -- )
+  max-win 0 ?do i w-on @ i w-kind @ 3 = and if i raise exit then loop
+  3 100 80 330 230 s" Settings" win-new drop ;
+
 ( ---- Mouse and keys ---- )
 -1 value drag-id   0 value drag-dx   0 value drag-dy
+-1 value drag-icon   0 value ic-x0   0 value ic-y0   0 value ic-moved   ( an icon being moved )
 0 value ctrl-cmd
 -1 value want-launch   ( an icon asked for: started from the main loop )
 : file-win ( -- id )   -1 { r }  max-win 0 ?do i w-on @ i w-kind @ 1 = and if i to r then loop r ;
@@ -390,14 +512,13 @@ create dk-msg 80 allot   0 value dk-msg-n   0 value dk-msg-t
   win-close ;
 : open-files ( -- )
   file-win dup 0< 0= if raise exit then drop
-  1 40 30 560 440 s" Files" win-new dup 0< if drop exit then drop
+  1 40 30 dk-w 60 - 560 min  dk-h bar-h - 60 - 440 min  s" Files" win-new dup 0< if drop exit then drop
   fl-init ;
 : bar-click ( x -- )
   { px }
   px dk-w 64 - >= if quit! exit then
   px 4 - 132 / nth-win dup 0< 0= if
     px 4 - 132 mod 128 < if raise exit then then drop ;
-: in-title? ( x y id -- f ) nip nip  drop 0 ;
 : on-down ( x y -- )
   { px py }
   -1 { id }
@@ -406,17 +527,27 @@ create dk-msg 80 allot   0 value dk-msg-n   0 value dk-msg-t
   id 0< if
     px py icon-hit dup to icon-sel
     0< if exit then
+    icon-sel to drag-icon  px to ic-x0  py to ic-y0  0 to ic-moved
+    px icon-sel icon-x - to drag-dx  py icon-sel icon-y - to drag-dy
     icon-time 0<> ticks icon-time - 600 < and if icon-sel to want-launch 0 to icon-time exit then
     ticks to icon-time exit then
   id raise
   py id w-y @ title-h 1+ + < if
     px id w-x @ id w-w @ + 24 - > if id close-win exit then
     id to drag-id  px id w-x @ - to drag-dx  py id w-y @ - to drag-dy exit then
-  id w-kind @ 1 = if px id cont-x - py id cont-y - fl-click then ;
-: on-up ( -- ) -1 to drag-id ;
+  id w-kind @ 1 = if px id cont-x - py id cont-y - fl-click then
+  id w-kind @ 3 = if px id cont-x - py id cont-y - set-click then ;
+: on-up ( -- )
+  -1 to drag-id
+  drag-icon 0< 0= ic-moved and if ini-save then
+  -1 to drag-icon ;
 : on-move ( x y -- )
   { px py }
   px to mouse-x  py to mouse-y
+  drag-icon 0< 0= if
+    px ic-x0 - abs 3 > py ic-y0 - abs 3 > or if -1 to ic-moved  0 to icon-time then
+    ic-moved if px drag-dx -  py drag-dy -  drag-icon icon-xy! then
+    exit then
   drag-id 0< if exit then
   px drag-dx - 0 max dk-w drag-id w-w @ - min drag-id w-x !
   py drag-dy - 0 max dk-h bar-h - title-h - min drag-id w-y ! ;
@@ -492,7 +623,7 @@ previous
   { na nn ta tn }
   0 { id }
   dk-nested if s" One terminal at a time" dk-say exit then
-  2 60 40 660 480 ta tn win-new to id
+  2 20 20 dk-w 40 - 660 min  dk-h bar-h - 40 - 480 min  ta tn win-new to id
   id 0< if exit then
   term-font font  s" M" text-size to t-ch to t-cw  ui-font font
   id cont-w t-cw / t-max-c min to t-cols
@@ -553,6 +684,7 @@ create line-buf 400 allot
 : do-launch ( i -- )
   { i }
   i icon-kind 0 = if open-files exit then
+  i icon-kind 3 = if open-settings exit then
   i icon-kind 1 = if i icon-cmd i icon-label run-in-terminal exit then
   dk-nested if s" Close the editor first" dk-say exit then
   dk-home z>s { ha hn }
@@ -593,6 +725,7 @@ create line-buf 400 allot
   1 s" Forth" s" repl" icon
   1 s" Writhdeck" s" writhdeck" icon
   1 s" Ed" s" ed" icon
+  3 s" Settings" s" " icon
   2 s" Snake" s" examples/games/sdl2_snake.fs" icon
   2 s" 2048" s" examples/games/sdl2_2048.fs" icon
   2 s" Tetris" s" examples/games/sdl2_tetris.fs" icon
@@ -617,20 +750,19 @@ create line-buf 400 allot
   fonts
   ui-font font
   SDL_StartTextInput drop
-  -1 to want-launch  0 to open-pending  -1 to drag-id  0 to dk-nested  -1 to dk-dirty
+  -1 to want-launch  0 to open-pending  -1 to drag-id  -1 to drag-icon  0 to dk-nested  -1 to dk-dirty
   begin dk-frame quit? until
   close-screen ;
 
 : desk-main ( -- )
-  dk-home 290 fl-getcwd drop
-  default-icons
+  find-home  ini-name
+  default-icons  ini-load
   ['] queue-open is fl-open
   begin
-    0 to prog?
+    0 to prog?  0 to resize?
     desk-once
-    prog? while
-    run-program
-  repeat ;
+    prog? if run-program -1 else resize? then
+  while repeat ;
 
 previous also forth definitions previous
 also fm ' desk-main previous constant desk-xt
