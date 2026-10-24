@@ -36,7 +36,7 @@ also editor definitions
 ( ---- Settings ---- )
 0 value focus-on   0 value hem-on
 0 value words0   0 value autosave   0 value last-auto
-0 value words-now   -1 value words-edits
+0 value cur-mem   0 value words-now   -1 value words-edits   0 value words-at   0 value words-gap
 0 value timer-mode   0 value timer-t0   0 value timer-len   0 value alerted
 0 value last-sec   0 value ww   0 value pad
 0 value toc-pos   0 value toc-n   0 value toc-sel   0 value toc-top
@@ -53,7 +53,7 @@ defer stats-hook ( -- )   defer stats-extra ( -- )   ( set once the browser word
   wrap-on if cols ww - 2/ else 0 then to pad ;
 
 ( ---- Settings: writhdeck.ini, in the format of WrithDeck, the Tcl program ---- )
-0 value hem-cfg   0 value auto-cfg   1 value auto-min   -1 value bar-on
+-1 value hl-cfg   0 value hem-cfg   0 value auto-cfg   1 value auto-min   -1 value bar-on
 0 value msg-shown   0 value help-seen   0 value fresh
 create zl 128 allot   create zc 128 allot   create zr 128 allot   create hbar 128 allot
 : zset ( a n z -- )   >r 120 min dup r@ ! r> cell+ swap cmove ;
@@ -69,6 +69,7 @@ wd-defaults
   ka kn s" autosave_enabled" compare 0= if va vn yes? dup to auto-cfg to autosave exit then
   ka kn s" autosave_interval" compare 0= if va vn to-number 1 max 60 min to auto-min exit then
   ka kn s" bar" compare 0= if va vn yes? to bar-on exit then
+  ka kn s" highlight" compare 0= if va vn yes? to hl-cfg exit then
   ka kn s" line_numbers" compare 0= if va vn yes? to nums-on exit then
   ka kn s" utc_offset" compare 0= if va vn to-number -12 max 14 min to tz-hours exit then
   ka kn s" help_bar" compare 0= if va vn hbar zset exit then
@@ -94,6 +95,8 @@ wd-defaults
   s" word_goal" key= goal wn eol+
   s" % line_numbers: numbers in the margin of the wrapped view, Ctrl+L" wl
   s" line_numbers" key= nums-on wyes eol+
+  s" % highlight: colors for Markdown and txt2tags marks; no is faster on a very big text" wl
+  s" highlight" key= hl-cfg wyes eol+
   s" % utc_offset: hours added to UTC to find the day of the daily statistics" wl
   s" utc_offset" key= tz-hours wn eol+
   s" % bar: show the status bar (a message still shows in it)" wl
@@ -179,8 +182,15 @@ wd-defaults
   0 { n }  0 { inw }
   len 0 ?do i b@ space? if 0 to inw else inw 0= if 1 +to n -1 to inw then then loop
   n ;
-: word-count ( -- n )
-  edits words-edits <> if count-words to words-now  edits to words-edits then
+: word-count! ( -- n )   \ exact
+  now-ms { t0 }
+  edits words-edits <> if
+    count-words to words-now  edits to words-edits
+    now-ms to words-at  now-ms t0 - 20 * to words-gap
+  then
+  words-now ;
+: word-count ( -- n )   \ for the status bar: on a big text, recounted at most about every twentieth of the time spent counting
+  edits words-edits <> if now-ms words-at - words-gap > if word-count! exit then then
   words-now ;
 
 ( ---- Timer ---- )
@@ -244,10 +254,18 @@ wd-defaults
   0 { p }
   begin p len < while  p eol to mle   p mle md-line   mle 1+ to p  repeat
   0 to hl-stale ;
+0 value hl-top   0 value hl-rows
+: md-window ( -- )   \ the lines on the screen only: a mark never leaves its line, and a big text is not scanned at each key
+  cbuf-ready
+  top bol { p }  0 { n }
+  begin p len < n text-rows 2 + < and while
+    p eol to mle  p mle md-line  mle 1+ to p  1 +to n
+  repeat
+  top to hl-top  text-rows to hl-rows  0 to hl-stale ;
 : wd-scan ( -- )
   hl-on 0= if exit then
   forth-name? if forth-scan exit then
-  md-scan ;
+  md-window ;
 
 ( ---- Line numbers: the count is kept from the last draw, so a key costs a few lines, not the whole text ---- )
 : cl-ok? ( -- f )   cl-len 0< if 0 exit then  cl-len len = cl-pos cur < or ;
@@ -336,7 +354,10 @@ wd-defaults
   draw-status
   ccol crow at-xy
   show ;
-: wd-scroll   wrap-on if wrap-scroll else plain-scroll then ;
+: wd-scroll
+  cur to cur-mem
+  wrap-on if wrap-scroll else plain-scroll then
+  hl-on if forth-name? 0= if top hl-top <> text-rows hl-rows <> or if -1 to hl-stale then then then ;
 : wd-draw     wrap-on if wrap-draw else plain-draw then ;
 
 ( ---- The status bar ---- )
@@ -420,11 +441,11 @@ wd-defaults
 : stat-page ( -- )
   page 0 to orow
   s" Statistics" pl  1 +to orow
-  s" Words" word-count kv
+  s" Words" word-count! kv
   s" Characters" len kv
-  s" This session" word-count words0 - kv
+  s" This session" word-count! words0 - kv
   s" Daily goal" goal kv
-  s" Reading minutes" word-count 200 / 1+ kv
+  s" Reading minutes" word-count! 200 / 1+ kv
   stats-extra
   0 0 { lines paras }
   len 0 ?do i b@ 10 = if 1 +to lines then loop
@@ -748,6 +769,30 @@ create babs 700 allot   0 value bal   0 value bview   ( bview: 0 folder, 1 favor
   { a n }  0 { k }
   begin k n < if a k + c@ 32 <> else 0 then while 1 +to k repeat
   a k + 1+  n k - 1- 0 max  a k ;
+( Cursor position of each file: lines "P position path", the oldest dropped after 50 files )
+50 constant cp-max
+create cp-tab cp-max sl-sz * allot   create cp-pos cp-max cells allot
+variable cp-cnt   0 cp-cnt !
+create cp-buf sl-sz allot   0 value cp-n   0 value cp-dirty   ( cp-n: length of the path of the open file, 0 for none )
+: cp-find ( a n -- k )   cp-tab cp-cnt @ sl-find ;
+: cp-put ( a n pos -- )
+  { a n pos }  a n cp-find { k }
+  k 0< if
+    cp-cnt @ cp-max >= if
+      cp-cnt @ 1- 0 ?do
+        cp-tab i 1+ sl-a  cp-tab i sl-a  sl-sz cmove
+        cp-pos i 1+ cells + @  cp-pos i cells + !
+      loop
+      -1 cp-cnt +!
+    then
+    cp-cnt @ to k  1 cp-cnt +!
+    a n 255 min cp-tab k sl-a zcopy drop
+  then
+  pos cp-pos k cells + ! ;
+: cp-line ( a n -- )   \ position, path
+  field to-number { pos }
+  dup 0= if 2drop exit then
+  pos cp-put ;
 : st-line ( a n -- )   \ day, words, path
   field to-number { d }  field to-number { w }
   dup 0= if 2drop drop exit then
@@ -757,6 +802,7 @@ create babs 700 allot   0 value bal   0 value bview   ( bview: 0 folder, 1 favor
   over c@ [char] F = if 2 /string fav-tab fav-cnt 20 sl-add exit then
   over c@ [char] R = if 2 /string rec-tab rec-cnt 10 sl-add exit then
   over c@ [char] S = if 2 /string st-line exit then
+  over c@ [char] P = if 2 /string cp-line exit then
   2drop ;
 : each-line ( b n -- )
   { b n }  0 { s }  0 { e }
@@ -766,7 +812,7 @@ create babs 700 allot   0 value bal   0 value bview   ( bview: 0 folder, 1 favor
     e 1+ to s
   repeat ;
 : lst-load ( -- )
-  0 fav-cnt !  0 rec-cnt !  0 st-cnt !  ini-init
+  0 fav-cnt !  0 rec-cnt !  0 st-cnt !  0 cp-cnt !  ini-init
   s" writhdeck.rec" ini-in-dir r/o open-file if drop exit then  { fh }
   fh file-size throw { sz }
   sz 1+ bytes { b }
@@ -783,6 +829,7 @@ create babs 700 allot   0 value bal   0 value bview   ( bview: 0 folder, 1 favor
   fav-cnt @ 0 ?do  s" F " w+  fav-tab i sl-a z>s wl  loop
   rec-cnt @ 0 ?do  s" R " w+  rec-tab i sl-a z>s wl  loop
   st-cnt @ 0 ?do i st-write loop
+  cp-cnt @ 0 ?do  s" P " w+  cp-pos i cells + @ wn  s"  " w+  cp-tab i sl-a z>s wl  loop
   fhs close-file drop ;
 : b-abs ( a n -- a' n' )   \ the path of a name of the folder
   { a n }  b-cwd { ca cn }
@@ -793,17 +840,31 @@ create babs 700 allot   0 value bal   0 value bview   ( bview: 0 folder, 1 favor
 : abs-name ( -- a n )   fname c@ [char] / = if fname flen else fname flen b-abs then ;
 : st-note ( -- )   \ today's words of the open file, kept when they grew
   flen 0= if exit then
-  st-base word-count words0 - 0 max + { w }
+  st-base word-count! words0 - 0 max + { w }
   w 0= if exit then
   abs-name today w st-put   -1 to st-dirty ;
-: st-hook ( -- )   st-note  st-dirty if 0 to st-dirty lst-save then ;
+: cp-note ( -- )   \ the cursor of the open file, when it moved
+  cp-n 0= if exit then
+  cp-buf cp-n cp-find { k }
+  k 0< if cur-mem 0= if exit then else cp-pos k cells + @ cur-mem = if exit then then
+  cp-buf cp-n cur-mem cp-put  -1 to cp-dirty ;
+: cp-flush ( -- )   \ at the end of an editing session: only the tables in memory are used (the text is gone)
+  cp-note  cp-dirty if 0 to cp-dirty lst-save then  0 to cp-n ;
+: cp-start ( -- )   \ at load: back to where the file was left
+  0 to cp-n  0 to cur-mem  flen 0= if exit then
+  abs-name 255 min dup to cp-n cp-buf zcopy drop
+  cp-buf cp-n cp-find dup 0< if drop else cells cp-pos + @ len min 0 max to cur then
+  cur to cur-mem ;
+: st-hook ( -- )
+  st-note  cp-note
+  st-dirty cp-dirty or if 0 to st-dirty  0 to cp-dirty  lst-save then ;
 ' st-hook is stats-hook
 : st-start ( -- )   \ at load: what was already written today in that file
   0 to st-base  flen 0= if exit then
   lst-load  abs-name today st-find dup 0< if drop else cells st-w + @ to st-base then ;
 : st-extra ( -- )
   st-note
-  s" Today, this file" st-base word-count words0 - 0 max + kv
+  s" Today, this file" st-base word-count! words0 - 0 max + kv
   s" Today, all files" st-today-all kv ;
 ' st-extra is stats-extra
 create dbuf 12 allot
@@ -958,11 +1019,11 @@ create dbuf 12 allot
 
 ( ---- Running ---- )
 : wd-after-load ( -- )
-  -1 to cl-len  st-start
-  -1 to hl-on  layout-update
+  -1 to cl-len  st-start  cp-start
+  hl-cfg to hl-on  layout-update
   repl 0= if 80 bytes to repl then
   toc-pos 0= if 500 cells bytes to toc-pos then
-  word-count to words0  now-ms to last-auto  0 to last-sec ;
+  word-count! to words0  now-ms to last-auto  0 to last-sec ;
 : wd-install ( -- )
   ['] wd-scroll is scroll   ['] wd-draw is draw   ['] wd-status is draw-status
   ['] wd-scan is hl-scan   ['] wrap-want is set-want
@@ -976,6 +1037,7 @@ create dbuf 12 allot
     dup 0= if 2drop browse 0= if ed-plain exit then ed-arg ed-arg-n then
     0 to want-browser
     ['] ed-main catch to werr
+    ['] cp-flush catch drop
     werr if ed-plain werr throw then
     want-browser
   while 0 0 repeat

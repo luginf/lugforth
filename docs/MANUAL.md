@@ -50,7 +50,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with `ninja posix`). You
 prompt:
 
 ```
-Lugforth v2026.10.24.9
+Lugforth v2026.10.24.11
 :; ===========>/>
 type 'info' for help
  ok
@@ -557,6 +557,8 @@ Pushing a tag such as `v7.0.8.1` (or running `.github/workflows/release.yml` by 
 Static binaries are not possible: Lugforth reaches libc, SDL2 and X11 through `dlopen`/`dlsym`.
 
 ## Console window
+
+`lugforth -e words...` (POSIX) runs the rest of the command line as one line of Forth, like `gforth -e`: `lugforth -e writhdeck notes.txt` opens the editor, `lugforth -e "1 2 + . cr bye"` computes and leaves (without `bye` the interpreter stays open).
 
 `lugforth --gui [file.fs]` (any Linux build with SDL2) opens a console window with a TrueType font,
 mouse selection and paste, and scrolling back. The menu is hidden until the button at the top right

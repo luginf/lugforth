@@ -30,9 +30,18 @@ DEFINED? gui-load [IF]
 [ELSE]
 : gui-start ( -- )   s" --gui: this build has no window (lugforth-mini)" type cr 1 terminate ;
 [THEN]
+: e-add { buf n i -- buf n' }   \ the argument i and a blank, after the n bytes already there
+   i argv 4000 n - 0 max min { a l }
+   a buf n + l cmove  32 buf n l + + c!  buf n l + 1+ ;
+: e-line ( -- a n )   \ the arguments after -e, one line of Forth
+   4096 allocate throw 0 argc 2 ?do i e-add loop ;
 : autoexec
    ( Open passed file if any. )
    argc 2 >= if
+      1 argv s" -e" compare 0= if
+         argc 3 < if s" -e needs Forth words: lugforth -e writhdeck notes.txt" type cr 1 terminate then
+         e-line ['] evaluate catch if 1 terminate then exit
+      then
       1 argv s" --gui" compare 0= if gui-start exit then
       1 argv ['] included catch if 1 terminate then exit
    then

@@ -60,6 +60,22 @@ four" fresh   count-words 4 =assert
   s" see http://x.org/a" fresh   md-scan   cbuf 9 + c@ 0 =assert
   0 to hl-on ;
 
+: test-window
+  s" = A =
+b
+c
+d
+**x** e" fresh   -1 to hl-on  2 to text-rows  0 to top  md-window
+  cbuf c@ 3 =assert   cbuf 12 + c@ 0 =assert   0 to hl-on ;
+
+: test-cursor-memory
+  0 cp-cnt !
+  s" /a/f" 40 cp-put   s" /a/g" 7 cp-put   s" /a/f" 55 cp-put
+  cp-cnt @ 2 =assert   s" /a/f" cp-find 0 =assert   0 cells cp-pos + @ 55 =assert
+  s" 123 /a/h x" cp-line   s" /a/h x" cp-find 2 =assert   2 cells cp-pos + @ 123 =assert
+  s" /nowhere" cp-find -1 =assert
+  0 cp-cnt ! ;
+
 : test-outline
   s" = A =
 text
