@@ -34,7 +34,7 @@ firmware looks for `\EFI\BOOT\BOOTX64.EFI` on a FAT32 partition, which is what t
    * or, on a stick already formatted FAT32, copy `out/efi/BOOTX64.EFI` to
      `EFI/BOOT/BOOTX64.EFI`. Add whatever else you want at the root: the
      `.fs` files of `examples/`, `ports/rpi/disk/autoexec.fs`, and
-     `ports/posix/{editor,writhdeck,eval_copy}.fs` in `lib/` for `ed` and
+     `editors/{editor,writhdeck}.fs` and `ports/posix/eval_copy.fs` in `lib/` for `ed` and
      `writhdeck`.
    * or make a GPT stick by hand. One FAT32 partition of type "EFI System" is
      enough, there is no need for a second one (this erases the stick; replace

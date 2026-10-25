@@ -33,9 +33,9 @@ if MUSL_ENABLED:
     ForthTest('$dst/tests/posix_static_all_tests.out',
               '$dst/posix/lugforth-static', '$src/common/all_tests.fs'),
     ForthTest('$dst/tests/posix_static_editor_tests.out',
-              '$dst/posix/lugforth-static', '$src/ports/posix/editor_tests.fs'),
+              '$dst/posix/lugforth-static', '$src/editors/editor_tests.fs'),
     ForthTest('$dst/tests/posix_static_writhdeck_tests.out',
-              '$dst/posix/lugforth-static', '$src/ports/posix/writhdeck_tests.fs'),
+              '$dst/posix/lugforth-static', '$src/editors/writhdeck_tests.fs'),
   ]))
 
   # lugforth-static-sdl: the same with SDL2 and X11 linked in (no sound, no TrueType: see docs/dev/PORTS.md).
@@ -55,9 +55,9 @@ Alias('posix', ' '.join([
   ForthTest('$dst/tests/posix_lineedit_tests.out',
             '$dst/posix/lugforth', '$src/ports/posix/lineedit_tests.fs'),
   ForthTest('$dst/tests/posix_editor_tests.out',
-            '$dst/posix/lugforth', '$src/ports/posix/editor_tests.fs'),
+            '$dst/posix/lugforth', '$src/editors/editor_tests.fs'),
   ForthTest('$dst/tests/posix_writhdeck_tests.out',
-            '$dst/posix/lugforth', '$src/ports/posix/writhdeck_tests.fs'),
+            '$dst/posix/lugforth', '$src/editors/writhdeck_tests.fs'),
   TestCommand('$dst/tests/posix_see_all_test.out',
               '$dst/posix/lugforth',
               'echo internals see-all bye | $dst/posix/lugforth '

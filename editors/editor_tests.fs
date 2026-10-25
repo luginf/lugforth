@@ -14,7 +14,7 @@
 
 ( Tests of the text editor `ed`, on its buffer: no terminal is needed )
 
-needs ../../common/testing.fs
+needs ../common/testing.fs
 
 only forth definitions
 vocabulary editor-tests

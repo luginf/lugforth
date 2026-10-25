@@ -14,7 +14,7 @@
 
 ( Tests of writhdeck, on its buffer: no terminal is needed )
 
-needs ../../common/testing.fs
+needs ../common/testing.fs
 
 only forth definitions
 vocabulary writhdeck-tests

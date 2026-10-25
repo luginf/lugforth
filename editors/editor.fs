@@ -18,7 +18,8 @@
 ( window is. It speaks ANSI only, so it runs in a terminal, in the window of )
 ( lugforth --gui, and over telnet. The string must hold no vertical bar. )
 
-needs eval_copy.fs
+\ Next to it on a board, in lib/; already loaded by the console on the PC
+[defined] eval-copy 0= [if] needs eval_copy.fs [then]
 
 \ Flag: the code of ed (the string ed-src) has been compiled.
 0 value ed-loaded

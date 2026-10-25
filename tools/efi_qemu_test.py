@@ -543,7 +543,7 @@ def main():
   for src, dest in [('examples/games/sdl2_roguelike.fs', 'games/sdl2_roguelike.fs'),
                     ('examples/games/sdl2_tetris.fs', 'games/sdl2_tetris.fs'), ('examples/games/sdl2_snake.fs', 'games/sdl2_snake.fs'),
                     ('examples/games/sdl2_minesweeper.fs', 'games/sdl2_minesweeper.fs'), ('examples/games/sdl2_mastermind.fs', 'games/sdl2_mastermind.fs'),
-                    ('ports/posix/editor.fs', 'lib/editor.fs'), ('ports/posix/writhdeck.fs', 'lib/writhdeck.fs'),
+                    ('editors/editor.fs', 'lib/editor.fs'), ('editors/writhdeck.fs', 'lib/writhdeck.fs'),
                     ('ports/posix/eval_copy.fs', 'lib/eval_copy.fs'), ('ports/efi/disk/drivers.fs', 'drivers.fs')]:
     baremetal_mkdisk.put(spec, os.path.join(ROOT, src), dest)
   baremetal_mkdisk.put(spec, os.path.join(out, 'BOOTX64.EFI'), 'EFI/BOOT/BOOTX64.EFI')

@@ -12,7 +12,7 @@ Additions and modifications, Copyright 2026 Luginfo10, under the same license:
   - Raspberry Pi Pico (RP2040) port (ports/pico/), adapted from the pico-ice port
   - Android ports: command line, WebView and native SDL2 (ports/android/), SDL console (ports/posix/sdl2_console.fs)
   - words reference tools (tools/words_*.py, WORDS.md)
-  - text editors ed and writhdeck (ports/posix/editor.fs, writhdeck.fs, eval_copy.fs), after the author's WrithDeck
+  - text editors ed and writhdeck (editors/editor.fs, writhdeck.fs, eval_copy.fs), after the author's WrithDeck
   - lugforth-mini, the POSIX build without editors, SDL2 and servers (ports/posix/posix_mini_boot.fs)
   - the line editor (common/lineedit.fs) and the SDL console window with colors (ports/posix/sdl2_console*.fs)
   - bare-metal AArch64 port for QEMU and the Raspberry Pi 3/4 (ports/rpi/)

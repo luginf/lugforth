@@ -12,7 +12,7 @@
 \ See the License for the specific language governing permissions and
 \ limitations under the License.
 
-\ The words of ueForth that ed and writhdeck (ports/posix/editor.fs, writhdeck.fs) use and gforth lacks.
+\ The words of ueForth that ed and writhdeck (editors/editor.fs, writhdeck.fs) use and gforth lacks.
 \ Loaded by ports/gforth/writhdeck-gforth.fs before the editors. Tested with gforth 0.7.9.
 
 decimal

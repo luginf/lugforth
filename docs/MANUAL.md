@@ -50,7 +50,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with `ninja posix`). You
 prompt:
 
 ```
-Lugforth v2026.10.25.8
+Lugforth v2026.10.25.10
 :; ===========>/>
 type 'info' for help
  ok
@@ -694,7 +694,7 @@ the prompt stops at each screenful with `-- more --`: space for the next page, E
 ## ed
 
 `ed file.fs` (POSIX build, in a terminal or in the `--gui` window) opens or creates a text file.
-Code: `ports/posix/editor.fs`, compiled on first use; tests: `ports/posix/editor_tests.fs`.
+Code: `editors/editor.fs`, compiled on first use; tests: `editors/editor_tests.fs`.
 
 | Keys | Action |
 |---|---|
@@ -719,7 +719,7 @@ format of WrithDeck's ini files (see [writhdeck.ini](#writhdeckini)); the keys i
 ## writhdeck
 
 `writhdeck file.t2t` is the same editor for writing, after [WrithDeck](https://github.com/luginf/writhdeck)
-(`ports/posix/writhdeck.fs`, built on `editor.fs`: both files are needed). Lines are wrapped in a
+(`editors/writhdeck.fs`, built on `editor.fs`: both files are needed). Lines are wrapped in a
 centered column; txt2tags and Markdown are highlighted (headings, lists, `**bold**`, `//italic//`,
 `__underline__`, `%` comments). The status bar shows the words, the words of the session and the
 progress to the daily goal.

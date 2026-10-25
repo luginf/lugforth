@@ -19,7 +19,9 @@ Short game-oriented words on top of libSDL2, for the POSIX build and (same sourc
 - `ports/posix/sdl2_mixer.fs` has `soundfont ( a n -- )` and `soundfont?` (`Mix_SetSoundFonts`): a `.sf2` or `.sf3` file, looked for as given, then by base name in the current directory, then in the directory of the script (`1 argv`). FluidSynth reads only files, so a soundfont cannot come from memory. Loading a MIDI from memory (`SDL_RWFromConstMem`, `Mix_LoadMUS_RW`) failed with "Unrecognized audio format" and was not pursued.
 - `sdl2-abc` (`ports/posix/sdl2_abc.fs`, `ports/web/sdl2_abc.fs`) reads tunes in ABC notation and plays them. The reader is shared: `common/abc.fs` defines `abc-parser` in `internals`, a word that returns the reader's source as a string, which each platform loader evaluates (words in vocabulary `abc-int`, public ones in `sdl2`). POSIX writes a standard MIDI file to a temporary file made by `mkstemps` (a fixed name in `/tmp` failed when another user had made it), deletes it once loaded and plays it with the mixer; the web loader schedules WebAudio oscillators. Tests: `ports/posix/sdl2_abc_tests.fs` (18). A tune is written with `r~ ... ~` because ABC uses `|`.
 
-## Editors: `ed` and `writhdeck` (ports/posix/editor.fs, writhdeck.fs, *_tests.fs)
+## Editors: `ed` and `writhdeck` (editors/editor.fs, writhdeck.fs, *_tests.fs)
+
+The editors moved from `ports/posix/` to `editors/` (2026-10-25): the same two files serve the POSIX boot (`ports/posix/posix_boot.fs`), Windows, the EFI and Raspberry Pi disks (`lib/`), the release packages and the gforth loader. `editor.fs` loads `eval_copy.fs` (kept in `ports/posix/`) only when `eval-copy` is not defined yet: the PC boot has it already, a board has it in `lib/`. Under gforth `type` and `emit` are defers read with `defer@`, and `emit` does not go through `type` (the row cache redirects both there).
 
 `ed` is a text editor in Forth; `writhdeck` is a port of WrithDeck (original in `~/src/writhdeck`, Tcl/C,
 manual `writhdeck_MANUAL.md`) built on top of it. Both are strings compiled on first use (`ed-src`,

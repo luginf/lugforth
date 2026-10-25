@@ -33,8 +33,8 @@ needs ../../common/abc.fs
 needs sdl2_abc.fs
 needs sdl2_console_ttf.fs
 needs sdl2_console.fs
-needs editor.fs
-needs writhdeck.fs
+needs ../../editors/editor.fs
+needs ../../editors/writhdeck.fs
 needs sockets.fs
 needs telnetd.fs
 needs httpd.fs

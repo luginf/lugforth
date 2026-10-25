@@ -260,7 +260,7 @@ jobs:
           cp sdl2dl/LICENSE.txt pkg/SDL2-LICENSE.txt 2>/dev/null || true
           cp sdl2dl/README-SDL.txt pkg/ 2>/dev/null || true
           cp sdl2dl/LICENSE.*.txt pkg/ 2>/dev/null || true
-          cp ports/posix/sdl2.fs ports/posix/sdl2_ttf.fs ports/posix/sdl2_console.fs ports/posix/sdl2_console_ttf.fs ports/posix/eval_copy.fs ports/posix/editor.fs ports/posix/writhdeck.fs pkg/lib/
+          cp ports/posix/sdl2.fs ports/posix/sdl2_ttf.fs ports/posix/sdl2_console.fs ports/posix/sdl2_console_ttf.fs ports/posix/eval_copy.fs editors/editor.fs editors/writhdeck.fs pkg/lib/
           ls -R pkg
 
       - name: Test the SDL2 words
@@ -348,7 +348,7 @@ jobs:
           cp sdl2dl/LICENSE.txt pkg/SDL2-LICENSE.txt 2>/dev/null || true
           cp sdl2dl/README-SDL.txt pkg/ 2>/dev/null || true
           cp sdl2dl/LICENSE.*.txt pkg/ 2>/dev/null || true
-          cp ports/posix/sdl2.fs ports/posix/sdl2_ttf.fs ports/posix/sdl2_console.fs ports/posix/sdl2_console_ttf.fs ports/posix/eval_copy.fs ports/posix/editor.fs ports/posix/writhdeck.fs pkg/lib/
+          cp ports/posix/sdl2.fs ports/posix/sdl2_ttf.fs ports/posix/sdl2_console.fs ports/posix/sdl2_console_ttf.fs ports/posix/eval_copy.fs editors/editor.fs editors/writhdeck.fs pkg/lib/
           ls -R pkg
 
       - name: Test the SDL2 words

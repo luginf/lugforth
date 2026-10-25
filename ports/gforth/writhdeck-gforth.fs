@@ -12,7 +12,7 @@
 \ See the License for the specific language governing permissions and
 \ limitations under the License.
 
-\ ed and writhdeck of Lugforth under gforth (tested with 0.7.9), from the files of ports/posix, unchanged:
+\ ed and writhdeck of Lugforth under gforth (tested with 0.7.9), from the files of editors/, unchanged:
 \   gforth ports/gforth/writhdeck-gforth.fs -e "writhdeck notes.txt"
 \ The editors are Forth source held in a string between r| and a vertical bar. The loader cuts that text out,
 \ writes it to a temporary file and includes it, on top of compat.fs (the ueForth words gforth lacks).
@@ -48,8 +48,8 @@ defer wd-go ( a n -- )
 : load-source ( name-a name-n -- )   ( the path is relative to this file )
   in-here slurp body tmp-name spit  tmp-name included ;
 
-s" ../posix/editor.fs" load-source
-s" ../posix/writhdeck.fs" load-source
+s" ../../editors/editor.fs" load-source
+s" ../../editors/writhdeck.fs" load-source
 
 only forth definitions
 : ed ( "file" -- )   parse-name 255 min dup to ed-arg-n  ed-arg swap cmove  ed-arg ed-arg-n ed-go ;

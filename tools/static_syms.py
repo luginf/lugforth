@@ -9,7 +9,7 @@ with_sdl = '--sdl' in sys.argv
 names = set()
 pat = re.compile(r'z" ([A-Za-z_][A-Za-z_0-9]*)" +\d+ +(sysfunc|sdl|sdlimg|sdlttf|sdlmix|sofunc)\b')
 dl = re.compile(r'z" ([A-Za-z_][A-Za-z_0-9]*)" +[^\n]*?\bdlsym\b')
-for f in sorted(glob.glob(ROOT + 'common/*.fs') + glob.glob(ROOT + 'ports/posix/*.fs')):
+for f in sorted(glob.glob(ROOT + 'common/*.fs') + glob.glob(ROOT + 'ports/posix/*.fs') + glob.glob(ROOT + 'editors/*.fs')):
     if f.endswith('_tests.fs'):
         continue
     for line in open(f, encoding='utf-8', errors='ignore'):

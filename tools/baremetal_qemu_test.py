@@ -401,7 +401,7 @@ def qtap(b, *names):
 
 
 def test_editors(b, browser_dir='/lib'):
-  """ed and writhdeck on the console (ports/posix/editor.fs, writhdeck.fs, run
+  """ed and writhdeck on the console (editors/editor.fs, writhdeck.fs, run
   from /lib): text typed on the serial line, Home, End and Delete from the USB
   keyboard, saved on the FAT, read back with cat; writhdeck's file browser
   enters a directory."""
@@ -645,10 +645,12 @@ def make_disk(path, fat, mbr):
   vdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'examples', 'system', 'varvara')
   for name in ('uxn.fs', 'screen.fs', 'audio.fs', 'file.fs', 'varvara_rpi.fs', 'boot.rom', 'devtest.rom', 'tone.rom', 'xo5.rom'):
     baremetal_mkdisk.put(spec, os.path.join(vdir, name), 'system/varvara/' + name)
-  # ed and writhdeck (ports/posix) are loaded from /lib by test_editors.
-  pdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ports', 'posix')
-  for name in ('editor.fs', 'writhdeck.fs', 'eval_copy.fs'):
-    baremetal_mkdisk.put(spec, os.path.join(pdir, name), 'lib/' + name)
+  # ed and writhdeck (editors/) are loaded from /lib by test_editors.
+  pdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ports", "posix")
+  edir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "editors")
+  for name in ('editor.fs', 'writhdeck.fs'):
+    baremetal_mkdisk.put(spec, os.path.join(edir, name), 'lib/' + name)
+  baremetal_mkdisk.put(spec, os.path.join(pdir, 'eval_copy.fs'), 'lib/eval_copy.fs')
   return spec
 
 

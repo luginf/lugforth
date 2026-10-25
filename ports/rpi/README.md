@@ -115,7 +115,7 @@ console screen (`GFX-SIZE`); the default is 640x480. The layer ends at `screen`.
 
 ## ed and writhdeck
 
-`ed` and `writhdeck` (ports/posix/editor.fs, writhdeck.fs) run on the console: `make disk` copies them
+`ed` and `writhdeck` (editors/editor.fs, writhdeck.fs) run on the console: `make disk` copies them
 to `/lib`, and the words `ed` and `writhdeck` of platform.fs include them on first use. They are the same
 files as on Linux: `[defined] posix` picks the POSIX code (termios, getenv, mkdir, chdir...) or the board's
 (`form` is 30 rows by 80 columns, `chdir`, `getcwd`, `delete-file`, `rename-file`, `unix-time`, and a

@@ -353,10 +353,18 @@ wd-defaults
   rc-slot 8 + * rc-cache + to rc-s
   rc-s @ rc-n = if rc-s 8 + rc-n rc-buf rc-n compare 0= if exit then then
   rc-buf rc-n type   rc-n rc-s !   rc-buf rc-s 8 + rc-n cmove ;
+: rc-emit-on ( -- ) ;   : rc-emit-off ( -- ) ;   : type@ ( -- xt )   ['] type >body @ ;
+[defined] gforth [if]   \ type and emit are defers there, read with defer@; emit does not go through type: redirect it too
+0 value rc-eold   create rc-c 8 allot
+: rc-emit ( c -- )   rc-c c!  rc-c 1 rc-type ;
+: rc-emit-on ( -- )   ['] emit defer@ to rc-eold  ['] rc-emit is emit ;
+: rc-emit-off ( -- )   rc-eold is emit ;
+: type@ ( -- xt )   ['] type defer@ ;
+[then]
 : wrap-row ( r -- )
-  ['] type >body @ to rc-old   0 to rc-n   ['] rc-type is type
+  type@ to rc-old   0 to rc-n   ['] rc-type is type  rc-emit-on
   dup ['] wrap-row0 catch
-  rc-old is type  throw
+  rc-old is type  rc-emit-off  throw
   rc-send ;
 : wrap-scroll ( -- )
   layout-update

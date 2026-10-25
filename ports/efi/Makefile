@@ -82,7 +82,7 @@ $(OUT)/BOOTX64.EFI: $(OUT)/lugforth.so
 # files the console uses (the examples, the editors, varvara).
 USB_FILES := $(OUT)/BOOTX64.EFI=EFI/BOOT/BOOTX64.EFI \
   $(EXAMPLE_FILES) $(ROOT)/ports/rpi/disk/autoexec.fs=autoexec.fs \
-  $(ROOT)/ports/posix/editor.fs=lib/editor.fs $(ROOT)/ports/posix/writhdeck.fs=lib/writhdeck.fs \
+  $(ROOT)/editors/editor.fs=lib/editor.fs $(ROOT)/editors/writhdeck.fs=lib/writhdeck.fs \
   $(ROOT)/ports/posix/eval_copy.fs=lib/eval_copy.fs \
   $(foreach f,MANUAL.md WORDS.md SDL2.md SDL2-words.md SDL2-web.md,$(ROOT)/docs/$(f)=docs/$(f)) $(ROOT)/ports/efi/disk/drivers.fs=drivers.fs \
   $(foreach f,$(wildcard $(ROOT)/examples/system/varvara/*.fs $(ROOT)/examples/system/varvara/*.rom),$(f)=system/varvara/$(notdir $(f)))
