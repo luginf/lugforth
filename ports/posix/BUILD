@@ -26,8 +26,9 @@ CompileMini('$dst/posix/lugforth-mini', '$src/ports/posix/main.c',
 # No SDL2, sound or window (they are shared libraries loaded at run time): the terminal Forth, ed, writhdeck.
 # ninja posix-static; needs the package musl-dev (x86_64-linux-musl-gcc).
 if MUSL_ENABLED:
+  StaticSyms('$dst/gen/static_syms.h', implicit=['$src/tools/static_syms.py'])
   CompileStatic('$dst/posix/lugforth-static', '$src/ports/posix/main.c',
-                implicit=['$dst/gen/posix_boot.h'])
+                implicit=['$dst/gen/posix_boot.h', '$dst/gen/static_syms.h'])
   Alias('posix-static', ' '.join([
     ForthTest('$dst/tests/posix_static_all_tests.out',
               '$dst/posix/lugforth-static', '$src/common/all_tests.fs'),
@@ -36,6 +37,15 @@ if MUSL_ENABLED:
     ForthTest('$dst/tests/posix_static_writhdeck_tests.out',
               '$dst/posix/lugforth-static', '$src/ports/posix/writhdeck_tests.fs'),
   ]))
+
+  # lugforth-static-sdl: the same with SDL2 and X11 linked in (no sound, no TrueType: see docs/dev/PORTS.md).
+  # ninja posix-static-sdl builds SDL2 and the X11 libraries against musl first (tools/build_musl_sdl.sh, needs curl,
+  # cmake and the network the first time), then links.
+  StaticSyms('$dst/gen/static_syms_sdl.h', flags='--sdl', implicit=['$src/tools/static_syms.py'])
+  MuslSdl('$dst/musl-deps/sdl.stamp')
+  CompileStaticSdl('$dst/posix/lugforth-static-sdl', '$src/ports/posix/main.c',
+                   implicit=['$dst/gen/posix_boot.h', '$dst/gen/static_syms_sdl.h', '$dst/musl-deps/sdl.stamp'])
+  Alias('posix-static-sdl', '$dst/posix/lugforth-static-sdl')
 
 Alias('posix', ' '.join([
   ForthTest('$dst/tests/posix_all_tests.out',

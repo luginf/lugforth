@@ -21,10 +21,10 @@
 sdl2-ttf
 sdl2 definitions also posix
 0 value tfont   0 value font-file   0 value tex-gen
-create tex-t 230 cells allot
+create tex-t 96 cells allot   create tex-v 1024 cells allot   create tex-k 1024 cells allot
 z" TTF_FontFaceIsFixedWidth" 1 sdlttf TTF_FaceFixed ( a -- n )
 0 value cur   0 value ca   0 value cn
-create gz 4 allot
+create gz 8 allot
 : font-ok? ( z -- f )
   dup 0= if drop 0 exit then
   12 TTF_OpenFont ?dup if TTF_CloseFont drop -1 else 0 then ;
@@ -131,35 +131,47 @@ create gz 4 allot
   tsize sl@ tsize 4 + sl@ ;
 : ttf-free ( -- )
   tex-gen con-gen = if
-    223 0 do tex-t i cells + @ ?dup if SDL_DestroyTexture drop then loop
+    95 0 do tex-t i cells + @ ?dup if SDL_DestroyTexture drop then loop
+    1024 0 do tex-v i cells + @ ?dup if SDL_DestroyTexture drop then loop
   then
-  tex-t 230 cells 0 fill ;
+  tex-t 96 cells 0 fill   tex-v 1024 cells 0 fill   tex-k 1024 cells 0 fill ;
 : utf8! ( cp -- )   \ the letter at gz, ended by 0
   dup $80 < if gz c! 0 gz 1+ c! exit then
   dup $800 < if
     dup 6 rshift $c0 or gz c!  $3f and $80 or gz 1+ c!  0 gz 2 + c! exit then
-  dup 12 rshift $e0 or gz c!  dup 6 rshift $3f and $80 or gz 1+ c!  $3f and $80 or gz 2 + c!  0 gz 3 + c! ;
-: ttf-one ( i -- )
-  dup  dup 95 < if 32 + else 33 + cell>cp then  utf8!
+  dup $10000 < if
+    dup 12 rshift $e0 or gz c!  dup 6 rshift $3f and $80 or gz 1+ c!  $3f and $80 or gz 2 + c!  0 gz 3 + c! exit then
+  dup 18 rshift $f0 or gz c!  dup 12 rshift $3f and $80 or gz 1+ c!
+  dup 6 rshift $3f and $80 or gz 2 + c!  $3f and $80 or gz 3 + c!  0 gz 4 + c! ;
+0 value tr   0 value tg   0 value tb   ( the color of the text, given to a glyph when it is drawn )
+: ttf-render ( cp -- texture or 0 )
+  utf8!
   tfont gz $ffffffff TTF_RenderUTF8_Blended
-  dup 0= if drop drop exit then
+  dup 0= if exit then
   dup renderer swap SDL_CreateTextureFromSurface
-  swap SDL_FreeSurface drop
+  swap SDL_FreeSurface drop ;
+: ttf-one ( i -- )   \ the ASCII glyphs 33 to 126 are made at once
+  dup 32 + ttf-render
   swap cells tex-t + ! ;
 : ttf-build ( -- )
   ttf-free
-  223 0 do i ttf-one loop
+  95 1 do i ttf-one loop
   con-gen to tex-gen ;
-: ttf-glyph ( g x y -- )
-  { g x y }
-  g 0< g 222 > or if exit then
-  g cells tex-t + @ ?dup if
+: ttf-other ( cp -- texture or 0 )   \ any other letter is made when first shown (a table of 1024, a clash replaces)
+  dup 1021 mod { k }
+  tex-k k cells + @ over = if drop tex-v k cells + @ exit then
+  tex-v k cells + @ ?dup if SDL_DestroyTexture drop then
+  dup ttf-render
+  dup tex-v k cells + !   swap tex-k k cells + ! ;
+: ttf-glyph ( cp x y -- )
+  { cp x y }
+  cp 33 127 within if cp 32 - cells tex-t + @ else cp ttf-other then
+  ?dup if
+    dup tr tg tb SDL_SetTextureColorMod drop
     x y con-cw con-ch gdst rect-at!
     renderer swap 0 gdst SDL_RenderCopy drop
   then ;
-: ttf-tint ( r g b -- )
-  { r g b }
-  223 0 do tex-t i cells + @ ?dup if r g b SDL_SetTextureColorMod drop then loop ;
+: ttf-tint ( r g b -- )   to tb to tg to tr ;
 : ttf-install ( -- )
   TTF_Init drop
   font-find if

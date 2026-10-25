@@ -32,15 +32,15 @@ sdl2 definitions
 
 : test-accents
   80 to con-cols  0 to cx  0 to cy  0 to u-need
-  s" aé€’z" con-type
-  0 0 grid c@ 97 =assert   1 0 grid c@ 233 =assert   2 0 grid c@ 128 =assert
-  3 0 grid c@ 133 =assert   4 0 grid c@ 122 =assert   cx 5 =assert
-  233 cell>cp 233 =assert   128 cell>cp $20ac =assert
-  233 cell-glyph 200 =assert
-  $4e2d cp>cell 63 =assert
-  233 128 - base-map + c@ 101 =assert   128 128 - base-map + c@ 69 =assert   201 128 - base-map + c@ 69 =assert
-  0 to sl  1 0 grid c@ sel-cell  2 0 grid c@ sel-cell
-  sl 5 =assert   selbuf c@ $c3 =assert   selbuf 1+ c@ $a9 =assert   selbuf 2 + c@ $e2 =assert
+  s" aé€’z中😀" con-type
+  0 0 grid sl@ 97 =assert   1 0 grid sl@ 233 =assert   2 0 grid sl@ $20ac =assert
+  3 0 grid sl@ $2019 =assert   4 0 grid sl@ 122 =assert   5 0 grid sl@ $4e2d =assert
+  6 0 grid sl@ $1f600 =assert   cx 7 =assert
+  s" ÿ" con-type   7 0 grid sl@ 255 =assert
+  233 bm-base 101 32 - =assert   $20ac bm-base 69 32 - =assert   $4e2d bm-base 63 32 - =assert   97 bm-base 65 =assert
+  0 to sl  1 0 grid sl@ sel-cell  2 0 grid sl@ sel-cell  5 0 grid sl@ sel-cell  6 0 grid sl@ sel-cell
+  sl 12 =assert   selbuf c@ $c3 =assert   selbuf 1+ c@ $a9 =assert   selbuf 2 + c@ $e2 =assert
+  selbuf 5 + c@ $e4 =assert   selbuf 8 + c@ $f0 =assert   selbuf 11 + c@ $80 =assert
   con-clear ;
 
 : test-hex6

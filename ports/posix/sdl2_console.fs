@@ -160,10 +160,10 @@ create font-data
   $00 c, $70 c, $10 c, $18 c, $18 c, $18 c, $0e c, $18 c, $18 c, $18 c, $18 c, $10 c, $70 c, $00 c, $00 c, $00 c,   \ }
   $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $72 c, $0e c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c,   \ ~
 
-( ---- The text grid: 1000 lines of up to 300 columns ---- )
+( ---- The text grid: 1000 lines of up to 300 columns, a cell holds a Unicode code point of 4 bytes ---- )
 1000 constant con-lines
 300 constant max-cols
-create con-buf max-cols con-lines * allot
+create con-buf max-cols con-lines * 4 * allot
 create con-attr max-cols con-lines * 4 * allot   ( the colors of each cell, see sgr below )
 0 value cur-sgr   ( the attributes new characters get: 9 bits of foreground, 9 of background, flags )
 0 value con-cols   0 value con-rows   0 value con-cw   0 value con-ch
@@ -181,14 +181,15 @@ defer pick-open ( n -- )   ( the color picker, further down )
 0 value back        ( lines scrolled back )
 0 value sel-on
 
-: grid ( x y -- a ) max-cols * + con-buf + ;
+: grid ( x y -- a ) max-cols * + 4 * con-buf + ;
+: gfill ( a n -- )   0 ?do 32 over l! 4 + loop drop ;   ( n blank cells )
 : attr-addr ( x y -- a ) max-cols * + 4 * con-attr + ;
 : con-clear ( -- )
-  con-buf max-cols con-lines * 32 fill  con-attr max-cols con-lines * 4 * erase
+  con-buf max-cols con-lines * gfill  con-attr max-cols con-lines * 4 * erase
   0 to cx 0 to cy  0 to back  0 to sel-on  -1 to dirty ;
 : con-scroll ( -- )
-  con-buf max-cols + con-buf max-cols con-lines 1- * cmove
-  0 con-lines 1- grid max-cols 32 fill  0 to sel-on
+  con-buf max-cols 4 * + con-buf max-cols 4 * con-lines 1- * cmove
+  0 con-lines 1- grid max-cols gfill  0 to sel-on
   con-attr max-cols 4 * + con-attr max-cols 4 * con-lines 1- * cmove
   con-attr max-cols 4 * con-lines 1- * + max-cols 4 * erase ;
 : con-nl ( -- )
@@ -197,7 +198,7 @@ defer pick-open ( n -- )   ( the color picker, further down )
   cy con-lines >= if con-scroll con-lines 1- to cy then ;
 : put-char ( c -- )
   cx con-cols >= if con-nl then
-  cx cy grid c!  cur-sgr cx cy attr-addr l!  1 +to cx  -1 to dirty ;
+  cx cy grid l!  cur-sgr cx cy attr-addr l!  1 +to cx  -1 to dirty ;
 
 : kbd-shown ( -- f ) window-handle SDL_IsScreenKeyboardShown $ffffffff and 0<> ;
 : vis ( -- n ) kbd-shown if con-rows 2/ 3 max else con-rows then ;
@@ -278,7 +279,7 @@ create prm 8 cells allot
   dup [char] D = if
     drop cx p1 1 max - 0 max to cx  -1 to dirty exit then
   dup [char] K = if
-    drop cx cy grid con-cols cx - 0 max 32 fill
+    drop cx cy grid con-cols cx - 0 max gfill
     cx cy attr-addr con-cols cx - 0 max 4 * erase  -1 to dirty exit then
   dup [char] m = if drop sgr-apply -1 to dirty exit then
   drop ;
@@ -292,7 +293,7 @@ create prm 8 cells allot
     prm @ to p1   prm cell+ @ to p2
     csi-done exit then
   drop ;
-( ---- Accents: the grid holds one byte a cell. 32 to 126 ASCII, 160 to 255 Latin-1, and 128 to 159 a few more signs ---- )
+( ---- Unicode: UTF-8 in, a code point a cell. The bitmap font has only ASCII: it draws the plain letter ---- )
 create extra-cp
   $20ac , $152 , $153 , $178 , $2018 , $2019 , $201c , $201d , $2013 , $2014 , $2026 , $2022 , $2192 , $2190 , $160 , $161 , $17d , $17e , $2122 , $2260 ,
 20 constant extras
@@ -305,12 +306,13 @@ create base-map   ( the plain letter for each byte 128 to 255, for the bitmap fo
   68 c, 78 c, 79 c, 79 c, 79 c, 79 c, 79 c, 120 c, 79 c, 85 c, 85 c, 85 c, 85 c, 89 c, 80 c, 115 c,
   97 c, 97 c, 97 c, 97 c, 97 c, 97 c, 97 c, 99 c, 101 c, 101 c, 101 c, 101 c, 105 c, 105 c, 105 c, 105 c,
   100 c, 110 c, 111 c, 111 c, 111 c, 111 c, 111 c, 47 c, 111 c, 117 c, 117 c, 117 c, 117 c, 121 c, 112 c, 121 c,
-: cp>cell ( codepoint -- byte )
-  dup 160 >= over 255 <= and if exit then
-  extras 0 ?do dup i cells extra-cp + @ = if drop i 128 + unloop exit then loop
-  drop 63 ;
-: cell>cp ( byte -- codepoint )   dup 160 >= if exit then  128 - cells extra-cp + @ ;
-: cell-glyph ( byte -- g )   dup 128 >= if 33 - else 32 - then ;   ( 0 to 94 ASCII, 95 to 222 the others )
+: extras-find ( cp -- k )   \ the place of that sign in extra-cp, 31 when it is not there
+  extras 0 ?do dup i cells extra-cp + @ = if drop i unloop exit then loop
+  drop 31 ;
+: bm-base ( cp -- g )   \ the glyph of the bitmap font for any code point
+  dup 127 < if 32 - exit then
+  dup 160 >= over 255 <= and if 128 - else extras-find then
+  base-map + c@ 32 - ;
 0 value u-need   0 value u-cp
 : u-byte ( c -- )   \ a byte of UTF-8 text: the first one of a letter, or one that follows
   dup 192 >= if
@@ -318,7 +320,9 @@ create base-map   ( the plain letter for each byte 128 to 255, for the bitmap fo
     to u-need to u-cp exit then
   u-need 0= if drop exit then
   63 and u-cp 6 lshift or to u-cp  -1 +to u-need
-  u-need 0= if u-cp cp>cell put-char then ;
+  u-need 0= if
+    u-cp $110000 >= u-cp $d800 >= u-cp $e000 < and or if 63 else u-cp then  put-char
+  then ;
 : con-putc ( c -- )
   esc-state 2 = if csi-char exit then
   esc-state 3 = if 7 = if 0 to esc-state then exit then   ( title, ends with bell )
@@ -365,7 +369,7 @@ create gdst 16 allot
 : bm-build ( -- ) make-atlas ;
 : bm-glyph ( g x y -- )
   { g x y }
-  g 95 >= if g 33 + 128 - base-map + c@ 32 - to g then   ( no accent in the bitmap: the plain letter )
+  g bm-base to g
   g 8 * 0 8 16 gsrc rect-at!
   x y con-cw con-ch gdst rect-at!
   renderer atlas gsrc gdst SDL_RenderCopy drop ;
@@ -373,7 +377,7 @@ create gdst 16 allot
 
 defer font-cell ( size -- cw ch )   ' bm-cell is font-cell
 defer atlas-build ( -- )            ' bm-build is atlas-build
-defer glyph-at ( g x y -- )         ' bm-glyph is glyph-at
+defer glyph-at ( code-point x y -- )         ' bm-glyph is glyph-at
 defer glyph-tint ( r g b -- )       ' bm-tint is glyph-tint
 2 value hmin   24 value hmax   1 value hstep   180 value hdiv   0 value hrel
 ( the size is counted in half scales of the bitmap, in points with TrueType, where a step is hrel percent )
@@ -384,7 +388,7 @@ defer glyph-tint ( r g b -- )       ' bm-tint is glyph-tint
   { a n x y }
   n 0 ?do
     a i + c@ dup 32 > over 127 < and if
-      32 - x i con-cw * + y glyph-at
+      x i con-cw * + y glyph-at
     else drop then
   loop ;
 
@@ -421,15 +425,17 @@ create selbuf 20000 allot
 0 value sr   0 value sc1   0 value sc2   0 value lastc
 0 value r1   0 value c1   0 value r2   0 value c2
 : sel-put ( c -- ) sl 19990 < if selbuf sl + c! 1 +to sl else drop then ;
-: sel-cell ( byte -- )   \ copied as UTF-8
+: sel-cell ( code-point -- )   \ copied as UTF-8
   dup 128 < if sel-put exit then
-  cell>cp
   dup $800 < if dup 6 rshift $c0 or sel-put $3f and $80 or sel-put exit then
-  dup 12 rshift $e0 or sel-put  dup 6 rshift $3f and $80 or sel-put  $3f and $80 or sel-put ;
+  dup $10000 < if
+    dup 12 rshift $e0 or sel-put  dup 6 rshift $3f and $80 or sel-put  $3f and $80 or sel-put exit then
+  dup 18 rshift $f0 or sel-put  dup 12 rshift $3f and $80 or sel-put
+  dup 6 rshift $3f and $80 or sel-put  $3f and $80 or sel-put ;
 : sel-row ( r c1 c2 -- )   \ the cells c1 to c2 of a row, trailing spaces dropped
   to sc2 to sc1 to sr
-  sc2 begin dup sc1 >= if dup sr grid c@ 32 = else 0 then while 1- repeat to lastc
-  lastc 1+ sc1 ?do  i sr grid c@ dup 32 < if drop 32 then sel-cell  loop ;
+  sc2 begin dup sc1 >= if dup sr grid sl@ 32 = else 0 then while 1- repeat to lastc
+  lastc 1+ sc1 ?do  i sr grid sl@ dup 32 < if drop 32 then sel-cell  loop ;
 : sel-copy ( -- )
   sel-on 0= if exit then
   0 to sl
@@ -971,7 +977,7 @@ defer font-pick ( k -- )   ' drop is font-pick
 0 value view-t   0 value cc   0 value ca   0 value cell-f   0 value cell-b   -1 value tint-a
 : draw-cell ( col row -- )
   { col row }
-  col row view-t + grid c@ to cc
+  col row view-t + grid sl@ to cc
   col row view-t + attr@ to ca
   col con-cw * margin +  row con-ch * top-px + margin + { px py }
   ca tint-a <> if
@@ -980,7 +986,7 @@ defer font-pick ( k -- )   ' drop is font-pick
   then
   cell-b bg-col <> if cell-b color px py con-cw con-ch box then
   ca $200000 and if cell-f color px py con-ch + 2 - con-cw 1 box then
-  cc 32 > cc 127 < and cc 128 >= or if cc cell-glyph px py glyph-at then ;
+  cc 32 > if cc px py glyph-at then ;
 ( ---- Graphics under the text: after `graphic`, the drawing words work at the prompt ---- )
 \ A texture of 640x480 receives the drawing (the renderer targets it while the program runs);
 \ the console draws it first, stretched to the window, then the text over it: the cells
@@ -1177,18 +1183,19 @@ previous
   con-open ;
 
 0 value last-blink
+: blink-tick ( -- )   ticks 500 / 1 and blink <> if blink 1 xor to blink -1 to dirty then ;
 : con-key ( -- c )
   con-ensure
   gfx-tex if -1 to dirty then
   begin
     con-pump
     q-any? if 0 to back q-pop exit then
-    ticks 500 / 1 and blink <> if blink 1 xor to blink -1 to dirty then
+    blink-tick
     dirty if con-draw then
     10 SDL_Delay drop
   again ;
 : con-key? ( -- f )   ( a program that polls, as writhdeck does, still sees its output )
-  renderer con-renderer = renderer 0<> and if con-pump dirty if con-draw then q-any? else 0 then ;
+  renderer con-renderer = renderer 0<> and if con-pump blink-tick dirty if con-draw then q-any? else 0 then ;
 
 also internals
 : le-on ( -- )   -1 le-force ! ;   ( line editing even though stdin is no terminal )

@@ -76,6 +76,11 @@ d
   s" /nowhere" cp-find -1 =assert
   0 cp-cnt ! ;
 
+: test-ini-open-last
+  0 to open-last
+  s" open_last" s" yes" wd-ini-kv   open-last 0<> assert
+  s" open_last" s" no" wd-ini-kv   open-last 0 =assert ;
+
 : test-outline
   s" = A =
 text

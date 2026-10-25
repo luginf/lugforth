@@ -136,6 +136,28 @@ platform's `builtins.h`/`platform.fs`/boot-chain `.fs` file, not just GBA:
     runs per-pixel at any real resolution — full detail, with the exact
     numbers, in `ports/gba/README.md`'s "Performance" section.
 
+## Traps met while working on writhdeck, the console and the line editor (2026-10)
+
+- A `|` anywhere in an `r|` block ends it, **a stack comment too**: `( cp -- texture|0 )` in `sdl2_console_ttf.fs` made every
+  lugforth hang at boot (the tests of every port hung, which is the sign). Write `texture or 0`. Same for `)` inside a `( comment )`:
+  the text after it is compiled (`ERROR: ---- NOT FOUND!`).
+- `>r ... r@` inside a word that has `{ locals }` reads the locals frame: results are garbage. Use a local or a `value`.
+- `{ locals }` inside an `if` / loop body break (written inside a conditional it silently failed: writhdeck did not save). Declare
+  them at the top of the word, even when it looks harmless.
+- There is no `l@` (use `sl@`, signed, or `l!` to write), no `defer@` (the xt of a defer is `' name >body @`), no `bytes` outside
+  `editor.fs`. `?do` with start > limit runs away: guard it.
+- A word such as `: ttf-one ( i -- )` leaves a value under its work (the original used `dup`): replacing its first line must keep the
+  stack shape (an underflow -4 only showed as `--gui: cannot open a window`).
+- Words in `sdl2_console.fs` are compiled by `eval-copy` when the window opens, not by the build: `ninja posix` does not check them.
+  Run `SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy out/posix/lugforth ports/posix/sdl2_console_tests.fs` after editing it, and look at
+  a screenshot (Xvfb needs `xdotool windowfocus` before it types).
+- The console cursor, a key wait that polls (`key?`) and any state kept only in `con-key` freeze when a program polls: keep such
+  state in a word that both `con-key` and `con-key?` call (`blink-tick`).
+- Python in a heredoc: `\xc3` in a normal string becomes the character U+00C3, not a byte; write the real characters in the
+  Forth sources (UTF-8), and read and write files with `encoding='utf-8'`.
+- `tools/words_reference.py` finds constants with a regex on the source line: `11 35 os constant EAGAIN` (Linux and macOS values)
+  has its own pattern; a new way to write constants needs one too, or the descriptions silently disappear from `docs/WORDS.md`.
+
 ## Adding words
 
 A new C function looked up by `sysfunc` also goes in the table of `ports/posix/main.c` (static build, see PORTS.md).

@@ -81,7 +81,7 @@ previous
 
 ( The system: values that macOS numbers differently from Linux )
 also internals host-mac? previous constant on-mac?
-: os ( linux darwin -- n ) on-mac? if swap drop else drop then ;
+: os ( linux darwin -- n ) on-mac? if swap drop else drop then ;   \ the value for this system: the second on macOS, else the first
 ( Library file names: the SDL2 bindings ask for them by these words, as on Windows )
 : lib-try ( file-a file-n prefix-a prefix-n -- z or 0 )   ( the name made at here, when that library opens )
   dup >r here swap cmove                 ( file-a file-n )
@@ -93,11 +93,11 @@ also internals host-mac? previous constant on-mac?
   2dup s" /opt/homebrew/lib/" lib-try ?dup if nip nip exit then
   2dup s" /usr/local/lib/" lib-try ?dup if nip nip exit then
   s>z ;
-: lib-name ( z-linux a-mac n-mac -- z ) on-mac? if mac-lib nip else 2drop then ;
-: sdl2-lib ( -- z ) z" libSDL2-2.0.so.0" s" libSDL2-2.0.0.dylib" lib-name ;
-: sdl2-ttf-lib ( -- z ) z" libSDL2_ttf-2.0.so.0" s" libSDL2_ttf-2.0.0.dylib" lib-name ;
-: sdl2-image-lib ( -- z ) z" libSDL2_image-2.0.so.0" s" libSDL2_image-2.0.0.dylib" lib-name ;
-: sdl2-mixer-lib ( -- z ) z" libSDL2_mixer-2.0.so.0" s" libSDL2_mixer-2.0.0.dylib" lib-name ;
+: lib-name ( z-linux a-mac n-mac -- z ) on-mac? if mac-lib nip else 2drop then ;   \ the file name of a shared library on this system
+: sdl2-lib ( -- z ) z" libSDL2-2.0.so.0" s" libSDL2-2.0.0.dylib" lib-name ;   \ the file name of libSDL2 on this system
+: sdl2-ttf-lib ( -- z ) z" libSDL2_ttf-2.0.so.0" s" libSDL2_ttf-2.0.0.dylib" lib-name ;   \ the file name of libSDL2_ttf on this system
+: sdl2-image-lib ( -- z ) z" libSDL2_image-2.0.so.0" s" libSDL2_image-2.0.0.dylib" lib-name ;   \ the file name of libSDL2_image on this system
+: sdl2-mixer-lib ( -- z ) z" libSDL2_mixer-2.0.so.0" s" libSDL2_mixer-2.0.0.dylib" lib-name ;   \ the file name of libSDL2_mixer on this system
 : .d_type ( a -- n ) 18 20 os + c@ ;
 : .d_name ( a -- z ) 19 21 os + ;
 

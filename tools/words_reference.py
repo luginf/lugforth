@@ -226,6 +226,9 @@ def source_info():
             m = re.match(r'^(-?\d+|\$[0-9a-fA-F]+)\s+constant\s+(\S+)', line)
             if m:
                 desc.setdefault(m.group(2).lower(), 'Constant, %s.' % m.group(1))
+            m = re.match(r'^(-?\d+|\$[0-9a-fA-F]+)\s+(-?\d+|\$[0-9a-fA-F]+)\s+os\s+constant\s+(\S+)', line)   # linux macOS os constant
+            if m:
+                desc.setdefault(m.group(3).lower(), 'Constant, %s (%s on macOS).' % (m.group(1), m.group(2)))
             m = re.match(r'^JSWORD:\s+(\S+)\s+\{([^}]*)\}', line)
             if m:
                 args = m.group(2).strip()
@@ -243,7 +246,7 @@ def source_info():
 
 desc_comments = {}
 
-LINEEDIT_VARS = set('cb cl cn cfirst cuniq cand da dl dn dpath ea el en ep fdir fl fmode fname ha hl hist hist-i hist-n hist-save la lf lowc lp lup pa pl pool pool-cnt pool-max pool-ptr pool-used sink sj sk upc wlen wsv'.split())
+LINEEDIT_VARS = set('cb cl cn cfirst cuniq cand da dl dn dpath ea el en ep fdir fl fmode fname ha hl hist hist-i hist-n hist-save la lf lowc lp lq lup pa pl pool pool-cnt pool-max pool-ptr pool-used sink sj sk upc wlen wsv'.split())
 PREFIX_NOTES = [
   ('le-', 'Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called.'),
   ('pg-', 'Internal helper of the pager (common/pager.fs), which stops the output of a typed line at each screenful. Not meant to be called.'),

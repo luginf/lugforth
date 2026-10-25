@@ -810,6 +810,10 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `dpos` | `( -- a )` | Variable: the position in `dbuf` of the digits being built. | P |
 | `dump-line` | `( a -- a )` |  | P |
 | `e'` | `( n -- )` |  | P |
+| `e-add` | `( buf n i -- buf n' )` | the argument i and a blank, after the n bytes already there | P |
+| `e-is-e?` | `( i -- f )` |  | P |
+| `e-line` | `( from -- a n next )` | the arguments from there up to the next -e, one line of Forth | P |
+| `e-run` | `( -- )` | lugforth -e words... [-e words...]: each -e starts a line, run in order | P |
 | `ea` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `eat-till-cr` |  |  | P |
 | `edit-accept` | `( -- )` | Deferred word: the line input used by the prompt. Set to `accept` by default, to the line editor when it is loaded. | P |
@@ -844,6 +848,7 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `hist-slot` | `( k -- a )` | Internal state or helper of the history of typed lines (common/lineedit.fs). Not meant to be used. | P |
 | `hist@` | `( k -- a n )` | Internal state or helper of the history of typed lines (common/lineedit.fs). Not meant to be used. | P |
 | `hl` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
+| `host-mac?` | `( -- f )` | Internal: true when the C program was built for macOS (read by `on-mac?`). | P |
 | `icr` |  |  | P |
 | `immediate?` | `( xt -- f )` |  | P |
 | `IMMEDIATE_MARK` |  | Constant, 1. | P |
@@ -868,9 +873,11 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `le-clear-screen` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `le-cmp` | `( p q -- -1\|0\|1 )` | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `le-collect` | `( -- )` | send each candidate to sink | P |
+| `le-cols` | `( from to -- n )` | the letters, so the columns, between two positions of the line | P |
 | `le-common` | `( a n -- c )` | length in common with cand | P |
 | `le-complete` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `le-complete1` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
+| `le-cont?` | `( p -- f )` | the byte at p goes on a letter of several bytes (UTF-8) | P |
 | `le-cr` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `le-del` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `le-down` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
@@ -905,12 +912,14 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `le-list` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `le-match?` | `( a n -- f )` | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `le-n.` | `( n -- )` | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
+| `le-next` | `( -- p )` | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `le-pathy?` | `( -- f )` | looks like a path: starts with . or ~, or has a / | P |
 | `le-pool` | `( a n -- )` | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
+| `le-prev` | `( -- p )` | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `le-prevword` | `( -- a n )` | the word before it | P |
 | `le-print` | `( a n -- )` | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `le-quoter?` | `( a n -- f )` | s" z" r\| r~ | P |
-| `le-redraw` | `( oldpos -- )` | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
+| `le-redraw` | `( oldcols -- )` | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `le-right` | `( n -- )` | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `le-set` | `( a n -- )` | replace the whole line | P |
 | `le-sort` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
@@ -941,6 +950,7 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `LONG-SIZE` |  |  | P |
 | `lowc` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `lp` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
+| `lq` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `ls-loop` | `( dh -- )` | Helper of `ls`: prints the entries of the open directory dh. | P |
 | `lup` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `mem=` | `( a a n -- f )` |  | P |
@@ -1082,36 +1092,41 @@ System calls and constants of Linux and macOS, reached with `sysfunc`. `also pos
 | `d0=ior` | `( n -- n ior )` |  | P |
 | `dlopen` | `( z n -- a )` |  | P |
 | `dup2` |  | C function `dup2`, 2 arguments. | P |
-| `EAGAIN` |  | Constant, 11. | P |
+| `EAGAIN` |  | Constant, 11 (35 on macOS). | P |
 | `EPIPE` |  | Constant, 32. | P |
 | `errno` | `( -- err )` | -- ESP32 only as of v7.0.7.2 | P |
 | `execvp` |  | C function `execvp`, 2 arguments. | P |
 | `F_SETFL` |  | Constant, 4. | P |
 | `fcntl` |  | C function `fcntl`, 3 arguments. | P |
-| `FNDELAY` |  | Constant, 2048. | P |
+| `FNDELAY` |  | Constant, 2048 (4 on macOS). | P |
 | `fork` |  | C function `fork`, 0 arguments. | P |
 | `fsync` |  | C function `fsync`, 1 argument. | P |
 | `ftruncate` |  | C function `ftruncate`, 2 arguments. | P |
 | `getcwd` |  | C function `getcwd`, 2 arguments. | P |
 | `isatty` |  | C function `isatty`, 1 argument. | P |
+| `lib-name` | `( z-linux a-mac n-mac -- z )` | the file name of a shared library on this system | P |
+| `lib-try` | `( file-a file-n prefix-a prefix-n -- z or 0 )` | the name made at here, when that library opens | P |
 | `lseek` |  | C function `lseek`, 3 arguments. | P |
+| `mac-lib` | `( a n -- z )` | a library of macOS: in the system, else in the Homebrew folders | P |
 | `malloc` | `( n -- a \| 0 )` | System malloc | P |
-| `MAP_ANONYMOUS` |  | Constant, $20. | P |
+| `MAP_ANONYMOUS` |  | Constant, $20 ($1000 on macOS). | P |
 | `MAP_FIXED` |  | Constant, $10. | P |
 | `MAP_PRIVATE` |  | Constant, $2. | P |
 | `mmap` |  | C function `mmap`, 6 arguments. | P |
 | `mprotect` |  | C function `mprotect`, 3 arguments. | P |
 | `munmap` |  | C function `munmap`, 2 arguments. | P |
-| `O_APPEND` |  | Constant, 2000. | P |
-| `O_CREAT` |  | Constant, 100. | P |
-| `O_EXCL` |  | Constant, 200. | P |
-| `O_NONBLOCK` |  | Constant, 4000. | P |
+| `O_APPEND` |  | Constant, $400 ($8 on macOS). | P |
+| `O_CREAT` |  | Constant, $40 ($200 on macOS). | P |
+| `O_EXCL` |  | Constant, $80 ($800 on macOS). | P |
+| `O_NONBLOCK` |  | Constant, $800 ($4 on macOS). | P |
 | `O_RDONLY` |  | Constant, 0. | P |
 | `O_RDWR` |  | Constant, 2. | P |
-| `O_TRUNC` |  | Constant, 1000. | P |
+| `O_TRUNC` |  | Constant, $200 ($400 on macOS). | P |
 | `O_WRONLY` |  | Constant, 1. | P |
+| `on-mac?` | `( -- f )` | True when Lugforth runs on macOS: the library names and the values of `os` follow it. | P |
 | `open` |  | C function `open`, 3 arguments. | P |
 | `opendir` |  | C function `opendir`, 1 argument. | P |
+| `os` | `( linux darwin -- n )` | the value for this system: the second on macOS, else the first | P |
 | `pipe` |  | C function `pipe`, 1 argument. | P |
 | `PROT_EXEC` |  | Constant, 4. | P |
 | `PROT_NONE` |  | Constant, 0. | P |
@@ -1123,13 +1138,17 @@ System calls and constants of Linux and macOS, reached with `sysfunc`. `also pos
 | `rename` |  | C function `rename`, 2 arguments. | P |
 | `RTLD_LAZY` |  | Constant, 1. | P |
 | `RTLD_NOW` |  | Constant, 2. | P |
+| `sdl2-image-lib` | `( -- z )` | the file name of libSDL2_image on this system | P |
+| `sdl2-lib` | `( -- z )` | the file name of libSDL2 on this system | P |
+| `sdl2-mixer-lib` | `( -- z )` | the file name of libSDL2_mixer on this system | P |
+| `sdl2-ttf-lib` | `( -- z )` | the file name of libSDL2_ttf on this system | P |
 | `SEEK_CUR` |  | Constant, 1. | P |
 | `SEEK_END` |  | Constant, 2. | P |
 | `SEEK_SET` |  | Constant, 0. | P |
 | `shared-library` | `( z "name" -- )` |  | P |
 | `SIG_DFL` |  | Constant, 0. | P |
 | `SIG_IGN` |  | Constant, 1. | P |
-| `SIGBUS` |  | Constant, 7. | P |
+| `SIGBUS` |  | Constant, 7 (10 on macOS). | P |
 | `SIGHUP` |  | Constant, 1. | P |
 | `SIGINT` |  | Constant, 2. | P |
 | `SIGKILL` |  | Constant, 9. | P |
@@ -1159,7 +1178,7 @@ System calls and constants of Linux and macOS, reached with `sysfunc`. `also pos
 | `!field` | `( n "name" -- )` |  | P |
 | `@field` | `( "name" -- n )` |  | P |
 | `align-by` | `( a n -- a )` |  | P |
-| `field` | `( n "name" )` |  | P |
+| `field` | `( n "name" )` | Defines a field of n bytes in the structure being built (see `struct`): `name` adds the offset of the field to an address. | P |
 | `field-op` | `( n "name" -- )` |  | P |
 | `i16` |  |  | P |
 | `i32` |  |  | P |
@@ -1507,7 +1526,7 @@ System calls and constants of Linux and macOS, reached with `sysfunc`. `also pos
 | `_ECHO` |  | Constant, 8. | P |
 | `delay-mode` |  |  | P |
 | `form-hook` | `( -- xt\|0 )` | Value: 0, or the xt of a word giving the size ( h w ) of a console that is not the tty (the console window sets it), used by `form`. | P |
-| `ICANON` |  | Constant, 2. | P |
+| `ICANON` |  | Constant, 2 ($100 on macOS). | P |
 | `ioctl` |  | C function `ioctl`, 3 arguments. | P |
 | `new-termios` |  |  | P |
 | `nodelay-mode` |  |  | P |
@@ -1525,9 +1544,9 @@ System calls and constants of Linux and macOS, reached with `sysfunc`. `also pos
 | `termios-key?` | `( -- f )` |  | P |
 | `termios-terminate` | `( n -- )` |  | P |
 | `termios@` | `( a -- )` |  | P |
-| `TIOCGWINSZ` |  | Constant, $5413. | P |
-| `VMIN` |  | Constant, 6. | P |
-| `VTIME` |  | Constant, 5. | P |
+| `TIOCGWINSZ` |  | Constant, $5413 ($40087468 on macOS). | P |
+| `VMIN` |  | Constant, 6 (16 on macOS). | P |
+| `VTIME` |  | Constant, 5 (17 on macOS). | P |
 | `winsize` |  |  | P |
 
 ## The `visual` vocabulary (Linux)

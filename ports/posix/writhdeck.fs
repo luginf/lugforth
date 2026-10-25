@@ -53,7 +53,7 @@ defer stats-hook ( -- )   defer stats-extra ( -- )   ( set once the browser word
   wrap-on if cols ww - 2/ else 0 then to pad ;
 
 ( ---- Settings: writhdeck.ini, in the format of WrithDeck, the Tcl program ---- )
--1 value hl-cfg   0 value hem-cfg   0 value auto-cfg   1 value auto-min   -1 value bar-on
+0 value open-last   -1 value first-run   -1 value hl-cfg   0 value hem-cfg   0 value auto-cfg   1 value auto-min   -1 value bar-on
 0 value msg-shown   0 value help-seen   0 value fresh
 create zl 128 allot   create zc 128 allot   create zr 128 allot   create hbar 128 allot
 : zset ( a n z -- )   >r 120 min dup r@ ! r> cell+ swap cmove ;
@@ -70,6 +70,7 @@ wd-defaults
   ka kn s" autosave_interval" compare 0= if va vn to-number 1 max 60 min to auto-min exit then
   ka kn s" bar" compare 0= if va vn yes? to bar-on exit then
   ka kn s" highlight" compare 0= if va vn yes? to hl-cfg exit then
+  ka kn s" open_last" compare 0= if va vn yes? to open-last exit then
   ka kn s" line_numbers" compare 0= if va vn yes? to nums-on exit then
   ka kn s" utc_offset" compare 0= if va vn to-number -12 max 14 min to tz-hours exit then
   ka kn s" help_bar" compare 0= if va vn hbar zset exit then
@@ -97,6 +98,8 @@ wd-defaults
   s" line_numbers" key= nums-on wyes eol+
   s" % highlight: colors for Markdown and txt2tags marks; no is faster on a very big text" wl
   s" highlight" key= hl-cfg wyes eol+
+  s" % open_last: with no file given, open the file edited last time instead of the file browser" wl
+  s" open_last" key= open-last wyes eol+
   s" % utc_offset: hours added to UTC to find the day of the daily statistics" wl
   s" utc_offset" key= tz-hours wn eol+
   s" % bar: show the status bar (a message still shows in it)" wl
@@ -321,7 +324,7 @@ wd-defaults
     1 +to dp
   repeat
   normal ;
-: wrap-row ( r -- )   \ text first, then the rest of the row cleared: a row is never blank for a moment
+: wrap-row0 ( r -- )   \ text first, then the rest of the row cleared: a row is never blank for a moment
   to wrow
   0 wrow at-xy
   rp len > if clear-to-eol exit then
@@ -333,6 +336,28 @@ wd-defaults
   rp de draw-seg  clear-to-eol
   nums-on if rnext 0> if rnext 1- b@ 10 = if 1 +to lno then then then
   rnext to rp ;
+( ---- Only the rows that changed are sent: a row is drawn into a buffer, and compared with the last one sent ---- )
+16000 constant rc-max   1024 constant rc-slot   200 constant rc-rows
+0 value rc-buf   0 value rc-cache   0 value rc-n   0 value rc-old   0 value rc-s   0 value rc-size
+: rc-type ( a n -- )   \ the output of a row goes to rc-buf
+  dup rc-n + rc-max > if 2drop exit then
+  dup >r  rc-buf rc-n + swap cmove  r> +to rc-n ;
+: rc-reset ( -- )   \ the screen is not what the cache says (an overlay, a new size)
+  rc-cache if rc-cache rc-rows rc-slot 8 + * erase then ;
+: rc-init ( -- )
+  rc-buf 0= if rc-max bytes to rc-buf then
+  rc-cache 0= if rc-rows rc-slot 8 + * bytes to rc-cache then
+  rc-reset ;
+: rc-send ( r -- )   \ the row held in rc-buf: sent, unless the terminal shows it already
+  dup rc-rows >= rc-n rc-slot > or if drop rc-buf rc-n type exit then
+  rc-slot 8 + * rc-cache + to rc-s
+  rc-s @ rc-n = if rc-s 8 + rc-n rc-buf rc-n compare 0= if exit then then
+  rc-buf rc-n type   rc-n rc-s !   rc-buf rc-s 8 + rc-n cmove ;
+: wrap-row ( r -- )
+  ['] type >body @ to rc-old   0 to rc-n   ['] rc-type is type
+  dup ['] wrap-row0 catch
+  rc-old is type  throw
+  rc-send ;
 : wrap-scroll ( -- )
   layout-update
   top vstart to top
@@ -340,6 +365,9 @@ wd-defaults
   cv top < if cv to top then
   focus-on if
     cv to top  text-rows 2/ 0 ?do top vprev to top loop
+  then
+  cv top - text-rows ww * 4 * > if   \ far below: count the rows up from the cursor, not down from the old top
+    cv to top  text-rows 1- 0 ?do top vprev to top loop
   then
   0 { n }  top { s }
   begin s cv < while  s vnext to s  1 +to n  repeat
@@ -350,6 +378,8 @@ wd-defaults
   n to crow   pad cur vcol + to ccol
   0 to left ;
 : wrap-draw ( -- )
+  rc-cache 0= if rc-init then
+  cols 1000 * rows + rc-size <> if cols 1000 * rows + to rc-size  rc-reset then
   hl-stale if hl-scan then
   has-sel? if sel-lo sel-hi else 0 0 then to s-hi to s-lo
   cur bol to fs   cur eol to fe
@@ -1015,7 +1045,7 @@ create dbuf 12 allot
   over 24 = or over 26 = or over 25 = or over 1 = or nip ;
 : wd-pre ( code -- code' )
   dup 17 = over 19 = or over 15 = or if stats-hook then
-  dup 27 = if drop wd-menu 0 exit then
+  dup 27 = if drop rc-reset wd-menu rc-reset 0 exit then
   dup 12 = if drop nums-flip 0 exit then
   dup 15 = if drop do-save modified 0= if -1 to want-browser -1 to done then 0 exit then
   hem-on if dup hem-block? if drop s" Hemingway: only forward" say 0 exit then then ;
@@ -1025,7 +1055,7 @@ create dbuf 12 allot
 
 ( ---- Running ---- )
 : wd-after-load ( -- )
-  -1 to cl-len  st-start  cp-start
+  -1 to cl-len  rc-init  st-start  cp-start
   hl-cfg to hl-on  layout-update
   repl 0= if 80 bytes to repl then
   toc-pos 0= if 500 cells bytes to toc-pos then
@@ -1037,10 +1067,20 @@ create dbuf 12 allot
   ['] wrap-home is home-key   ['] wrap-end is end-key
   ['] wd-pre is pre-key   ['] wd-wait is wait-key   ['] wd-after-load is after-load
   ['] wd-ini-kv is ini-kv   ['] wd-ini-body is ini-body   ['] wd-defname is ini-defname   ['] wd-ini-load is ini-load ;
+: last-file ( -- a n )   \ the most recent file when it still exists, else 0 0
+  lst-load  rec-cnt @ 0= if 0 0 exit then
+  rec-tab z>s 2dup r/o open-file if drop 2drop 0 0 exit then
+  close-file drop ;
+: wd-start ( -- f )   \ no file was given: the last one if the ini says so (the first time only), else the browser
+  first-run if ed-init wd-ini-load ed-free then   \ open_last is in the ini, which ed-main reads later
+  first-run open-last and  0 to first-run  if
+    last-file dup if 255 min dup to ed-arg-n ed-arg swap cmove -1 exit then 2drop
+  then
+  browse ;
 : wd-main ( a n -- )
-  wd-install
+  wd-install   -1 to first-run
   begin
-    dup 0= if 2drop browse 0= if ed-plain exit then ed-arg ed-arg-n then
+    dup 0= if 2drop wd-start 0= if ed-plain exit then ed-arg ed-arg-n then
     0 to want-browser
     ['] ed-main catch to werr
     ['] cp-flush catch drop

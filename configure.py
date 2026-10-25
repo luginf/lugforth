@@ -342,6 +342,21 @@ rule compile_static
   deps = gcc
   command = $MUSL_CC -O2 -w -DLUGFORTH_MINIMAL -DLUGFORTH_STATIC -I $src -I $dst -static -no-pie -fno-stack-protector -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,--build-id=none -s $in -o $out -lm -MD -MF $depfile
 
+rule static_syms
+  description = STATIC_SYMS $out
+  command = LUG_ROOT=$src/ python3 $src/tools/static_syms.py $out $flags
+
+rule musl_sdl
+  description = MUSL_SDL (SDL2 and X11 static, a few minutes the first time)
+  command = sh $src/tools/build_musl_sdl.sh && touch $out
+  pool = console
+
+rule compile_static_sdl
+  description = MUSL_CC (SDL2) $in
+  depfile = $out.d
+  deps = gcc
+  command = $MUSL_CC -O2 -w -DLUGFORTH_MINIMAL -DLUGFORTH_STATIC -DLUGFORTH_STATIC_SDL -I $src -I $dst -static -no-pie -fno-stack-protector -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,--build-id=none -s $in -o $out -L$dst/musl-deps/stage/usr/lib/x86_64-linux-gnu -L$dst/musl-deps/stage/usr/lib -lSDL2_mixer -lSDL2_ttf -lSDL2_image -lfreetype -lSDL2 -lasound -lXext -lX11 -lxcb -lXau -lm -pthread -MD -MF $depfile
+
 rule cc_mingw
   description = MINGW_CC $in
   depfile = $out.d
@@ -487,6 +502,21 @@ def ConvertImage(target, source, implicit=[]):
 
 def CompileStatic(target, source, implicit=[]):
   return Simple('compile_static', target, source, implicit)
+
+
+def StaticSyms(target, flags='', implicit=[]):
+  global output
+  Simple('static_syms', target, '', implicit)
+  output += f'  flags={flags}\n'
+  return target
+
+
+def MuslSdl(target):
+  return Simple('musl_sdl', target, '')
+
+
+def CompileStaticSdl(target, source, implicit=[]):
+  return Simple('compile_static_sdl', target, source, implicit)
 
 
 def CompileMingw(target, source, implicit=[]):

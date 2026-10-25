@@ -49,6 +49,16 @@ create tbuf 200 allot
   le-kill-eol   s" ax" line=
   le-kill-bol   s" " line=   ep @ 0 =assert ;
 
+: test-edit-utf8
+  fresh
+  s" aéb" put   ep @ 4 =assert   0 4 le-cols 3 =assert   1 3 le-cols 1 =assert
+  le-back   ep @ 3 =assert   le-back   ep @ 1 =assert   le-back   ep @ 0 =assert
+  le-forward   le-forward   ep @ 3 =assert
+  le-bs   s" ab" line=   ep @ 1 =assert
+  s" €" put   s" a€b" line=   ep @ 4 =assert
+  le-home   le-forward   le-del   s" ab" line=   ep @ 1 =assert
+  s" é" put   le-end   le-kill-bol   s" " line=   ep @ 0 =assert ;
+
 : test-edit-limit
   fresh   3 en !
   s" abcdef" put   s" abc" line= ;

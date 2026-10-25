@@ -31,6 +31,8 @@ and countdown, outline (Esc o), replace all, autosave, txt2tags/Markdown highlig
 (`writhdeck` alone or Ctrl+O: Enter, n new, / filter, r rename, d delete, b backup to `backups/`, f favorite, v cycles folder / favorites / recent files; both lists are kept in `writhdeck.rec` beside the ini, lines `F path` and `R path`, 20 favorites and 10 recent files, the files chosen in the browser are noted as recent; `*` marks a favorite in the folder view).
 Speed on a big text (670 KB): Markdown colors are computed for the lines on the screen only (`md-window`; a mark never leaves its line; `wd-scroll` marks the colors stale when `top` or the number of rows changes), not for the whole text at each key (that was 0.56 s); the word count of the status bar is recounted at most every 20 times its own cost (`word-count`, the exact `word-count!` serves the statistics). Ini key `highlight` (yes/no) turns the colors off.
 
+Only changed rows are sent (wrapped view): `wrap-row` draws a row into a buffer by redirecting `type` (`rc-type`) and sends it only if it differs from the last row sent to that line (`rc-cache`, `rc-send`); one key costs about 170 bytes instead of 1400. The cache is emptied (`rc-reset`) before and after the Esc menu (every overlay is reached from it), when the size changes and at each load. Plain (not wrapped) view still redraws everything. A jump far below the top counts the rows up from the cursor (`wrap-scroll`), not down from the old top. Ini key `open_last` (yes/no): with no file given, the first start opens the most recent file of `writhdeck.rec` if it still exists (the Tcl WrithDeck opens its browser).
+
 No flicker: `tick` (once a second) redraws only when the timer runs, a message was set, the word count is stale or the size changed (idle = 0 bytes sent to the terminal; it used to redraw the whole screen each second), and `wrap-row` writes the text first and clears the rest of the row after (it cleared the row before writing).
 
 Line numbers (Ctrl+L, ini key `line_numbers`, wrapped view only): shown on the first row of each paragraph, in a 6-column margin; the count of the first line shown is kept from the last draw (`line-at`, `cl-pos`/`cl-line`/`cl-len`), so a key costs a few lines, not a scan of the text (the cache is dropped when the text changes before the cursor, on load and after replace all).
@@ -137,11 +139,18 @@ Traps met: a word named `scan`, `top`, `step`, `frame` or `key-down` replaces th
 Settings (2026-10-24): icons are dragged and their places, the background color (8 swatches) and the size of the desktop (4 sizes, the screen is opened again) are saved as Forth lines in `$HOME/.config/lugforth/desktop.ini` (folders made when missing, room for other settings later) (`dk-bg!`, `dk-size!`, `icon@`, loaded with `included`). One line per icon: `kind s" label" s" command" x y icon@`; kinds 0 file manager, 1 command in a terminal window (`ed`, `writhdeck`, `repl`), 2 Forth program (path from the project folder, absolute if it starts with `/`), 3 settings, 4 SDL Forth console (the desktop closes, the console opens as with `--gui`, `desk` brings the desktop back); the file may be edited by hand. The project folder is found by looking for `examples/utils/desktop.fs` in `./`, `../`, `../../`, `../../../`, so `desk` starts from examples/utils as from the root. Tested under Xvfb (drag, swatch, size, restart from the root, Snake).
 Next steps: rename, copy, new folder in the file manager (needs a text field), mouse selection in terminal windows.
 
-## Accents in the console window (`lugforth --gui`)
+## Unicode in the console window (`lugforth --gui`)
 
-The grid holds one byte a cell. `con-putc` decodes the UTF-8 that programs `type` (`u-byte`): Latin-1 (U+00A0 to U+00FF) is
-stored as its own code (160 to 255), and 20 other signs (euro, oe, quotes, dashes, ellipsis, arrows... `extra-cp`) as 128 to 159; any
-other letter shows `?`. Glyph index = `cell-glyph` (0 to 94 ASCII, 95 to 222 the others); the TrueType atlas (`sdl2_console_ttf.fs`)
-renders 223 glyphs; the bitmap font has no accents and draws the plain letter (`base-map`). A selection is copied as UTF-8
-(`sel-cell`). Typed letters already arrived as UTF-8 bytes (SDL text input). Tested in `sdl2_console_tests.fs` (headless) and by
-screenshot under Xvfb with DejaVu Sans Mono.
+A grid cell holds a Unicode code point (4 bytes: `grid` has a stride of 4, `gfill` blanks cells, read with `sl@`, written with `l!`).
+`con-putc` decodes the UTF-8 that programs `type` (`u-byte`; a bad sequence shows `?`). The TrueType font (`sdl2_console_ttf.fs`)
+makes the glyphs 33 to 126 at once and any other letter when it is first shown (`ttf-other`: a table of 1024 textures keyed by code
+point mod 1021, a clash replaces); the color of the text is given to a glyph when it is drawn (`ttf-tint` only stores it). A letter the
+font lacks shows the font's empty box (DejaVu Sans Mono has no CJK or emoji); wide letters still take one cell. The bitmap font has
+only ASCII and draws the plain letter for Latin-1 and 20 common signs (`bm-base`, `base-map`, `extra-cp`), else `?`. A selection is
+copied as UTF-8 (`sel-cell`). Typed letters arrive as UTF-8 bytes (SDL text input). Tested in `sdl2_console_tests.fs` (headless) and by
+screenshot under Xvfb (Latin, Greek, Cyrillic, symbols; with the bitmap font through `gui-load sdl2 console`).
+
+Line editor at the prompt (`common/lineedit.fs`): moves, backspace and delete work on a letter, not a byte (`le-prev`, `le-next`),
+and the cursor sequences count columns, that is letters (`le-cols`); this was also wrong on a real terminal. Tested in `lineedit_tests.fs`.
+
+The console cursor blinks from `blink-tick`, called by `con-key` and by `con-key?`: a program that polls with `key?` (writhdeck) had a frozen phase, often the invisible one, hence no cursor.

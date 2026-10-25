@@ -42,70 +42,31 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 
-#define SYM(x) {#x, (void *) x},
+// The table is generated from the .fs sources by tools/static_syms.py (out/gen/static_syms.h).
+#ifdef LUGFORTH_STATIC_SDL
+#include "gen/static_syms_sdl.h"
+#else
+#include "gen/static_syms.h"
+#endif
+#ifdef LUGFORTH_STATIC_SDL
+// SDL2 and the X11 libraries are linked in (ninja posix-static-sdl). The Forth still "opens" libSDL2 by name:
+// give it a handle that means "this executable". SDL2_image, SDL2_ttf and SDL2_mixer are linked in too. The other libraries (pthread...)
+// are not linked in: dlopen fails (0) and the Forth falls back (bitmap font, no sound).
+static void *lug_static_dlopen(const char *name, int flags) {
+  static char self;
+  return name && !strncmp(name, "libSDL2", 7) ? (void *) &self : 0;
+}
+#endif
 static const struct { const char *name; void *addr; } lug_syms[] = {
-  SYM(accept)
-  SYM(bind)
-  SYM(chdir)
-  SYM(clock_gettime)
-  SYM(close)
-  SYM(closedir)
-  SYM(connect)
-  SYM(creat)
-  SYM(dlopen)
-  SYM(dup2)
-  SYM(execvp)
-  SYM(exit)
-  SYM(fcntl)
-  SYM(fork)
-  SYM(free)
-  SYM(fsync)
-  SYM(ftruncate)
-  SYM(getcwd)
-  SYM(getenv)
-  SYM(gethostbyname)
-  SYM(ioctl)
-  SYM(isatty)
-  SYM(listen)
-  SYM(lseek)
-  SYM(malloc)
-  SYM(mkdir)
-  SYM(mkstemps)
-  SYM(mmap)
-  SYM(mprotect)
-  SYM(munmap)
-  SYM(open)
-  SYM(opendir)
-  SYM(pipe)
-  SYM(poll)
-  SYM(read)
-  SYM(readdir)
-  SYM(realloc)
-  SYM(recv)
-  SYM(recvfrom)
-  SYM(recvmsg)
-  SYM(remove)
-  SYM(rename)
-  SYM(rmdir)
-  SYM(send)
-  SYM(sendmsg)
-  SYM(sendto)
-  SYM(setsockopt)
-  SYM(signal)
-  SYM(socket)
-  SYM(tcgetattr)
-  SYM(tcsetattr)
-  SYM(time)
-  SYM(unlink)
-  SYM(usleep)
-  SYM(wait)
-  SYM(waitpid)
-  SYM(write)
+#ifdef LUGFORTH_STATIC_SDL
+  {"dlopen", (void *) lug_static_dlopen},
+#endif
+  LUG_SYMS
 };
 static void *lug_static_dlsym(void *h, const char *n) {
-  for (unsigned i = 0; i < sizeof(lug_syms) / sizeof(lug_syms[0]); ++i)
+  for (unsigned i = 0; lug_syms[i].name; ++i)
     if (!strcmp(n, lug_syms[i].name)) return lug_syms[i].addr;
-  return dlsym(h, n);
+  return h && h != RTLD_DEFAULT ? 0 : dlsym(h, n);
 }
 #define LUG_DLSYM lug_static_dlsym
 #endif
@@ -186,7 +147,20 @@ static void restore_and_die(int sig) {
   raise(sig);
 }
 
+#ifdef LUGFORTH_STATIC_SDL
+// A static alsa-lib cannot load plugins: the "default" device of a Pulse or PipeWire desktop is such a plugin
+// (libasound_module_pcm_pulse.so) and fails. plughw:0,0 (card 0) is the default here, tested on a PipeWire desktop; AUDIODEV (the variable SDL reads
+// for ALSA) chooses another device.
+// The ALSA error lines (one for each plugin tried) are not printed: SDL says "Couldn't open audio device".
+extern void snd_lib_error_set_handler(void (*handler)(const char *, int, const char *, int, const char *, ...));
+static void lug_alsa_quiet(const char *f, int l, const char *fn, int e, const char *fmt, ...) {}
+#endif
+
 int main(int argc, char *argv[]) {
+#ifdef LUGFORTH_STATIC_SDL
+  setenv("AUDIODEV", "plughw:0,0", 0);
+  snd_lib_error_set_handler(lug_alsa_quiet);
+#endif
   // lugforth --gui & : a background job is stopped by SIGTTOU/SIGTTIN as soon as it touches the
   // terminal (tcsetattr, a read), and the window never opens. The window does not need the terminal.
   if (argc >= 2 && strcmp(argv[1], "--gui") == 0) {

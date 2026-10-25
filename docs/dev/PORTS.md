@@ -158,8 +158,42 @@ with `-DLUGFORTH_STATIC`: the terminal Forth, `ed`, `writhdeck`, files, sockets,
 - A static executable has no dynamic symbol table, so `dlsym(RTLD_DEFAULT, "open")` finds nothing and the first `sysfunc` made the
   start loop. `main.c` holds a table (`lug_syms`) of the C functions that the `.fs` sources look up by name, searched before `dlsym`.
   **A new `z" name" n sysfunc` needs its name in that table** (the tests of `posix-static` then fail at load, error -38).
-- No SDL2, sound, window (`--gui`) or `graphic`: they `dlopen` shared libraries, which a static musl executable cannot do.
-  The distribution's `libSDL2.a` is built for glibc and pulls about twenty libraries (X11, ALSA, Pulse, Wayland), it cannot be
-  linked with musl. SDL inside the static binary would mean building SDL2 and the X11 libraries against musl: not done.
+- `lugforth-static` has no SDL2, sound or window: those `dlopen` shared libraries, which a static musl executable cannot do.
+  For them see `lugforth-static-sdl` below.
+- The table of names is generated, not written by hand: `tools/static_syms.py` scans the `.fs` of `common/` and `ports/posix/`
+  for `z" name" n sysfunc|sdl|sofunc` and `... dlsym` and writes `out/gen/static_syms*.h` (extern declarations by asm label,
+  so no header clash). A new binding needs nothing more than being written in a `.fs`.
 - Tested: `common/all_tests.fs`, the editor and writhdeck tests, `tools/editors_pty_test.py out/posix/lugforth-static`.
   Not in the release workflow yet (the Debian 10 container has no `x86_64-linux-musl-gcc`).
+
+### lugforth-static-sdl (SDL2 inside the static executable)
+
+`ninja posix-static-sdl` -> `out/posix/lugforth-static-sdl` (about 5.2 MB): the same, with SDL2 2.30.0, SDL2_image 2.8.2, SDL2_ttf 2.22.0,
+SDL2_mixer 2.8.0, freetype 2.13.2, alsa-lib 1.2.11, libX11, libXext, libxcb and libXau linked in. `--gui` (SDL console, TrueType font),
+the `sdl2` games and graphics examples work on any Linux with an X server, whatever its libc.
+
+- `tools/build_musl_sdl.sh` (run by ninja, idempotent) downloads the sources (sha256 checked) and builds them against musl into
+  `out/musl-deps/` (gitignored): needs `curl`, `cmake`, `make`, `pkg-config`, the network the first time, a few minutes. X11, freetype and
+  alsa-lib are built with autotools (`--enable-static`), the SDL libraries with cmake.
+- SDL is built for X11 only (linked, no `dlopen`), software renderer (`sdl2.fs` already falls back from ACCELERATED), dummy and
+  offscreen video drivers (so `SDL_VIDEODRIVER=dummy` and the smoke tests work). SDL2_image decodes with stb_image (PNG, JPEG, BMP, GIF...;
+  no SVG, TIFF, WEBP). SDL2_mixer: WAV, MP3, FLAC, OGG (stb_vorbis) and MIDI with its built-in timidity (needs instrument patches on the
+  host, else silent). freetype has no harfbuzz, png, bzip2, brotli or zlib. **Left out:** joystick, Wayland, OpenGL, Vulkan, X11 extensions
+  (xcursor, xrandr, xinput...), PulseAudio, PipeWire.
+- **Sound (alsa-lib):** cost is about 1 MB. alsa-lib is LGPL 2.1 (see NOTICE: whoever distributes the binary must allow relinking, the
+  object files and the build script are enough). A static alsa-lib cannot load plugins (`--with-libdl=no`). On a PipeWire/Pulse desktop (Ubuntu
+  24.04) the `default` device is the pipewire plugin, a shared library: it fails ("Cannot open shared library libasound_module_pcm_pipewire.so")
+  and SDL finds no audio device. `main.c` therefore sets `AUDIODEV=plughw:0,0` (card 0, with format conversion) unless the variable is
+  already set; **tested by the maintainer on a PipeWire desktop: sound works**. Another card: `AUDIODEV=plughw:1,0 ...`. The ALSA lines about the
+  missing plugin are silenced; SDL's own "Couldn't open audio device" stays. If PipeWire ever holds the card ("busy"), the way out would be SDL's
+  `disk` driver piped to `pw-play`. Not heard by me (the test PC session has no access to the sound card).
+- cmake's own check of Xlib cannot link a static libX11, so two results are given by hand (`HAVE_XGENERICEVENT`,
+  `SDL_VIDEO_DRIVER_X11_HAS_XKBKEYCODETOKEYSYM`); without them the build stops in `SDL_x11events.c` (conflicting `XGenericEventCookie`).
+  The `sdl2.pc` of a static build lists the libs as `-l/path/libX11.a`, which does not link: the link line is written in `configure.py`.
+- `main.c` (`LUGFORTH_STATIC_SDL`): `dlopen("libSDL2...")` (SDL2, image, ttf, mixer) returns a handle meaning "this executable", any other
+  library returns 0; `dlsym` with such a handle looks in the table only. `tools/static_syms.py` writes the `SDL_`, `IMG_`, `TTF_`, `Mix_` names
+  of the `sdl`, `sdlimg`, `sdlttf`, `sdlmix` words into the table (only for this build).
+- Tested here: `all_tests`, `sdl2_console_tests`, `editors_pty_test.py`, `--gui` under Xvfb (accent typed with xdotool, drawn with the
+  TrueType font), the raycaster, `sdl2_roguelike.fs` (image sheet loaded, mixer opened) under Xvfb, a C program linked the same way. Not tested:
+  a machine without X libraries (it should not need any), Wayland-only desktops (XWayland needed), audible sound, other keyboards than xdotool's.
+- Not in the release workflow (the Debian 10 container has no musl-gcc): decision of the maintainer.

@@ -40,11 +40,18 @@ defer le-type   ' type is le-type   ( the tests send the output elsewhere )
 : le-right ( n -- )   dup 0= if drop exit then le-esc[ le-n. [char] C le-emit ;
 : le-clear-eol   le-esc[ [char] K le-emit ;
 : le-line ( -- a n )   ea @ el @ ;
+: le-cont? ( p -- f )   ea @ + c@ $c0 and $80 = ;   \ the byte at p goes on a letter of several bytes (UTF-8)
+: le-cols ( from to -- n )   \ the letters, so the columns, between two positions of the line
+  2dup < 0= if 2drop 0 exit then
+  0 -rot swap do i le-cont? 0= if 1+ then loop ;
+: le-prev ( -- p )   ep @ 1- begin dup 0> if dup le-cont? else 0 then while 1- repeat ;
+: le-next ( -- p )   ep @ 1+ begin dup el @ < if dup le-cont? else 0 then while 1+ repeat ;
+variable lq
 : le-uc ( c -- C )   dup 96 > over 123 < and if 32 - then ;
 
-( Redraw the line when the cursor was at column oldpos and is now at ep )
-: le-redraw ( oldpos -- )
-  le-left   le-line le-type   le-clear-eol   el @ ep @ - le-left ;
+( Redraw the line when the cursor was at column oldcols and is now at ep )
+: le-redraw ( oldcols -- )
+  le-left   le-line le-type   le-clear-eol   ep @ el @ le-cols le-left ;
 
 : le-insert ( c -- )
   el @ en @ >= if drop exit then
@@ -53,7 +60,7 @@ defer le-type   ' type is le-type   ( the tests send the output elsewhere )
   then
   ea @ ep @ + dup 1+ el @ ep @ - cmove>
   ea @ ep @ + c!   1 el +!
-  ep @ 1 ep +! le-redraw ;
+  0 ep @ le-cols  1 ep +!  le-redraw ;
 variable fmode   ( completing file names: case matters and is kept )
 : le-fold ( c -- c' )   fmode @ 0= if le-uc then ;
 ( Completed text follows the case of what was typed: capitals only if all the typed letters are )
@@ -72,30 +79,36 @@ variable lowc   variable upc   variable lup
 
 : le-bs
   ep @ 0= if exit then
-  ea @ ep @ + dup 1- el @ ep @ - cmove
-  ep @ -1 ep +!   -1 el +!   le-redraw ;
+  le-prev lq !
+  0 ep @ le-cols
+  ea @ ep @ + ea @ lq @ + el @ ep @ - cmove
+  ep @ lq @ - negate el +!   lq @ ep !   le-redraw ;
 : le-del
   ep @ el @ = if exit then
-  ea @ ep @ + 1+ dup 1- el @ ep @ - 1- cmove
-  -1 el +!   ep @ le-redraw ;
+  le-next lq !
+  0 ep @ le-cols
+  ea @ lq @ + ea @ ep @ + el @ lq @ - cmove
+  ep @ lq @ - el +!   le-redraw ;
 
 : le-goto ( p -- )
-  dup ep @ < if ep @ over - le-left else dup ep @ - le-right then ep ! ;
-: le-back     ep @ 0= if exit then ep @ 1- le-goto ;
-: le-forward  ep @ el @ < if ep @ 1+ le-goto then ;
+  dup ep @ < if dup ep @ le-cols le-left else ep @ over le-cols le-right then ep ! ;
+: le-back     ep @ 0= if exit then le-prev le-goto ;
+: le-forward  ep @ el @ < if le-next le-goto then ;
 : le-home   0 le-goto ;
 : le-end    el @ le-goto ;
 : le-kill-eol   ep @ el !   le-clear-eol ;
 : le-kill-bol
+  0 ep @ le-cols
   ea @ ep @ + ea @ el @ ep @ - cmove
-  ep @ dup negate el +!   0 ep !   le-redraw ;
+  ep @ negate el +!   0 ep !   le-redraw ;
 : le-clear-screen
   le-esc[ s" 2J" le-type   le-esc[ s" H" le-type
-  ?arrow. le-line le-type   el @ ep @ - le-left ;
+  ?arrow. le-line le-type   ep @ el @ le-cols le-left ;
 
 : le-set ( a n -- )   \ replace the whole line
+  0 ep @ le-cols lq !
   en @ min >r   ea @ r@ cmove
-  ep @   r@ el !   r> ep !   le-redraw ;
+  r@ el !   r> ep !   lq @ le-redraw ;
 
 ( History: the last 64 lines, as count byte + text )
 64 constant hist-max
@@ -316,7 +329,7 @@ variable sk   variable sj
   then
   cuniq @ if fmode @ 0= if le-space then exit then
   le-cr 0 to line-pos   le-list   le-cr
-  ?arrow. le-line le-type   el @ ep @ - le-left ;
+  ?arrow. le-line le-type   ep @ el @ le-cols le-left ;
 : le-complete   le-complete1  0 fmode ! ;
 
 

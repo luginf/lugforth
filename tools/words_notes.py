@@ -19,6 +19,9 @@ The names of standard (ANS Forth) words are in ANS, so they need no note.
 """
 
 NOTES = {
+  'on-mac?': ('( -- f )', 'True when Lugforth runs on macOS: the library names and the values of `os` follow it.'),
+  'host-mac?': ('( -- f )', 'Internal: true when the C program was built for macOS (read by `on-mac?`).'),
+  'field': ('( n "name" )', 'Defines a field of n bytes in the structure being built (see `struct`): `name` adds the offset of the field to an address.'),
   'plot': ('( x y -- )', 'Alias of `dot` (sdl2 short words): draws one pixel. See docs/SDL2-words.md.'),
   'form-hook': ('( -- xt|0 )', 'Value: 0, or the xt of a word giving the size ( h w ) of a console that is not the tty (the console window sets it), used by `form`.'),
   'ed-arg-n': ('( -- n )', 'Length of the file name kept in `ed-arg` (the name typed after `ed` or `writhdeck`).'),

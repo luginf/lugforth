@@ -98,3 +98,33 @@ Reda, under the MIT license below; the new code is under the Apache License 2.0 
 
 ports/baremetal/font8x8.h is font8x8 by Daniel Hepper (https://github.com/dhepper/font8x8), after
 Marcel Sondaar and the IBM VGA fonts, in the public domain.
+
+The executable built by `ninja posix-static-sdl` (lugforth-static-sdl) links in, as static libraries built by
+tools/build_musl_sdl.sh from the original sources, SDL2 2.30.0 (https://libsdl.org) and the X11 libraries
+libX11, libXext, libxcb and libXau (X.Org / freedesktop.org), SDL2_image, SDL2_ttf and SDL2_mixer (zlib license, with their own
+stb_image, stb_vorbis, minimp3, dr_flac and timidity, public domain, MIT or LGPL/Artistic as in their sources), freetype and alsa-lib.
+Nothing of them is in this repository.
+
+SDL2: Copyright (C) 1997-2024 Sam Lantinga <slouken@libsdl.org>, zlib license:
+
+  This software is provided 'as-is', without any express or implied warranty. In no event will the authors
+  be held liable for any damages arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose, including commercial applications,
+  and to alter it and redistribute it freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not claim that you wrote the original
+     software. If you use this software in a product, an acknowledgment in the product documentation would
+     be appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the
+     original software.
+  3. This notice may not be removed or altered from any source distribution.
+
+libX11, libXext, libxcb, libXau: MIT/X11-style licenses, copyright of the X Consortium, The Open Group,
+Keith Packard, the XCB authors and others; the exact notices are in the COPYING file of each library
+(sources downloaded to out/musl-deps/src by the script). Whoever distributes the executable must carry them.
+
+freetype 2.13.2 is used under the FreeType License (FTL, BSD-style, requires the credit: "Portions of this software are copyright
+The FreeType Project (www.freetype.org). All rights reserved."). alsa-lib 1.2.11 is under the GNU LGPL 2.1: the executable that links it
+statically must be distributed with the means to relink it (the object files or the sources of Lugforth and tools/build_musl_sdl.sh,
+which rebuilds alsa-lib from the original tarball) and the text of the LGPL.

@@ -33,14 +33,21 @@ DEFINED? gui-load [IF]
 : e-add { buf n i -- buf n' }   \ the argument i and a blank, after the n bytes already there
    i argv 4000 n - 0 max min { a l }
    a buf n + l cmove  32 buf n l + + c!  buf n l + 1+ ;
-: e-line ( -- a n )   \ the arguments after -e, one line of Forth
-   4096 allocate throw 0 argc 2 ?do i e-add loop ;
+: e-is-e? ( i -- f )   dup argc < if argv s" -e" compare 0= else drop 0 then ;
+: e-line ( from -- a n next )   \ the arguments from there up to the next -e, one line of Forth
+   { i }  4096 allocate throw 0
+   begin i argc < if i e-is-e? 0= else 0 then while  i e-add  1 +to i  repeat
+   i ;
+: e-run ( -- )   \ lugforth -e words... [-e words...]: each -e starts a line, run in order
+   1 begin dup argc < while
+      1+ e-line >r  ['] evaluate catch if 1 terminate then  r>
+   repeat drop ;
 : autoexec
    ( Open passed file if any. )
    argc 2 >= if
       1 argv s" -e" compare 0= if
          argc 3 < if s" -e needs Forth words: lugforth -e writhdeck notes.txt" type cr 1 terminate then
-         e-line ['] evaluate catch if 1 terminate then exit
+         e-run exit
       then
       1 argv s" --gui" compare 0= if gui-start exit then
       1 argv ['] included catch if 1 terminate then exit
