@@ -90,6 +90,7 @@ Boot sequence (platform e.g. posix):
 ### Platform Structure
 
 - `common/` — shared Forth source and C headers used by all platforms
+- `editors/` — `ed` and `writhdeck` (shared by posix, windows, efi, rpi, gforth)
 - `ports/posix/` — Linux/macOS: C entry point, POSIX bindings, sockets, X11, pthreads
 - `ports/esp32/` — Arduino `.ino` + C++ builtins; optional extensions in `ports/esp32/optional/`
 - `ports/pico-ice/` — RP2040-based FPGA board
