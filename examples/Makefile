@@ -106,7 +106,7 @@ view: view-lines view-lines-c view-lines-uxn
 # the logic of the ports from eForth Windows (2048, 3d, inference) and of the games
 # after r3forth (tetris, snake, minesweeper) and mastermind: each test prints PASS
 test-ports:
-	@for t in games/2048_tests.fs graphics/3d_tests.fs utils/inference/inference_tests.fs utils/inference/lamp_diagnosis_tests.fs games/games_tests.fs games/raycaster_tests.fs graphics/turtle_tests.fs; do \
+	@for t in games/2048_tests.fs graphics/3d_tests.fs utils/inference/inference_tests.fs utils/inference/lamp_diagnosis_tests.fs games/games_tests.fs games/raycaster_tests.fs graphics/turtle_tests.fs games/zmachine_tests.fs; do \
 	  printf "%-20s " "$$t"; \
 	  out=$$(cd .. && SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy $(LUGFORTH:../%=%) examples/$$t 2>&1 | tail -1); echo "$$out"; \
 	  case "$$out" in PASS*) ;; *) exit 1;; esac; \

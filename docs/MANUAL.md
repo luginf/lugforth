@@ -40,7 +40,7 @@ details of Lugforth itself (binaries, editors, examples, ports, building). Word 
 
 # Learn
 
-Conventions: what you type follows the prompt `-->`; what Lugforth answers is on the next line or
+Conventions: what you type follows the prompt `>`; what Lugforth answers is on the next line or
 after your input. Case does not matter: `DUP`, `dup` and `Dup` are the same word. Words are
 separated by spaces, and almost anything that is not a space can be part of a word name.
 
@@ -50,17 +50,17 @@ Start `lugforth` (see [Binaries](#binaries) or build it with `ninja posix`). You
 prompt:
 
 ```
-Lugforth v2026.10.25.11
+Lugforth v2026.10.26.1
 :; ===========>/>
 type 'info' for help
  ok
--->
+>
 ```
 
 Type a line and press Enter. Lugforth reads each word, executes it, and says ` ok` when the line is done.
 
 ```
---> 2 3 + .
+> 2 3 + .
 5  ok
 ```
 
@@ -68,9 +68,9 @@ Forth writes **postfix**: the operands come first, then the operator. `2 3 +` me
 add". The `.` word prints the result. Without it, the result stays unseen:
 
 ```
---> 2 3 +
+> 2 3 +
  ok
---> .
+> .
 5  ok
 ```
 
@@ -78,17 +78,17 @@ The 5 waited between the two lines. Where? On the **stack**, the subject of the 
 Arithmetic first:
 
 ```
---> 10 3 - .
+> 10 3 - .
 7  ok
---> 7 6 * .
+> 7 6 * .
 42  ok
---> 17 5 / .
+> 17 5 / .
 3  ok
---> 17 5 mod .
+> 17 5 mod .
 2  ok
---> -7 abs .
+> -7 abs .
 7  ok
---> 3 9 max .
+> 3 9 max .
 9  ok
 ```
 
@@ -107,11 +107,11 @@ pushes its result. `.s` shows the stack without changing it. The count is in ang
 of the stack is on the right:
 
 ```
---> 1 2 3 .s
+> 1 2 3 .s
 <3> 1 2 3  ok
---> + .s
+> + .s
 <2> 1 5  ok
---> . .
+> . .
 5 1  ok
 ```
 
@@ -135,9 +135,9 @@ before `--`, and what is left after. `( a b -- b a )` for `swap` means "a below 
 Try each one with `.s`:
 
 ```
---> 1 2 swap .s
+> 1 2 swap .s
 <2> 2 1  ok
---> 2drop 5 dup * .
+> 2drop 5 dup * .
 25  ok
 ```
 
@@ -158,9 +158,9 @@ A **definition** starts with `:` (colon), the name, the body, and ends with `;` 
 then on the new word is part of the language.
 
 ```
---> : square  dup * ;
+> : square  dup * ;
  ok
---> 5 square .
+> 5 square .
 25  ok
 ```
 
@@ -175,22 +175,22 @@ A word can use words defined before it. This is **factoring**: when a phrase app
 name. Words are tiny and testable one by one:
 
 ```
---> 3 cube .
+> 3 cube .
 27  ok
 : celsius>f ( c -- f )  9 * 5 / 32 + ;
---> 100 celsius>f .
+> 100 celsius>f .
 212  ok
 ```
 
 Two tools to look around:
 
 ```
---> see square
+> see square
 : square 
     DUP * 
 ; 
  ok
---> words
+> words
 ```
 
 `see` decompiles a word. `words` lists every word of the current vocabulary, most recent first (your
@@ -211,13 +211,13 @@ keep your words in a file.
 A comparison leaves a **flag**: `-1` for true, `0` for false.
 
 ```
---> 3 4 < .
+> 3 4 < .
 -1  ok
---> 4 3 < .
+> 4 3 < .
 0  ok
---> 3 3 = .
+> 3 3 = .
 -1  ok
---> 5 0= .
+> 5 0= .
 0  ok
 ```
 
@@ -230,11 +230,11 @@ The comparisons are `=`, `<>`, `<`, `>`, `<=`, `>=`, and `0=`, `0<`, `0>` for a 
 : sign ( n -- )
   dup 0< if drop ." negative" else
   0= if ." zero" else ." positive" then then ;
---> -5 sign
+> -5 sign
 negative ok
---> 0 sign
+> 0 sign
 zero ok
---> 8 sign
+> 8 sign
 positive ok
 ```
 
@@ -250,7 +250,7 @@ For several values of one number, `case`:
     2 of ." two" endof
     ." many"
   endcase ;
---> 2 kind
+> 2 kind
 two ok
 ```
 
@@ -272,10 +272,10 @@ two ok
 
 ```
 : stars ( n -- )  0 ?do 42 emit loop ;
---> 5 stars
+> 5 stars
 ***** ok
 : table ( n -- )  11 1 do dup i * . loop drop ;
---> 7 table
+> 7 table
 7 14 21 28 35 42 49 56 63 70  ok
 ```
 
@@ -293,10 +293,10 @@ and `begin ... while ... repeat` tests at the start:
 
 ```
 : countdown ( n -- )  begin dup . 1- dup 0= until drop ;
---> 5 countdown
+> 5 countdown
 5 4 3 2 1  ok
 : gcd ( a b -- g )  begin dup while tuck mod repeat drop ;
---> 48 18 gcd .
+> 48 18 gcd .
 6  ok
 ```
 
@@ -304,7 +304,7 @@ A word can call itself with `recurse`:
 
 ```
 : fact ( n -- n! )  dup 1 > if dup 1- recurse * then ;
---> 10 fact .
+> 10 fact .
 3628800  ok
 ```
 
@@ -320,29 +320,29 @@ A word can call itself with `recurse`:
 A **variable** is a named cell of memory. Its name pushes its *address*; `!` stores and `@` fetches.
 
 ```
---> variable score
---> 10 score !
---> score @ .
+> variable score
+> 10 score !
+> score @ .
 10  ok
---> 5 score +!
---> score @ .
+> 5 score +!
+> score @ .
 15  ok
 ```
 
 `?` is the shortcut for `@ .`. A **constant** is a name for a value that does not change:
 
 ```
---> 42 constant answer
---> answer .
+> 42 constant answer
+> answer .
 42  ok
 ```
 
 A **value** is read like a constant and changed with `to`; handy for a counter you read often:
 
 ```
---> 0 value lives
---> 3 to lives
---> lives .
+> 0 value lives
+> 3 to lives
+> lives .
 3  ok
 ```
 
@@ -350,7 +350,7 @@ An **array** is a `create`d block of memory. A cell is 8 bytes, so use `cells` t
 
 ```
 create primes  2 , 3 , 5 , 7 , 11 ,      \ , stores a number and moves on
---> primes 3 cells + @ .
+> primes 3 cells + @ .
 7  ok
 create buf 10 allot                       \ 10 bytes, filled with whatever was there
 ```
@@ -362,7 +362,7 @@ Bytes are fetched with `c@` and stored with `c!`. Memory is not cleared for you:
 
 ```
 : hyp2 { a b -- r }  a a *  b b * + ;
---> 3 4 hyp2 .
+> 3 4 hyp2 .
 25  ok
 ```
 
@@ -376,8 +376,8 @@ Declare them at the very top of the word, never inside an `if` or a loop body.
 ## 7. Text and numbers
 
 ```
---> : hello ." Hello, world!" ;
---> hello
+> : hello ." Hello, world!" ;
+> hello
 Hello, world! ok
 ```
 
@@ -385,8 +385,8 @@ Hello, world! ok
 an address and a length, to be used with `type`:
 
 ```
---> : greet ( a n -- )  ." Hello, " type ." !" ;
---> s" Forth" greet
+> : greet ( a n -- )  ." Hello, " type ." !" ;
+> s" Forth" greet
 Hello, Forth! ok
 ```
 
@@ -396,7 +396,7 @@ right-align a number in a field: `5 3 .r 7 3 .r` prints `  5  7`.
 Numbers use the current **base**. `hex` and `decimal` switch it:
 
 ```
---> 255 hex . decimal
+> 255 hex . decimal
 FF  ok
 ```
 
@@ -407,7 +407,7 @@ quotient), `*/` (multiply, then divide, without losing precision: `2 3 4 */` is 
 Floating point exists too, with its own stack and a trailing `e` on literals:
 
 ```
---> 1.5e 2.5e f+ f.
+> 1.5e 2.5e f+ f.
 4.000000  ok
 ```
 
@@ -428,8 +428,8 @@ Write your words in a file with any editor, or with Lugforth's own: `ed mygame.f
 Load it, then use the words:
 
 ```
---> include squares.fs
---> 5 squares
+> include squares.fs
+> 5 squares
 1 4 9 16 25  ok
 ```
 
@@ -467,7 +467,7 @@ After an error Lugforth empties the stack and gives the prompt back. A few habit
     i 5 mod 0= if ." Buzz " else
     i . then then then
   loop ;
---> fizzbuzz
+> fizzbuzz
 1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz  ok
 ```
 
@@ -488,7 +488,7 @@ create flags limit allot
       then
     then
   loop ;
---> sieve
+> sieve
 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47  ok
 ```
 
@@ -498,7 +498,7 @@ Forth passes behavior around:
 ```
 : .name ( -- ) ." Lugforth" ;
 : rep ( n xt -- )  swap 0 ?do dup execute space loop drop ;
---> 3 ' .name rep
+> 3 ' .name rep
 Lugforth Lugforth Lugforth  ok
 ```
 
@@ -799,6 +799,7 @@ status_right  = goal help_bar
 | `sdl2_3d.fs` | turning wireframes |
 | `sdl2_2048.fs` | sliding tiles; `--no-anim` turns the animation off |
 | `2048.fs` | 2048 in the terminal |
+| `zmachine.fs` | Z-machine interpreter in one file: plays Infocom and Inform stories (`.z3 .z4 .z5 .z8`), `zplay story.z5` |
 | `fm/sdl2_fm.fs` | FM synthesizer, MIDI keyboard on Linux and in the browser |
 | `inference/` | small rule based inference engine, README in English and French, Makefile with scenarios |
 

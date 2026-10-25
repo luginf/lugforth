@@ -40,7 +40,7 @@ import time
 import tty
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PROMPT = b'--> '
+PROMPT = b'> '
 
 
 def main():

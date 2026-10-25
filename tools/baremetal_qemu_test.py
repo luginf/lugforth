@@ -37,7 +37,7 @@ import threading
 import time
 
 QEMU = os.environ.get('QEMU', 'qemu-system-aarch64')
-PROMPT = '--> '
+PROMPT = '> '
 
 
 class Board:

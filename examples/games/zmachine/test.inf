@@ -1,0 +1,41 @@
+! Test story of examples/games/zmachine_tests.fs. Compile with Inform 6 (no library):
+!   inform6 -v3 test.inf test.z3 ; inform6 -v5 test.inf test.z5   (the .z3 and .z5 here are the result)
+Array buf -> 64;
+Array parse -> 64;
+Property colour;
+Attribute shiny; Attribute light;
+Object room "Test room" with description "A bare room.", colour 5 has light;
+Object ball "red ball" room with name 'ball', colour 9 has shiny;
+Object cube "blue cube" room with name 'cube' 'box';
+Global counter = 0;
+[ Fact n; if (n <= 1) return 1; return n * Fact(n-1); ];
+[ Main w i k;
+  print "Hello, Z-machine! Abbreviations: the the the and and.^";
+  print "Number: ", 7*6, " ", -17/5, " ", -17%5, " ", 300*100, "^";
+  print "Fact(7)=", Fact(7), "^";
+  print (name) room, " / ", (name) ball, "^";
+  print "child of room: ", (name) child(room), " sibling: ", (name) sibling(child(room)), "^";
+  print "colour ball ", ball.colour, " room ", room.colour, " has shiny: ", (ball has shiny), "^";
+  give cube shiny;
+  print "cube shiny: ", (cube has shiny), "^";
+  move cube to ball;
+  print "cube in ball: ", (parent(cube) == ball), "^";
+  for (i = 0 : i < 5 : i++) { counter = counter + i * i; }
+  print "counter ", counter, "^";
+  print "chars: ", (char) 'A', (char) 'z', "^";
+  for (k = 0 : k < 3 : k++) {
+    print "> "; buf->0 = 60; parse->0 = 15; read buf parse;
+    w = parse->1;
+    print "words: ", w, "^";
+    for (i = 1 : i <= w : i++) {
+      print "  ", i, ": ";
+      if (parse-->(i*2-1) == 'ball') print "BALL";
+      else if (parse-->(i*2-1) == 'quit') print "QUIT";
+      else if (parse-->(i*2-1) == 0) print "unknown";
+      else print "known";
+      print " len ", parse->(i*4), " pos ", parse->(i*4+1), "^";
+    }
+    print "random ", random(100) >= 1, "^";
+  }
+  quit;
+];

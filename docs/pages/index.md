@@ -41,7 +41,7 @@ Advance. See <a href="ports.html">ports</a>.</div>
   on a terminal and on the bare-metal consoles: space, Enter, `q`; `pager-off`.
 * New ports: Android, Game Boy Advance, Raspberry Pi Pico, Raspberry Pi and PC UEFI (bare metal), SDL2 on Windows and macOS, a console window in SDL2 (<code>lugforth --gui</code>).
 * Two text editors, <code>ed</code> and <code>writhdeck</code> (Linux, macOS, Windows; also under gforth).
-* Examples: games (Breakout, roguelike, 2048 with animation), turning 3D wireframes, a rule based inference engine, benchmarks, a txt2tags converter.
+* Examples: games (Breakout, roguelike, 2048 with animation, a Z-machine interpreter for interactive fiction), turning 3D wireframes, a rule based inference engine, benchmarks, a txt2tags converter.
 
 ## Quick start
 
@@ -55,7 +55,7 @@ out/posix/lugforth
 ```
 
 ```
---> : square dup * ;
---> 12 square .
+> : square dup * ;
+> 12 square .
 144  ok
 ```

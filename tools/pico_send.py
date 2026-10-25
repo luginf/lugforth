@@ -40,7 +40,7 @@ try:
 except ImportError:
   sys.exit('pyserial is needed: pip install pyserial')
 
-PROMPT = b'-->'
+PROMPT = b'>'
 ERRORS = (b'NOT FOUND', b'ERROR', b'STACK UNDERFLOW', b'STACK OVERFLOW')
 MAX_LINE = 199  # the board's line buffer holds 200 characters
 

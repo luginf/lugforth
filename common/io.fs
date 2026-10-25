@@ -83,7 +83,7 @@ variable r-copy   ( set at the end of the boot: r" r| r~ then copy their text, a
 variable echo -1 echo !   variable arrow -1 arrow !  0 value wascr
 : *emit ( n -- ) dup 13 = if drop cr else emit then ;
 : ?echo ( n -- ) echo @ if *emit else drop then ;
-: ?arrow.   arrow @ if ." --> " then ;
+: ?arrow.   arrow @ if ." > " then ;
 : *key ( -- n )
   begin
     key

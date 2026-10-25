@@ -22,7 +22,7 @@ To install:
     port shows up as /dev/ttyACM0 (check with `ls /dev/ttyACM*` or `dmesg`):
       picocom -b 115200 /dev/ttyACM0       (quit with Ctrl-A then Ctrl-X)
       screen /dev/ttyACM0 115200           (quit with Ctrl-A, K, then y)
-    You should see the Lugforth banner and the --> prompt.
+    You should see the Lugforth banner and the > prompt.
 
 Sending a program from the PC:
   Do not use `cat file.fs > /dev/ttyACM0`: the board echoes everything back,
