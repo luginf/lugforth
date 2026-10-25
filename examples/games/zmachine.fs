@@ -3,6 +3,7 @@
 \
 \     include examples/games/zmachine.fs
 \     zplay story.z5                \ or:  s" story.z5" zstart
+\ or from the shell:  lugforth examples/games/zmachine.fs story.z5
 \
 \ Written from the Z-Machine Standards Document 1.1 (Graham Nelson, https://inform-fiction.org/zmachine/standards/);
 \ no code of another interpreter is used. Fortz (Brad Shepherdson, gforth, GPL) was the inspiration.
@@ -17,6 +18,7 @@
 \ array of cells. All the values are kept as 16 bits unsigned and signed with s16 when needed.
 
 variable zm-status
+[defined] ms-ticks 0= [if] : ms-ticks ( -- ms ) utime 1000 um/mod nip ; [then]   \ gforth
 vocabulary zm   also zm definitions
 
 \ ---- State ----
@@ -160,9 +162,10 @@ variable zcn   variable zcl
   zcn @ zpc ! ;
 
 \ ---- Text: Z-characters ----
-create zalpha 80 allot
-r| abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ  0123456789.,!?_#'"/\-:()| ( 78 characters )
-zalpha swap cmove
+create zalpha 80 allot   \ the 26 letters of each of the 3 alphabets, built without a string holding a quote
+s" abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ  0123456789.,!?_#'" zalpha swap cmove
+34 zalpha 71 + c!   47 zalpha 72 + c!   92 zalpha 73 + c!
+s" -:()" zalpha 74 + swap cmove
 variable za   variable zab   variable zesc   variable zhi
 
 : zscii-out ( c -- ) zout ;
@@ -258,14 +261,20 @@ variable zci   variable zco
     zl zco @ + c!  1 zco +!
   repeat drop zco @ ;
 
-also internals
-arrow constant zarrow
-' edit-accept constant zacc
-previous
+\ The line editor: that of the console in Lugforth (without its "> " prompt); in gforth accept on a terminal,
+\ else read-line, which sees the end of the input (ports/gforth/zmachine-gforth.fs).
+[defined] gforth 0= [if]
+also internals   arrow constant zarrow   ' edit-accept constant zacc   previous
 : zedit-line ( -- n )
   zarrow @ >r  0 zarrow !
   zline 250 zacc execute
   r> zarrow ! ;
+[else]
+: zedit-line ( -- n )
+  stdout flush-file drop
+  stdin isatty if zline 250 accept cr exit then      \ gforth's own editing, and the echo of what is typed
+  zline 250 stdin read-line throw 0= if drop 255 zline c! 1 then ;
+[then]
 defer zgetline   ' zedit-line is zgetline     \ ( -- n ) a line of n bytes in zline
 : zread-line ( -- n )
   lb-flush
@@ -640,9 +649,11 @@ tab: t0   tab: t1   tab: t2   tab: tv   tab: te
   5 0 do 0 i zs! loop
   0 mtop !  0 zwin !  0 ll !
   -1 zrun ! ;
+[defined] gforth [if] : zfsize ( fid -- n ) file-size throw drop ;   \ a double there
+[else] : zfsize ( fid -- n ) file-size throw ; [then]
 : zread-story ( a n -- ok )
   r/o open-file if drop 0 exit then >r
-  r@ file-size throw to zsize
+  r@ zfsize to zsize
   zmem if zmem free drop then
   zsize 65536 + allocate if r> close-file drop 0 exit then to zmem
   zmem zsize 65536 + erase
@@ -667,4 +678,13 @@ also zm
   zsetup
   zrunloop cr ;
 : zplay ( "story" -- ) bl parse zstart ;
+
+\ lugforth examples/games/zmachine.fs story.z5     plays the story at once (the second argument)
+[defined] gforth 0= [if]
+: zmain ( -- )
+  argc 3 < if exit then
+  1 argv dup 11 < if 2drop exit then  + 11 - 11 s" zmachine.fs" compare if exit then
+  2 argv zstart bye ;
+zmain
+[then]
 previous

@@ -69,9 +69,11 @@ floats. Only the Windows parts (GDI, `Kernel32`, `structures` with `L,`) had to 
 Sibling project `~/src/forks/uf-9` did the same for a 16-bit Forth (its `PORTS-EFORTH.txt`).
 
 In `examples/` (GPL, listed in NOTICE; `make -C examples test-ports` runs the logic tests, `make smoke` the SDL2 one):
-- `zmachine.fs` (+ `zmachine_tests.fs`, stories in `zmachine/`): Z-machine interpreter written from the standard 1.1, one file, versions 3, 4, 5 and 8, `zplay story.z5`.
+- `zmachine.fs` (+ `zmachine_tests.fs`, stories in `zmachine/`: `test.inf` bare v3/v5, `cave.inf` a small game with the Inform 6 library, v5, to play: `lugforth examples/games/zmachine.fs examples/games/zmachine/cave.z5`): Z-machine interpreter written from the standard 1.1, one file, versions 3, 4, 5 and 8, `zplay story.z5`.
   Text only (no upper window: a v5 status line is dropped; the v3 one with `-1 zm-status !`), own save format, accents in UTF-8. Checked against `dfrotz` on
   `test.inf` (v3, v5, v8) and on a small Inform 6 library game (v5, v8: same text, save, restore, restart). About 2 million instructions a second.
+  Also runs under gforth 0.7.9 (`gforth ports/gforth/zmachine-gforth.fs story.z5`, tests: `gforth examples/games/zmachine_tests.fs`): three
+  `[defined] gforth` spots in the file (accept on a terminal or read-line, file-size double, ms-ticks); output identical to Lugforth's on test.z3, test.z5 and the library game z5/z8.
   Not done: version 6 and 7, undo, colours, sound, timed input, Quetzal. Fortz (GPL) was only the inspiration, no code of it is used.
 - `2048.fs` (+ `2048_tests.fs`): terminal game, `2048-play`. Tested in a pty; colors/layout not seen by eye.
 - `3d.fs` (+ `3d_tests.fs`) and `sdl2_3d.fs`: math, objects, rotation, perspective; SDL2 drawing checked only with

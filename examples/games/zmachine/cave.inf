@@ -1,0 +1,136 @@
+! A small adventure to try zmachine.fs with a real Inform 6 library (rooms, a locked door, a light,
+! containers, a treasure, a score). Compile (needs the Inform 6 library 6.12, version 5 or 8 as the
+! library does not fit in version 3):
+!     inform6 -v5 +/usr/share/inform6/library cave.inf cave.z5
+! Solution (used by ../zmachine_tests.fs): see the end of this file.
+
+Constant Story "The Cave of Lugforth";
+Constant Headline "^An interactive fiction for the Z-machine interpreter in Forth.^";
+Constant MAX_SCORE = 10;
+Include "Parser";
+Include "VerbLib";
+
+Object Clearing "Forest clearing"
+  with description
+         "Tall pines surround a sunny clearing. A narrow path leads east into the trees, and
+          a small cottage stands to the north.",
+       n_to Cottage,
+       e_to Path,
+  has light;
+
+Object tree "old pine" Clearing
+  with name 'old' 'pine' 'tree' 'pines' 'trees',
+       description "Its trunk is covered with moss.",
+       before [; Climb: "You are too old for that."; ],
+  has scenery;
+
+Object Path "Woodland path"
+  with description
+         "The path ends at a hollow stump. You can go back west to the clearing.",
+       w_to Clearing,
+  has light;
+
+Object stump "hollow stump" Path
+  with name 'hollow' 'stump' 'log',
+       description "A hollow stump, wide enough to hide something.",
+  has container open static;
+
+Object key "brass key" stump
+  with name 'brass' 'key',
+       description "A small brass key, worn smooth.",
+       after [; Take: "You take the key out of the stump."; ];
+
+Object Cottage "Cottage"
+  with description
+         "A cosy one-room cottage with a stone floor. A trapdoor in the floor leads down.
+          The clearing is south.",
+       s_to Clearing,
+       d_to trapdoor,
+  has light;
+
+Object table "wooden table" Cottage
+  with name 'wooden' 'table',
+       description "A sturdy table.",
+  has supporter static;
+
+Object lamp "brass lantern" table
+  with name 'brass' 'lantern' 'lamp' 'light',
+       description "A lantern with a bright wick.",
+       when_on "The lantern is burning.",
+       when_off "A lantern sits here.",
+       after [; SwitchOn: give self light; SwitchOff: give self ~light; ],
+  has switchable;
+
+Object bell "silver bell" Cottage
+  with name 'silver' 'bell',
+       description "A small bell with a clear voice.",
+       before [; Take: "Maybe it should stay on the table."; ];
+
+Object trapdoor "trapdoor" Cottage
+  with name 'trap' 'door' 'trapdoor' 'hatch',
+       description "A heavy wooden trapdoor.",
+       door_to [; if (location == Cottage) return Cellar; return Cottage; ],
+       door_dir [; if (location == Cottage) return d_to; return u_to; ],
+       with_key key,
+       found_in Cottage Cellar,
+  has door openable lockable locked static;
+
+Object Cellar "Cellar"
+  with description
+         "A low, damp cellar. Barrels line the walls. A passage leads east and a ladder goes up.",
+       u_to trapdoor,
+       e_to Vault,
+  has ~light;
+
+Object barrel "oak barrel" Cellar
+  with name 'oak' 'barrel' 'barrels',
+       description "Empty, as far as you can tell.",
+  has container openable static;
+
+Object Vault "Treasure vault"
+  with description
+         "A round vault with a stone pedestal in the middle. The passage back is west.",
+       w_to Cellar,
+  has ~light;
+
+Object pedestal "stone pedestal" Vault
+  with name 'stone' 'pedestal',
+       description "A flat pedestal worn by time.",
+  has supporter static;
+
+Object gem "green gem" pedestal
+  with name 'green' 'gem' 'emerald',
+       description "It glitters, even in this faint light.",
+       after [; Take:
+           if (self hasnt general) {
+               give self general;
+               score = score + 5;
+               "Taken. You feel richer.";
+           }
+       ];
+
+Object chest "iron chest" Cottage
+  with name 'iron' 'chest',
+       description "A chest with a heavy lid.",
+       after [; Receive:
+           if (noun == gem && self hasnt general) {
+               give self general;
+               score = score + 5;
+               "The gem rests safely in the chest. Well done!";
+           }
+       ],
+  has container openable static;
+
+[ RingSub; "Ding! The bell rings out cheerfully."; ];
+Verb 'ring' * noun -> Ring;
+
+[ Initialise;
+  location = Clearing;
+  "^Welcome to the cave of Lugforth. Find the gem and bring it to the chest.^";
+];
+
+Include "Grammar";
+
+! Solution:
+!   e / look in stump / take key / w / n / take lantern / turn on lantern / ring bell /
+!   unlock trapdoor with key / open trapdoor / d / e / take gem / w / u / put gem in chest / score
