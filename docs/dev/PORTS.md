@@ -37,6 +37,7 @@ dosfstools mtools); make test checks them afterwards with mtools and fsck.fat.
 
 Decision (2026-10-18): no x86 port without UEFI (own boot, VBE/Multiboot2 framebuffer, PS/2, AHCI/NVMe drivers and
 FAT on them): too much work for a narrow target. If ever wanted, Multiboot2 through GRUB is the shortcut.
+The pointer is kept in real screen pixels (`in_mouse_rx/ry`) and drawn in `fb_cursor_flip` straight into the framebuffer after the zoomed flip, so under `3 to zoom` it moves by one pixel, not three (`mouse-x` still gives logical pixels). Not seen on a real mouse yet.
 Known limits: OVMF never polls USB mice (no mouse under QEMU, only on hardware: `n mouse-speed`, default 20 = 0.20
 pixel per count); no key releases from UEFI, the firmware repeat starts 500 ms after the press (breakout stutters on the
 keyboard at first). Video memory is write-combining: keep the `sfence` in `dcache_clean` (screen.h). The console syncs

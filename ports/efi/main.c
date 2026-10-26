@@ -403,9 +403,8 @@ static void ptr_poll(void) {
       moved = 1;
     }
     if (moved) {
-      int z = fb_zoom ? fb_zoom : 1;
       for (int a = 0; a < 2; a++) {
-        int64_t d = ptr_acc[a] / (100 * z) * z;       // whole logical pixels
+        int64_t d = ptr_acc[a] / 100;                  // whole screen pixels
         if (d) { input_rel(a, d); ptr_acc[a] -= d * 100; }
       }
       in_mouse_seen = 1;

@@ -75,6 +75,25 @@ s" (first opening the iron chest)" has? check
 s" The gem rests safely in the chest. Well done!" has? check
 s" scored 10 out of a possible 10, in 16 turns" has? check
 
+\ cave_fr.z5, the same game in French with the French Inform 6 library (UTF-8 source: the story brings its own
+\ alphabet and Unicode table; the accents go through the keyboard too)
+new-input
+s" est" iline   s" regarder dans la souche" iline   s" prendre la clé" iline   s" ouest" iline   s" nord" iline
+s" prendre la lanterne" iline   s" allumer la lanterne" iline   s" sonner la cloche" iline
+s" déverrouiller la trappe avec la clé" iline   s" ouvrir la trappe" iline   s" descendre" iline   s" est" iline
+s" prendre la gemme" iline   s" ouest" iline   s" monter" iline   s" ouvrir le coffre" iline
+s" mettre la gemme dans le coffre" iline   s" score" iline
+s" examples/games/zmachine/cave_fr.z5" play
+s" Bienvenue dans la grotte de Lugforth" has? check
+s" Dans la souche creuse, vous voyez une clé de laiton." has? check
+s" Vous sortez la clé de la souche." has? check
+s" Ding ! La cloche sonne gaiement." has? check
+s" Vous déverrouillez la trappe." has? check
+s" Une cave basse et humide." has? check
+s" Prise. Vous vous sentez plus riche." has? check
+s" La gemme repose en sécurité dans le coffre. Bravo !" has? check
+s" 10 sur 10, en 17 tours" has? check
+
 \ a missing story file does not crash
 s" examples/games/zmachine/nothing.z3" play
 

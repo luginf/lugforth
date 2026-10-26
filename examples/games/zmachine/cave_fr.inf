@@ -1,0 +1,146 @@
+!% -Cu
+!% -~S
+!% +Language_name=french
+! La Grotte de Lugforth: cave.inf en français, avec la bibliothèque Inform 6 française de Lionel Ange
+! (https://gitlab.com/auraes/inform6lib_fr, CC BY-SA 4.0), qui se pose sur la bibliothèque anglaise 6.12.x.
+! Elle n'est pas dans ce dépôt. Compiler (Inform 6.35 ou plus pour -Cu; le source est en UTF-8):
+!     inform6 cave_fr.inf cave_fr.z5 +/chemin/inform6lib/ ++/chemin/inform6lib_fr/
+! (l'archive libI6_Windows.zip de ce dépôt GitLab contient inform6lib/ et inform6lib_fr/)
+! Les verbes sont à l'infinitif comme dans cette bibliothèque: prendre, ouvrir, allumer, mettre... et il faut
+! taper les accents. Solution (utilisée par ../zmachine_tests.fs): voir la fin de ce fichier.
+
+Constant Story "La Grotte de Lugforth";
+Constant Headline "^Une fiction interactive pour l'interpréteur Z-machine en Forth.^";
+Constant MAX_SCORE = 10;
+Include "parser";
+Include "verblib";
+
+Object Clairiere "Clairière"
+  with description
+         "De grands pins entourent une clairière ensoleillée. Un sentier étroit mène à l'est dans les arbres,
+          et une petite chaumière se dresse au nord.",
+       n_to Chaumiere,
+       e_to Sentier,
+  has light;
+
+Object pin "vieux pin" Clairiere
+  with name 'vieux' 'pin' 'pins' 'arbre' 'arbres',
+       description "Son tronc est couvert de mousse.",
+       before [; Climb: "Vous êtes trop vieux pour cela."; ],
+  has male scenery;
+
+Object Sentier "Sentier dans les bois"
+  with description
+         "Le sentier se termine devant une souche creuse. Vous pouvez retourner à l'ouest, à la clairière.",
+       w_to Clairiere,
+  has light;
+
+Object souche "souche creuse" Sentier
+  with name 'souche' 'creuse' 'tronc',
+       description "Une souche creuse, assez large pour cacher quelque chose.",
+  has female container open static;
+
+Object cle "clé de laiton" souche
+  with name 'clé' 'laiton',
+       description "Une petite clé de laiton, usée jusqu'à être lisse.",
+       after [; Take: "Vous sortez la clé de la souche."; ],
+  has female;
+
+Object Chaumiere "Chaumière"
+  with description
+         "Une chaumière douillette d'une seule pièce, au sol de pierre. Une trappe dans le plancher mène vers le bas.
+          La clairière est au sud.",
+       s_to Clairiere,
+       d_to trappe,
+  has light female;
+
+Object table "table de bois" Chaumiere
+  with name 'table' 'bois',
+       description "Une table solide.",
+  has female supporter static;
+
+Object lanterne "lanterne de laiton" table
+  with name 'lanterne' 'laiton' 'lampe' 'lumière',
+       description "Une lanterne à la mèche vive.",
+       when_on "La lanterne brûle.",
+       when_off "Une lanterne est posée ici.",
+       after [; SwitchOn: give self light; SwitchOff: give self ~light; ],
+  has female switchable;
+
+Object cloche "cloche d'argent" Chaumiere
+  with name 'cloche' 'clochette' 'argent',
+       description "Une petite cloche à la voix claire.",
+       before [; Take: "Elle devrait peut-être rester sur la table."; ],
+  has female;
+
+Object trappe "trappe" Chaumiere
+  with name 'trappe' 'porte' 'panneau',
+       description "Une lourde trappe de bois.",
+       door_to [; if (location == Chaumiere) return Cave; return Chaumiere; ],
+       door_dir [; if (location == Chaumiere) return d_to; return u_to; ],
+       with_key cle,
+       found_in Chaumiere Cave,
+  has female door openable lockable locked static;
+
+Object Cave "Cave"
+  with description
+         "Une cave basse et humide. Des tonneaux bordent les murs. Un passage mène à l'est et une échelle monte.",
+       u_to trappe,
+       e_to Caveau,
+  has female ~light;
+
+Object tonneau "tonneau de chêne" Cave
+  with name 'tonneau' 'tonneaux' 'chêne',
+       description "Vide, pour autant que vous puissiez en juger.",
+  has male container openable static;
+
+Object Caveau "Salle du trésor"
+  with description
+         "Une salle ronde avec un piédestal de pierre au milieu. Le passage du retour est à l'ouest.",
+       w_to Cave,
+  has female ~light;
+
+Object piedestal "piédestal de pierre" Caveau
+  with name 'piédestal' 'pierre',
+       description "Un piédestal plat, usé par le temps.",
+  has male supporter static;
+
+Object gemme "gemme verte" piedestal
+  with name 'gemme' 'verte' 'émeraude',
+       description "Elle scintille, même dans cette faible lumière.",
+       after [; Take:
+           if (self hasnt general) {
+               give self general;
+               score = score + 5;
+               "Prise. Vous vous sentez plus riche.";
+           }
+       ],
+  has female;
+
+Object coffre "coffre de fer" Chaumiere
+  with name 'coffre' 'fer',
+       description "Un coffre au lourd couvercle.",
+       after [; Receive:
+           if (noun == gemme && self hasnt general) {
+               give self general;
+               score = score + 5;
+               "La gemme repose en sécurité dans le coffre. Bravo !";
+           }
+       ],
+  has male container openable static;
+
+[ SonnerSub; "Ding ! La cloche sonne gaiement."; ];
+
+[ Initialise;
+  location = Clairiere;
+  "^Bienvenue dans la grotte de Lugforth. Trouvez la gemme et rapportez-la dans le coffre.^";
+];
+
+Include "frenchg";
+
+Verb 'sonner' * noun -> Sonner;
+
+! Solution:
+!   est / regarder dans la souche / prendre la clé / ouest / nord / prendre la lanterne / allumer la lanterne /
+!   sonner la cloche / déverrouiller la trappe avec la clé / ouvrir la trappe / descendre / est / prendre la gemme /
+!   ouest / monter / ouvrir le coffre / mettre la gemme dans le coffre / score

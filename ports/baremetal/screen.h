@@ -504,28 +504,48 @@ static const char *const cur_shape[16] = {
   "XoooooX    ", "XooooooX   ", "XoooooooX  ", "XooooXXXXX ", "XooXooX    ", "XoX XooX   ",
   "XX  XooX   ", "X    XooX  ", "     XooX  ", "      XX   " };
 
-static void fb_flip(void) {
-  uint32_t save[16][11];
-  int cx = (int) in_mouse_x, cy = (int) in_mouse_y, drawn = 0;
-  if (fb_cursor_on && in_mouse_seen && fb_back && !fb_gfx && cx >= 0 && cy >= 0) {
-    drawn = 1;
+static int64_t in_mouse_rx, in_mouse_ry;   // the same position in real screen pixels (the pointer moves by those)
+static int cur_ox = -1, cur_oy;             // where the pointer was drawn last, real pixels (-1: nowhere)
+
+static uint32_t fb_native(uint32_t c) {
+  return fb_rgb ? ((c & 255) << 16) | (c & 0xFF00) | ((c >> 16) & 255) : c;
+}
+
+// The pointer is drawn at the resolution of the screen, straight into the framebuffer after the
+// flip, not in the zoomed picture: with a zoom of 3 it moves by one pixel, not by three. The pixels
+// it covered are put back from fb_front (what the framebuffer holds, before the pointer).
+static void fb_cursor_flip(void) {
+  int z = fb_zoom ? fb_zoom : 1, W = fb_w * z, H = fb_h * z;
+  if (!fb_mem || !fb_front_ok || !fb_front || !TERM_FOCUSED()) return;
+  int show = fb_cursor_on && in_mouse_seen && !fb_gfx;
+  int nx = (int) in_mouse_rx, ny = (int) in_mouse_ry;
+  if (nx >= W) nx = W - 1;
+  if (ny >= H) ny = H - 1;
+  if (nx < 0 || ny < 0) show = 0;
+  if (cur_ox >= 0) {
     for (int r = 0; r < 16; r++)
       for (int c = 0; c < 11; c++) {
-        int x = cx + c, y = cy + r;
-        char ch = cur_shape[r][c];
-        if (x >= fb_w || y >= fb_h) continue;
-        uint32_t *px = fb_back + (size_t) y * fb_w + x;
-        save[r][c] = *px;
-        if (ch == 'X') *px = 0x000000;
-        else if (ch == 'o') *px = 0xFFFFFF;
+        int x = cur_ox + c, y = cur_oy + r;
+        if (x >= W || y >= H || cur_shape[r][c] == ' ') continue;
+        uint32_t f = fb_front[(size_t) (y / z) * fb_w + x / z];
+        ((volatile uint32_t *) ((volatile uint8_t *) fb_mem + (uint64_t) y * fb_pitch))[x] = (f >> 24) ? 0 : fb_native(f & 0xFFFFFF);
       }
+    dcache_clean((const void *) ((volatile uint8_t *) fb_mem + (uint64_t) cur_oy * fb_pitch), (uint64_t) 16 * fb_pitch);
+    cur_ox = -1;
   }
+  if (!show) return;
+  for (int r = 0; r < 16; r++)
+    for (int c = 0; c < 11; c++) {
+      int x = nx + c, y = ny + r;
+      char ch = cur_shape[r][c];
+      if (x >= W || y >= H || ch == ' ') continue;
+      ((volatile uint32_t *) ((volatile uint8_t *) fb_mem + (uint64_t) y * fb_pitch))[x] = fb_native(ch == 'X' ? 0x000000 : 0xFFFFFF);
+    }
+  dcache_clean((const void *) ((volatile uint8_t *) fb_mem + (uint64_t) ny * fb_pitch), (uint64_t) 16 * fb_pitch);
+  cur_ox = nx; cur_oy = ny;
+}
+
+static void fb_flip(void) {
   fb_flip_diff();
-  if (drawn)
-    for (int r = 0; r < 16; r++)
-      for (int c = 0; c < 11; c++) {
-        int x = cx + c, y = cy + r;
-        if (x >= fb_w || y >= fb_h) continue;
-        fb_back[(size_t) y * fb_w + x] = save[r][c];
-      }
+  fb_cursor_flip();
 }

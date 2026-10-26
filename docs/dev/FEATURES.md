@@ -69,7 +69,7 @@ floats. Only the Windows parts (GDI, `Kernel32`, `structures` with `L,`) had to 
 Sibling project `~/src/forks/uf-9` did the same for a 16-bit Forth (its `PORTS-EFORTH.txt`).
 
 In `examples/` (GPL, listed in NOTICE; `make -C examples test-ports` runs the logic tests, `make smoke` the SDL2 one):
-- `zmachine.fs` (+ `zmachine_tests.fs`, stories in `zmachine/`: `test.inf` bare v3/v5, `cave.inf` a small game with the Inform 6 library, v5, to play: `lugforth examples/games/zmachine.fs examples/games/zmachine/cave.z5`): Z-machine interpreter written from the standard 1.1, one file, versions 3, 4, 5 and 8, `zplay story.z5`.
+- `zmachine.fs` (+ `zmachine_tests.fs`, stories in `zmachine/`: `test.inf` bare v3/v5, `cave.inf` a small game with the Inform 6 library, v5, to play: `lugforth examples/games/zmachine.fs examples/games/zmachine/cave.z5`; `cave_fr.inf` the same game in French, written for the French library of Lionel Ange (gitlab.com/auraes/inform6lib_fr, CC BY-SA, on top of the English 6.12.x library; NOT in this repository), compiled with Inform 6.45 `-Cu`: see the header of the file; the story brings its own alphabet and Unicode table, which `zmachine.fs` reads): Z-machine interpreter written from the standard 1.1, one file, versions 3, 4, 5 and 8, `zplay story.z5`.
   Text only (no upper window: a v5 status line is dropped; the v3 one with `-1 zm-status !`), own save format, accents in UTF-8. Checked against `dfrotz` on
   `test.inf` (v3, v5, v8) and on a small Inform 6 library game (v5, v8: same text, save, restore, restart). About 2 million instructions a second.
   Also runs under gforth 0.7.9 (`gforth ports/gforth/zmachine-gforth.fs story.z5`, tests: `gforth examples/games/zmachine_tests.fs`): three
@@ -162,3 +162,48 @@ Line editor at the prompt (`common/lineedit.fs`): moves, backspace and delete wo
 and the cursor sequences count columns, that is letters (`le-cols`); this was also wrong on a real terminal. Tested in `lineedit_tests.fs`.
 
 The console cursor blinks from `blink-tick`, called by `con-key` and by `con-key?`: a program that polls with `key?` (writhdeck) had a frozen phase, often the invisible one, hence no cursor.
+
+## Inform 6 stories
+
+Stories live in `examples/games/zmachine/` (`.inf` source, `.z3`/`.z5` compiled, both committed). The compilers and
+libraries are NOT in the repository.
+
+### What is installed here (checked 2026-10-26)
+
+- `/usr/bin/inform` = Inform 6.31 (2006), library 6/11 in `/usr/share/inform/6.31/module`. Latin-1 sources only, no `-Cu`.
+  OK for a quick English test (`inform -v5 +/usr/share/inform/6.31/module x.inf x.z5`), but 6/11 has no automatic
+  "(first opening the chest)": `cave.inf` was built with 6.12 and `zmachine_tests.fs` expects its messages.
+- Nothing else. Get what you need in a scratch directory (never in the repo):
+  - compiler: `git clone --depth 1 https://github.com/DavidKinder/Inform6.git && make` (6.45, has `-Cu`)
+  - English 6.12.x library + French files: `git clone https://gitlab.com/auraes/inform6lib_fr` and unzip its
+    `libI6_Windows.zip` (gives `inform6lib/` = English 6.12.6, `inform6lib_fr/` = `french.h`, `frenchg.h`, `translation.h`,
+    and the example `cqvdle.inf`, a good second test of the interpreter).
+
+### Compile
+
+    inform6 cave.inf cave.z5 -v5 +/path/inform6lib/                                  # English, version 5 (the library does not fit in v3)
+    inform6 cave_fr.inf cave_fr.z5 +/path/inform6lib/ ++/path/inform6lib_fr/         # French (needs 6.35+ for the !% -Cu header)
+
+The French source starts with `!% -Cu`, `!% -~S`, `!% +Language_name=french` and is UTF-8. French library conventions:
+verbs in the infinitive (`prendre`, `ouvrir`, `allumer`, `regarder`, not `regarde`), accents must be typed, genders by
+`has male` / `has female` (the library does elisions and agreements itself, no `articles` needed), `Include "parser"; Include "verblib";`
+then `Include "frenchg";` last. The French library is CC BY-SA 4.0: do not copy it into the repository (if ever: NOTICE with its text).
+
+### Test
+
+    out/posix/lugforth examples/games/zmachine_tests.fs        # ends with PASS (49 checks)
+    gforth examples/games/zmachine_tests.fs -e bye              # same, under gforth
+    printf 'regarder\ninventaire\n' | out/posix/lugforth examples/games/zmachine.fs story.z5    # by hand; stdin EOF prints garbage at the end, ignore
+
+`zmachine_tests.fs`: `s" cmd" iline` queues a command, `play` runs, `has?` searches the capture (`ocap`, 16 KB), the input buffer
+`icap` is 600 bytes. A check on text that the interpreter wraps at 78 columns can miss (the line break replaces a space):
+test a short fragment. The turn count excludes meta commands such as `score`.
+
+### Traps
+
+- Inform's `-Cu` stories bring their own alphabet table (header word $34) and Unicode table (header extension word 3, via $36);
+  `zmachine.fs` reads both in `zsetup` (`zuni`, `zun`, `zalpha`, `afind`, `ez-char`). Wrong accents ("Apr7s") = that code broke.
+- Print-only messages in a `LibraryMessages` `before` routine must end with `rtrue`, or the English message is printed after.
+- Library constants such as `AND__TX` cannot be redefined without a language file: use a real language library instead of
+  patching the English one (the first `cave_fr.inf` did, with `BeforeParsing` mapping French words to English ones: abandoned).
+- Rebuild the EFI/Pi disks after adding a `.z5`: `ports/efi/Makefile` takes `examples/games/zmachine/*.z3|*.z5` by wildcard.

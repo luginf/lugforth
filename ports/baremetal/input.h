@@ -24,7 +24,7 @@
 // ---- the state read by the sdl2 words ----
 static uint8_t in_down[256], in_hit[256], in_snap[256];
 static int in_last_key;            // last key pressed, sdl2 code, for last-key
-static int64_t in_mouse_x, in_mouse_y, in_wheel, in_wheel_acc;
+static int64_t in_mouse_x, in_mouse_y, in_mouse_rx, in_mouse_ry, in_wheel, in_wheel_acc;
 static int in_mouse_seen;          // a pointer device sent something
 static int in_shift, in_ctrl;
 
@@ -235,18 +235,22 @@ __attribute__((unused)) static void input_key(int code, int value) {
 // Absolute position, 0..32767 on each axis of the whole screen.
 __attribute__((unused)) static void input_abs(int x_or_y, int64_t v) {
   in_mouse_seen = 1;
-  if (x_or_y == 0) in_mouse_x = fb_w ? v * fb_w / 32768 : 0;
-  else in_mouse_y = fb_h ? v * fb_h / 32768 : 0;
+  int z = fb_zoom ? fb_zoom : 1;
+  if (x_or_y == 0) { in_mouse_rx = fb_w ? v * fb_w * z / 32768 : 0; in_mouse_x = in_mouse_rx / z; }
+  else { in_mouse_ry = fb_h ? v * fb_h * z / 32768 : 0; in_mouse_y = in_mouse_ry / z; }
 }
 
 // Relative motion (a mouse), in screen pixels, kept on the screen.
 __attribute__((unused)) static void input_rel(int x_or_y, int64_t d) {
   in_mouse_seen = 1;
+  int z = fb_zoom ? fb_zoom : 1;
+  int64_t *r = x_or_y == 0 ? &in_mouse_rx : &in_mouse_ry;
   int64_t *p = x_or_y == 0 ? &in_mouse_x : &in_mouse_y;
-  int64_t lim = x_or_y == 0 ? fb_w : fb_h;
-  *p += fb_zoom ? d / fb_zoom : d;
-  if (*p < 0) *p = 0;
-  if (lim && *p >= lim) *p = lim - 1;
+  int64_t lim = (x_or_y == 0 ? fb_w : fb_h) * z;
+  *r += d;
+  if (*r < 0) *r = 0;
+  if (lim && *r >= lim) *r = lim - 1;
+  *p = *r / z;
 }
 
 __attribute__((unused)) static void input_wheel(int64_t d) { in_wheel_acc += d; }

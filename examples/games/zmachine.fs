@@ -50,7 +50,7 @@ defer zcr   ' cr is zcr
   ll @ lj @ - ll ! ;
 : lb-put ( c -- ) lb ll @ + c!  1 ll +! ;
 
-create zuni   \ ZSCII 155 to 223 as Unicode
+create zuni0   \ ZSCII 155 to 223 as Unicode (the default table)
 $e4 , $f6 , $fc , $c4 , $d6 , $dc , $df , $bb , $ab , $eb , $ef , $ff , $cb , $cf ,
 $e1 , $e9 , $ed , $f3 , $fa , $fd , $c1 , $c9 , $cd , $d3 , $da , $dd ,
 $e0 , $e8 , $ec , $f2 , $f9 , $c0 , $c8 , $cc , $d2 , $d9 ,
@@ -58,12 +58,15 @@ $e2 , $ea , $ee , $f4 , $fb , $c2 , $ca , $ce , $d4 , $db , $e5 , $c5 , $f8 , $d
 $e3 , $f1 , $f5 , $c3 , $d1 , $d5 , $e6 , $c6 , $e7 , $c7 , $fe , $f0 , $de , $d0 ,
 $a3 , $153 , $152 , $a1 , $bf ,
 
-: zuni-find ( cp -- zscii ) 63 69 0 do over zuni i cells + @ = if drop i 155 + leave then loop nip ;
+create zuni 97 cells allot   variable zun      \ the table of the story (its header extension) or the default one
+: zuni-default ( -- ) 69 zun !  69 0 do zuni0 i cells + @ zuni i cells + ! loop ;
+zuni-default
+: zuni-find ( cp -- zscii ) 63 zun @ 0 ?do over zuni i cells + @ = if drop i 155 + leave then loop nip ;
 : lb-utf8 ( cp -- ) dup 6 rshift $c0 or lb-put $3f and $80 or lb-put ;
 
 : zscreen ( c -- )
   dup 13 = if drop lb-flush zcr exit then
-  dup 155 224 within if zuni swap 155 - cells + @ lb-utf8 else
+  dup 155 zun @ 155 + within if zuni swap 155 - cells + @ lb-utf8 else
   dup 32 127 within 0= if drop exit then lb-put then
   ll @ zwidth >= if lb-break then ;
 
@@ -163,9 +166,11 @@ variable zcn   variable zcl
 
 \ ---- Text: Z-characters ----
 create zalpha 80 allot   \ the 26 letters of each of the 3 alphabets, built without a string holding a quote
-s" abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ  0123456789.,!?_#'" zalpha swap cmove
-34 zalpha 71 + c!   47 zalpha 72 + c!   92 zalpha 73 + c!
-s" -:()" zalpha 74 + swap cmove
+: zalpha-default ( -- )
+  s" abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ  0123456789.,!?_#'" zalpha swap cmove
+  34 zalpha 71 + c!   47 zalpha 72 + c!   92 zalpha 73 + c!
+  s" -:()" zalpha 74 + swap cmove ;
+zalpha-default
 variable za   variable zab   variable zesc   variable zhi
 
 : zscii-out ( c -- ) zout ;
@@ -285,15 +290,13 @@ defer zgetline   ' zedit-line is zgetline     \ ( -- n ) a line of n bytes in zl
 create eb 8 allot   create zq 12 allot   variable zqn
 : ezmax ( -- n ) zver 4 < if 6 else 9 then ;
 : ezq ( z -- ) zqn @ ezmax < if zq zqn @ + c!  1 zqn +! else drop then ;
-: a2-find ( c -- k )
-  -1  26 2 ?do  over zalpha 52 + i + c@ = if drop i leave then loop nip ;
+: afind { c lo hi -- k }   \ where c is in zalpha between lo and hi, or -1
+  -1  hi lo ?do c zalpha i + c@ = if drop i leave then loop ;
 : ez-char ( c -- )
-  dup 97 123 within if 91 - ezq exit then
-  dup a2-find dup 0< if
-    drop  5 ezq 6 ezq  dup 5 rshift ezq  31 and ezq
-  else
-    5 ezq 6 + ezq drop
-  then ;
+  dup 0 26 afind dup 0< 0= if nip 6 + ezq exit then drop
+  dup 26 52 afind dup 0< 0= if nip 20 - 4 ezq ezq exit then drop
+  dup 54 78 afind dup 0< 0= if nip 46 - 5 ezq ezq exit then drop
+  5 ezq 6 ezq  dup 5 rshift ezq  31 and ezq ;
 : zpack ( -- )
   ezmax 3 / 0 do
     zq i 3 * +  dup c@ 10 lshift  over 1+ c@ 5 lshift or  swap 2 + c@ or
@@ -509,7 +512,7 @@ variable ct-f   variable ct-s   variable ct-n
 : z-log_shift 0 op@ 1 op@ s16 dup 0< if negate rshift else lshift then zstore ;
 : z-art_shift 0 op@ s16 1 op@ s16 dup 0< if negate 0 ?do 2/ loop else lshift then zstore ;
 : z-set_font 0 op@ 1 = if 1 else 0 then zstore ;
-: z-print_unicode 0 op@ dup 127 < if zout else drop 63 zout then ;
+: z-print_unicode 0 op@ dup 127 < if zout else zuni-find zout then ;
 : z-check_unicode 3 zstore ;
 : z-save_undo $ffff zstore ;
 : z-restore_undo 0 zstore ;
@@ -643,6 +646,15 @@ tab: t0   tab: t1   tab: t2   tab: tv   tab: te
 : zsetup ( -- )
   0 zb@ to zver
   $0c zw@ to zglobals   $0e zw@ to zstatic   $0a zw@ to zobjt   $18 zw@ to zabbr
+  zalpha-default   zuni-default
+  zver 5 >= if
+    $34 zw@ ?dup if 78 0 do dup i + zb@ zalpha i + c! loop drop then            \ the alphabet of the story
+    $36 zw@ ?dup if
+      dup zw@ 3 >= if 6 + zw@ ?dup if                                          \ and its Unicode table
+        dup zb@ 97 min dup zun !  swap 1+ swap 0 ?do dup i 2* + zw@ zuni i cells + ! loop drop
+      then else drop then
+    then
+  then
   zfix  zheader
   $06 zw@ zpc !
   5 zsp !  0 zfp !
@@ -680,7 +692,7 @@ also zm
 : zplay ( "story" -- ) bl parse zstart ;
 
 \ lugforth examples/games/zmachine.fs story.z5     plays the story at once (the second argument)
-[defined] gforth 0= [if]
+[defined] gforth 0= [defined] argv and [if]   \ no argc / argv on the bare-metal boots
 : zmain ( -- )
   argc 3 < if exit then
   1 argv dup 11 < if 2drop exit then  + 11 - 11 s" zmachine.fs" compare if exit then

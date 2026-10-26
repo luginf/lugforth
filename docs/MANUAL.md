@@ -50,7 +50,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with `ninja posix`). You
 prompt:
 
 ```
-Lugforth v2026.10.26.9
+Lugforth v2026.10.26.11
 :; ===========>/>
 type 'info' for help
  ok
@@ -799,7 +799,7 @@ status_right  = goal help_bar
 | `sdl2_3d.fs` | turning wireframes |
 | `sdl2_2048.fs` | sliding tiles; `--no-anim` turns the animation off |
 | `2048.fs` | 2048 in the terminal |
-| `zmachine.fs` | Z-machine interpreter in one file: plays Infocom and Inform stories (`.z3 .z4 .z5 .z8`), `zplay story.z5` (try `lugforth examples/games/zmachine.fs examples/games/zmachine/cave.z5`); also under gforth (`ports/gforth/zmachine-gforth.fs`) |
+| `zmachine.fs` | Z-machine interpreter in one file: plays Infocom and Inform stories (`.z3 .z4 .z5 .z8`), `zplay story.z5` (try `lugforth examples/games/zmachine.fs examples/games/zmachine/cave.z5`, or `cave_fr.z5` in French); also under gforth (`ports/gforth/zmachine-gforth.fs`) |
 | `fm/sdl2_fm.fs` | FM synthesizer, MIDI keyboard on Linux and in the browser |
 | `inference/` | small rule based inference engine, README in English and French, Makefile with scenarios |
 
