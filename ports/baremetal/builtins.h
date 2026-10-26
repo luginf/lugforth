@@ -26,6 +26,7 @@
   XV(BM_VOC, "FB-LINE", FB_LINE, fb_line(n3, n2, n1, n0); DROPn(4)) \
   XV(BM_VOC, "FB-PIXEL", FB_PIXEL, n1 = fb_pixel(n1, n0); DROP) \
   XV(BM_VOC, "FB-FLIP", FB_FLIP, fb_flip()) \
+  XV(BM_VOC, "MOUSE-CURSOR", MOUSE_CURSOR, fb_cursor_on = n0 != 0; DROP) \
   XV(BM_VOC, "FB-BLIT8", FB_BLIT8, fb_blit8(b3, n2, n1, (const uint32_t *) a0); DROPn(4)) \
   XV(BM_VOC, "FB-CLOSE", FB_CLOSE, fb_close()) \
   XV(BM_VOC, "GFX-OPEN", GFX_OPEN, gfx_ensure()) \

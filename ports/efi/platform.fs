@@ -62,6 +62,12 @@ previous
 ( Speed of a relative mouse: percent of a screen pixel per count of the device, 40 by default )
 also rpi
 : mouse-speed ( n -- )   mouse-speed! ;
+: mouse-info ( -- )   \ what the firmware reports: move the mouse, run it again
+  ." relative pointers " 20 ptr-stat . ."  absolute " 21 ptr-stat . cr
+  ." rel: last dx " 0 ptr-stat . ." dy " 1 ptr-stat . ." reports " 2 ptr-stat . cr
+  ." abs: x " 3 ptr-stat . ." y " 4 ptr-stat . ." reports " 5 ptr-stat .
+  ." max " 6 ptr-stat . 7 ptr-stat . cr
+  ." resolution (counts per mm) " 8 ptr-stat . 9 ptr-stat . cr ;
 previous
 
 ( The current directory of the disk: cd, pwd )

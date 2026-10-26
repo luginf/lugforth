@@ -346,9 +346,11 @@ static void key_press(int code, int shift, int ctrl, int alt, int altgr) {
 static EFI_SIMPLE_POINTER_PROTOCOL *rel_ptr[PTR_MAX];
 static EFI_ABSOLUTE_POINTER_PROTOCOL *abs_ptr[PTR_MAX];
 static int rel_count, abs_count;
-static int ptr_gain = 20;             // device counts -> screen pixels, in percent (MOUSE-SPEED)
+static int ptr_gain = 10;             // device counts -> screen pixels, in percent (MOUSE-SPEED)
 static int64_t ptr_acc[2];
 static int ptr_left, ptr_right;
+static int ptr_rel_seen;              // a relative pointer has reported: absolute ones are then ignored
+static int64_t ptr_dbg[12];            // PTR-STAT: last raw values, to see what the firmware reports
 
 static void ptr_init(void) {
   EFI_GUID rg = EFI_SIMPLE_POINTER_PROTOCOL_GUID, ag = EFI_ABSOLUTE_POINTER_PROTOCOL_GUID;
@@ -384,8 +386,19 @@ static void ptr_poll(void) {
     EFI_SIMPLE_POINTER_STATE st;
     int moved = 0;
     while (rel_ptr[i]->GetState(rel_ptr[i], &st) == EFI_SUCCESS) {
-      ptr_acc[0] += (int64_t) st.RelativeMovementX * ptr_gain;      // in 1/100 pixel
-      ptr_acc[1] += (int64_t) st.RelativeMovementY * ptr_gain;
+      int64_t dx = st.RelativeMovementX, dy = st.RelativeMovementY;
+      ptr_dbg[0] = dx; ptr_dbg[1] = dy; ptr_dbg[2]++;
+      // Counts per millimetre of the device: EDK2's USB mouse says 8 and reports
+      // small counts; a firmware that reports 16384 says so here. Scale to the 8.
+      UINT64 rx = rel_ptr[i]->Mode->ResolutionX, ry = rel_ptr[i]->Mode->ResolutionY;
+      ptr_dbg[8] = rx; ptr_dbg[9] = ry;
+      if (rx > 8) dx = dx * 8 / (int64_t) rx;
+      if (ry > 8) dy = dy * 8 / (int64_t) ry;
+      if (dx || dy) ptr_rel_seen = 1;
+      if (dx > 1000) dx = 1000; else if (dx < -1000) dx = -1000;     // garbage from a firmware
+      if (dy > 1000) dy = 1000; else if (dy < -1000) dy = -1000;
+      ptr_acc[0] += dx * ptr_gain;      // in 1/100 pixel
+      ptr_acc[1] += dy * ptr_gain;
       ptr_buttons(st.LeftButton != 0, st.RightButton != 0);
       moved = 1;
     }
@@ -400,11 +413,19 @@ static void ptr_poll(void) {
   }
   for (int i = 0; i < abs_count; i++) {
     EFI_ABSOLUTE_POINTER_STATE st;
+    if (ptr_rel_seen) {                  // a mouse is moving: the same device may also show up as an absolute one
+      while (abs_ptr[i]->GetState(abs_ptr[i], &st) == EFI_SUCCESS) { ptr_dbg[5]++; }
+      continue;
+    }
     EFI_ABSOLUTE_POINTER_MODE *m = abs_ptr[i]->Mode;
     while (abs_ptr[i]->GetState(abs_ptr[i], &st) == EFI_SUCCESS) {
+      ptr_dbg[3] = st.CurrentX; ptr_dbg[4] = st.CurrentY; ptr_dbg[5]++;
+      ptr_dbg[6] = m->AbsoluteMaxX; ptr_dbg[7] = m->AbsoluteMaxY;
       if (m->AbsoluteMaxX > m->AbsoluteMinX && m->AbsoluteMaxY > m->AbsoluteMinY) {
-        input_abs(0, (int64_t) ((st.CurrentX - m->AbsoluteMinX) * 32767 / (m->AbsoluteMaxX - m->AbsoluteMinX)));
-        input_abs(1, (int64_t) ((st.CurrentY - m->AbsoluteMinY) * 32767 / (m->AbsoluteMaxY - m->AbsoluteMinY)));
+        int64_t ax = ((int64_t) st.CurrentX - m->AbsoluteMinX) * 32767 / (int64_t) (m->AbsoluteMaxX - m->AbsoluteMinX);
+        int64_t ay = ((int64_t) st.CurrentY - m->AbsoluteMinY) * 32767 / (int64_t) (m->AbsoluteMaxY - m->AbsoluteMinY);
+        input_abs(0, ax < 0 ? 0 : ax > 32767 ? 32767 : ax);
+        input_abs(1, ay < 0 ? 0 : ay > 32767 ? 32767 : ay);
       }
       ptr_buttons((st.ActiveButtons & 1) != 0, (st.ActiveButtons & 2) != 0);
     }

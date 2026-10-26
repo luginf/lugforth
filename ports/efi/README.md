@@ -173,9 +173,13 @@ Limits, by design:
   starts it again and writes `sound = on`. `ports/efi/sound_ini.fs`.
 * Mouse: `main.c` connects all the firmware's drivers at start (as the shell's
   `connect -r`) and polls every simple and absolute pointer. A relative device
-  moves 0.20 screen pixel per count; `n mouse-speed` sets it in percent (put `15 mouse-speed` in `autoexec.fs` to keep it; the default was lowered from 40 to 20 on 2026-10-24, a real mouse was too fast, the right value depends on the dpi of the mouse and is not measured). OVMF
+  moves 0.10 screen pixel per count of a device of 8 counts per mm (the movement is scaled by the resolution the firmware reports: one machine gave dx = -16384); `n mouse-speed` sets it in percent (put `15 mouse-speed` in `autoexec.fs` to keep it; the default was lowered from 40 to 20 on 2026-10-24, a real mouse was too fast, the right value depends on the dpi of the mouse and is not measured). OVMF
   never polls the USB mouse or tablet (QEMU keeps the PS/2 mouse as the active
   one), so there is no mouse under QEMU and `make test` does not check it.
+  `mouse-info` prints what the firmware reports (pointers, last raw dx dy, resolution);
+  `examples/graphics/sdl2_mouse_test.fs` shows position, buttons, wheel and a speed figure.
+  The sdl2 words draw a small arrow (in `fb_flip`, put back after the copy) unless the
+  program says `0 cursor`; `n mouse-cursor` toggles it.
 * The console shows its pixels when it waits for a key, or every 100 ms during
   a stream of output, so an editor's row by row redraw does not flash.
 * The line editor of the desktop (`common/lineedit.fs`) is loaded: history of

@@ -452,7 +452,7 @@ static void fb_blit8(const uint8_t *px, cell_t w, cell_t h, const uint32_t *pal)
 // memory is slow to write on a real GPU, and a game moves little between two
 // frames. Each row's changed span is zoomed into a line in RAM, which is
 // copied to the zoom rows.
-static void fb_flip(void) {
+static void fb_flip_diff(void) {
   if (!fb_back || !TERM_FOCUSED()) return;
   if (fb_gfx) { fb_gfx_dirty = 1; con_sync(); return; }
   size_t px = (size_t) fb_w * fb_h;
@@ -490,4 +490,42 @@ static void fb_flip(void) {
   }
   if (y0 >= 0) dcache_clean((const void *) ((volatile uint8_t *) fb_mem + (uint64_t) y0 * fb_zoom * fb_pitch),
                             (uint64_t) (y1 - y0 + 1) * fb_zoom * fb_pitch);
+}
+
+// A software mouse pointer for the programs that do not draw one (a window
+// of a desktop has the OS's pointer; here nothing does). It is drawn into the
+// back buffer just for the flip, then the pixels under it are put back, so
+// the program's own picture is never touched. input.h keeps the position.
+static int64_t in_mouse_x, in_mouse_y;
+static int in_mouse_seen;
+static int fb_cursor_on = 1;        // MOUSE-CURSOR ( f -- )
+static const char *const cur_shape[16] = {
+  "X          ", "XX         ", "XoX        ", "XooX       ", "XoooX      ", "XooooX     ",
+  "XoooooX    ", "XooooooX   ", "XoooooooX  ", "XooooXXXXX ", "XooXooX    ", "XoX XooX   ",
+  "XX  XooX   ", "X    XooX  ", "     XooX  ", "      XX   " };
+
+static void fb_flip(void) {
+  uint32_t save[16][11];
+  int cx = (int) in_mouse_x, cy = (int) in_mouse_y, drawn = 0;
+  if (fb_cursor_on && in_mouse_seen && fb_back && !fb_gfx && cx >= 0 && cy >= 0) {
+    drawn = 1;
+    for (int r = 0; r < 16; r++)
+      for (int c = 0; c < 11; c++) {
+        int x = cx + c, y = cy + r;
+        char ch = cur_shape[r][c];
+        if (x >= fb_w || y >= fb_h) continue;
+        uint32_t *px = fb_back + (size_t) y * fb_w + x;
+        save[r][c] = *px;
+        if (ch == 'X') *px = 0x000000;
+        else if (ch == 'o') *px = 0xFFFFFF;
+      }
+  }
+  fb_flip_diff();
+  if (drawn)
+    for (int r = 0; r < 16; r++)
+      for (int c = 0; c < 11; c++) {
+        int x = cx + c, y = cy + r;
+        if (x >= fb_w || y >= fb_h) continue;
+        fb_back[(size_t) y * fb_w + x] = save[r][c];
+      }
 }

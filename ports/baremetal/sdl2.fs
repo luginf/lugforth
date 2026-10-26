@@ -28,10 +28,10 @@ vocabulary sdl2   also rpi also sdl2 definitions
   to height to width
   begin  width height zoom fb-open  while  zoom 1 > 0= if -21 throw then  -1 +to zoom  repeat
   -1 to screen-open?   0 to quitting   0 to gfx-mode ;
-: close-screen ( -- )   screen-open? if fb-close then  0 to screen-open?  1 to zoom  0 to gfx-mode ;
+: close-screen ( -- )   screen-open? if fb-close then  0 to screen-open?  1 to zoom  0 to gfx-mode  1 mouse-cursor ;
 : title ( a n -- ) 2drop ;
 : fullscreen ( f -- ) drop ;
-: cursor ( f -- ) drop ;
+: cursor ( f -- ) mouse-cursor ;   ( the built-in arrow: 0 for a program that draws its own )
 
 ( ---- Colors ---- )
 0 value pen-r   0 value pen-g   0 value pen-b   255 value pen-a
