@@ -102,9 +102,20 @@ variable indent
 : see. ( xt -- ) >name type space ;
 : icr   cr indent @ 0 max 4* spaces ;
 : indent+! ( n -- ) indent +! icr ;
+\ True when x is the xt of a word: of a vocabulary, or a builtin of C.
+: known-xt? ( x -- f )
+   >r last-vocabulary @ begin dup while
+     dup >body @ begin dup while dup r@ = if 2drop rdrop -1 exit then >link repeat drop
+     >body 2 cells + @
+   repeat drop
+   'builtins begin dup >link while dup r@ = if drop rdrop -1 exit then 3 cells + repeat drop
+   rdrop 0 ;
+\ What postpone compiles for a word that is not immediate: the xt as a literal, then ,
+: postponed? ( a -- f ) dup cell+ @ ['] , = if @ known-xt? else drop 0 then ;
 : see-one ( xt -- xt+1 )
    dup cell+ swap @
-   dup ['] DOLIT = if drop dup @ . cell+ exit then
+   dup ['] DOLIT = if drop dup postponed? if ." POSTPONE " dup @ see. 2 cells + exit then
+                      dup @ . cell+ exit then
    dup ['] DOSET = if drop ." TO " dup @ cell - see. cell+ icr exit then
    dup ['] DOFLIT = if drop dup sf@ <# [char] e hold #fs #> type space cell+ exit then
    dup ['] $@ = if drop ['] s" see.
@@ -130,6 +141,12 @@ variable indent
 : see-loop   dup >body swap >params 1- cells over +
              begin 2dup < while swap see-one swap repeat 2drop ;
 : ?see-flags   >flags IMMEDIATE_MARK and if ." IMMEDIATE " then ;
+\ The builtin of C whose code field a word of the dictionary has, made by
+\ opcode-as as DO from (DO), or by create as BEGIN from NOP: 0 if none.
+: opcode-of ( xt -- xt' | 0 )
+  @ >r 'builtins begin dup >link while
+    dup @ r@ = if rdrop exit then 3 cells +
+  repeat drop rdrop 0 ;
 : see-xt ( xt -- )
   dup @ ['] see-loop @ = if
     ['] : see.  dup see.
@@ -144,6 +161,7 @@ variable indent
   dup @ ['] SMUDGE @ = if ." DOES>/CONSTANT: " see. cr exit then
   dup @ ['] callcode @ = if ." Code: " see. cr exit then
   dup >params 0= if ." Built-in: " see. cr exit then
+  dup opcode-of ?dup if ." C code: " swap see. ." runs the opcode " see. cr exit then
   ." Unsupported: " see. cr ;
 
 : nonvoc? ( xt -- f )

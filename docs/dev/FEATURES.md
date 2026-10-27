@@ -106,7 +106,11 @@ the base with three u/mod on half cells, `pad` is 160 bytes above `here` for the
 opcodes of tier 2 now (`(DO) (?DO) (LOOP) (+LOOP)` in `internals`, `common/tier2_opcodes.h`); `opcode-as (DO) DO`
 in boot.fs gives the Forth `DO` the code field of the opcode, as `BEGIN` and `IF` are made, so `see` and the marks
 of utils.fs still find one word. The return stack is laid out as before (limit, then index: `I` is `R@`, `J`, `K`,
-`LEAVE`, `UNLOOP` unchanged). The web build has no tier 2 and keeps the Forth versions. 1e7 turns of
+`LEAVE`, `UNLOOP` unchanged). The web build has no tier 2 and keeps the Forth versions.
+`see` (2026.10.27.3): a word whose code field is a builtin's, as `DO` or `I`, shows `C code: DO runs the opcode (DO)`
+instead of `Unsupported` (`opcode-of` in utils.fs), and the literal xt that `postpone` compiles before `,` shows as
+`POSTPONE DO` (`known-xt?` walks the vocabularies and the builtins). `see DO` finds the compiling word `do` (case
+is ignored); the runtime `DO` is in the vocabulary `internalized`: `internals internalized see DO forth`. 1e7 turns of
 `0 10000000 0 do i + loop` on posix: 554 ms before, 71 ms after. Same results as gforth on `+LOOP` with negative
 steps and `LEAVE`.
 
