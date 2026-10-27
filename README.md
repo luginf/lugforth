@@ -1,5 +1,7 @@
 # Lugforth
 
+*English - [Français](README.fr.md)*
+
 A small, case-insensitive, 64-bit Forth built on a minimal C kernel. It runs on Linux, in the browser,
 on Android, on microcontrollers (ESP32, Pico, GBA) and on bare metal (Raspberry Pi, x86-64 PC via UEFI).
 

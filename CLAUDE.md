@@ -22,7 +22,7 @@ again before opening a pull request: `git fetch origin main`, then start from (o
 included) in `origin/main` too before saying it does not exist.
 
 The global rules of the maintainer apply: no commit, push or amend without their agreement (they read a `git diff` first);
-leave changes in the working tree and say how to see the diff. A commit asked for once does not cover the next change.
+leave changes in the working tree, and do not remind them that they can read the `git diff` (they know). A commit asked for once does not cover the next change.
 
 ## Build and test
 
@@ -48,7 +48,7 @@ Do not `pkill -f` a pattern that appears in your own command line (it kills your
 
 At each modification, raise the version, even by a fraction: in the root `BUILD`,
 `SetVersions(version='YYYY.MM.DD.N', date='YYYY-MM-DD')` (the date of the change, N = 1, 2... for the changes of that day; `info` shows it
-under the revision), and the banner of `docs/MANUAL.md` (`Lugforth vYYYY.MM.DD.N`). Now 2026.10.27.4 (2026-10-27). The release tag is
+under the revision), and the banner of `docs/MANUAL.md` (`Lugforth vYYYY.MM.DD.N`). Now 2026.10.27.5 (2026-10-27). The release tag is
 `v` + this version (`v2026.10.23.1`): the release workflow refuses a tag that differs from `BUILD`. Dotted digits on purpose (the release
 workflow, the packages and the Android `versionCode` read it). Do it in the same change set. (Before 2026.10.23.1 it was 7.0.11.N, and the
 tags v0.5.x.)
