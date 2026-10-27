@@ -50,7 +50,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with `ninja posix`). You
 prompt:
 
 ```
-Lugforth v2026.10.27.3
+Lugforth v2026.10.27.4
 :; ===========>/>
 type 'info' for help
  ok
@@ -307,6 +307,40 @@ A word can call itself with `recurse`:
 > 10 fact .
 3628800  ok
 ```
+
+**Two words named `do`.** `do`, `loop`, `if`, `begin` and the other control words work at two
+moments. While a definition is compiled, the **compiling word** `do` runs at once (it is immediate):
+it writes a call to the **runtime word** `DO` into the definition and remembers where the loop
+starts, for `loop`. Each time the definition runs, the runtime `DO` puts the limit and the counter
+on the return stack. Only the runtime words stay in the compiled code, and `see` shows them:
+
+```
+: compte  5 0 do i . loop ;
+> see compte
+: compte
+    5 0 DO
+        I .
+    LOOP
+;
+```
+
+Both have the same name (the case is ignored), as in uEforth: the compiling word, defined last, is
+the one found when you type `do`, and the runtime word is moved to the vocabulary `internalized`.
+So `see do` and `see DO` show the compiling word; to see the runtime one, put `internalized` in the
+search order:
+
+```
+> see do
+: do
+    leaving( POSTPONE DO here
+; IMMEDIATE
+> internals internalized see DO forth
+C code: DO runs the opcode (DO)
+```
+
+`DO ?DO LOOP +LOOP` are written in C on most builds; on the web build they are Forth words, and the
+same line shows their definition (`: DO SWAP R> -rot >R >R >R ;`). gforth does the same with other
+names: its runtime word is `(do)`, and its `see` writes it back as `DO`.
 
 **Exercises**
 
