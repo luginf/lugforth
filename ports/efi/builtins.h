@@ -37,6 +37,7 @@
   XV(pc, "PTR-STAT", PTR_STAT, n0 = n0 == 20 ? rel_count : n0 == 21 ? abs_count : n0 >= 0 && n0 < 12 ? ptr_dbg[n0] : 0) \
   XV(pc, "SLEEP-US", SLEEP_US, sleep_us(n0 < 0 ? 0 : n0); DROP) \
   XV(pc, "IDLE-US", IDLE_US, PUSH idle_us()) \
+  XV(pc, "MOUSE-SPEED@", MOUSE_SPEED_GET, PUSH ptr_gain) \
   XV(pc, "CNTFRQ", CNTFRQ, PUSH timer_freq()) \
   XV(pc, "BOARD", BOARD, PUSH BOARD_NAME; PUSH sizeof(BOARD_NAME) - 1) \
   XV(pc, "SCREEN-SIZE", SCREEN_SIZE, PUSH gop_w; PUSH gop_h) \

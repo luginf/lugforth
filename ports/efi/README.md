@@ -180,6 +180,12 @@ Limits, by design:
   `examples/graphics/sdl2_mouse_test.fs` shows position, buttons, wheel and a speed figure.
   The sdl2 words draw a small arrow (in `fb_flip`, put back after the copy) unless the
   program says `0 cursor`; `n mouse-cursor` toggles it.
+* A small desktop: `include utils/desktop_bm.fs` (it starts at once; `desk` brings it back). Icons, a file
+  manager and a settings window (draggable windows, taskbar; mouse speed with - and +, Save writes it to
+  `lugforth.ini` as `mouse = 55`, read at boot like `sound = off`), drawn with the sdl2 words (`examples/utils/desktop_bm.fs`; `desktop.fs` needs the real libSDL2 and cannot
+  run here). Mouse or keyboard (arrows, Enter, Esc): double click to open a folder, run a `.fs`, play a `.z3 .z5 .z8`
+  story, or edit any other file in writhdeck; the editors and programs take the whole screen, a key brings the
+  desktop back. The icons are the table in `dk-defaults`. Checked under QEMU with the keyboard, not with a real mouse.
 * The console shows its pixels when it waits for a key, or every 100 ms during
   a stream of output, so an editor's row by row redraw does not flash.
 * The line editor of the desktop (`common/lineedit.fs`) is loaded: history of

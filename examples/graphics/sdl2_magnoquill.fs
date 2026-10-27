@@ -24,6 +24,13 @@
 sdl2
 
 800 constant win-w   800 constant win-h
+variable pct   100 pct !           \ the window is win-w * pct / 100: smaller on a screen under 800 lines
+: scaled ( n -- n' )   pct @ 100 */ ;
+: open-screen ( -- )   \ 800x800 if the display has room (a bare-metal PC with 1366x768 has not), else smaller
+  100 pct !
+  begin
+    win-w pct @ 100 */  win-h pct @ 100 */ ['] screen catch 0<>
+  while  pct @ 10 - pct !  pct @ 30 < if -21 throw then  repeat ;
 500 constant npts-min   20000 constant npts-max   500 constant npts-step
 0.004e0 fconstant base-tstep      \ time step per frame at speed 1
 16 constant frame-ms              \ about 60 frames a second
@@ -98,7 +105,7 @@ fvariable f-hprime     fvariable f-hmod
    calc-xy calc-k calc-e calc-d calc-q calc-c calc-p calc-bright
    colormode @ if calc-color else 1e0 fdup fdup frr f! fgg f! fbb f! then
    frr f@ byte  fgg f@ byte  fbb f@ byte  rgb
-   fpx f@ 2e0 f* f>s   400e0 fpy f@ f- 2e0 f* f>s   dot ;
+   fpx f@ 2e0 f* f>s scaled   400e0 fpy f@ f- 2e0 f* f>s scaled   dot ;
 
 : draw-creature   npts @ 0 do i draw-point loop ;
 
@@ -141,7 +148,7 @@ create prev 128 allot
    frame-ms ticks r> - - dup 0> if delay else drop then ;
 
 : magnoquill ( -- )
-   win-w win-h screen
+   open-screen
    s" Magnoquill Driftflare Quiverbloom" title
    0 frames !  4000 npts !  5 speed-level !  0e0 qt f!
    0 paused !  1 colormode !  1 blendmode !

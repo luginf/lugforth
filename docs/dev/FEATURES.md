@@ -407,6 +407,8 @@ file may be edited by hand. The project folder is found by looking for
 copy, new folder in the file manager (needs a text field), mouse
 selection in terminal windows.
 
+`examples/utils/desktop_bm.fs`: the same idea for the bare-metal PC and Pi (no libSDL2 there): icons, draggable windows (file manager, settings with the mouse speed saved in lugforth.ini) with the short sdl2 words, runs `.fs`, Z-machine stories, `writhdeck` and `ed` (they take the screen, a key brings the desktop back). Tested under QEMU with the keyboard (2026-10-27); the mouse is the one of the sdl2 words (software arrow), never felt under OVMF.
+
 ## Unicode in the console window (`lugforth --gui`)
 
 A grid cell holds a Unicode code point (4 bytes: `grid` has a stride of
