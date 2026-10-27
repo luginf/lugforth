@@ -214,7 +214,7 @@ e: test-anew
 : test-buffer:   tbuf 10 erase  tbuf 9 + c@ 0 =assert ;
 : tpn ( -- a n ) parse-name ;
 : test-parse-name   s" tpn   word  " evaluate s" word" str= assert ;
-: test-holds   <# s" xyz" holds 0 #s #> s" 0xyz" str= assert ;
+: test-holds   <# s" xyz" holds 0 0 #s #> s" 0xyz" str= assert ;
 : test--trailing   s" ab  " -trailing nip 2 =assert   s"    " -trailing nip 0 =assert ;
 defer tdefer
 : test-defer@   ['] dup ['] tdefer defer!  ['] tdefer defer@ ['] dup =assert
@@ -317,3 +317,12 @@ synonym tdup dup
 : test-synonym   5 tdup =assert ;
 : test-n>r   1 2 3 3 n>r nr> 3 =assert 3 =assert 2 =assert 1 =assert ;
 : test-cs-roll   1 2 3 2 cs-roll 1 =assert 3 =assert 2 =assert ;
+
+( Pictured numeric output on a double, as the standard has it )
+: test-<#-single   12 0 <# #s #> s" 12" str= assert   0 0 <# #s #> s" 0" str= assert ;
+: test-<#-double   0 1 <# #s #>
+                   cell 8 = if s" 18446744073709551616" else s" 4294967296" then str= assert ;
+: test-<#-max      -1 -1 <# #s #> nip cell 8 = if 39 else 20 then =assert ;
+: test-<#-s>d      -42 dup >r abs s>d <# #s r> sign #> s" -42" str= assert ;
+: test-<#-hex      base @ hex 255 0 <# # # #> rot base ! s" FF" str= assert ;
+: test-<#-binary   base @ 2 base ! -1 -1 <# #s #> nip swap base ! cell 16 * =assert ;

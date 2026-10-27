@@ -100,7 +100,7 @@ create nbuf GRID_WIDTH allot   \ the line after the move
 \ the tile 2^n in a field of 5 characters
 : .tile ( n -- )
   ?dup 0= if ."     ." exit then
-  1 swap lshift <# #s #>  5 over - 0 max spaces type ;
+  1 swap lshift 0 <# #s #>  5 over - 0 max spaces type ;
 
 create tile-colors 16 c,  229 c, 223 c, 215 c, 209 c, 203 c, 196 c, 227 c, 226 c, 220 c, 214 c, 208 c, 201 c, 201 c,
 : tile-color ( n -- c )   12 min tile-colors + c@ ;

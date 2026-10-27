@@ -96,30 +96,32 @@ sharing `cwd`, closing the first while others live, F5+ terminals.
 
 ## TIC-80 (ports/tic80) - started 2026-10-27
 
-A wasm32 module for the TIC-80 fantasy console, which runs it in its wasm3 interpreter: a Forth cartridge is then
-sandboxed like a Lua one. TIC-80 dropped its pForth binding from its releases (nesbox/TIC-80#3133) because pForth
-reads and writes the host's memory; here every address is an offset in the module's linear memory, an access
-past it traps, and the only ways out are the imports of the module `tic80` (`api`, `type`, `ticks`, the math
-functions), whose addresses the host checks. No CALL, DLSYM, file or task words.
+A wasm32 module for the TIC-80 fantasy console. TIC-80 dropped its pForth binding from its releases
+(nesbox/TIC-80#3133) because pForth reads and writes the host's memory; here every address is an offset in the
+module's linear memory, an access past it traps, and the only ways out are the imports of the module `tic80`
+(`api`, `type`, `ticks`, the math functions), whose addresses the host checks. No CALL, DLSYM, file or task words.
 
 - Build: `make -C ports/tic80` (clang with the wasm32 target and wasm-ld, no sysroot: `include/` and `libc.h` are the
   bits of a C library the kernel needs, with a first-fit `malloc` over `memory.grow`). Gives
-  `out/tic80/lugforth-tic80.wasm` (about 75 KiB with the boot text) and `lugforth-tic80.wasm.h`, a C array for TIC-80.
-  `-mcpu=mvp`: no wasm feature that wasm3 might lack. The boot header is plain C (`importation.py --header c`).
+  `out/tic80/lugforth-tic80.wasm` (about 75 KiB with the boot text). `-mcpu=mvp`; the memory may grow to 16 MiB
+  (`--max-memory`), a limit in the module. The boot header is plain C (`importation.py --header c`).
+- TIC-80 does not interpret the module: `make -C ports/tic80 c` translates it to C with wasm2c (package wabt), and
+  TIC-80 compiles that with the wasm2c runtime in bounds-check mode (its `vendor/lugforth/`). First tried with
+  wasm3, the interpreter TIC-80 has for its wasm language: an interpreter running an interpreter, 25 times slower
+  than native Lugforth (1e6 DO LOOP: 1.3 s; boot 90 ms). With wasm2c: 13.5 ms (Lua in TIC-80: 10.5 ms), boot 11 ms.
 - The inner interpreter switches on the opcode (`ports/tic80/interp.h`, as the MSVC build): wasm has no computed goto.
   A division by zero throws -10 (`DIV0_CHECK`); a forged xt or a stack pointer set anywhere stays in the module.
 - Exports: `lf_init`, `lf_alloc`/`lf_free`, `lf_eval`, `lf_find`, `lf_call`, `lf_call1` (SCN, BDR, MENU take the row),
   `lf_depth`. The commands go through `'host`, read by `host-loop` (`ports/tic80/platform.fs`), which yields back
   to the host after each; the stack is emptied before each command, so a TIC that leaves cells shows in `lf_depth`.
-  After a trap the instance is half way through a word: the host drops it and makes a new one.
+  After a trap the instance is half way through a word: the host drops it.
 - `api.h` is the list of the 56 API words, with the names and stack effects of TIC-80's pForth binding
-  (`src/api/forth.c` there): EXITGAME and KEYPRESSED, not EXIT and KEY. The host keeps a copy of it.
+  (`src/api/forth.c` there): EXITGAME and KEYPRESSED, not EXIT and KEY. TIC-80 keeps a copy of it.
 - Test: `make -C ports/tic80 test` (node: boot, commands, API stack effects, traps). With a cartridge as second
   argument, `node ports/tic80/test_host.js out/tic80/lugforth-tic80.wasm cart.fth` loads it and calls BOOT and TIC.
-  Checked 2026-10-27 with TIC-80's `demos/forthdemo.fth` and `tests/conformance/probes/forth.fth` (334 API calls,
-  no probe threw). `demos/bunny/forthmark.fth` leaves 2 cells per TIC: its `S>D <# #S #>` expects the pictured
-  output of the standard on a double, ours takes a single cell (the gotcha noted in FEATURES.md).
-- Cells are 32 bits, as on the web. Boot in about 20 ms under node; not yet measured in wasm3.
+  Checked 2026-10-27 with TIC-80's `demos/forthdemo.fth`, `demos/bunny/forthmark.fth` and
+  `tests/conformance/probes/forth.fth` (334 API calls, no probe threw; in TIC-80, no divergence from Lua).
+- Cells are 32 bits, as on the web.
 
 ## Game Boy Advance (ports/gba)
 
@@ -138,7 +140,7 @@ makes a small `posix` vocabulary (`shared-library` = `dll`, `sign-extend`, `SDL2
 `lib/sdl2_ttf.fs` (copies of the posix files, put in the zip by the `windows` job: the sources are too big for the MSVC string of the
 boot). That job downloads the official SDL2 and SDL2_ttf DLLs and runs `ports/windows/sdl2_test.fs` (dummy drivers). Tested: Windows
 (window, pixel, TTF) and macOS (`sdl2_tests.fs`, 38) in CI on 2026-10-23, version 2026.10.23.2. Not bundled: SDL2_image, SDL2_mixer.
-The console window (`--gui`, `gui`) is the posix `sdl2_console.fs` and `sdl2_console_ttf.fs`, copied in `lib/`, with more words in the `posix` shim (`sysfunc` through msvcrt.dll, `dlsym`, `readdir`, `.d_name`, `.d_type`, `isatty`, a `termios` with `form-hook`) and `win?` in the console (OS=Windows_NT: no DISPLAY test, `%APPDATA%\lugforth`, `C:/Windows/Fonts`). The Examples menu walks three levels of folders on every platform. Windows directories: `ports/windows/windows_dirs.fs` (FindFirstFile); paths: `/` becomes a backslash in `open-file`, `ends/` knows both. Traps met testing under wine (`wine lugforth.exe t.fs` with output written to a file: the console output is not on stdout): `[']` does not work at the prompt (use `'`), and `<# #s #>` takes a single cell here.
+The console window (`--gui`, `gui`) is the posix `sdl2_console.fs` and `sdl2_console_ttf.fs`, copied in `lib/`, with more words in the `posix` shim (`sysfunc` through msvcrt.dll, `dlsym`, `readdir`, `.d_name`, `.d_type`, `isatty`, a `termios` with `form-hook`) and `win?` in the console (OS=Windows_NT: no DISPLAY test, `%APPDATA%\lugforth`, `C:/Windows/Fonts`). The Examples menu walks three levels of folders on every platform. Windows directories: `ports/windows/windows_dirs.fs` (FindFirstFile); paths: `/` becomes a backslash in `open-file`, `ends/` knows both. Traps met testing under wine (`wine lugforth.exe t.fs` with output written to a file: the console output is not on stdout): `[']` does not work at the prompt (use `'`), and (before 2026.10.27.2) `<# #s #>` took a single cell.
 
 ## macOS (ports/posix)
 
@@ -162,7 +164,7 @@ early and the boot faulted without a message.
 `ports/posix` are not changed: the loader cuts the Forth text between `r|` and the closing bar, writes it to
 `/tmp/lugforth-gforth-body.fs` and includes it. `ports/gforth/compat.fs` supplies what gforth lacks: the vocabularies `ansi internals
 posix termios`, `z"` and `z>s`, `bytes`, `sysfunc` (mapped to `sf-*` words: getenv, mkdir, chdir, getcwd, remove, rename, time), `readdir` /
-`.d_name` / `.d_type` over `read-dir`, the ANSI words of `common/ansi.fs`, `ms-ticks`, and `<#` taking one cell as in ueForth. Raw mode is
+`.d_name` / `.d_type` over `read-dir`, the ANSI words of `common/ansi.fs`, `ms-ticks`, and `<#` taking one cell as in ueForth (no longer needed since 2026.10.27.2: `<#` takes a double, as in gforth). Raw mode is
 `stty raw -echo`. Traps: gforth compiles into a wordlist outside `forth` at start (`forth-wordlist set-current` first, or `only forth`
 loses the vocabularies); `{ locals }` are refused outside a definition; `included` paths are relative to the including file.
 `python3 tools/editors_pty_test.py ports/gforth/writhdeck-gforth.fs` runs the same pty test as for the native build (all pass).

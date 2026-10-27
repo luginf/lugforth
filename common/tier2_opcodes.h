@@ -24,4 +24,20 @@
   Y(align, g_sys->heap = (cell_t *) CELL_ALIGNED(g_sys->heap)) \
   YV(internals, fill32, cell_t c = tos; DROP; cell_t n = tos; DROP; \
                         uint32_t *a = (uint32_t *) tos; DROP; \
-                        for (;n;--n) *a++ = c)
+                        for (;n;--n) *a++ = c) \
+  DO_LOOP_OPCODE_LIST
+
+// DO..LOOP in C: the return stack holds the limit, then the index (I is R@).
+// A loop ends when the index crosses from limit-1 to limit, either way, as the
+// Forth versions in boot.fs (used where a port has no tier 2, the web).
+#define LOOP_ENDS(i, n) ((cell_t) (((ucell_t) (i) - rp[-1]) ^ ((ucell_t) (n) - rp[-1])) < 0)
+#define DO_LOOP_OPCODE_LIST \
+  XV(internals, "(DO)", PDO, *++rp = *sp--; *++rp = tos; DROP) \
+  XV(internals, "(?DO)", PQDO, if (tos == *sp) { --sp; DROP; ip = (cell_t *) *ip; } \
+                               else { *++rp = *sp--; *++rp = tos; DROP; ++ip; }) \
+  XV(internals, "(LOOP)", PLOOP, w = (cell_t) ((ucell_t) *rp + 1); \
+                                 if (LOOP_ENDS(*rp, w)) { rp -= 2; ++ip; } \
+                                 else { *rp = w; ip = (cell_t *) *ip; }) \
+  XV(internals, "(+LOOP)", PPLOOP, w = (cell_t) ((ucell_t) *rp + tos); \
+                                   if (LOOP_ENDS(*rp, w)) { rp -= 2; ++ip; } \
+                                   else { *rp = w; ip = (cell_t *) *ip; } DROP)

@@ -214,7 +214,7 @@ previous
 [then]
 : out-byte ( b -- ) olen @ obuf + c! 1 olen +! olen @ $1000 = if flush-out then ;
 
-: .hex2 ( b -- ) base @ >r hex <# # # #> type r> base ! ;
+: .hex2 ( b -- ) base @ >r hex 0 <# # # #> type r> base ! ;
 : .stack ( s -- ) dup @ 0 ?do dup cell+ i + c@ .hex2 space loop drop ;
 : debug-stacks ( -- )
   flush-out ." WST " wst .stack cr ." RST " rst .stack cr ;

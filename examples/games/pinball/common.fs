@@ -74,7 +74,7 @@ s" #.. .#. ..# .#. #.." char > glyph
   n 0 ?do a i + c@ x i 4 * s * + y s draw-char loop ;
 : say-number ( n x y s -- )   ( right aligned on x )
   { n x y s }
-  n <# #s #> { a l }  a l x l 4 * s * - y s say ;
+  n 0 <# #s #> { a l }  a l x l 4 * s * - y s say ;
 
 ( ---- Seven segment score ---- )
 

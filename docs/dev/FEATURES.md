@@ -84,7 +84,7 @@ In `examples/` (GPL, listed in NOTICE; `make -C examples test-ports` runs the lo
 Ideas left: more inference examples from his docs
 (`INFERENCE/docs/*.odt`), `3Dmodelisation`/`dumpTool` extras, other upstream projects (lotto, 6809, flog, BMP, HTTP).
 Verified in a real X window (display :0) for sdl2_2048: see [PITFALLS.md](PITFALLS.md), last bullets. Gotchas met: `include` is relative to the including file; `if` at top level does not work (wrap in a word);
-`<# #s #>` takes ONE number here; `.r`, `random` ( n -- r ) are in `ansi_compat.fs`, `ms-ticks 1 or rand-seed !` seeds it.
+`<# #s #>` takes a double, as in the standard (since 2026.10.27.2; before, one cell as in eForth): `n 0 <# #s #>`; `.r`, `random` ( n -- r ) are in `ansi_compat.fs`, `ms-ticks 1 or rand-seed !` seeds it.
 
 ## ANS words added to common/ansi_compat.fs - 2026-10-27
 
@@ -97,7 +97,18 @@ Choices: `TO` is redefined last, to store in a 2VALUE and an FVALUE too (it reco
 wordlist alone in the search order around FIND; TRAVERSE-WORDLIST skips the builtins of C (forks) and smudged words;
 `{: a b | c -- d :}` is built on `(local)`, `|` locals start at 0. Tests in `ansi_compat_tests.fs` (posix);
 on the web build they were checked by hand (the test framework does not run there). Gerry Jackson's
-forth2012-test-suite has not been run yet. The pictured numeric output is still the single-cell one of eForth.
+forth2012-test-suite has not been run yet. The pictured numeric output takes a double since 2026.10.27.2 (`#` divides by
+the base with three u/mod on half cells, `pad` is 160 bytes above `here` for the 128 digits of a binary double).
+
+## DO LOOP in C - 2026-10-27
+
+`DO ?DO LOOP +LOOP` were Forth words (`common/boot.fs`, about twenty primitives a turn for `LOOP`). They are
+opcodes of tier 2 now (`(DO) (?DO) (LOOP) (+LOOP)` in `internals`, `common/tier2_opcodes.h`); `opcode-as (DO) DO`
+in boot.fs gives the Forth `DO` the code field of the opcode, as `BEGIN` and `IF` are made, so `see` and the marks
+of utils.fs still find one word. The return stack is laid out as before (limit, then index: `I` is `R@`, `J`, `K`,
+`LEAVE`, `UNLOOP` unchanged). The web build has no tier 2 and keeps the Forth versions. 1e7 turns of
+`0 10000000 0 do i + loop` on posix: 554 ms before, 71 ms after. Same results as gforth on `+LOOP` with negative
+steps and `LEAVE`.
 
 ## Games after r3forth (examples/games/sdl2_tetris.fs, sdl2_snake.fs, sdl2_minesweeper.fs) - done 2026-10-19
 

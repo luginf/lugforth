@@ -198,7 +198,7 @@ defer <value>
     INTEGER of
       _s" " >a
       top >count @ 0 ?do
-        top i cells + @ <# #s #> a> _s"  " ,c _s ,c >a
+        top i cells + @ 0 <# #s #> a> _s"  " ,c _s ,c >a
       loop a> endof
     REAL of
       _s" " >a top >count @ 0 ?do

@@ -34,7 +34,7 @@ cell 1- constant cell-mask
 : ca@ ( a -- n ) dup cell-base @ swap cell-shift rshift 255 and ;
 
 ( Print address line leaving room )
-: dump-line ( a -- a ) cr <# #s #> 20 over - >r type r> spaces ;
+: dump-line ( a -- a ) cr 0 <# #s #> 20 over - >r type r> spaces ;
 
 ( Semi-dangerous word to trim down the system heap )
 DEFINED? realloc [IF]
@@ -48,7 +48,7 @@ forth definitions internals
    over 15 and if over dump-line over 15 and 3 * spaces then
    for aft
      dup 15 and 0= if dup dump-line then
-     dup ca@ <# # #s #> type space 1+
+     dup ca@ 0 <# # #s #> type space 1+
    then next drop cr ;
 
 ( Remove from Dictionary )

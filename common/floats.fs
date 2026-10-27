@@ -38,7 +38,7 @@ previous definitions
 internals definitions
 : #f+s ( r -- ) fdup precision for aft 10e f* then next
                 precision for aft fdup f>s 10 mod [char] 0 + hold 0.1e f* then next
-                [char] . hold fdrop f>s #s ;
+                [char] . hold fdrop f>s 0 #s ;
 forth definitions internals
 : #fs ( r -- ) fdup f0< if fnegate #f+s [char] - hold else #f+s then ;
 : f. ( r -- ) <# #fs #> type space ;

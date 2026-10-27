@@ -22,8 +22,8 @@ also bluetooth also internals also esp
 z" forth xx:xx:xx:xx:xx:xx" constant name
 ( Create unique name for device )
 base @ hex getEfuseMac
-<# # # char : hold # # #> name 6 + swap cmove
-<# # # char : hold # # char : hold # # char : hold # # #> name c + swap cmove
+0 <# # # char : hold # # #> name 6 + swap cmove
+0 <# # # char : hold # # char : hold # # char : hold # # #> name c + swap cmove
 base !
 SerialBT.new constant bt
 name 0 bt SerialBT.begin drop

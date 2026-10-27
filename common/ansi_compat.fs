@@ -125,8 +125,8 @@ forth definitions internals
 forth definitions
 
 ( Printing right justified )
-: .r ( n width -- ) >r dup >r abs <# #s r> sign #> r> over - spaces type ;
-: u.r ( u width -- ) >r <# #s #> r> over - spaces type ;
+: .r ( n width -- ) >r dup >r abs 0 <# #s r> sign #> r> over - spaces type ;
+: u.r ( u width -- ) >r 0 <# #s #> r> over - spaces type ;
 
 ( Memory and strings )
 : move ( src dst n -- ) >r 2dup u< r> swap if cmove> else cmove then ;

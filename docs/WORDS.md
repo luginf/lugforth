@@ -351,9 +351,9 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | Word | Stack | What it does | P W |
 |------|-------|--------------|-----|
 | `!` |  | ANS. Primitive defined in C. | P W |
-| `#` | `( u -- u )` | ANS. | P W |
-| `#>` | `( w -- b u )` | ANS. | P W |
-| `#s` | `( u -- 0 )` | ANS. | P W |
+| `#` | `( ud -- ud' )` | ANS. | P W |
+| `#>` | `( xd -- a n )` | ANS. | P W |
+| `#s` | `( ud -- 0 0 )` | ANS. | P W |
 | `#tib` |  | ANS. Primitive defined in C. | P W |
 | `'` |  | ANS. | P W |
 | `(` |  | ANS. | P W |
@@ -775,7 +775,11 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `'SYS` |  |  | P |
 | `'throw-handler` |  |  | P |
 | `'tib` |  |  | P |
+| `(+LOOP)` |  |  | P |
 | `(+to)` | `( xt -- )` |  | P |
+| `(?DO)` |  |  | P |
+| `(DO)` |  |  | P |
+| `(LOOP)` |  |  | P |
 | `(search)` | `( a1 n1 a2 n2 a0 n0 -- a n f )` | Helper of `search`: looks for the string a2 n2 in a1 n1, starting at a0 n0. | P |
 | `(to)` | `( xt -- )` |  | P |
 | `(um*)` | `( a b lo hi ah -- lo hi )` | Helper of `um*`: one step of the unsigned multiplication of two cells into a double. | P |
@@ -1061,6 +1065,7 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `notfound` | `( a n n -- )` |  | P |
 | `nr-ret` |  |  | P |
 | `onlines` | `( xt -- xt )` |  | P |
+| `opcode-as` | `( "op" "name" -- )` | A port with tier 2 opcodes has DO ?DO LOOP +LOOP in C: opcode-as (DO) DO gives the Forth DO the code field of the opcode, as BEGIN and IF are made above, so it stays the one word that see and utils.fs mark. Without them, on the web, the Forth versions run. | P |
 | `pa` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `park-forth` | `( -- a )` |  | P |
 | `park-heap` | `( -- a )` |  | P |
