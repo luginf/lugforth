@@ -286,7 +286,7 @@ wd-defaults
     cl-pos p ?do i b@ 10 = if 1 +to n then loop  n negate +to cl-line
   then
   p to cl-pos  len to cl-len  cl-line ;
-: lno-type ( n -- )   <# #s #> dup 5 swap - 0 max 0 ?do 32 emit loop type ;
+: lno-type ( n -- )   0 <# #s #> dup 5 swap - 0 max 0 ?do 32 emit loop type ;
 : nums-flip ( -- )
   wrap-on 0= if s" Line numbers need the wrapped view (Esc w)" say exit then
   nums-on 0= to nums-on  layout-update  ini-save
@@ -539,7 +539,7 @@ wd-defaults
 
 : number-say ( n a len -- )   \ "n text" on the message line
   { n a l }  0 { k }
-  n <# #s #> { d dl }
+  n 0 <# #s #> { d dl }
   d msg dl cmove  32 msg dl + c!  a msg dl + 1+ l cmove
   dl 1+ l + 78 min to mlen ;
 : num-type-say ( n -- )   s" replaced" number-say ;
@@ -986,7 +986,7 @@ create dbuf 12 allot
   bn 0= bsel b-dir? or bview 0<> or if exit then
   b-sel-name { a n }
   s" backups" bname zcopy drop  bname 493 ed-mkdir drop
-  0 to bnl  s" backups/" bn+  a n bn+  s" _" bn+  0 wd-time <# #s #> bn+
+  0 to bnl  s" backups/" bn+  a n bn+  s" _" bn+  0 wd-time 0 <# #s #> bn+
   a n r/o open-file if drop s" Cannot read" say exit then
   { fh }
   fh file-size throw { size }

@@ -72,10 +72,10 @@ create font
 : text ( a n x y -- )
   { a u x y }
   u 0 ?do a i + c@ x i 4 * + y glyph loop ;
-: num ( n x y -- ) rot <# #s #> 2swap text ;
+: num ( n x y -- ) rot 0 <# #s #> 2swap text ;
 : fixed ( n digits x y -- )   ( n with a decimal point, 1 or 2 digits after it )
   { n d x y }
-  d 1 = if n <# # 46 hold #s #> else n <# # # 46 hold #s #> then
+  d 1 = if n 0 <# # 46 hold #s #> else n 0 <# # # 46 hold #s #> then
   x y text ;
 
 ( ---- The patch: nine values, six sounds ---- )

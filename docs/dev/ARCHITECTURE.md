@@ -95,6 +95,7 @@ Boot sequence (platform e.g. posix):
 - `ports/esp32/` — Arduino `.ino` + C++ builtins; optional extensions in `ports/esp32/optional/`
 - `ports/pico-ice/` — RP2040-based FPGA board
 - `ports/web/` — JavaScript/WASM target
+- `ports/tic80/` — wasm32 module for the TIC-80 console (wasm3), sandboxed: see PORTS.md
 - `ports/windows/` — Win32 build via MSVC cross-compilation from WSL
 - `tools/` — build-time Python scripts
 - `docs/pages/` — the GitHub Pages site (Markdown, built by `tools/make_pages.py`); `attic/oldsite/` — the documentation website inherited from uEforth (see its README); `docs/dev/` — these notes

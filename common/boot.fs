@@ -116,10 +116,17 @@ variable leaving
 : leaving(   leaving @ 0 leaving !   2 nest-depth +! ;
 : )leaving   leaving @ swap leaving !  -2 nest-depth +!
              begin dup while dup @ swap here swap ! repeat drop ;
+\ A port with tier 2 opcodes has DO ?DO LOOP +LOOP in C: opcode-as (DO) DO gives
+\ the Forth DO the code field of the opcode, as BEGIN and IF are made above, so it
+\ stays the one word that see and utils.fs mark. Without them, on the web, the
+\ Forth versions run.
+: opcode-as ( "op" "name" -- ) bl parse find ?dup if @ ' ! else bl parse 2drop then ;
 : DO ( n n -- .. ) swap r> -rot >r >r >r ;
+opcode-as (DO) DO
 : do ( lim s -- ) leaving( postpone DO here ; immediate
 : ?DO ( n n -- n n f .. )
    2dup = if 2drop r> @ >r else swap r> cell+ -rot >r >r >r then ;
+opcode-as (?DO) ?DO
 : ?do ( lim s -- ) leaving( postpone ?DO leaving, here ; immediate
 : UNLOOP   r> rdrop rdrop >r ;
 : LEAVE   r> rdrop rdrop @ >r ;
@@ -127,10 +134,12 @@ variable leaving
 : +LOOP ( n -- ) r> r> dup r@ - >r rot + r> -rot
                        dup r@ - -rot >r >r xor 0<
                  if r> cell+ rdrop rdrop >r else r> @ >r then ;
+opcode-as (+LOOP) +LOOP
 : +loop ( n -- ) postpone +LOOP , )leaving ; immediate
 : LOOP   r> r> dup r@ - >r 1+ r> -rot
                dup r@ - -rot >r >r xor 0<
          if r> cell+ rdrop rdrop >r else r> @ >r then ;
+opcode-as (LOOP) LOOP
 : loop   postpone LOOP , )leaving ; immediate
 create I ' r@ @ ' i !  ( i is same as r@ )
 : J ( -- n ) rp@ 3 cells - @ ;

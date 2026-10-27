@@ -29,24 +29,32 @@ defer prompt
 : emit ( n -- ) >r rp@ 1 type rdrop ;
 : space bl emit ;   : cr 13 emit nl emit ;
 
-( Numeric Output )
+( Numeric Output, on a double number as the standard has it: u. is 0 <# #s #> )
 variable hld
-: pad ( -- a ) here 80 + ;
+: pad ( -- a ) here 160 + ;   ( the digits go down from pad: 128 for a binary double )
 : digit ( u -- c ) 9 over < 7 and + 48 + ;
 : extract ( n base -- n c ) u/mod swap digit ;
 : <# ( -- ) pad hld ! ;
 : hold ( c -- ) hld @ 1 - dup hld ! c! ;
-: # ( u -- u ) base @ extract hold ;
-: #s ( u -- 0 ) begin # dup while repeat ;
+( ud / base with u/mod only, in half cells: hi / base, then the remainder and )
+( the upper half of lo, then the remainder and the lower half: each fits a cell )
+: # ( ud -- ud' )
+   base @ u/mod >r
+   cell 4 * lshift over cell 4 * rshift or
+   base @ u/mod >r
+   cell 4 * lshift swap 1 cell 4 * lshift 1- and or
+   base @ u/mod r> cell 4 * lshift or
+   swap digit hold r> ;
+: #s ( ud -- 0 0 ) begin # 2dup or 0= until ;
 : sign ( n -- ) 0< if 45 hold then ;
-: #> ( w -- b u ) drop hld @ pad over - ;
-: str ( n -- b u ) dup >r abs <# #s r> sign #> ;
+: #> ( xd -- a n ) 2drop hld @ pad over - ;
+: str ( n -- a n ) dup >r abs 0 <# #s r> sign #> ;
 : hex ( -- ) 16 base ! ;   : octal ( -- ) 8 base ! ;
 : decimal ( -- ) 10 base ! ;   : binary ( -- ) 2 base ! ;
-: u. ( u -- ) <# #s #> type space ;
+: u. ( u -- ) 0 <# #s #> type space ;
 : . ( w -- ) base @ 10 xor if u. exit then str type space ;
 : ? ( a -- ) @ . ;
-: n. ( n -- ) base @ swap decimal <# #s #> type base ! ;
+: n. ( n -- ) base @ swap decimal 0 <# #s #> type base ! ;
 
 ( Strings )
 : parse-quote ( -- a n ) [char] " parse ;

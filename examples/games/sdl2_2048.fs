@@ -48,7 +48,7 @@ create glyphs  $7B6F , $2C97 , $73E7 , $73CF , $5BC9 , $79CF , $79EF , $7249 , $
 0 value ds   0 value dn   0 value dstr   0 value dx0   0 value dy0
 : draw-number ( n x y s -- )
   to ds  to dy0  to dx0
-  <# #s #> to dn  to dstr
+  0 <# #s #> to dn  to dstr
   dx0  dn 4 * 1- ds * 2/  -  to dx0
   dy0  ds 5 * 2/  -  to dy0
   dn 0 ?do  dstr i + c@ [char] 0 -  dx0 i 4 * ds * +  dy0  ds  draw-glyph  loop ;
@@ -192,7 +192,7 @@ create snap 16 allot       \ the grid after the move, before the new tile
 create tbuf 80 allot   0 value tlen
 : t+ ( a n -- )   dup >r tbuf tlen + swap cmove  r> +to tlen ;
 : show-score ( -- )
-  0 to tlen  s" 2048  score " t+  score <# #s #> t+
+  0 to tlen  s" 2048  score " t+  score 0 <# #s #> t+
   game-over? if s"   -  game over, r for a new game" t+ then
   tbuf tlen title ;
 

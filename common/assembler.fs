@@ -96,7 +96,7 @@ variable opcodes
    >r opcodes @ begin dup while r> 2dup >r >r execute r> >body @ repeat rdrop drop ;
 
 : m@ ( a -- n ) 0 swap cell 0 do dup ca@ i 8 * lshift swap >r or r> 1+ loop drop ;
-: m. ( n n -- ) base @ hex >r >r <# r> 1- for # # next #> type r> base ! ;
+: m. ( n n -- ) base @ hex >r >r 0 <# r> 1- for # # next #> type r> base ! ;
 : sextend ( n n -- n ) cell 8 * swap - dup >r lshift r> arshift ;
 
 variable istep

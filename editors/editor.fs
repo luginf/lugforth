@@ -392,7 +392,7 @@ defer pre-key ( code -- code' )   defer wait-key ( -- code )   defer after-load
   rp draw-line
   rp eol dup len = if drop len 1+ else 1+ then to rp ;
 : stype ( a n -- )   cols outcol - 0 max min dup +to outcol dry if 2drop else type then ;
-: num-type ( n -- )   <# #s #> stype ;
+: num-type ( n -- )   0 <# #s #> stype ;
 : name-tail ( -- a n )   flen 40 min >r fname flen + r@ - r> ;
 : plain-status ( -- )
   0 text-rows at-xy  esc ." [7m"  0 to outcol
@@ -544,7 +544,7 @@ defer ini-load   defer ini-save
   fh close-file drop
   b got ini-text  b free drop  -1 ;
 : w+ ( a n -- )   fhs write-file drop ;
-: wn ( n -- )   <# #s #> w+ ;
+: wn ( n -- )   0 <# #s #> w+ ;
 : eol+ ( -- )   10 onebyte c!  onebyte 1 w+ ;
 : wl ( a n -- )   w+ eol+ ;
 : key= ( a n -- )   w+ s"  = " w+ ;

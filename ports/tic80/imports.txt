@@ -1,0 +1,9 @@
+api
+type
+ticks
+sin
+cos
+atan2
+pow
+exp
+log

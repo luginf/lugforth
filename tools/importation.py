@@ -115,6 +115,14 @@ def Process():
       elif args.header == 'cpp':
         fh.write('const char ' + args.name + '[] = R"""(\n' +
                  '\n'.join(output) + '\n)""";\n')
+      elif args.header == 'c':
+        # Plain C (no raw strings): every line escaped and quoted.
+        fixed = []
+        for line in output:
+          line = line.replace('\\', '\\\\').replace('"', '\\"')
+          fixed.append('"' + line + '\\n"')
+        fh.write('const char ' + args.name + '[] =\n' +
+                 '\n'.join(fixed) + '\n;\n')
       elif args.header == 'win':
         fixed = []
         for line in output:

@@ -34,7 +34,7 @@ variable ea   variable en   variable el   variable ep
 defer le-type   ' type is le-type   ( the tests send the output elsewhere )
 : le-emit ( c -- )   >r rp@ 1 le-type rdrop ;
 : le-cr   13 le-emit 10 le-emit ;
-: le-n. ( n -- )   base @ swap decimal <# #s #> le-type base ! ;
+: le-n. ( n -- )   base @ swap decimal 0 <# #s #> le-type base ! ;
 : le-esc[   27 le-emit [char] [ le-emit ;
 : le-left ( n -- )    dup 0= if drop exit then le-esc[ le-n. [char] D le-emit ;
 : le-right ( n -- )   dup 0= if drop exit then le-esc[ le-n. [char] C le-emit ;

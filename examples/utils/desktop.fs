@@ -424,7 +424,7 @@ create q-str 115 c, 34 c, 32 c,    ( s" and a space )
 create q-end 34 c, 32 c,
 create nl-str 10 c,
 : ib+ ( a n -- ) { a n } a ini-buf ini-n + n cmove  n +to ini-n ;
-: ib-num ( n -- ) base @ >r decimal  <# #s #> ib+  s"  " ib+  r> base ! ;
+: ib-num ( n -- ) base @ >r decimal  0 <# #s #> ib+  s"  " ib+  r> base ! ;
 : dk-bg! ( n -- ) to dk-bg ;
 : dk-size! ( w h -- ) 480 max to dk-h  640 max to dk-w ;
 : ini-save ( -- )

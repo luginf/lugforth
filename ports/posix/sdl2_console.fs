@@ -582,7 +582,7 @@ s" Alt+Enter" fs-set
 : ini-load ( -- )   ini-read ini-parse ;
 : ob+ ( a n -- ) dup >r obuf obn + swap cmove r> +to obn ;
 : ob-nl ( -- ) 10 obuf obn + c!  1 +to obn ;
-: hex6 ( u -- a n )   base @ >r 16 base !  <# # # # # # # #> r> base ! ;
+: hex6 ( u -- a n )   base @ >r 16 base !  0 <# # # # # # # #> r> base ! ;
 : env-font? ( -- f )   \ the font comes from LUGFORTH_FONT (the AppImage), whose path changes at each run
   z" LUGFORTH_FONT" c-getenv ?dup if z>s fpath z>s compare 0= else 0 then ;
 : ini-save ( -- )

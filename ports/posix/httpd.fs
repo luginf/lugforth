@@ -125,7 +125,7 @@ variable goal   variable goal#
 : send ( a n -- ) client-type ;
 
 : response ( mime$ result$ status -- )
-  s" HTTP/1.0 " client-type <# #s #> client-type
+  s" HTTP/1.0 " client-type 0 <# #s #> client-type
   bl client-emit client-type client-cr
   s" Content-type: " client-type client-type client-cr
   client-cr ;
