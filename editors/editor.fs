@@ -712,10 +712,12 @@ defer ini-load   defer ini-save
   fname free drop  msg free drop  pbuf free drop  kwbuf free drop
   onebyte free drop  ibuf free drop  lastfind free drop  log free drop  rlog free drop  text free drop
   cbuf if cbuf free drop then   clip if clip free drop then ;
+0 value last-draw
+( A key still waiting skips the redraw, but not for more than 80 ms: with a held key and a fast repeat, as on the EFI PC, the cursor would only show up at the release. )
 : loop-keys ( -- )
   begin
     refresh-size scroll
-    key? 0= if draw then
+    key? 0= ms-ticks last-draw - 80 > or if draw ms-ticks to last-draw then
     wait-key handle
     done
   until ;

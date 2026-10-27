@@ -121,14 +121,27 @@ static void clock_init(void) {
 static EFI_EVENT wait_timer;
 static EFI_EVENT key_event;
 
+// Time spent asleep, for IDLE-US: a program that never sleeps shows a load of 100%.
+static uint64_t idle_tsc;
+
+// hlt between two checks: the firmware's WaitForEvent is a plain polling loop on many PCs
+// (fan at full speed); the firmware's timer tick (about 10 ms) wakes the hlt.
 static void sleep_us(uint64_t us) {
   if (!wait_timer || us < 100) return;
+  uint64_t t0 = rdtsc();
   BS->SetTimer(wait_timer, TimerRelative, us * 10);        // 100 ns units
-  EFI_EVENT ev[2] = { wait_timer, key_event };
-  UINTN index;
-  BS->WaitForEvent(key_event ? 2 : 1, ev, &index);
+  for (;;) {
+    if (BS->CheckEvent(wait_timer) == EFI_SUCCESS) break;
+    if (key_event && BS->CheckEvent(key_event) == EFI_SUCCESS) break;
+    uint64_t fl;
+    __asm__ volatile("pushfq; popq %0" : "=r"(fl));
+    if (fl & 0x200) __asm__ volatile("hlt");               // only with interrupts on, or it never wakes
+  }
   BS->SetTimer(wait_timer, TimerCancel, 0);
+  idle_tsc += rdtsc() - t0;
 }
+
+static uint64_t idle_us(void) { return idle_tsc / (tsc_hz / 1000000); }
 
 static int console_extra_char(void);   // the keyboard's, through input.h
 static void con_sync(void);            // console.h

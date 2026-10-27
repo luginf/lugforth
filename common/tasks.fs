@@ -57,7 +57,14 @@ DEFINED? ms-ticks [IF]
     : ms ( n -- ) ms-ticks >r begin pause 1000 usleep drop ms-ticks r@ - over >= until rdrop drop ;
     previous
   [ELSE]
-    : ms ( n -- ) ms-ticks >r begin pause ms-ticks r@ - over >= until rdrop drop ;
+    DEFINED? pc [IF] also pc [THEN]
+    DEFINED? sleep-us [IF]
+      ( bare-metal PC: sleep up to 1 ms between two pauses, a busy wait heats the machine )
+      : ms ( n -- ) ms-ticks >r begin pause 1000 sleep-us ms-ticks r@ - over >= until rdrop drop ;
+    [ELSE]
+      : ms ( n -- ) ms-ticks >r begin pause ms-ticks r@ - over >= until rdrop drop ;
+    [THEN]
+    DEFINED? pc [IF] previous [THEN]
   [THEN]
 [THEN]
 

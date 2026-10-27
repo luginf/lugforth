@@ -2,7 +2,8 @@
 
 Windows, drawing, keyboard, mouse, images, text and sound for games,
 through the shared libraries of SDL2. Nothing is linked into `lugforth`:
-the libraries are opened at run time (`dlopen`) the first time you use them.
+the libraries are opened at run time (`dlopen`) the first time you use
+them.
 
 ```forth
 sdl2                          \ load, sdl2 becomes your vocabulary
@@ -12,15 +13,20 @@ sdl2                          \ load, sdl2 becomes your vocabulary
 run
 ```
 
-Examples: `sdl2_demo.fs` (tour of the words), `sdl2_breakout.fs` (a game, about
-200 lines), `sdl2_drums.fs` (16-step drum machine), `fm/sdl2_fm.fs` (two operator FM synthesizer, MIDI in, kept out of the interpreter: see `fm/README.md`), `sdl2_pianoroll.fs` (piano
-roll with soundfont playback and export to `.mid` and ABC, POSIX only),
-`sdl2_roguelike.fs` (tile sheet, with music), `sdl2_3d.fs` (turning wireframe cube, pyramid and octahedron), `sdl2_2048.fs` (2048 with a slide and pop animation, `--no-anim` turns it off; digits drawn from a 3x5 bitmap), `pinball/pinball.fs` (a pinball in the
-style of Night Mission, fixed point physics). Breakout, drums, the FM synthesizer and roguelike also
-run in the browser.
+Examples: `sdl2_demo.fs` (tour of the words), `sdl2_breakout.fs` (a
+game, about 200 lines), `sdl2_drums.fs` (16-step drum machine),
+`fm/sdl2_fm.fs` (two operator FM synthesizer, MIDI in, kept out of the
+interpreter: see `fm/README.md`), `sdl2_pianoroll.fs` (piano roll with
+soundfont playback and export to `.mid` and ABC, POSIX only),
+`sdl2_roguelike.fs` (tile sheet, with music), `sdl2_3d.fs` (turning
+wireframe cube, pyramid and octahedron), `sdl2_2048.fs` (2048 with a
+slide and pop animation, `--no-anim` turns it off; digits drawn from a
+3x5 bitmap), `pinball/pinball.fs` (a pinball in the style of Night
+Mission, fixed point physics). Breakout, drums, the FM synthesizer and
+roguelike also run in the browser.
 
-All words: [SDL2-words.md](SDL2-words.md). The short words also exist in the web
-build, see [SDL2-web.md](SDL2-web.md).
+All words: [SDL2-words.md](SDL2-words.md). The short words also exist in
+the web build, see [SDL2-web.md](SDL2-web.md).
 
 ## Packages
 
@@ -32,43 +38,50 @@ build, see [SDL2-web.md](SDL2-web.md).
 | `sdl2-mixer`  | libSDL2_mixer-2.0.so.0 | `libsdl2-mixer-2.0-0` | sound files, music, mixing, soundfont |
 | `sdl2-abc`    | (`sdl2-mixer`, and a soundfont for MIDI) | `fluid-soundfont-gm` or your own `.sf2` | tunes in ABC notation |
 
-Typing a loader again puts `sdl2` back on top. All words below live in the
-`sdl2` vocabulary, with the raw C names (`SDL_Init`, ...) for anything without
-a short word. `sdl2` is also where your definitions go.
+Typing a loader again puts `sdl2` back on top. All words below live in
+the `sdl2` vocabulary, with the raw C names (`SDL_Init`, ...) for
+anything without a short word. `sdl2` is also where your definitions go.
 
 ## Short words (`sdl2`)
 
-Screen: `screen ( w h -- )`, `close-screen`, `zoom` (value, set before `screen`),
-`title ( a n -- )`, `fullscreen ( f -- )`, `cursor ( f -- )`, `width`, `height`.
+Screen: `screen ( w h -- )`, `close-screen`, `zoom` (value, set before
+`screen`), `title ( a n -- )`, `fullscreen ( f -- )`, `cursor ( f -- )`,
+`width`, `height`.
 
-Colors: `color ( $rrggbb -- )`, `rgb ( r g b -- )`, `rgba ( r g b a -- )`,
-`alpha ( a -- )`, and named colors `black white red green blue yellow cyan
-magenta orange purple pink brown gray` (`red color`), and `ink ( n -- )`, a color by
-number from 0 to 15 (0 black, 1 red, 2 green, 3 yellow, 4 blue, 5 magenta, 6 cyan, 7 white...).
+Colors: `color ( $rrggbb -- )`, `rgb ( r g b -- )`,
+`rgba ( r g b a -- )`, `alpha ( a -- )`, and named colors
+`black white red green blue yellow cyan magenta orange purple pink brown gray`
+(`red color`), and `ink ( n -- )`, a color by number from 0 to 15 (0
+black, 1 red, 2 green, 3 yellow, 4 blue, 5 magenta, 6 cyan, 7 white...).
 
-Drawing: `cls`, `dot ( x y -- )`, `line ( x1 y1 x2 y2 -- )`, `box ( x y w h -- )`,
-`frame ( x y w h -- )`, `hline ( x y w -- )`, `disc ( cx cy r -- )`,
-`circle ( cx cy r -- )`, `flip`, `pixel@ ( x y -- $rrggbb )`.
+Drawing: `cls`, `dot ( x y -- )`, `line ( x1 y1 x2 y2 -- )`,
+`box ( x y w h -- )`, `frame ( x y w h -- )`, `hline ( x y w -- )`,
+`disc ( cx cy r -- )`, `circle ( cx cy r -- )`, `flip`,
+`pixel@ ( x y -- $rrggbb )`.
 
 Frame loop: `events` (call once per frame), `quit?`, `quit!`, `wait`,
 `ticks ( -- ms )`, `delay ( ms -- )`, `dt` (ms taken by the last frame).
 
-Input: `pressed? ( key -- f )` with `[char] a`, `key-left key-right key-up
-key-down key-space key-enter key-esc key-tab key-backspace`,
-`LEFT-BUTTON MIDDLE-BUTTON RIGHT-BUTTON`, `mouse-x`, `mouse-y`, `last-key`,
-`wheel`. Same names and meaning as the generic graphics interface.
-`scan? ( scancode -- f )` tells whether a key is held by its place on the keyboard
-(SDL scancode: 4 is the key A of a QWERTY, 20 is Q...), whatever the layout: use it
-for a piano or WASD style row of keys that must not move on an AZERTY keyboard.
+Input: `pressed? ( key -- f )` with `[char] a`,
+`key-left key-right key-up key-down key-space key-enter key-esc key-tab key-backspace`,
+`LEFT-BUTTON MIDDLE-BUTTON RIGHT-BUTTON`, `mouse-x`, `mouse-y`,
+`last-key`, `wheel`. Same names and meaning as the generic graphics
+interface. `scan? ( scancode -- f )` tells whether a key is held by its
+place on the keyboard (SDL scancode: 4 is the key A of a QWERTY, 20 is
+Q...), whatever the layout: use it for a piano or WASD style row of keys
+that must not move on an AZERTY keyboard.
 
 Beeps (no library beyond libSDL2): `beep ( freq ms -- )` queues a tone,
-so several `beep` in a row play as a melody. `wave` sets the shape
-(0 square, 1 triangle, 2 saw, 3 noise, 4 sine), as `color` sets the color: `1 wave`, or the words
-`square triangle saw noise sine`. `beep-volume ( n -- )` and `pitch-drop ( n -- )` work the same way; read
-a setting back with `wave@`, `beep-volume@`, `pitch-drop@`. `to wave` still works. Also `silence`, `beeping?`.
+so several `beep` in a row play as a melody. `wave` sets the shape (0
+square, 1 triangle, 2 saw, 3 noise, 4 sine), as `color` sets the color:
+`1 wave`, or the words `square triangle saw noise sine`.
+`beep-volume ( n -- )` and `pitch-drop ( n -- )` work the same way; read
+a setting back with `wave@`, `beep-volume@`, `pitch-drop@`. `to wave`
+still works. Also `silence`, `beeping?`.
 
-`play ( a n -- )` queues notes written in MML (Music Macro Language, the `PLAY` of the BASICs of MSX, GW-BASIC
-and QBasic): `s" t140 o4 l8 c d e c  e4 g4 r4 >c2" play`.
+`play ( a n -- )` queues notes written in MML (Music Macro Language, the
+`PLAY` of the BASICs of MSX, GW-BASIC and QBasic):
+`s" t140 o4 l8 c d e c  e4 g4 r4 >c2" play`.
 
 | Command | Meaning |
 |---|---|
@@ -84,24 +97,30 @@ and QBasic): `s" t140 o4 l8 c d e c  e4 g4 r4 >c2" play`.
 | `v8` | the volume, 0 to 15 (it sets `beep-volume`) |
 | `w1` | the wave, as `1 to wave` (not part of the usual MML) |
 
-Spaces are free; the settings stay from one `play` to the next. Differences from the dialects: the octave
-numbering is the MSX one (`o4 c` is the middle C; check a tune written for another dialect, they differ); no chords, no `m` modes (legato, staccato) and no `x` (play a string variable). It works at the prompt after `sdl2` (the console
+Spaces are free; the settings stay from one `play` to the next.
+Differences from the dialects: the octave numbering is the MSX one
+(`o4 c` is the middle C; check a tune written for another dialect, they
+differ); no chords, no `m` modes (legato, staccato) and no `x` (play a
+string variable). It works at the prompt after `sdl2` (the console
 window, the boards, the web page).
 
-Several voices: a comma in the string starts another voice, and the voices start together
-(`s" o4 e d c d e e e2, o3 c1 g1" play`). 4 voices at most, 512 notes each; each voice begins with the octave,
-length, tempo, wave and volume the `play` started with. On Linux the voices are mixed into one buffer and
-queued whole (so a very long tune takes a moment to prepare); on the boards each voice has its own queue;
-on the web page the notes of every voice are scheduled from the same moment.
+Several voices: a comma in the string starts another voice, and the
+voices start together (`s" o4 e d c d e e e2, o3 c1 g1" play`). 4 voices
+at most, 512 notes each; each voice begins with the octave, length,
+tempo, wave and volume the `play` started with. On Linux the voices are
+mixed into one buffer and queued whole (so a very long tune takes a
+moment to prepare); on the boards each voice has its own queue; on the
+web page the notes of every voice are scheduled from the same moment.
 
-Envelope: `adsr ( attack decay sustain release -- )` (ms, ms, percent, ms) shapes every `beep` and every
-note of `play`; the release is the end of the note, not added to it. `adsr@` reads the values, `adsr-off`
+Envelope: `adsr ( attack decay sustain release -- )` (ms, ms, percent,
+ms) shapes every `beep` and every note of `play`; the release is the end
+of the note, not added to it. `adsr@` reads the values, `adsr-off`
 removes the envelope (the default). Hits and ABC tunes are not affected.
 
-Hits: `drum-hit ( freq ms -- )` starts at once and plays over other sounds (8 at a
-time), fading out; `pitch-drop` (percent) makes the pitch fall, enough for a
-kick drum. Call `flip` or `delay` regularly, as a game loop does. Use `beep` or
-`drum-hit` in a program, not both.
+Hits: `drum-hit ( freq ms -- )` starts at once and plays over other
+sounds (8 at a time), fading out; `pitch-drop` (percent) makes the pitch
+fall, enough for a kick drum. Call `flip` or `delay` regularly, as a
+game loop does. Use `beep` or `drum-hit` in a program, not both.
 
 ## Images (`sdl2-image`)
 
@@ -119,24 +138,26 @@ directories that is not found is tried again without them, so
 
 ## Sound (`sdl2-mixer`)
 
-`load-sound ( a n -- snd )`, `play ( snd -- )`, `free-sound`, `sound-volume`,
-`stop-sounds`, `sounds-playing`, `load-music ( a n -- mus )`,
-`music ( mus -- )` (loops), `music-once`, `stop-music`, `music-volume`,
-`music?`, `free-music`. Overlapping sounds are mixed.
+`load-sound ( a n -- snd )`, `play ( snd -- )`, `free-sound`,
+`sound-volume`, `stop-sounds`, `sounds-playing`,
+`load-music ( a n -- mus )`, `music ( mus -- )` (loops), `music-once`,
+`stop-music`, `music-volume`, `music?`, `free-music`. Overlapping sounds
+are mixed.
 
 Music files: OGG, MP3, FLAC, Opus, WAV, MOD and MIDI, as far as your
-SDL2_mixer has the decoders. MIDI needs a soundfont: `soundfont ( a n -- )` sets
-a `.sf2` or `.sf3` (`soundfont?` returns a flag instead of throwing). The name
-is tried as given, then in the current directory, then in the script's
-directory, so `s" mygame.sf2" soundfont` finds a file beside the program.
-Without one, FluidSynth uses the system soundfont if there is one.
+SDL2_mixer has the decoders. MIDI needs a soundfont:
+`soundfont ( a n -- )` sets a `.sf2` or `.sf3` (`soundfont?` returns a
+flag instead of throwing). The name is tried as given, then in the
+current directory, then in the script's directory, so
+`s" mygame.sf2" soundfont` finds a file beside the program. Without one,
+FluidSynth uses the system soundfont if there is one.
 
 ## Tunes (`sdl2-abc`)
 
-Tunes written in [ABC notation](https://abcnotation.com/), a text format for
-melodies, can be played with the soundfont. Type `sdl2-abc` once (it loads
-`sdl2-mixer` if needed). Since ABC uses the bar character, write the tune with
-`r~ ... ~`, a multi-line string that ends at a tilde:
+Tunes written in [ABC notation](https://abcnotation.com/), a text format
+for melodies, can be played with the soundfont. Type `sdl2-abc` once (it
+loads `sdl2-mixer` if needed). Since ABC uses the bar character, write
+the tune with `r~ ... ~`, a multi-line string that ends at a tilde:
 
 ```forth
 sdl2-abc
@@ -153,36 +174,51 @@ C D E F | [CEG]2 z2 |
 tune abc-play                      \ once; abc-loop repeats; tune-stop stops
 ```
 
-`abc ( a n -- )` reads the tune; `tune-play`, `tune-loop`, `tune-stop` and
-`tune-playing?` play it; `abc-play` and `abc-loop` do both. After `abc` you can
-change `tune-bpm` and `tune-program` (General MIDI instrument), read `tune-ms`
-and `tune-notes`, or write a MIDI file with `tune-save`.
+`abc ( a n -- )` reads the tune; `tune-play`, `tune-loop`, `tune-stop`
+and `tune-playing?` play it; `abc-play` and `abc-loop` do both. After
+`abc` you can change `tune-bpm` and `tune-program` (General MIDI
+instrument), read `tune-ms` and `tune-notes`, or write a MIDI file with
+`tune-save`.
 
-Understood: `K:` `L:` `M:` `Q:` and `%%MIDI program n`; notes, accidentals,
-octave marks, lengths, rests, chords, ties, broken rhythm, tuplets, bar lines.
-Skipped: chord symbols, decorations, grace notes, comments, lyrics. Not
-supported: repeats, several voices, tempo changes. At most 1024 notes. The web
-build has the same words with a simple synthesizer.
+Understood: `K:` `L:` `M:` `Q:` and `%%MIDI program n`; notes,
+accidentals, octave marks, lengths, rests, chords, ties, broken rhythm,
+tuplets, bar lines. Skipped: chord symbols, decorations, grace notes,
+comments, lyrics. Not supported: repeats, several voices, tempo changes.
+At most 1024 notes. The web build has the same words with a simple
+synthesizer.
 
 ## Console window (`sdl2_console.fs`)
 
-In the console window, `graphic` makes the drawing words work at the prompt (`0 0 100 100 line`):
-a 640x480 texture receives them, drawn under the text, centered, in proportion; `cls` clears it, `flip`
-redraws the window. `w h graphic-size` sets the size of the texture (16 to 4096), kept in proportion in the window. A program that calls `screen` ends it. The pen is saved and restored around each redraw.
+In the console window, `graphic` makes the drawing words work at the
+prompt (`0 0 100 100 line`): a 640x480 texture receives them, drawn
+under the text, centered, in proportion; `cls` clears it, `flip` redraws
+the window. `w h graphic-size` sets the size of the texture (16 to
+4096), kept in proportion in the window. A program that calls `screen`
+ends it. The pen is saved and restored around each redraw.
 
-`lugforth --gui [file.fs]` opens a console window (`type` and `key` go to an SDL window). The
-code is part of the binary: `gui-load` loads it, then `desktop console` starts it (Android
-uses `gui-load smooth-font console`). Without SDL2 or a display, `--gui` says so and keeps
-the terminal.
+`lugforth --gui [file.fs]` opens a console window (`type` and `key` go
+to an SDL window). The code is part of the binary: `gui-load` loads it,
+then `desktop console` starts it (Android uses
+`gui-load smooth-font console`). Without SDL2 or a display, `--gui` says
+so and keeps the terminal.
 
-The menu is hidden: the button at the top right, or F10, shows it (a right click on the open menu closes it; a right click on the button hides the button, and on its place shows it again) (Examples, only when the folder holds `.fs` files, View, Colors,
-Font, Help). Examples lists the `.fs` files of `LUGFORTH_EXAMPLES` (default: the current
-directory). Colors has a color picker for the text and for the background (a square of saturation and brightness, a strip of hues, the hex value) and a few themes. Alt+Enter, or View, toggles full screen. Font lists the fixed width
-TrueType and OpenType fonts found in `/usr/share/fonts`, `~/.local/share/fonts` and `~/.fonts` (the wheel scrolls a long menu). View also has
-More margin and Less margin (`margin=` in the `.ini`, in pixels). Also: mouse selection (copied), middle click or Ctrl+V to paste, wheel
-or PageUp/PageDown to scroll back, Ctrl+wheel, Ctrl +/-, Ctrl 0 for the text size. ASCII only.
+The menu is hidden: the button at the top right, or F10, shows it (a
+right click on the open menu closes it; a right click on the button
+hides the button, and on its place shows it again) (Examples, only when
+the folder holds `.fs` files, View, Colors, Font, Help). Examples lists
+the `.fs` files of `LUGFORTH_EXAMPLES` (default: the current directory).
+Colors has a color picker for the text and for the background (a square
+of saturation and brightness, a strip of hues, the hex value) and a few
+themes. Alt+Enter, or View, toggles full screen. Font lists the fixed
+width TrueType and OpenType fonts found in `/usr/share/fonts`,
+`~/.local/share/fonts` and `~/.fonts` (the wheel scrolls a long menu).
+View also has More margin and Less margin (`margin=` in the `.ini`, in
+pixels). Also: mouse selection (copied), middle click or Ctrl+V to
+paste, wheel or PageUp/PageDown to scroll back, Ctrl+wheel, Ctrl +/-,
+Ctrl 0 for the text size. ASCII only.
 
-Settings are kept in `lugforth.ini` in `~/.local/share/lugforth` (or `LUGFORTH_HOME`):
+Settings are kept in `lugforth.ini` in `~/.local/share/lugforth` (or
+`LUGFORTH_HOME`):
 
 ```
 size=15
@@ -193,22 +229,24 @@ margin=12
 fullscreen=Alt+Enter
 ```
 
-`fullscreen=` is the key of full screen: `Alt+Enter`, `F11`, `Ctrl+Shift+F`...
+`fullscreen=` is the key of full screen: `Alt+Enter`, `F11`,
+`Ctrl+Shift+F`...
 
-`font=` wins over `LUGFORTH_FONT`, then DejaVu Sans Mono and other common fonts of the
-system. `ports/posix/sdl2_console_tests.fs` tests the settings (dummy drivers, like the
-other SDL tests).
+`font=` wins over `LUGFORTH_FONT`, then DejaVu Sans Mono and other
+common fonts of the system. `ports/posix/sdl2_console_tests.fs` tests
+the settings (dummy drivers, like the other SDL tests).
 
 ## Limits
 
 * Calls pass integers and pointers only: no floats or structs by value
   (`SDL_RenderCopyEx`, rotation...).
-* No callbacks from C into Forth: audio uses queues (`beep`, `drum-hit`) or the mixer.
+* No callbacks from C into Forth: audio uses queues (`beep`, `drum-hit`)
+  or the mixer.
 * Mouse positions are in logical pixels, whatever the `zoom`.
-* `pressed?` reads the held state once per `events`; a press shorter than one
-  frame is missed.
-* Names ignore case, so the function `SDL_Quit` is bound as `sdl-shutdown`;
-  `SDL_QUIT` is the event constant.
+* `pressed?` reads the held state once per `events`; a press shorter
+  than one frame is missed.
+* Names ignore case, so the function `SDL_Quit` is bound as
+  `sdl-shutdown`; `SDL_QUIT` is the event constant.
 
 ## Tests
 

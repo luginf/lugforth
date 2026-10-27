@@ -121,7 +121,7 @@ cannot be read), -2 (the firmware refuses the image: not an x64 UEFI one, or Sec
 |---|---|---|
 | Boot from a USB stick (MBR + FAT32), prompt, floats (x87), timer | tested | to try |
 | Faults (#GP, #PF, divide...) become `THROW` | tested | to try |
-| Idle CPU: sleeps in `WaitForEvent` | not measured | to try |
+| Idle CPU: `hlt` between two checks (the firmware's `WaitForEvent` polls), `ms` and `delay` sleep; `include examples/system/cpu_load.fs` prints the load | tested (2% waiting, 100% in a loop that never waits) | to try |
 | Console on the screen (GOP, at least 1280x960, zoom 1 to 3 by size) | tested | to try |
 | Screen words, lines, text, images, breakout, roguelike, tetris, snake, minesweeper, mastermind | tested | to try |
 | Keyboard (firmware console input), typing and held keys | USB keyboard, tested | to try |

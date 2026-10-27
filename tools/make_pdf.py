@@ -17,8 +17,8 @@ DEV = ['README.md', 'ARCHITECTURE.md', 'FEATURES.md', 'PORTS.md', 'PITFALLS.md',
 
 def files():
   if FR:
-    out = [os.path.join(DOCS, 'fr', f) for f in ORDER if f != 'WORDS.md']
-    out += [os.path.join(DOCS, 'fr', 'dev', f) for f in DEV]
+    out = [os.path.join(DOCS, 'fr', f[:-3] + '_fr.md') for f in ORDER if f != 'WORDS.md']
+    out += [os.path.join(DOCS, 'fr', 'dev', f[:-3] + '_fr.md') for f in DEV]
     return [f for f in out if os.path.exists(f)]
   out = [os.path.join(DOCS, f) for f in ORDER]
   known = set(DEV)
@@ -33,7 +33,7 @@ def main():
   version = re.search(r"version='([^']+)'", open(os.path.join(ROOT, 'BUILD')).read()).group(1)
   cmd = ['pandoc', '-f', 'gfm', '--pdf-engine=xelatex', '--toc', '--toc-depth=2', '-V', 'geometry:margin=2cm',
          '-V', 'fontsize=10pt', '-V', 'mainfont=DejaVu Sans', '-V', 'monofont=DejaVu Sans Mono',
-         '-V', 'colorlinks=true', '-M', 'title=' + ('Manuel de Lugforth' if FR else 'Lugforth manual'), '-M', 'subtitle=' + ('version ' if True else '') + version,
+         '-V', 'colorlinks=true', '-M', 'title=' + ('Manuel de Lugforth' if FR else 'Lugforth manual'), '-M', 'subtitle=' + 'version ' + version,
          '-M', 'date=' + time.strftime('%Y-%m-%d'),
          '--resource-path=' + DOCS, '--lua-filter=' + os.path.join(ROOT, 'tools', 'pdf_tables.lua'),
          '-H', os.path.join(ROOT, 'tools', 'pdf_header.tex'), '-o', out] + files()

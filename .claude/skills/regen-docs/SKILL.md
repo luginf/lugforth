@@ -8,6 +8,6 @@ description: Regenerate the generated docs (WORDS.md, PDF, website) after adding
   a word that has no description.
 - Docs edited: `python3 tools/make_pdf.py` (pandoc + xelatex) rebuilds `docs/lugforth_manual.pdf`.
 - Website: `ninja posix web`, then `python3 tools/make_pages.py` (pandoc) builds `out/pages`.
-- The French translation lives in `docs/fr/` (hand written, same file names): when an English doc changes,
+- The French translation lives in `docs/fr/` (hand written, same file names with the suffix `_fr`: `MANUAL_fr.md`, so that they can share a flat folder, a stick): when an English doc changes,
   change its French twin in the same change set.
 - Then bump the version (skill `bump-version`).

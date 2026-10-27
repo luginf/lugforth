@@ -1,7 +1,8 @@
 # Notes for developers (and for Claude)
 
-What a person or an agent working on Lugforth should read before touching the code. The rules of work
-(branches, commits, version) are in [CLAUDE.md](../../CLAUDE.md) at the root of the repository.
+What a person or an agent working on Lugforth should read before
+touching the code. The rules of work (branches, commits, version) are in
+[CLAUDE.md](../../CLAUDE.md) at the root of the repository.
 
 | file | what |
 |---|---|
@@ -11,5 +12,7 @@ What a person or an agent working on Lugforth should read before touching the co
 | [PITFALLS.md](PITFALLS.md) | traps met: Forth, loaders, SDL2, web, new platform boot chains, testing tricks |
 | [IDEAS.md](IDEAS.md) | open questions (ideas left), ideas left, other Forths |
 
-For users: [MANUAL.md](../MANUAL.md) (tutorial and reference), [WORDS.md](../WORDS.md) (every word),
-[docs/pages](../pages) (the website), [attic/oldsite](../../attic/oldsite/README.md) (the pages inherited from uEforth).
+For users: [MANUAL.md](../MANUAL.md) (tutorial and reference),
+[WORDS.md](../WORDS.md) (every word), [docs/pages](../pages) (the
+website), [attic/oldsite](../../attic/oldsite/README.md) (the pages
+inherited from uEforth).

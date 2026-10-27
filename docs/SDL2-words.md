@@ -1,11 +1,11 @@
 # SDL2 word reference
 
-Every word of the `sdl2` vocabulary, for the POSIX build (`out/posix/lugforth`).
-For a tour with examples read [SDL2.md](SDL2.md) first. This page is the
-complete list.
+Every word of the `sdl2` vocabulary, for the POSIX build
+(`out/posix/lugforth`). For a tour with examples read [SDL2.md](SDL2.md)
+first. This page is the complete list.
 
-The words come from five loaders, each loading its source the first time it
-is typed. They all add to the same `sdl2` vocabulary:
+The words come from five loaders, each loading its source the first time
+it is typed. They all add to the same `sdl2` vocabulary:
 
 | Loader | Library | Section |
 |--------|---------|---------|
@@ -15,15 +15,17 @@ is typed. They all add to the same `sdl2` vocabulary:
 | `sdl2-mixer` | `libSDL2_mixer-2.0.so.0` | [Sound](#sound-sdl2-mixer) |
 | `sdl2-abc` | (loads `sdl2-mixer`) | [Tunes](#tunes-sdl2-abc) |
 
-Stack notation: `x y` are pixel coordinates, `w h` sizes, `a n` a Forth string
-(address, length), `z` a zero terminated C string, `f` a flag, `$rrggbb` a color.
-`img snd mus font` are handles returned by the `load-` words. Values are read
-by name and changed with `to`: `3 to zoom`.
+Stack notation: `x y` are pixel coordinates, `w h` sizes, `a n` a Forth
+string (address, length), `z` a zero terminated C string, `f` a flag,
+`$rrggbb` a color. `img snd mus font` are handles returned by the
+`load-` words. Values are read by name and changed with `to`:
+`3 to zoom`.
 
-Raw C bindings keep the C name and argument order. Each one pushes exactly one
-result. When the table says `void` the C function returns nothing but a value
-is still pushed: `drop` it. Int results that can be negative (`-1` for an
-error) should go through `sign-extend` from the `posix` vocabulary.
+Raw C bindings keep the C name and argument order. Each one pushes
+exactly one result. When the table says `void` the C function returns
+nothing but a value is still pushed: `drop` it. Int results that can be
+negative (`-1` for an error) should go through `sign-extend` from the
+`posix` vocabulary.
 
 Word lists: [alphabetical index](#alphabetical-index).
 
@@ -154,7 +156,8 @@ Word lists: [alphabetical index](#alphabetical-index).
 
 ### Raw C bindings (core)
 
-`sdl-shutdown` is the C function `SDL_Quit`: lugforth ignores case, so it could not share its name with the `SDL_QUIT` event constant.
+`sdl-shutdown` is the C function `SDL_Quit`: lugforth ignores case, so
+it could not share its name with the `SDL_QUIT` event constant.
 
 | Word | Stack | Args |
 |------|-------|------|
@@ -207,7 +210,8 @@ Word lists: [alphabetical index](#alphabetical-index).
 
 ### Internal words (core)
 
-Used by the words above. Listed because they are in the vocabulary and can hide or be hidden by your own names.
+Used by the words above. Listed because they are in the vocabulary and
+can hide or be hidden by your own names.
 
 | Word | Stack | What it does |
 |------|-------|--------------|
@@ -303,7 +307,8 @@ Type `sdl2-ttf` once. Text is drawn in the current color.
 
 ### Raw C bindings (text)
 
-The `SDL_Color` argument of `TTF_RenderUTF8_Blended` is passed packed, as `pen`.
+The `SDL_Color` argument of `TTF_RenderUTF8_Blended` is passed packed,
+as `pen`.
 
 | Word | Stack | Args |
 |------|-------|------|
@@ -323,7 +328,8 @@ The `SDL_Color` argument of `TTF_RenderUTF8_Blended` is passed packed, as `pen`.
 
 ## Sound (sdl2-mixer)
 
-Type `sdl2-mixer` once. Not to be confused with `beep`, which is in the core.
+Type `sdl2-mixer` once. Not to be confused with `beep`, which is in the
+core.
 
 | Word | Stack | What it does |
 |------|-------|--------------|
@@ -385,7 +391,12 @@ Type `sdl2-mixer` once. Not to be confused with `beep`, which is in the core.
 
 ## Tunes (sdl2-abc)
 
-Type `sdl2-abc` once (it loads `sdl2-mixer` if needed). A tune written in ABC notation (see abcnotation.com) is read, turned into a MIDI file in a temporary file (deleted once loaded) and played by SDL2_mixer through FluidSynth, with the soundfont given by `soundfont` or the one of the system. The same words exist in the web build, where simple oscillators play the notes.
+Type `sdl2-abc` once (it loads `sdl2-mixer` if needed). A tune written
+in ABC notation (see abcnotation.com) is read, turned into a MIDI file
+in a temporary file (deleted once loaded) and played by SDL2_mixer
+through FluidSynth, with the soundfont given by `soundfont` or the one
+of the system. The same words exist in the web build, where simple
+oscillators play the notes.
 
 | Word | Stack | What it does |
 |------|-------|--------------|
@@ -405,7 +416,8 @@ Type `sdl2-abc` once (it loads `sdl2-mixer` if needed). A tune written in ABC no
 
 ### Internal words (tunes)
 
-The reader itself lives in the vocabulary `abc-int`, which is not searched by default.
+The reader itself lives in the vocabulary `abc-int`, which is not
+searched by default.
 
 | Word | Stack | What it does |
 |------|-------|--------------|
@@ -430,10 +442,12 @@ The reader itself lives in the vocabulary `abc-int`, which is not searched by de
 
 ## Drawing at the prompt, and the boards (rpi, efi, web)
 
-`graphic` makes the drawing words work at the prompt of the bare-metal console (Raspberry Pi, PC UEFI), of the
-console window (`--gui`) and of the web terminal, without `screen`: a drawing area is shown under (web: above) the
-text, which stays usable. `0 0 100 100 line`, `red color`, `cls`. The words below exist in the short words of those
-builds; they are listed here with the others.
+`graphic` makes the drawing words work at the prompt of the bare-metal
+console (Raspberry Pi, PC UEFI), of the console window (`--gui`) and of
+the web terminal, without `screen`: a drawing area is shown under (web:
+above) the text, which stays usable. `0 0 100 100 line`, `red color`,
+`cls`. The words below exist in the short words of those builds; they
+are listed here with the others.
 
 ### Drawing area
 
@@ -448,7 +462,9 @@ builds; they are listed here with the others.
 
 ### Keys on the boards (internal)
 
-The serial line of the boards is read as a stream of characters, without key releases (a USB keyboard is read by C code, see `pressed?`): a key counts as held for `key-hold` milliseconds after its last press.
+The serial line of the boards is read as a stream of characters, without
+key releases (a USB keyboard is read by C code, see `pressed?`): a key
+counts as held for `key-hold` milliseconds after its last press.
 
 | Word | Stack | What it does |
 |------|-------|--------------|
@@ -474,11 +490,13 @@ The serial line of the boards is read as a stream of characters, without key rel
 
 ## Aliases
 
-Other names for the same word, as other Forths and BASICs call them. An alias is a plain colon definition that calls
-the word, so it works the same everywhere `sdl2` does (Linux, web, rpi, efi). Add new ones here.
+Other names for the same word, as other Forths and BASICs call them. An
+alias is a plain colon definition that calls the word, so it works the
+same everywhere `sdl2` does (Linux, web, rpi, efi). Add new ones here.
 
-Where to change them: an alias is one line, `: plot ( x y -- ) dot ;`, written right after the word it renames in
-each of the three sources of the short words, which must stay equal:
+Where to change them: an alias is one line, `: plot ( x y -- ) dot ;`,
+written right after the word it renames in each of the three sources of
+the short words, which must stay equal:
 
 | Build | Source |
 |-------|--------|
@@ -486,13 +504,18 @@ each of the three sources of the short words, which must stay equal:
 | Raspberry Pi and PC (UEFI) | `ports/baremetal/sdl2.fs` |
 | Web | `ports/web/sdl2.fs` (the web build also has a stub below, `: plot graphic s" plot" evaluate ;`, so that the word works at the prompt before `graphic`) |
 
-Then add the row to the table above, and the word to the alphabetical index at the end of this page.
+Then add the row to the table above, and the word to the alphabetical
+index at the end of this page.
 
-Where the other sections of this page come from: this file is written by hand, section by section, after
-the sources: Core, Images, Text, Sound and Tunes (`ports/posix/sdl2.fs`, `sdl2_image.fs`, `sdl2_ttf.fs`,
-`sdl2_mixer.fs`, `sdl2_abc.fs`); the words of the boards and the web page (`ports/baremetal/sdl2.fs`,
-`ports/web/sdl2.fs`, `ports/web/sdl2_abc.fs`); `sound-off` and `snd-ok` (`ports/efi/sound_ini.fs`, `ports/efi/hda.h`).
-The generated list of the other words is `docs/WORDS.md` (see `docs/dev/PITFALLS.md`, "Adding words").
+Where the other sections of this page come from: this file is written by
+hand, section by section, after the sources: Core, Images, Text, Sound
+and Tunes (`ports/posix/sdl2.fs`, `sdl2_image.fs`, `sdl2_ttf.fs`,
+`sdl2_mixer.fs`, `sdl2_abc.fs`); the words of the boards and the web
+page (`ports/baremetal/sdl2.fs`, `ports/web/sdl2.fs`,
+`ports/web/sdl2_abc.fs`); `sound-off` and `snd-ok`
+(`ports/efi/sound_ini.fs`, `ports/efi/hda.h`). The generated list of the
+other words is `docs/WORDS.md` (see `docs/dev/PITFALLS.md`, "Adding
+words").
 
 | Alias | Same as | Why |
 |-------|---------|-----|
@@ -500,5 +523,48 @@ The generated list of the other words is `docs/WORDS.md` (see `docs/dev/PITFALLS
 
 ## Alphabetical index
 
-`abc` `abc-loop` `abc-play` `active-hook` `alpha` `arrow` `audio-open` `audio-open?` `beep` `beep-volume` `beeping?` `black` `blue` `box` `brown` `c-close` `c-mkstemps` `circle` `close-screen` `cls` `color` `cursor` `cyan` `delay` `disc` `dot` `draw` `draw-part` `draw-size` `drum-hit` `dt` `escape` `events` `flip` `font` `forget-keys` `frame` `free-font` `free-image` `free-music` `free-sound` `fullscreen` `gfx-cls` `gfx-mode` `gfx-on` `graphic` `graphic-on` `graphic-size` `gray` `green` `height` `hline` `image-alpha` `image-size` `image-tint` `IMG_LoadTexture` `ink` `key-backspace` `key-down` `key-enter` `key-esc` `key-hit` `key-hold` `key-left` `key-right` `key-space` `key-tab` `key-times` `key-up` `key-within` `last-key` `latency` `LEFT-BUTTON` `line` `load-font` `load-image` `load-music` `load-sound` `magenta` `MIDDLE-BUTTON` `Mix_CloseAudio` `Mix_FreeChunk` `Mix_FreeMusic` `Mix_HaltChannel` `Mix_HaltMusic` `Mix_LoadMUS` `Mix_LoadWAV_RW` `Mix_OpenAudio` `Mix_PlayChannelTimed` `Mix_Playing` `Mix_PlayingMusic` `Mix_PlayMusic` `Mix_SetSoundFonts` `Mix_Volume` `Mix_VolumeMusic` `mouse-x` `mouse-y` `music` `music-once` `music-volume` `music?` `noise` `one-key` `orange` `pen` `pen-a` `pen-b` `pen-g` `pen-r` `pink` `pitch-drop` `pixel@` `play` `plot` `pressed?` `purple` `quit!` `quit?` `red` `render-hook` `renderer` `rgb` `rgba` `RIGHT-BUTTON` `sample-rate` `saw` `scan?` `screen` `screen-open?` `sdl` `sdl-error` `sdl-shutdown` `SDL_ClearQueuedAudio` `SDL_CloseAudioDevice` `SDL_CreateRenderer` `SDL_CreateTexture` `SDL_CreateTextureFromSurface` `SDL_CreateWindow` `SDL_Delay` `SDL_DestroyRenderer` `SDL_DestroyTexture` `SDL_DestroyWindow` `SDL_FreeSurface` `SDL_GetError` `SDL_GetKeyboardState` `SDL_GetMouseState` `SDL_GetQueuedAudioSize` `SDL_GetTicks` `SDL_Init` `SDL_InitSubSystem` `SDL_OpenAudioDevice` `SDL_PauseAudioDevice` `SDL_PollEvent` `SDL_PushEvent` `SDL_QueryTexture` `SDL_QueueAudio` `SDL_RenderClear` `SDL_RenderCopy` `SDL_RenderDrawLine` `SDL_RenderDrawPoint` `SDL_RenderDrawRect` `SDL_RenderFillRect` `SDL_RenderPresent` `SDL_RenderReadPixels` `SDL_RenderSetLogicalSize` `SDL_RWFromFile` `SDL_SetHint` `SDL_SetRenderDrawBlendMode` `SDL_SetRenderDrawColor` `SDL_SetTextureAlphaMod` `SDL_SetTextureBlendMode` `SDL_SetTextureColorMod` `SDL_SetWindowFullscreen` `SDL_SetWindowTitle` `SDL_ShowCursor` `SDL_UpdateTexture` `SDL_WaitEvent` `sdlimg` `sdlmix` `sdlttf` `setting` `silence` `sine` `snd-ok` `sound` `sound-off` `sound-on` `sound-volume` `soundfont` `soundfont?` `sounds-playing` `square` `stop-music` `stop-sounds` `text` `text-size` `ticks` `ticks>ms` `title` `triangle` `TTF_CloseFont` `TTF_Init` `TTF_OpenFont` `TTF_Quit` `TTF_RenderUTF8_Blended` `TTF_SizeUTF8` `tune-bpm` `tune-level` `tune-loop` `tune-midi` `tune-ms` `tune-notes` `tune-play` `tune-playing?` `tune-program` `tune-save` `tune-send` `tune-stop` `wait` `wave` `wheel` `white` `width` `window-handle` `yellow` `zoom`
+`abc` `abc-loop` `abc-play` `active-hook` `alpha` `arrow` `audio-open`
+`audio-open?` `beep` `beep-volume` `beeping?` `black` `blue` `box`
+`brown` `c-close` `c-mkstemps` `circle` `close-screen` `cls` `color`
+`cursor` `cyan` `delay` `disc` `dot` `draw` `draw-part` `draw-size`
+`drum-hit` `dt` `escape` `events` `flip` `font` `forget-keys` `frame`
+`free-font` `free-image` `free-music` `free-sound` `fullscreen`
+`gfx-cls` `gfx-mode` `gfx-on` `graphic` `graphic-on` `graphic-size`
+`gray` `green` `height` `hline` `image-alpha` `image-size` `image-tint`
+`IMG_LoadTexture` `ink` `key-backspace` `key-down` `key-enter` `key-esc`
+`key-hit` `key-hold` `key-left` `key-right` `key-space` `key-tab`
+`key-times` `key-up` `key-within` `last-key` `latency` `LEFT-BUTTON`
+`line` `load-font` `load-image` `load-music` `load-sound` `magenta`
+`MIDDLE-BUTTON` `Mix_CloseAudio` `Mix_FreeChunk` `Mix_FreeMusic`
+`Mix_HaltChannel` `Mix_HaltMusic` `Mix_LoadMUS` `Mix_LoadWAV_RW`
+`Mix_OpenAudio` `Mix_PlayChannelTimed` `Mix_Playing` `Mix_PlayingMusic`
+`Mix_PlayMusic` `Mix_SetSoundFonts` `Mix_Volume` `Mix_VolumeMusic`
+`mouse-x` `mouse-y` `music` `music-once` `music-volume` `music?` `noise`
+`one-key` `orange` `pen` `pen-a` `pen-b` `pen-g` `pen-r` `pink`
+`pitch-drop` `pixel@` `play` `plot` `pressed?` `purple` `quit!` `quit?`
+`red` `render-hook` `renderer` `rgb` `rgba` `RIGHT-BUTTON` `sample-rate`
+`saw` `scan?` `screen` `screen-open?` `sdl` `sdl-error` `sdl-shutdown`
+`SDL_ClearQueuedAudio` `SDL_CloseAudioDevice` `SDL_CreateRenderer`
+`SDL_CreateTexture` `SDL_CreateTextureFromSurface` `SDL_CreateWindow`
+`SDL_Delay` `SDL_DestroyRenderer` `SDL_DestroyTexture`
+`SDL_DestroyWindow` `SDL_FreeSurface` `SDL_GetError`
+`SDL_GetKeyboardState` `SDL_GetMouseState` `SDL_GetQueuedAudioSize`
+`SDL_GetTicks` `SDL_Init` `SDL_InitSubSystem` `SDL_OpenAudioDevice`
+`SDL_PauseAudioDevice` `SDL_PollEvent` `SDL_PushEvent`
+`SDL_QueryTexture` `SDL_QueueAudio` `SDL_RenderClear` `SDL_RenderCopy`
+`SDL_RenderDrawLine` `SDL_RenderDrawPoint` `SDL_RenderDrawRect`
+`SDL_RenderFillRect` `SDL_RenderPresent` `SDL_RenderReadPixels`
+`SDL_RenderSetLogicalSize` `SDL_RWFromFile` `SDL_SetHint`
+`SDL_SetRenderDrawBlendMode` `SDL_SetRenderDrawColor`
+`SDL_SetTextureAlphaMod` `SDL_SetTextureBlendMode`
+`SDL_SetTextureColorMod` `SDL_SetWindowFullscreen` `SDL_SetWindowTitle`
+`SDL_ShowCursor` `SDL_UpdateTexture` `SDL_WaitEvent` `sdlimg` `sdlmix`
+`sdlttf` `setting` `silence` `sine` `snd-ok` `sound` `sound-off`
+`sound-on` `sound-volume` `soundfont` `soundfont?` `sounds-playing`
+`square` `stop-music` `stop-sounds` `text` `text-size` `ticks`
+`ticks>ms` `title` `triangle` `TTF_CloseFont` `TTF_Init` `TTF_OpenFont`
+`TTF_Quit` `TTF_RenderUTF8_Blended` `TTF_SizeUTF8` `tune-bpm`
+`tune-level` `tune-loop` `tune-midi` `tune-ms` `tune-notes` `tune-play`
+`tune-playing?` `tune-program` `tune-save` `tune-send` `tune-stop`
+`wait` `wave` `wheel` `white` `width` `window-handle` `yellow` `zoom`
 

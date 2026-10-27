@@ -5,10 +5,10 @@ The examples are in folders by kind (SDL2 words, see `docs/SDL2.md`):
 | folder | what |
 |---|---|
 | `games/` | `sdl2_breakout.fs`, `sdl2_roguelike.fs` (with its tile sheet), `sdl2_2048.fs` (and the terminal `2048.fs`), three games after r3forth (below: `sdl2_tetris.fs`, `sdl2_snake.fs`, `sdl2_minesweeper.fs`), `sdl2_mastermind.fs`, `sdl2_raycaster.fs` (a Doom-like maze by raycasting, steered with the mouse), `heart_game.fs`, `pinball/pinball.fs`; `games_tests.fs`, `raycaster_tests.fs` and `2048_tests.fs` are their tests |
-| `graphics/` | `sdl2_demo.fs`, `sdl2_3d.fs` (turning wireframe cube, pyramid and octahedron; `3d.fs` is the math), `sdl2_turtle.fs` (Logo turtle graphics, words of forthtoise from [Forth is Fun](https://gitlab.com/garvalf/forth-is-fun), English and French), `boxes.fs`, `heart_graph.fs`, `min_grf.fs`, `bezier_test.fs` |
+| `graphics/` | `sdl2_demo.fs`, `sdl2_3d.fs` (turning wireframe cube, pyramid and octahedron; `3d.fs` is the math), `sdl2_turtle.fs` (Logo turtle graphics, words of forthtoise from [Forth is Fun](https://gitlab.com/garvalf/forth-is-fun), English and French), `sdl2_magnoquill.fs` (Magnoquill Driftflare Quiverbloom: a cloud of 4000 points drawn from a shader's formulas, rainbow colors and additive blending, ported from the gforth + SDL2 version; keys in the header), `boxes.fs`, `heart_graph.fs`, `min_grf.fs`, `bezier_test.fs` |
 | `music/` | `sdl2_drums.fs`, `sdl2_pianoroll.fs`, `fm/sdl2_fm.fs` (FM synthesizer with MIDI input, also in the browser; see `music/fm/README.md`) |
 | `utils/` | `txt2tags.fs`, `logs.fs`, `into.fs`, `complex.fs`, `infix/`, `inference/` (rules engine), `gemini/` (arrays, JSON) |
-| `system/` | networking (`curl.fs`, `udp.fs`, `httpd_sample.fs`, `espnow.fs`), assemblers (`asm_xtensa.fs`, `code_x64.fs`, `code_xtensa.fs`), `varvara/` (Uxn virtual machine) |
+| `system/` | networking (`curl.fs`, `udp.fs`, `httpd_sample.fs`, `espnow.fs`), `cpu_load.fs` (on the bare-metal PC: the CPU load of a wait, of a key wait and of a loop that never waits), assemblers (`asm_xtensa.fs`, `code_x64.fs`, `code_xtensa.fs`), `varvara/` (Uxn virtual machine) |
 | `bench/` | the benchmarks below, `speed.fs` |
 | `web/` | HTML pages that load the web build |
 
