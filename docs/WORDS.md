@@ -32,7 +32,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 
 ## The `forth` vocabulary
 
-511 words. 62 are described by the reference pages, 162 by the notes, 155 are standard words the project leaves to the standard, 132 have only a stack comment or binding, 0 have no description yet.
+593 words. 62 are described by the reference pages, 162 by the notes, 204 are standard words the project leaves to the standard, 157 have only a stack comment or binding, 8 have no description yet.
 
 
 ### Arguments
@@ -366,6 +366,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `+loop` | `( n -- )` | ANS. | P W |
 | `,` | `( n -- )` | ANS. | P W |
 | `-` | `( n n -- n )` | ANS. Primitive defined in C. | P W |
+| `-trailing` | `( a n -- a n' )` | ANS. | P W |
 | `.` | `( w -- )` | ANS. | P W |
 | `."` |  | ANS. | P W |
 | `.(` | `( -- )` | ANS. | P W |
@@ -392,7 +393,9 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `2over` | `( a b c d -- a b c d a b )` | ANS. | P W |
 | `2r>` | `( -- a b )` | ANS. | P W |
 | `2r@` | `( -- a b )` | ANS. | P W |
+| `2rot` | `( d1 d2 d3 -- d2 d3 d1 )` | ANS. | P W |
 | `2swap` | `( a b c d -- c d a b )` | ANS. | P W |
+| `2value` | `( x1 x2 "name" -- )` | ANS. | P W |
 | `2variable` | `( "name" -- )` | ANS. | P W |
 | `:` |  | ANS. Primitive defined in C. | P W |
 | `:noname` | `( -- xt )` | ANS. | P W |
@@ -420,6 +423,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `abort"` |  | ANS. | P W |
 | `abs` | `( n -- +n )` | ANS. Primitive defined in C. | P W |
 | `accept` | `( a n -- n )` | ANS. | P W |
+| `action-of` | `( "name" -- xt )` | ANS. | P W |
 | `again` |  | ANS. | P W |
 | `ahead` |  | ANS. | P W |
 | `align` |  | ANS. Primitive defined in C. | P W |
@@ -432,8 +436,10 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `begin` |  | ANS. | P W |
 | `bl` |  | ANS. Primitive defined in C. | P W |
 | `blank` |  | ANS. Primitive defined in C. | P W |
+| `buffer:` | `( u "name" -- )` | ANS. | P W |
 | `bye` |  | ANS. | P W |
 | `C!` |  | ANS. Primitive defined in C. | P W |
+| `c"` | `( "ccc<quote>" -- c-addr )` | ANS. A counted string: the length in the first byte. Compiled as an s" whose text starts with that byte, so see and the r\| copies treat it as any string. | P W |
 | `c,` | `( ch -- )` | ANS. | P W |
 | `C@` |  | ANS. Primitive defined in C. | P W |
 | `CASE` | `( n -- )` | ANS. | P W |
@@ -453,17 +459,23 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `d+` | `( lo1 hi1 lo2 hi2 -- lo hi )` | ANS. | P W |
 | `d-` | `( d d -- d )` | ANS. | P W |
 | `d.` | `( d -- )` | ANS. | P W |
+| `d.r` | `( d width -- )` | ANS. | P W |
 | `d0<` | `( d -- f )` | ANS. | P W |
 | `d0=` | `( d -- f )` | ANS. | P W |
 | `d2*` | `( lo hi -- lo hi )` | ANS. | P W |
 | `d2/` | `( lo hi -- lo hi )` | ANS. | P W |
 | `d<` | `( lo1 hi1 lo2 hi2 -- f )` | ANS. | P W |
 | `d=` | `( lo1 hi1 lo2 hi2 -- f )` | ANS. | P W |
+| `d>f` | `( d -- r )` | ANS. | P W |
 | `d>s` | `( d -- n )` | ANS. | P W |
 | `dabs` | `( d -- d )` | ANS. | P W |
 | `decimal` | `( -- )` | ANS. | P W |
 | `defer` | `( "name" -- )` | ANS. | P W |
+| `defer!` | `( xt' xt -- )` | ANS. | P W |
+| `defer@` | `( xt -- xt' )` | ANS. | P W |
 | `depth` | `( -- n )` | ANS. | P W |
+| `dmax` | `( d1 d2 -- d )` | ANS. | P W |
+| `dmin` | `( d1 d2 -- d )` | ANS. | P W |
 | `dnegate` | `( d -- d )` | ANS. | P W |
 | `do` | `( n n -- .. )` | ANS. | P W |
 | `DOES>` |  | ANS. Primitive defined in C. | P W |
@@ -479,16 +491,36 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `evaluate` | `( a n -- )` | ANS. | P W |
 | `EXECUTE` |  | ANS. Primitive defined in C. | P W |
 | `exit` |  | ANS. Primitive defined in C. | P W |
+| `f!` | `( r a -- )` | ANS. | P W |
 | `F**` |  | ANS. Primitive defined in C. | P W |
 | `f.` | `( r -- )` | ANS. | P W |
+| `f>d` | `( r -- d )` | ANS. Within the range of a cell. | P W |
+| `f@` | `( a -- r )` | ANS. | P W |
 | `FABS` |  | ANS. Primitive defined in C. | P W |
+| `facos` | `( r -- r' )` | ANS. | P W |
+| `facosh` | `( r -- r' )` | ANS. | P W |
+| `falign` | `( -- )` | ANS. | P W |
+| `faligned` | `( a -- a' )` | ANS. | P W |
+| `falog` | `( r -- r' )` | ANS. | P W |
 | `false` |  | ANS. Constant, 0. | P W |
+| `fasin` | `( r -- r' )` | ANS. | P W |
+| `fasinh` | `( r -- r' )` | ANS. | P W |
+| `fatan` | `( r -- r' )` | ANS. | P W |
 | `FATAN2` |  | ANS. Primitive defined in C. | P W |
+| `fatanh` | `( r -- r' )` | ANS. | P W |
 | `FCOS` |  | ANS. Primitive defined in C. | P W |
+| `fcosh` | `( r -- r' )` | ANS. | P W |
 | `fdepth` | `( -- n )` | ANS. | P W |
+| `fe.` | `( r -- )` | ANS. Engineering notation: an exponent that is a multiple of 3. | P W |
 | `FEXP` |  | ANS. Primitive defined in C. | P W |
+| `fexpm1` | `( r -- r' )` | ANS. | P W |
+| `ffield:` | `( n1 "name" -- n2 )` | ANS. | P W |
 | `fill` | `( a n ch -- )` | ANS. JavaScript function of the web page. | P W |
 | `FLN` |  | ANS. Primitive defined in C. | P W |
+| `flnp1` | `( r -- r' )` | ANS. | P W |
+| `float+` | `( a -- a' )` | ANS. | P W |
+| `floats` | `( n -- n' )` | ANS. | P W |
+| `flog` | `( r -- r' )` | ANS. | P W |
 | `FLOOR` |  | ANS. Primitive defined in C. | P W |
 | `FLUSH-FILE` | `( fh -- ior )` | ANS. | P - |
 | `fm/mod` | `( lo hi n -- rem quot )` | ANS. | P W |
@@ -498,11 +530,20 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `forget` | `( "name" )` | ANS. | P W |
 | `free` | `( a -- ior )` | ANS. | P - |
 | `FROT` |  | ANS. Primitive defined in C. | P W |
+| `fround` | `( r -- r' )` | ANS. | P W |
+| `fs.` | `( r -- )` | ANS. Scientific notation: one digit before the point. | P W |
 | `FSIN` |  | ANS. Primitive defined in C. | P W |
 | `FSINCOS` |  | ANS. Primitive defined in C. | P W |
+| `fsinh` | `( r -- r' )` | ANS. | P W |
+| `ftan` | `( r -- r' )` | ANS. | P W |
+| `ftanh` | `( r -- r' )` | ANS. | P W |
+| `f~` | `( r1 r2 r3 -- f )` | ANS. r3 > 0: \|r1-r2\| < r3; r3 = 0: r1 = r2; r3 < 0: \|r1-r2\| < \|r3\| * (\|r1\|+\|r2\|). | P W |
+| `get-current` | `( -- wid )` | ANS. | P W |
+| `get-order` | `( -- widn .. wid1 n )` | ANS. | P W |
 | `here` | `( -- a )` | ANS. Primitive defined in C. | P W |
 | `hex` | `( -- )` | ANS. | P W |
 | `hold` | `( c -- )` | ANS. | P W |
+| `holds` | `( a n -- )` | ANS. | P W |
 | `I` |  | ANS. | P W |
 | `if` |  | ANS. | P W |
 | `IMMEDIATE` |  | ANS. Primitive defined in C. | P W |
@@ -515,15 +556,18 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `key?` |  | ANS. | P W |
 | `leave` |  | ANS. | P W |
 | `literal` |  | ANS. Primitive defined in C. | P W |
+| `locals\|` | `( "names \|" -- )` | ANS. The first name takes the top of the stack. | P W |
 | `loop` |  | ANS. | P W |
 | `LSHIFT` |  | ANS. Primitive defined in C. | P W |
 | `m*` | `( n n -- d )` | ANS. | P W |
+| `m*/` | `( d1 n1 +n2 -- d2 )` | ANS. d1 * n1 / n2 through a triple-cell product, rounded toward zero. | P W |
 | `m+` | `( d n -- d )` | ANS. | P W |
 | `marker` | `( "name" -- )` | ANS. | P W |
 | `max` |  | ANS. Primitive defined in C. | P W |
 | `min` |  | ANS. Primitive defined in C. | P W |
 | `mod` | `( n n -- n )` | ANS. Primitive defined in C. | P W |
 | `move` | `( src dst n -- )` | ANS. | P W |
+| `name>string` | `( nt -- a n )` | ANS. | P W |
 | `negate` | `( n -- -n )` | ANS. Primitive defined in C. | P W |
 | `nip` | `( a b -- b )` | ANS. Primitive defined in C. | P W |
 | `OF` | `( n -- )` | ANS. | P W |
@@ -531,6 +575,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `OVER` |  | ANS. Primitive defined in C. | P W |
 | `pad` | `( -- a )` | ANS. | P W |
 | `page` |  | ANS. | P W |
+| `parse-name` | `( "name" -- a n )` | ANS. | P W |
 | `pick` | `( xu .. x0 u -- xu .. x0 xu )` | ANS. | P W |
 | `postpone` | `( "name" -- )` | ANS. | P W |
 | `precision` |  | ANS. | P W |
@@ -541,26 +586,39 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `refill` |  | ANS. | P W |
 | `RENAME-FILE` | `( a n a n -- ior )` | ANS. | P - |
 | `repeat` |  | ANS. | P W |
+| `replaces` | `( a1 n1 a2 n2 -- )` | ANS. Gives the name a2 n2 the text a1 n1, for SUBSTITUTE. | P W |
 | `required` | `( a n -- )` | ANS. | P - |
 | `resize` | `( a n -- a ior )` | ANS. | P - |
 | `RESIZE-FILE` | `( n fh -- ior )` | ANS. | P - |
+| `restore-input` | `( xn .. x1 n -- f )` | ANS. | P W |
 | `roll` | `( xu .. x0 u -- xu-1 .. x0 xu )` | ANS. | P W |
 | `rot` | `( a b c -- c a b )` | ANS. Primitive defined in C. | P W |
 | `RSHIFT` |  | ANS. Primitive defined in C. | P W |
 | `s"` |  | ANS. | P W |
 | `s>d` | `( n -- d )` | ANS. | P W |
+| `s\"` | `( "ccc<quote>" -- a n )` | ANS. Like s" with the escapes of the standard: \n \t \" \\ \xHH ... | P W |
+| `save-input` | `( -- x3 x2 x1 3 )` | ANS. | P W |
 | `search` | `( a1 n1 a2 n2 -- a3 n3 f )` | ANS. | P W |
+| `search-wordlist` | `( a n wid -- 0 \| xt 1 \| xt -1 )` | ANS. | P W |
+| `set-current` | `( wid -- )` | ANS. | P W |
+| `set-order` | `( widn .. wid1 n -- )` | ANS. | P W |
 | `set-precision` | `( n -- )` | ANS. | P W |
+| `sfalign` | `( -- )` | ANS. | P W |
+| `sfaligned` | `( a -- a' )` | ANS. | P W |
 | `sign` | `( n -- )` | ANS. | P W |
+| `sliteral` | `( a n -- )` | ANS. | P W |
 | `sm/rem` | `( lo hi n -- rem quot )` | ANS. | P W |
 | `source` | `( -- a n )` | ANS. | P W |
+| `source-id` | `( -- 0 \| -1 )` | ANS. 0 when the text comes from the keyboard, -1 from evaluate (and from a file). | P W |
 | `space` |  | ANS. | P W |
 | `spaces` | `( n -- )` | ANS. | P W |
 | `state` |  | ANS. Primitive defined in C. | P W |
+| `substitute` | `( a1 n1 a2 n2 -- a2 n3 n4 )` | ANS. Copies a1 n1 to a2 (room for n2 characters), %name% replaced by its text and %% by %. n4: the number of replacements, negative when the result does not fit. | P W |
 | `SWAP` |  | ANS. Primitive defined in C. | P W |
+| `synonym` | `( "new" "old" -- )` | ANS. | P W |
 | `then` |  | ANS. | P W |
 | `throw` | `( n -- )` | ANS. | P W |
-| `to` | `( n -- )` | ANS. | P W |
+| `to` | `( x \| x1 x2 \| r "name" -- )` | ANS. TO also stores in a 2value and in an fvalue. | P W |
 | `true` |  | ANS. Constant, -1. | P W |
 | `tuck` | `( a b -- b a b )` | ANS. | P W |
 | `type` |  | ANS. | P W |
@@ -570,36 +628,46 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `u>` | `( u u -- f )` | ANS. | P W |
 | `um*` | `( u u -- ud )` | ANS. | P W |
 | `um/mod` | `( lo hi u -- rem quot )` | ANS. | P W |
+| `unescape` | `( a1 n1 a2 -- a2 n2 )` | ANS. Doubles each % of a1 n1, copied to a2. | P W |
 | `UNLOOP` |  | ANS. | P W |
 | `until` |  | ANS. | P W |
+| `unused` | `( -- u )` | ANS. | P W |
 | `value` | `( n -- )` | ANS. | P W |
 | `VARIABLE` |  | ANS. Primitive defined in C. | P W |
 | `while` |  | ANS. | P W |
 | `within` | `( n lo hi -- f )` | ANS. | P W |
 | `word` | `( ch -- a )` | ANS. | P W |
+| `wordlist` | `( -- wid )` | ANS. | P W |
 | `XOR` |  | ANS. Primitive defined in C. | P W |
+| `{:` | `( "args \| vals -- outs :}" -- )` | ANS. | P W |
 
 ### Other
 
 | Word | Stack | What it does | P W |
 |------|-------|--------------|-----|
+| `+field` | `( n1 n2 "name" -- n3 )` |  | P W |
 | `2+` | `( n -- n )` | Adds 2 to a number. | P W |
 | `2-` | `( n -- n )` | Subtracts 2 from a number. | P W |
+| `>float` | `( a n -- r true \| false )` | The standard text of a float: the exponent may be left out, a blank text is 0. | P W |
 | `>name-length` | `( xt -- n )` | The length in bytes of the name of a definition. | - W |
 | `[defined]` | `( "name" -- f )` | True when the next word is found in the dictionary. Mostly used with [if]: [defined] foo [if] ... [then]. | P W |
 | `[undefined]` | `( "name" -- f )` | True when the next word is not found in the dictionary: the reverse of [defined]. | P W |
 | `alpha` | `( a -- )` | Sets the opacity of the drawing color, 0 to 255 (after `color`, which resets it). | - W |
 | `anew` | `( "name" -- )` | Like marker, but first forgets the word of that name and everything after it if it exists, so a file can be loaded again without piling up its words. | P W |
+| `begin-structure` | `( "name" -- addr 0 )` |  | P W |
 | `black` | `( -- $rrggbb )` | The color black, $000000: `black color`. | - W |
 | `blue` | `( -- $rrggbb )` | The color blue, $0000ff: `blue color`. | - W |
 | `box` | `( x y w h -- )` | Fills a rectangle. At the web prompt it opens the drawing area first. | - W |
 | `brown` | `( -- $rrggbb )` | The color brown, $804000: `brown color`. | - W |
 | `CALL` | `( xt -- )` | Calls a foreign function through the FFI. Used by `sofunc`, `sysfunc` (POSIX) and `JSWORD:` (web). | - W |
 | `cell-` | `( a -- a )` | The address of the previous cell: a minus the size of a cell (8 bytes). | P W |
+| `cfield:` | `( n1 "name" -- n2 )` |  | P W |
 | `circle` | `( cx cy r -- )` | Draws the outline of a circle. | - W |
 | `cls` | `( -- )` | Clears the drawing area to black. | - W |
 | `color` | `( $rrggbb -- )` | Sets the drawing color: `red color`, `$ff8000 color`. | - W |
 | `colors` | `( -- )` | Web build: prints all 256 terminal colors, to see what `fg` and `bg` give. | - W |
+| `cs-pick` | `( n -- )` |  | P W |
+| `cs-roll` | `( n -- )` |  | P W |
 | `cyan` | `( -- $rrggbb )` | The color cyan, $00ffff: `cyan color`. | - W |
 | `d>` | `( d d -- f )` | True when the signed double d1 is greater than d2. | P W |
 | `default-key` | `( -- c )` | The standard input `key` of the platform, what `key` does by default. | P - |
@@ -607,16 +675,25 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `disc` | `( cx cy r -- )` | Fills a disc. | - W |
 | `dot` | `( x y -- )` | Draws a pixel. At the web prompt it opens the drawing area first. | - W |
 | `ed` | `( "file" -- )` | The text editor written in Forth. See the manual. | P - |
-| `ed-arg` |  | ed-arg, ed-arg-n: the file name typed after ed (a buffer and its length). | P - |
+| `ed-arg` |  |  | P - |
 | `ed-arg-n` | `( -- n )` | Length of the file name kept in `ed-arg` (the name typed after `ed` or `writhdeck`). | P - |
-| `ed-go` |  | Runs the editor on the file a n. Set to ed-main when ed-src is compiled. | P - |
-| `ed-loaded` |  | Flag: the code of ed (the string ed-src) has been compiled. | P - |
-| `ed-src` |  | The source of the editor ed, a string compiled the first time ed is used. | P - |
+| `ed-go` |  |  | P - |
+| `ed-loaded` |  |  | P - |
+| `ed-src` |  |  | P - |
+| `ekey` | `( -- u )` |  | P W |
+| `ekey>char` | `( u -- u false \| ch true )` |  | P W |
+| `ekey?` | `( -- f )` |  | P W |
+| `emit?` | `( -- f )` |  | P W |
+| `end-structure` | `( addr n -- )` |  | P W |
 | `eval-copy` | `( a n -- )` | Evaluates the string a n after copying it to the heap, then restores the input source. Used for code kept as a string that evaluating would overwrite (the code of ed, writhdeck and the console window). | P - |
+| `field:` | `( n1 "name" -- n2 )` |  | P W |
 | `fill32` | `( a n v )` | Primitive defined in C. | - W |
 | `form` | `( -- h w )` | The height and width of the terminal, in characters. | P - |
 | `forth-builtins` | `( -- )` | The vocabulary at the bottom of `forth`, holding the words defined in C. They are moved into `forth` when the system starts. | P W |
+| `forth-wordlist` |  |  | P W |
 | `frame` | `( x y w h -- )` | Draws the outline of a rectangle. | - W |
+| `ftrunc` | `( r -- r' )` |  | P W |
+| `fvalue` | `( r "name" -- )` |  | P W |
 | `graphic` | `( -- )` | Loads `sdl2` and makes the drawing words (`line`, `box`, `color`, `cls`...) work at the prompt: in the console window under the text, on the web page in a drawing area above it. | - W |
 | `gray` | `( -- $rrggbb )` | The color gray, $808080: `gray color`. | - W |
 | `green` | `( -- $rrggbb )` | The color green, $00c000: `green color`. | - W |
@@ -629,8 +706,12 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `ink` | `( n -- )` | Sets the drawing color by number, 0 to 15 (0 black, 1 red, 2 green, 3 yellow, 4 blue, 5 magenta, 6 cyan, 7 white...). | - W |
 | `line` | `( x1 y1 x2 y2 -- )` | Draws a line in the current color. Typed at the web prompt before `graphic`, it opens the drawing area first. | - W |
 | `magenta` | `( -- $rrggbb )` | The color magenta, $ff00ff: `magenta color`. | - W |
+| `n>r` | `( i*x n -- )` |  | P W |
+| `name>compile` | `( nt -- x xt )` |  | P W |
+| `name>interpret` | `( nt -- xt )` |  | P W |
 | `noop` | `( -- )` | Does nothing. Handy as the default of a defer. | P W |
 | `not` | `( f -- f )` | Flag inversion (same as 0=): 0 gives -1 (true), any other value gives 0 (false). | P W |
+| `nr>` | `( -- i*x n )` |  | P W |
 | `ok` | `( -- )` | Prints the ` ok` after a line is interpreted. | P W |
 | `orange` | `( -- $rrggbb )` | The color orange, $ff8000: `orange color`. | - W |
 | `pager-off` | `( -- )` | Turns the pager off. | P - |
@@ -655,10 +736,11 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `sockets` | `( -- )` | Lazy loaded BSD sockets. | P - |
 | `telnetd` | `( -- )` | Lazy loaded telnet server. | P - |
 | `termios` | `( -- )` | Vocabulary of terminal handling. | P - |
+| `traverse-wordlist` | `( i*x xt wid -- j*x )` | Calls xt ( nt -- f ) on each word of wid, the newest first, while it gives true. The words of the kernel (the builtins of C) and the smudged ones are not in the walk. | P W |
 | `ud.` | `( ud -- )` | Prints an unsigned double number followed by a space. | P W |
-| `wd-go` |  | Runs writhdeck on the file a n. Set to wd-main when wd-src is compiled. | P - |
-| `wd-loaded` |  | Flag: the code of writhdeck (the string wd-src) has been compiled. | P - |
-| `wd-src` |  | The source of writhdeck, a string compiled the first time writhdeck is used. | P - |
+| `wd-go` |  |  | P - |
+| `wd-loaded` |  |  | P - |
+| `wd-src` |  |  | P - |
 | `web` | `( -- )` | Web build: the vocabulary of the words specific to the browser (the JS interpreter, `JSWORD:`...). | - W |
 | `web-interface` | `( -- )` | Lazy loaded web UI server. | P - |
 | `white` | `( -- $rrggbb )` | The color white, $ffffff: `white color`. | - W |
@@ -674,6 +756,7 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 |------|-------|--------------|---|
 | `#f+s` | `( r -- )` |  | P |
 | `$@` |  |  | P |
+| `$copy` | `( a n -- a' n )` |  | P |
 | `$place` | `( a n -- )` |  | P |
 | `'argc` |  |  | P |
 | `'argv` |  |  | P |
@@ -707,6 +790,9 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `0` |  |  | P |
 | `0BRANCH` |  | Primitive defined in C. | P |
 | `1` |  |  | P |
+| `2^cell` | `( -- r )` |  | P |
+| `2value-sample` |  |  | P |
+| `:}?` | `( a n -- f )` |  | P |
 | `<>locals` |  |  | P |
 | `>digit` | `( ch -- n\|-1 )` |  | P |
 | `>vocnext` | `( xt -- xt )` |  | P |
@@ -731,6 +817,7 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `BRANCH` |  | Primitive defined in C. | P |
 | `BUILTIN_FORK` |  | Constant, 4. | P |
 | `BUILTIN_MARK` |  | Constant, 8. | P |
+| `c"buf` |  |  | P |
 | `ca@` | `( a -- n )` |  | P |
 | `CALL0` | `( fn -- n )` |  | P |
 | `CALL1` | `( n fn -- n )` |  | P |
@@ -801,6 +888,7 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `DOCON` |  | Primitive defined in C. | P |
 | `DOCREATE` |  | Primitive defined in C. | P |
 | `DODOES` |  | Primitive defined in C. | P |
+| `does-like?` | `( xt xt' -- f )` |  | P |
 | `DOFLIT` | `( --- )` | Puts a float from the next cell onto float stack. | P |
 | `DOLIT` |  | Primitive defined in C. | P |
 | `DONEXT` |  | Primitive defined in C. | P |
@@ -825,13 +913,18 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `evaluate&fill` |  |  | P |
 | `evaluate-buffer` |  |  | P |
 | `EVALUATE1` | `( -- )` | Primitive defined in C. | P |
+| `fbuf` |  |  | P |
 | `fdir` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
+| `fexp10` | `( r -- r' n )` |  | P |
 | `fill32` | `( a n v )` | Primitive defined in C. | P |
 | `fl` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `fmode` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `fname` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
-| `forth-wordlist` |  |  | P |
 | `free.` | `( nf nu -- )` |  | P |
+| `fvalue-sample` |  |  | P |
+| `f~a` |  |  | P |
+| `f~b` |  |  | P |
+| `f~c` |  |  | P |
 | `grow-blocks` | `( n -- )` |  | P |
 | `gui-open` | `( -- )` | Opens the console window (`--gui`): loads its code and runs `console`. | P |
 | `gui-restore` | `( -- )` | Puts the search order back as the interpreter had it before the console window. | P |
@@ -953,12 +1046,20 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `lq` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `ls-loop` | `( dh -- )` | Helper of `ls`: prints the entries of the open directory dh. | P |
 | `lup` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
+| `m-neg` |  |  | P |
+| `m-t0` |  |  | P |
+| `m-t1` |  |  | P |
+| `m-t2` |  |  | P |
 | `mem=` | `( a a n -- f )` |  | P |
 | `nest-depth` |  |  | P |
+| `node-at` |  |  | P |
+| `node-name` | `( node -- a n )` |  | P |
+| `node-text` | `( node -- a n )` |  | P |
 | `NONAMED` |  | Constant, 16. | P |
 | `nonvoc?` | `( xt -- f )` |  | P |
 | `NOP` |  | Primitive defined in C. | P |
 | `notfound` | `( a n n -- )` |  | P |
+| `nr-ret` |  |  | P |
 | `onlines` | `( xt -- xt )` |  | P |
 | `pa` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `park-forth` | `( -- a )` |  | P |
@@ -1007,7 +1108,15 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `restore-name` | `( a n -- )` | Restore a snapshot from a file. | P |
 | `S>FLOAT?` |  |  | P |
 | `S>NUMBER?` | `( a n -- n f \| 0 )` |  | P |
+| `s\buf` |  |  | P |
+| `s\c` | `( ch -- )` |  | P |
+| `s\esc` | `( ch -- )` |  | P |
+| `s\hex` | `( -- n )` |  | P |
+| `s\len` |  |  | P |
+| `s\next` | `( -- ch \| -1 )` |  | P |
+| `s\parse` | `( "ccc<quote>" -- a n )` |  | P |
 | `save-name` | `( a n -- )` | Save a snapshot if the current vocabulary to a file. | P |
+| `saved-order` |  |  | P |
 | `saving-base` |  |  | P |
 | `scope` |  |  | P |
 | `scope-clear` |  |  | P |
@@ -1026,6 +1135,7 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `size-vocabulary` | `( voc )` |  | P |
 | `sj` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `sk` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
+| `skip-:}` | `( "... :}" -- )` |  | P |
 | `SMUDGE` |  | Constant, 2. | P |
 | `sourcedirname` | `( -- a n )` |  | P |
 | `sourcefilename` | `( -- a n )` |  | P |
@@ -1036,8 +1146,19 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `src-ref` | `( -- a )` | Variable: set when a string literal points into the text being read (see `include-file`). | P |
 | `starts../` | `( a n -- f )` |  | P |
 | `starts./` | `( a n -- f )` |  | P |
+| `sub-c` | `( ch -- )` |  | P |
+| `sub-cap` |  |  | P |
+| `sub-count` |  |  | P |
+| `sub-dst` |  |  | P |
+| `sub-len` |  |  | P |
+| `sub-over` |  |  | P |
+| `sub-pct` | `( a n -- a' n' )` | a is on a % | P |
+| `sub-s` | `( a n -- )` |  | P |
+| `subst-find` | `( a n -- node \| 0 )` |  | P |
+| `substitutions` |  |  | P |
 | `thrown` | `( -- a )` | Variable: the last value passed to `throw`, kept for the prompt. | P |
 | `tib-setup` |  |  | P |
+| `u>f` | `( u -- r )` |  | P |
 | `ud/base` | `( lo hi -- rem lo hi )` | divide by the current base | P |
 | `ud>s` | `( lo hi -- a n )` | Converts an unsigned double to a string in the current base, in a buffer of 80 characters. | P |
 | `upc` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
@@ -1058,6 +1179,7 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `xt-transfer` | `( xt -- )` |  | P |
 | `YIELD` |  | Primitive defined in C. | P |
 | `zplace` | `( a n -- )` |  | P |
+| `{:uninit` | `( "names" -- )` |  | P |
 | `}?` | `( a n -- )` |  | P |
 
 ## The `posix` vocabulary (Linux)
@@ -1166,7 +1288,7 @@ System calls and constants of Linux and macOS, reached with `sysfunc`. `also pos
 | `sysfunc` | `( z n "name" -- )` |  | P |
 | `timespec` | `( "name" )` |  | P |
 | `unlink` |  | C function `unlink`, 1 argument. | P |
-| `usleep` | `( us -- n )` | C function `usleep`, 1 argument. | P |
+| `usleep` |  | C function `usleep`, 1 argument. | P |
 | `wait` |  | C function `wait`, 1 argument. | P |
 | `waitpid` |  | C function `waitpid`, 3 arguments. | P |
 | `write` |  | C function `write`, 3 arguments. | P |

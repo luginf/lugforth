@@ -94,6 +94,33 @@ sharing `cwd`, closing the first while others live, F5+ terminals.
   on desktop and with an emulated phone; not with a real keyboard.
 - Traps are in [PITFALLS.md](PITFALLS.md) (the stack pointer `sp`, `[defined]` in a definition, encoding, keypress).
 
+## TIC-80 (ports/tic80) - started 2026-10-27
+
+A wasm32 module for the TIC-80 fantasy console, which runs it in its wasm3 interpreter: a Forth cartridge is then
+sandboxed like a Lua one. TIC-80 dropped its pForth binding from its releases (nesbox/TIC-80#3133) because pForth
+reads and writes the host's memory; here every address is an offset in the module's linear memory, an access
+past it traps, and the only ways out are the imports of the module `tic80` (`api`, `type`, `ticks`, the math
+functions), whose addresses the host checks. No CALL, DLSYM, file or task words.
+
+- Build: `make -C ports/tic80` (clang with the wasm32 target and wasm-ld, no sysroot: `include/` and `libc.h` are the
+  bits of a C library the kernel needs, with a first-fit `malloc` over `memory.grow`). Gives
+  `out/tic80/lugforth-tic80.wasm` (about 75 KiB with the boot text) and `lugforth-tic80.wasm.h`, a C array for TIC-80.
+  `-mcpu=mvp`: no wasm feature that wasm3 might lack. The boot header is plain C (`importation.py --header c`).
+- The inner interpreter switches on the opcode (`ports/tic80/interp.h`, as the MSVC build): wasm has no computed goto.
+  A division by zero throws -10 (`DIV0_CHECK`); a forged xt or a stack pointer set anywhere stays in the module.
+- Exports: `lf_init`, `lf_alloc`/`lf_free`, `lf_eval`, `lf_find`, `lf_call`, `lf_call1` (SCN, BDR, MENU take the row),
+  `lf_depth`. The commands go through `'host`, read by `host-loop` (`ports/tic80/platform.fs`), which yields back
+  to the host after each; the stack is emptied before each command, so a TIC that leaves cells shows in `lf_depth`.
+  After a trap the instance is half way through a word: the host drops it and makes a new one.
+- `api.h` is the list of the 56 API words, with the names and stack effects of TIC-80's pForth binding
+  (`src/api/forth.c` there): EXITGAME and KEYPRESSED, not EXIT and KEY. The host keeps a copy of it.
+- Test: `make -C ports/tic80 test` (node: boot, commands, API stack effects, traps). With a cartridge as second
+  argument, `node ports/tic80/test_host.js out/tic80/lugforth-tic80.wasm cart.fth` loads it and calls BOOT and TIC.
+  Checked 2026-10-27 with TIC-80's `demos/forthdemo.fth` and `tests/conformance/probes/forth.fth` (334 API calls,
+  no probe threw). `demos/bunny/forthmark.fth` leaves 2 cells per TIC: its `S>D <# #S #>` expects the pictured
+  output of the standard on a double, ours takes a single cell (the gotcha noted in FEATURES.md).
+- Cells are 32 bits, as on the web. Boot in about 20 ms under node; not yet measured in wasm3.
+
 ## Game Boy Advance (ports/gba)
 
 A prototype with a roguelike. See `ports/gba/README.md`; the boot-chain traps met are in [PITFALLS.md](PITFALLS.md).

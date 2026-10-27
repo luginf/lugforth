@@ -208,3 +208,112 @@ e: test-anew
 : test-random
   100 0 do 10 random dup 0 >= assert 10 < assert loop
   1 rand-seed ! 1000 random 1 rand-seed ! 1000 random =assert ;
+
+( Core extensions )
+10 buffer: tbuf
+: test-buffer:   tbuf 10 erase  tbuf 9 + c@ 0 =assert ;
+: tpn ( -- a n ) parse-name ;
+: test-parse-name   s" tpn   word  " evaluate s" word" str= assert ;
+: test-holds   <# s" xyz" holds 0 #s #> s" 0xyz" str= assert ;
+: test--trailing   s" ab  " -trailing nip 2 =assert   s"    " -trailing nip 0 =assert ;
+defer tdefer
+: test-defer@   ['] dup ['] tdefer defer!  ['] tdefer defer@ ['] dup =assert
+                action-of tdefer ['] dup =assert ;
+: test-save-input   save-input dup 3 =assert restore-input 0 =assert ;
+: test-restore-input-other   1 2 2 restore-input -1 =assert depth 0 =assert ;
+: test-c"   c" hello" dup c@ 5 =assert count s" hello" str= assert ;
+: test-s\"   s\" a\tb\n\x41\"\\" nip 7 =assert
+             s\" \x41\x7a" s" Az" str= assert
+             s\" \q\m" nip 3 =assert ;
+: test-source-id   source-id -1 =assert ;
+: test-unused   unused 0 >assert ;
+
+( Doubles )
+: test-2rot   1 2 3 4 5 6 2rot 2 =assert 1 =assert 6 =assert 5 =assert 4 =assert 3 =assert ;
+: test-dmax   1 0 5 0 dmax 0 =assert 5 =assert   -1 -1 1 0 dmin -1 =assert -1 =assert ;
+: test-m*/   10 0 3 2 m*/ 0 =assert 15 =assert
+             -10 -1 3 2 m*/ -1 =assert -15 =assert
+             max-n 0 4 2 m*/ 0 =assert -2 =assert
+             max-n 0 max-n max-n m*/ 0 =assert max-n =assert ;
+1 2 2value t2v
+: test-2value   1 2 to t2v t2v 2 =assert 1 =assert  3 4 to t2v t2v 4 =assert 3 =assert ;
+: t2v-set   7 8 to t2v ;
+: test-2value-compiled   t2v-set t2v 8 =assert 7 =assert ;
+e: test-d.r
+  -42 -1 6 d.r cr
+  out:    -42
+;e
+
+( Facility )
+begin-structure tpoint
+  field: tp.x
+  cfield: tp.c
+  field: tp.y
+end-structure
+: test-structure   tpoint 3 cells =assert  0 tp.x 0 =assert  0 tp.c cell =assert
+                   0 tp.y 2 cells =assert ;
+: test-ekey>char   65 ekey>char -1 =assert 65 =assert ;
+
+( Floating point )
+1.5e fvalue tfv
+: test-fvalue   tfv 1.5e f= assert  2.5e to tfv tfv 2.5e f= assert ;
+fvariable tfvar
+: test-f@   3e tfvar f! tfvar f@ 3e f= assert ;
+: test-ftrunc   -2.5e ftrunc -2e f= assert  2.5e ftrunc 2e f= assert ;
+: test-fround   2.4e fround 2e f= assert  2.6e fround 3e f= assert ;
+: test-f~   1e 1e 0e f~ assert   1e 1.01e 0.1e f~ assert   1e 2e 0.1e f~ 0 =assert
+            1e 1.001e -0.01e f~ assert ;
+: test->float   s" 1.5" >float assert 1.5e f= assert
+                s" 2E1" >float assert 20e f= assert
+                s" abc" >float 0 =assert
+                s"  " >float assert 0e f= assert ;
+: test-d>f   5 0 d>f 5e f= assert  -5 -1 d>f -5e f= assert ;
+: test-trig   0.5e fasin fsin 0.5e 0.001e f~ assert
+              1e fatan 4e f* pi 0.001e f~ assert
+              100e flog 2e 0.001e f~ assert  2e falog 100e 0.01e f~ assert ;
+e: test-fs.
+  1234.5e fs. cr
+  out: 1.234500E3 
+;e
+
+( Locals )
+: tl1 {: a b | c -- d :} a b + to c c 2* ;
+: test-{:   1 2 tl1 6 =assert ;
+: tl2 locals| a b | a b - ;
+: test-locals|   10 3 tl2 -7 =assert ;
+
+( Search order )
+wordlist constant twl
+: test-wordlist
+   get-current twl set-current  s" : twl-word 42 ;" evaluate  set-current
+   s" twl-word" twl search-wordlist -1 =assert execute 42 =assert
+   s" nothing-here" twl search-wordlist 0 =assert
+   s" dup" forth-wordlist search-wordlist -1 =assert ['] dup =assert ;
+: test-get-order   get-order dup >r set-order get-order dup r> =assert
+                   dup 0 >assert 0 ?do drop loop ;
+: test-set-order   get-order  twl forth-wordlist 2 set-order
+                   get-order 2 =assert forth-wordlist =assert twl =assert  set-order ;
+wordlist constant twl2
+get-current twl2 set-current : tw-a ; : tw-b ; set-current
+: count-words ( n nt -- n' f ) drop 1+ -1 ;
+: first-word ( n nt -- n' f ) drop 1+ 0 ;
+: test-traverse-wordlist   0 ['] count-words twl2 traverse-wordlist 2 =assert
+                           0 ['] first-word twl2 traverse-wordlist 1 =assert ;
+: test-name>string   ['] twl >name nip 3 =assert  ['] dup name>string s" DUP" str= assert ;
+
+( Strings )
+create sub-buf 80 allot
+: test-substitute
+   s" World" s" who" replaces
+   s" Hello %who%, 100%% sure, %nobody%" sub-buf 80 substitute 1 =assert
+   s" Hello World, 100% sure, %nobody%" str= assert
+   s" Hi %who%" sub-buf 3 substitute 0 <assert 2drop ;
+: test-unescape   s" 5%" sub-buf unescape s" 5%%" str= assert ;
+: tsl [ char l pad c! char i pad 1+ c! char t pad 2 + c! pad 3 ] sliteral ;
+: test-sliteral   tsl s" lit" str= assert ;
+
+( Tools )
+synonym tdup dup
+: test-synonym   5 tdup =assert ;
+: test-n>r   1 2 3 3 n>r nr> 3 =assert 3 =assert 2 =assert 1 =assert ;
+: test-cs-roll   1 2 3 2 cs-roll 1 =assert 3 =assert 2 =assert ;

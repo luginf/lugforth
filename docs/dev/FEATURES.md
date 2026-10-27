@@ -86,6 +86,19 @@ Ideas left: more inference examples from his docs
 Verified in a real X window (display :0) for sdl2_2048: see [PITFALLS.md](PITFALLS.md), last bullets. Gotchas met: `include` is relative to the including file; `if` at top level does not work (wrap in a word);
 `<# #s #>` takes ONE number here; `.r`, `random` ( n -- r ) are in `ansi_compat.fs`, `ms-ticks 1 or rand-seed !` seeds it.
 
+## ANS words added to common/ansi_compat.fs - 2026-10-27
+
+The words of Forth 2012 still missing, checked word set by word set against the lists of the standard with `[defined]`:
+CORE EXT, DOUBLE, LOCALS, SEARCH, STRING, MEMORY and EXCEPTION are now complete; FACILITY lacks only TIME&DATE (a clock
+per port), FLOATING only REPRESENT and the double precision words (the floats here are single, F@ is SF@), TOOLS only
+CODE ;CODE ASSEMBLER, FILE five words that belong with the files (READ-LINE WRITE-LINE INCLUDE-FILE FILE-STATUS REQUIRE).
+Choices: `TO` is redefined last, to store in a 2VALUE and an FVALUE too (it recognizes them by their DOES> code);
+`C"` is compiled as an `s"` whose text starts with the count byte, so `see` reads it; SEARCH-WORDLIST puts the
+wordlist alone in the search order around FIND; TRAVERSE-WORDLIST skips the builtins of C (forks) and smudged words;
+`{: a b | c -- d :}` is built on `(local)`, `|` locals start at 0. Tests in `ansi_compat_tests.fs` (posix);
+on the web build they were checked by hand (the test framework does not run there). Gerry Jackson's
+forth2012-test-suite has not been run yet. The pictured numeric output is still the single-cell one of eForth.
+
 ## Games after r3forth (examples/games/sdl2_tetris.fs, sdl2_snake.fs, sdl2_minesweeper.fs) - done 2026-10-19
 
 r3forth (https://github.com/phreda4/r3, Pablo Reda, MIT, credited in NOTICE) has its own syntax (`cond? ( ... )`,
