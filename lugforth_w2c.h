@@ -30,7 +30,6 @@ typedef struct w2c_lugforth {
   struct w2c_tic80* w2c_tic80_instance;
   u32 w2c_g0;
   wasm_rt_memory_t w2c_memory;
-  wasm_rt_funcref_table_t w2c_T0;
 } w2c_lugforth;
 
 void wasm2c_lugforth_instantiate(w2c_lugforth*, struct w2c_tic80*);
