@@ -258,6 +258,9 @@ create boot-path 512 allot
 : varvara-main ( -- )
   3 args-from-argv
   argc 3 < if boot-rom else 2 argv then varvara exit-code terminate ;
-[undefined] launching [if] varvara-main [then]
+( Run only as a script, `lugforth varvara.fs [program.rom]`: included from the prompt it just loads the words, then
+  `s" program.rom" varvara` runs a ROM. )
+: script? ( -- f )   argc 2 < if 0 exit then  1 argv dup 10 < if 2drop 0 exit then  + 10 - 10 s" varvara.fs" compare 0= ;
+[undefined] launching [if] script? [if] varvara-main [then] [then]
 
 [then]

@@ -1,4 +1,4 @@
-\ Tests of the logic of sdl2_tetris.fs, sdl2_snake.fs, sdl2_minesweeper.fs and sdl2_mastermind.fs,
+\ Tests of the logic of sdl2_tetris.fs, sdl2_snake.fs, sdl2_invaders.fs, sdl2_minesweeper.fs and sdl2_mastermind.fs,
 \ loaded without their game loop:  lugforth examples/games/games_tests.fs
 \ (the output ends with PASS). Needs libSDL2, but opens no window.
 
@@ -57,6 +57,39 @@ advance advance advance  len 8 t=   grow 0 t=   fruit taken + c@ 0 t=
 \ biting itself ends the game
 new-game  advance  1 to next-dir advance  2 to next-dir advance  3 to next-dir advance
 state 2 t=   best 0 t=
+depth 0 t=
+
+( ---- Space Invaders ---- )
+: invaders-no-run ;
+include sdl2_invaders.fs
+1 rand-seed !
+
+: shield-count ( -- n )   0  4 ssize * 0 do shields i + c@ + loop ;
+new-game  scan  alive-n 55 t=   lc 0 t=   rc 10 t=   lr 4 t=   state 0 t=   lives 3 t=
+\ a shot between two cells misses, one on an alien kills it and scores by row
+3 ax@ 5 +  4 ay@ 10 +  shoot-alien 0 t=   alive-n 55 t=
+3 ax@ 5 +  4 ay@ 2 +   shoot-alien -1 t=  3 4 alive@ c@ 0 t=   alive-n 54 t=   score 10 t=
+0 ax@ 3 +  0 ay@ 1 +   shoot-alien -1 t=  score 40 t=
+0 ax@ 3 +  0 ay@ 1 +   shoot-alien 0 t=
+\ the formation marches, drops at the edge and turns back
+new-game  march  ax 28 t=   ay 40 t=   anim 1 t=
+new-game  w 2 - 14 - cols 1- pit * - 3 - to ax   march   ay 48 t=   dir -1 t=   ax 45 t=
+\ a lonely alien marches fast
+new-game  nal 1 do 0 alive i + c! loop   scan  alive-n 1 t=   step-ms 35 t=
+\ shield shape, bites
+0 0 shape-on? 0 t=   11 5 shape-on? -1 t=   10 12 shape-on? 0 t=
+new-shields  shield-count dup 0 > -1 t=
+24 11 + sy 5 +  shield-hit?  -1 t=   shield-count swap <  -1 t=   0 11 5 shield-at c@ 0 t=
+24 11 + sy 5 +  shield-hit?  0 t=
+\ the cannon bullet goes up 4 pixels a frame
+new-game  1 to bullet-on  3 to bx  100 to by  bullet-move  by 96 t=
+1 to bullet-on  3 to bx  15 to by  bullet-move  bullet-on 0 t=
+\ the cannon is hit once, then the game goes on or ends
+new-game  player-hit  lives 2 t=  state 3 t=  player-hit  lives 2 t=
+after-hit  state 0 t=
+1 to lives  0 to state  player-hit  state 3 t=  lives 0 t=  after-hit  state 2 t=   best score t=
+\ the wave cleared: the next one starts lower and faster
+new-game  alive nal erase  0 to alive-n  next-wave  level 1 t=  alive-n 55 t=  ay 48 t=
 depth 0 t=
 
 ( ---- Minesweeper ---- )

@@ -19,7 +19,7 @@ UXNCLI    ?= uxncli
 UXNEMU    ?= uxnemu
 SMOKE_TIMEOUT ?= 5
 
-SDL2_EXAMPLES := graphics/sdl2_demo.fs games/sdl2_breakout.fs music/sdl2_drums.fs music/fm/sdl2_fm.fs music/sdl2_pianoroll.fs games/sdl2_roguelike.fs graphics/sdl2_3d.fs games/sdl2_2048.fs games/sdl2_tetris.fs games/sdl2_snake.fs games/sdl2_minesweeper.fs games/sdl2_mastermind.fs graphics/sdl2_mouse_test.fs graphics/sdl2_magnoquill.fs games/sdl2_raycaster.fs graphics/sdl2_turtle.fs games/pinball/pinball.fs games/pinball/play_raid.fs games/pinball/play_night.fs system/varvara/varvara.fs system/varvara/launch.fs utils/filer.fs utils/desktop.fs
+SDL2_EXAMPLES := graphics/sdl2_demo.fs games/sdl2_breakout.fs music/sdl2_drums.fs music/fm/sdl2_fm.fs music/sdl2_pianoroll.fs games/sdl2_roguelike.fs graphics/sdl2_3d.fs games/sdl2_2048.fs games/sdl2_tetris.fs games/sdl2_snake.fs games/sdl2_invaders.fs games/sdl2_minesweeper.fs games/sdl2_mastermind.fs graphics/sdl2_mouse_test.fs graphics/sdl2_magnoquill.fs games/sdl2_raycaster.fs graphics/sdl2_turtle.fs games/pinball/pinball.fs games/pinball/play_raid.fs games/pinball/play_night.fs system/varvara/varvara.fs system/varvara/launch.fs utils/filer.fs utils/desktop.fs
 
 .PHONY: help bench test-ports \
         bench-sieve bench-sieve-c bench-sieve-fs bench-sieve-uxn \
