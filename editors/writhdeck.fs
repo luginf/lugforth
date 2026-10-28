@@ -858,7 +858,7 @@ create cp-buf sl-sz allot   0 value cp-n   0 value cp-dirty   ( cp-n: length of 
 : lst-load ( -- )
   0 fav-cnt !  0 rec-cnt !  0 st-cnt !  0 cp-cnt !  ini-init
   s" writhdeck.rec" ini-in-dir r/o open-file if drop exit then  { fh }
-  fh file-size throw { sz }
+  fh file-size throw d>s { sz }
   sz 1+ bytes { b }
   b sz fh read-file throw { got }
   fh close-file drop
@@ -989,7 +989,7 @@ create dbuf 12 allot
   0 to bnl  s" backups/" bn+  a n bn+  s" _" bn+  0 wd-time 0 <# #s #> bn+
   a n r/o open-file if drop s" Cannot read" say exit then
   { fh }
-  fh file-size throw { size }
+  fh file-size throw d>s { size }
   size 1+ bytes { buf }
   buf size fh read-file throw drop  fh close-file drop
   bname bnl w/o create-file if drop buf free drop s" Cannot write" say exit then

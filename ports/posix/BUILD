@@ -71,6 +71,13 @@ Alias('posix', ' '.join([
               '$dst/posix/lugforth >> $dst/tests/posix_save_restore_test.out'),
 ]))
 
+# The Forth 2012 test suite (Hayes, Gerry Jackson): not part of `posix` as it is not in this repository.
+# ninja forth2012 uses $F2012_DIR or clones it into out/forth2012-suite (network). See tools/forth2012_test.py.
+OneShot('forth2012',
+        '$dst/posix/lugforth',
+        'python3 $src/tools/forth2012_test.py $dst/posix/lugforth',
+        pool='console')
+
 OneShot('install',
         '$dst/posix/lugforth',
         'sudo cp $dst/posix/lugforth /usr/bin/lugforth',

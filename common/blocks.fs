@@ -30,30 +30,40 @@ internals definitions
 : common-default-use s" blocks.fb" open-blocks ;
 ' common-default-use is default-use
 : use?!   block-fid 0< if default-use then ;
-: grow-blocks ( n -- ) 1024 * block-fid file-size throw max block-fid resize-file throw ;
+: grow-blocks ( n -- ) 1024 * block-fid file-size throw d>s max s>d block-fid resize-file throw ;
 forth definitions internals
 : save-buffers
    block-dirty if
-     block-id grow-blocks block-id 1024 * block-fid reposition-file throw
+     block-id grow-blocks block-id 1024 * s>d block-fid reposition-file throw
      block-data 1024 block-fid write-file throw
      block-fid flush-file throw
      0 to block-dirty
    then ;
 : block ( n -- a ) use?! dup block-id = if drop block-data exit then
                    save-buffers dup grow-blocks
-                   dup 1024 * block-fid reposition-file throw
+                   dup 1024 * s>d block-fid reposition-file throw
                    block-data clobber
                    block-data 1024 block-fid read-file throw drop
                    to block-id block-data ;
 : buffer ( n -- a ) use?! dup block-id = if drop block-data exit then
                     save-buffers to block-id block-data ;
-: empty-buffers   -1 to block-id ;
+: empty-buffers   -1 to block-id  0 to block-dirty ;   ( the updated buffer is not written )
 : update   -1 to block-dirty ;
 : flush   save-buffers empty-buffers ;
 
 ( Loading )
-: load ( n -- ) block 1024 evaluate ;
+: load ( n -- )   ( blk is the block being loaded, 0 when the input is not a block )
+   blk @ >r dup blk ! ['] block catch ?dup if r> blk ! throw then
+   1024 ['] (evaluate) catch r> blk ! throw ;
 : thru ( a b -- ) over - 1+ for aft dup >r load r> 1+ then next drop ;
+
+( A block is the input: REFILL goes on to the next block, and the input saved with SAVE-INPUT
+  holds the block number, the text is read again by RESTORE-INPUT )
+: refill ( -- f ) blk @ if 1 blk +! blk @ block 'tib ! 1024 #tib ! 0 >in ! -1 exit then refill ;
+: save-input ( -- x4 x3 x2 x1 4 ) save-input drop blk @ 4 ;
+: restore-input ( x4 x3 x2 x1 n -- f )
+   dup 4 <> if 0 ?do drop loop -1 exit then drop
+   { t n i b }  b blk !  b if b block else t then 'tib !  n #tib !  i >in !  0 ;
 
 ( Utility )
 : copy ( from to -- )

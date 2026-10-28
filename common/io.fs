@@ -61,6 +61,7 @@ variable hld
   EVALUATE. A word that reads up to a delimiter, as a comment or a string does, goes on to the next lines
   when it does not find the delimiter on the first one, see parse-more. )
 variable file-end
+variable src-fid   ( the file being included, see source-id )
 : line-end ( a -- a' ) begin dup file-end @ < while dup c@ 10 = if exit then 1+ repeat ;
 : refill-file ( -- f )   ( the next line of the file is the input: false at the end of the file )
   file-end @ 0= if 0 exit then
@@ -101,16 +102,18 @@ variable r-copy   ( set at the end of the boot: r" r| r~ then copy their text, a
 : r|   [char] | parse-more r-lit ; immediate
 : r~   [char] ~ parse-more r-lit ; immediate
 : s>z ( a n -- z ) here >r zplace r> ;
+: s>zt ( a n -- z )   ( a transient s>z: here stays where it was, so a file word does not move pad )
+   here >r zplace r@ here - allot r> ;
 : z>s ( z -- a n ) 0 over begin dup c@ while 1+ swap 1+ swap repeat drop ;
 
 ( Better Errors )
 : notfound ( a n n -- )
-   dup if cr ." ERROR: " >r type r> ."  NOT FOUND!" cr throw else drop then ;
+   dup if cr ." ERROR: " >r type r> ."  NOT FOUND!" cr drop -13 throw else drop then ;   ( -13: undefined word )
 ' notfound 'notfound !
 
 ( Abort )
 : abort   -1 throw ;
-: abort"   postpone ." postpone cr -2 aliteral postpone throw ; immediate
+: abort"   ( x -- ) postpone if postpone ." postpone cr -2 aliteral postpone throw postpone then ; immediate
 
 ( Input )
 : raw.s   depth 0 max for aft sp@ r@ cells - @ . then next ;
@@ -146,8 +149,11 @@ create input-buffer   input-limit allot
 : tib-setup   input-buffer 'tib ! ;
 ( A platform can replace the line editor, see common/lineedit.fs )
 defer edit-accept   ' accept is edit-accept
+: refill-keys   tib-setup tib input-limit edit-accept #tib ! 0 >in ! -1 ;
+\ REFILL: the next line of the file being read, the next line typed at the keyboard, and false
+\ for the text of EVALUATE (or the end of the file).
 : refill   refill-file if -1 exit then   file-end @ if 0 exit then
-         tib-setup tib input-limit edit-accept #tib ! 0 >in ! -1 ;
+           'tib @ input-buffer = if refill-keys exit then 0 ;
 
 ( Stack Guards )
 sp0 'stack-cells @ 2 3 */ cells + constant sp-limit
@@ -157,13 +163,18 @@ sp0 'stack-cells @ 2 3 */ cells + constant sp-limit
 ( REPL )
 : default-prompt   ."  ok" cr raw.s ;  ' default-prompt is prompt
 : evaluate-buffer   begin >in @ #tib @ < while ?stack +evaluate1 repeat ?stack ;
-: evaluate ( a n -- ) 'tib @ >r #tib @ >r >in @ >r file-end @ >r
+: (evaluate) ( a n -- )   ( evaluate, the block being loaded stays: see load )
+                      'tib @ >r #tib @ >r >in @ >r file-end @ >r
                       0 file-end ! #tib ! 'tib ! 0 >in !
                       ['] evaluate-buffer catch
                       r> file-end ! r> >in ! r> #tib ! r> 'tib !   \ the input back in place, after an error too
                       throw ;
+variable blk   ( the block being loaded, 0 when the input is not a block )
+: \   blk @ if >in @ 63 + -64 and >in ! exit then   ( a block line has 64 characters )
+      nl parse drop drop ; immediate
+: evaluate ( a n -- ) blk @ >r 0 blk ! ['] (evaluate) catch r> blk ! throw ;
 : evaluate&fill
-   begin >in @ #tib @ >= if prompt refill drop then evaluate-buffer again ;
+   begin >in @ #tib @ >= if prompt refill-keys drop then evaluate-buffer again ;
 variable thrown
 : quit
    #tib @ >in !

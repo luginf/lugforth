@@ -674,14 +674,14 @@ def test_files(b, what, long_create=False, mkdir=False):   # mkdir: the board's 
     r = b.run('big')
     check('%s: write 20000 bytes' % what, r, 'ERROR' not in r)
     b.run(': same? ( a -- f ) -1 swap 20000 0 do dup i + c@ i 7 * 255 and <> if swap drop 0 swap then loop drop ;')
-    b.run(': back  s" big.bin" r/o open-file throw to fh  fh file-size throw . '
+    b.run(': back  s" big.bin" r/o open-file throw to fh  fh file-size throw d>s . '
           '20000 allocate throw dup 20000 fh read-file throw .  fh close-file throw  dup same? .  free throw ;')
     r = b.run('back')
     check('%s: read back, size and bytes' % what, r, r.split()[:3] == ['20000', '20000', '-1'])
     r = b.run('s" big.bin" s" lib/moved.bin" rename-file . s" big.bin" r/o open-file . drop')
     check('%s: rename into lib, old name gone' % what, r, r.split()[:2] == ['0', '2'])
     b.run(': note  s" notes.txt" w/o create-file throw to fh  s" ecrit par lugforth" fh write-file throw '
-          ' 5 fh resize-file throw  fh file-size throw .  fh close-file throw ;')
+          ' 5 0 fh resize-file throw  fh file-size throw d>s .  fh close-file throw ;')
     r = b.run('note')
     check('%s: resize-file' % what, r, r.split()[0] == '5')
     r = b.run('s" tmp.txt" w/o create-file throw close-file . s" tmp.txt" delete-file . '

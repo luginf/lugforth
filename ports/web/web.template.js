@@ -593,6 +593,28 @@ function VM(stdlib, foreign, heap) {
     }
   }
 
+  function cmove_up(dst, src, n) {
+    dst = dst | 0;
+    src = src | 0;
+    n = n | 0;
+    while (n | 0) {
+      u8[dst] = u8[src];
+      src = (src + 1) | 0;
+      dst = (dst + 1) | 0;
+      n = (n - 1) | 0;
+    }
+  }
+
+  function cmove_down(dst, src, n) {
+    dst = dst | 0;
+    src = src | 0;
+    n = n | 0;
+    while (n | 0) {
+      n = (n - 1) | 0;
+      u8[(dst + n) | 0] = u8[(src + n) | 0];
+    }
+  }
+
   function run() {
     var tos = 0;
     var ip = 0;

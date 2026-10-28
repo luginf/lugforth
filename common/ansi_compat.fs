@@ -189,11 +189,13 @@ forth definitions
 
 ( Conditional compilation helpers and markers )
 \ True when the next word is found in the dictionary. Mostly used with [if]: [defined] foo [if] ... [then].
+\ As the standard has it, the flag is left on the stack in any state: in a definition it is
+\ for a [if] (or [ [defined] foo ] literal).
 : [defined] ( "name" -- f )
-   bl parse (find) 0<> state @ if postpone literal then ; immediate
+   bl parse (find) 0<> ; immediate
 \ True when the next word is not found in the dictionary: the reverse of [defined].
 : [undefined] ( "name" -- f )
-   bl parse (find) 0= state @ if postpone literal then ; immediate
+   bl parse (find) 0= ; immediate
 : [compile] ( "name" -- ) ' , ; immediate
 : compile, ( xt -- ) , ;
 : marker ( "name" -- )
@@ -208,6 +210,7 @@ forth definitions
    2dup s" /COUNTED-STRING" str= if 2drop 255 -1 exit then
    2dup s" MAX-U" str= if 2drop -1 -1 exit then
    2dup s" MAX-N" str= if 2drop -1 1 rshift -1 exit then
+   2dup s" #LOCALS" str= if 2drop 16 -1 exit then   \ the room for locals (locals-capacity in locals.fs) holds at least 16
    2drop 0 ;
 
 ( Pseudo random numbers, a linear congruential generator )
@@ -233,7 +236,8 @@ forth definitions internals
 : action-of ( "name" -- xt )
    ' state @ if aliteral postpone defer@ else defer@ then ; immediate
 \ 0 when the text comes from the keyboard, -1 from evaluate (and from a file).
-: source-id ( -- 0 | -1 ) 'tib @ input-buffer = if 0 else -1 then ;
+: source-id ( -- 0 | -1 | fileid )   ( the keyboard, EVALUATE text, an included file )
+   'tib @ input-buffer = if 0 exit then  file-end @ if src-fid @ else -1 then ;
 : save-input ( -- x3 x2 x1 3 ) 'tib @ #tib @ >in @ 3 ;
 : restore-input ( xn .. x1 n -- f )
    dup 3 <> if 0 ?do drop loop -1 exit then drop >in ! #tib ! 'tib ! 0 ;
@@ -281,14 +285,14 @@ forth definitions internals
    >r dup 0< if dabs ud>s swap 1- 45 over c! swap 1+ else ud>s then
    r> over - spaces type ;
 internals definitions
-variable m-t0   variable m-t1   variable m-t2   variable m-neg
+variable m-t0   variable m-t1   variable m-t2   variable m-neg   variable m-rem
 forth definitions internals
-\ d1 * n1 / n2 through a triple-cell product, rounded toward zero.
+\ d1 * n1 / n2 through a triple-cell product, floored as / is.
 : m*/ ( d1 n1 +n2 -- d2 )
    >r 2dup xor 0< m-neg ! abs >r dabs r>
    tuck um* m-t2 ! >r um* swap m-t0 ! 0 r> 0 d+ m-t2 @ + m-t2 ! m-t1 !
-   m-t1 @ m-t2 @ r@ um/mod m-t2 ! m-t0 @ swap r> um/mod nip m-t2 @
-   m-neg @ if dnegate then ;
+   m-t1 @ m-t2 @ r@ um/mod m-t2 ! m-t0 @ swap r> um/mod swap m-rem ! m-t2 @
+   m-neg @ if m-rem @ if 1 0 d+ then dnegate then ;
 : 2value ( x1 x2 "name" -- ) create , , does> 2@ ;
 forth definitions internals
 
@@ -441,9 +445,13 @@ variable substitutions   ( nodes: link, name a n, text a n )
 variable node-at
 : node-name ( node -- a n ) dup cell+ @ swap 2 cells + @ ;
 : node-text ( node -- a n ) dup 3 cells + @ swap 4 cells + @ ;
+: lc ( ch -- ch' ) dup [char] A [char] Z 1+ within if 32 + then ;
+: name= ( a1 n1 a2 n2 -- f )   ( the names of a substitution: the case does not count, as for the words )
+   rot over <> if 2drop drop 0 exit then
+   0 ?do over i + c@ lc over i + c@ lc <> if 2drop 0 unloop exit then loop 2drop -1 ;
 : subst-find ( a n -- node | 0 )
    substitutions @ begin dup while
-      dup >r node-name 2over compare 0= if 2drop r> exit then r> @
+      dup >r node-name 2over name= if 2drop r> exit then r> @
    repeat nip nip ;
 : $copy ( a n -- a' n ) here swap dup >r cmove here r@ allot align r> ;
 variable sub-dst   variable sub-cap   variable sub-len
@@ -458,6 +466,12 @@ variable sub-count   variable sub-over
    dup 0= if 2drop [char] % sub-c 1 /string exit then
    2dup subst-find ?dup if nip nip node-text sub-s 1 sub-count +! 1 /string exit then
    [char] % sub-c sub-s [char] % sub-c 1 /string ;
+: subst-run ( a1 n1 a2 n2 -- a2 n3 n4 )
+   sub-cap ! sub-dst ! 0 sub-len ! 0 sub-count ! 0 sub-over !
+   begin dup while
+      over c@ [char] % = if sub-pct else over c@ sub-c 1 /string then
+   repeat 2drop
+   sub-dst @ sub-len @ sub-over @ if -1 else sub-count @ then ;
 forth definitions internals
 \ Gives the name a2 n2 the text a1 n1, for SUBSTITUTE.
 : replaces ( a1 n1 a2 n2 -- )
@@ -466,12 +480,9 @@ forth definitions internals
    2swap swap , , swap , , node-at @ substitutions ! ;
 \ Copies a1 n1 to a2 (room for n2 characters), %name% replaced by its text and %% by %.
 \ n4: the number of replacements, negative when the result does not fit.
-: substitute ( a1 n1 a2 n2 -- a2 n3 n4 )
-   sub-cap ! sub-dst ! 0 sub-len ! 0 sub-count ! 0 sub-over !
-   begin dup while
-      over c@ [char] % = if sub-pct else over c@ sub-c 1 /string then
-   repeat 2drop
-   sub-dst @ sub-len @ sub-over @ if -1 else sub-count @ then ;
+: substitute { a1 n1 a2 n2 -- a2 n3 n4 }   ( n4 is negative when the strings overlap: the standard lets it )
+   a1 a2 n2 + u<  a2 a1 n1 + u<  and if a2 0 -1 exit then
+   a1 n1 a2 n2 subst-run ;
 \ Doubles each % of a1 n1, copied to a2.
 : unescape ( a1 n1 a2 -- a2 n2 )
    0 2swap over + swap ?do
@@ -479,6 +490,28 @@ forth definitions internals
       2dup + i c@ swap c! 1+
    loop ;
 forth definitions internals
+
+( Double number literals: a number with a point at the end, as 123. or -$ff. )
+internals definitions
+: dlit ( lo hi -- ) swap aliteral aliteral ;
+: dprefix ( ch -- base | 0 ) dup [char] $ = if drop 16 exit then dup [char] # = if drop 10 exit then
+   [char] % = if 2 exit then 0 ;
+: dnum? { a n -- lo hi f }   ( a n: the text without the point )
+   base @ { b }  0 { neg }
+   n 0> if a c@ [char] - = if -1 to neg 1 +to a -1 +to n then then
+   n 0> if a c@ dprefix ?dup if base ! 1 +to a -1 +to n then then
+   n 0> neg 0= and if a c@ [char] - = if -1 to neg 1 +to a -1 +to n then then
+   n 0> if 0 0 a n >number nip 0= else 0 0 0 then
+   b base !
+   dup neg and if >r dnegate r> then ;
+forth definitions internals
+also recognizers definitions
+: REC-DNUM ( c-addr len -- lo hi xt addr1 | addr2 )
+  dup 2 < if 2drop RECTYPE-NONE exit then
+  2dup + 1- c@ [char] . <> if 2drop RECTYPE-NONE exit then
+  1- dnum? if ['] dlit RECTYPE-NUM else 2drop RECTYPE-NONE then ;
+' REC-DNUM +RECOGNIZER
+previous forth-wordlist set-current
 
 ( Tools )
 : cs-pick ( n -- ) pick ;

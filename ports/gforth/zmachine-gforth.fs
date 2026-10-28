@@ -14,8 +14,8 @@
 
 \ The Z-machine interpreter of Lugforth (examples/games/zmachine.fs) under gforth, unchanged. Tested with gforth 0.7.9:
 \   gforth ports/gforth/zmachine-gforth.fs story.z5
-\ zmachine.fs itself holds the three differences, each in a [defined] gforth test: the line is read with accept on a terminal (echo, editing), else with read-line
-\ (which sees the end of the input), file-size gives a double, ms-ticks comes from utime. No compat.fs needed.
+\ zmachine.fs itself holds the two differences, each in a [defined] gforth test: the line is read with accept on a terminal (echo, editing), else with read-line
+\ (which sees the end of the input), ms-ticks comes from utime. No compat.fs needed.
 
 s" ../../examples/games/zmachine.fs" included   \ relative to this file
 

@@ -20,8 +20,13 @@ e: test-abort
 
 e: test-abort"
   : test abort" doh!" ;
-  ' test catch -2 =assert
+  -1 ' test catch -2 =assert drop   ( the flag stays: throw restores the stack as it was at catch )
   out: doh!
+;e
+
+e: test-abort"-false
+  : test abort" doh!" 7 ;
+  0 ' test catch 0 =assert 7 =assert
 ;e
 
 ( Skip on ESP32 as not emulated. )

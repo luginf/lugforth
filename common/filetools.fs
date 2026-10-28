@@ -94,7 +94,7 @@ internals definitions
 
 : restore-name ( "name" -- )
   r/o open-file throw >r
-  saving-base r@ file-size throw r@ read-file throw drop
+  saving-base r@ file-size throw d>s r@ read-file throw drop
   r> close-file throw
   park-heap @ 'heap !
   park-forth @ forth-wordlist !

@@ -22,5 +22,5 @@ GetProcessHeap constant process-heap
 forth definitions also windows
 : allocate ( n -- a ior ) process-heap 0 rot HeapAlloc dup 0= ;
 : free ( a -- ior ) process-heap 0 rot HeapFree drop 0 ;
-: resize ( a n -- a ior ) process-heap -rot 0 -rot HeapReAlloc dup 0= ;
+: resize ( a n -- a ior ) over >r process-heap -rot 0 -rot HeapReAlloc dup if rdrop 0 else drop r> -1 then ;   ( a failed resize leaves the old block as it was )
 only forth definitions

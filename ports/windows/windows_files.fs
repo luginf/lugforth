@@ -53,13 +53,14 @@ R/O W/O or constant R/W
 : CLOSE-FILE ( fh -- ior ) CloseHandle 0=ior ;
 : FLUSH-FILE ( fh -- ior ) FlushFileBuffers 0=ior ;
 : OPEN-FILE ( a n fam -- fh ior )
-   >r s>z win-path r> FILE_SHARE_READ FILE_SHARE_WRITE or NULL
+   >r s>zt win-path r> FILE_SHARE_READ FILE_SHARE_WRITE or NULL
    OPEN_EXISTING FILE_ATTRIBUTE_NORMAL NULL CreateFileA d0<ior ;
 : CREATE-FILE ( a n fam -- fh ior )
-   >r s>z win-path r> FILE_SHARE_READ FILE_SHARE_WRITE or NULL
+   >r s>zt win-path r> FILE_SHARE_READ FILE_SHARE_WRITE or NULL
    CREATE_ALWAYS FILE_ATTRIBUTE_NORMAL NULL CreateFileA d0<ior ;
-: DELETE-FILE ( a n -- ior ) s>z win-path DeleteFileA 0=ior ;
-: RENAME-FILE ( a n a n -- ior ) s>z -rot s>z swap MoveFileA 0=ior ;
+: DELETE-FILE ( a n -- ior ) s>zt win-path DeleteFileA 0=ior ;
+: RENAME-FILE ( a n a n -- ior )
+   here >r  s>z -rot s>zt swap MoveFileA 0=ior  r> here - allot ;
 : WRITE-FILE ( a n fh -- ior )
    -rot dup >r 0 >r rp@ NULL WriteFile
    if r> r> <> else rdrop rdrop GetLastError then ;

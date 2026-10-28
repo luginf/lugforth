@@ -120,7 +120,7 @@ previous
 : open-or-0 ( fh ior -- h ) if drop 0 then ;
 : append-open ( z n -- h )
   2dup r/w open-file if drop w/o create-file open-or-0
-  else nip nip dup file-size drop over reposition-file drop then ;
+  else nip nip dup dup file-size drop rot reposition-file drop then ;
 : libc-fopen ( z mode -- h )   ( mode: "rb" "wb" "ab" )
   c@ over zlen { z m n }
   m [char] r = if z n r/o open-file open-or-0 exit then
@@ -130,7 +130,7 @@ previous
 : libc-fread ( buf size len h -- n ) >r nip r> read-file if drop 0 then ;
 : libc-fwrite ( buf size len h -- n ) { buf size len h } buf len h write-file if 0 else len then ;
 : libc-fflush ( h -- n ) flush-file ;
-: file-length ( h -- n ) file-size drop ;
+: file-length ( h -- n ) file-size drop d>s ;
 : libc-opendir ( z -- d ) dup zlen open-dir if drop 0 then ;
 also internals
 : libc-readdir ( d -- de ) readdir ;

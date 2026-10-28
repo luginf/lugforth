@@ -32,7 +32,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 
 ## The `forth` vocabulary
 
-593 words. 62 are described by the reference pages, 162 by the notes, 204 are standard words the project leaves to the standard, 157 have only a stack comment or binding, 8 have no description yet.
+612 words. 62 are described by the reference pages, 162 by the notes, 207 are standard words the project leaves to the standard, 169 have only a stack comment or binding, 12 have no description yet.
 
 
 ### Arguments
@@ -75,25 +75,36 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | Word | Stack | What it does | P W |
 |------|-------|--------------|-----|
 | `#!` | `( -- )` | Skips the rest of the line, so a script can start with `#! /usr/bin/env lugforth`. Immediate. | P W |
+| `(evaluate)` | `( a n -- )` | evaluate, the block being loaded stays: see load | P W |
 | `aft` | `( -- )` | eForth loop word: in `n for A aft B then C next`, A runs only the first time round, B every other time, C every time. | P W |
 | `binary` | `( -- )` | Sets the number base to 2. | P W |
 | `echo` | `( -- a )` | Variable. Typed characters are echoed while it is true. | P W |
+| `extend-line` | `( -- f )` | the input goes on to the end of the next line: false at the end of the file | P W |
 | `extract` | `( n base -- n2 c )` | Pictured numeric output: splits off the last digit of n. | P W |
+| `file-end` |  |  | P W |
 | `for` | `( n -- )` | eForth counted loop: `n for ... next` runs the body n+1 times, `r@` gives the count from n down to 0. | P W |
 | `fp0` | `( -- a )` | The float stack pointer at the start. | P W |
 | `help` | `( -- )` | Same as `info`. | P W |
 | `hld` | `( -- a )` | Variable. The position in the pictured numeric output buffer. | P W |
 | `info` | `( -- )` | Prints the version, the revision and the date of the build, the free dictionary, the stacks and a few hints. | P W |
 | `K` | `( -- n )` | The index of the third enclosing `do` loop, after `i` and `j`. | P W |
+| `line-end` | `( a -- a' )` |  | P W |
 | `n.` | `( n -- )` | Prints a number without a trailing space. | P W |
 | `next` | `( -- )` | Ends a `for` loop. | P W |
 | `octal` | `( -- )` | Sets the number base to 8. | P W |
+| `parse-more` | `( ch -- a n )` | as parse, but over as many lines of a file as it takes to find ch | P W |
+| `parse-name-more` | `( -- a n )` | the next name, over as many lines of a file as it takes: empty at the end | P W |
+| `pm-start` |  |  | P W |
 | `postpone,` | `( xt -- )` | Compiles a word the way `postpone` would. | P W |
 | `prompt` | `( -- )` | Deferred word that prints the input prompt. | P W |
+| `refill-file` | `( -- f )` | the next line of the file is the input: false at the end of the file | P W |
+| `refill-keys` |  |  | P W |
 | `rp0` | `( -- a )` | The return stack pointer at the start. | P W |
 | `r~` | `( "string~" -- a n )` | Raw string ending with `~`, on several lines if needed: `r~ text with \| bars ~`. Like `r"` and `r\|`, it needs no escapes. | P W |
+| `s>zt` | `( a n -- z )` | a transient s>z: here stays where it was, so a file word does not move pad | P W |
 | `script-bye` | `( -- )` | Ends a script: leaves the program when it ran from a file, and does nothing at the prompt. | P W |
 | `sp0` | `( -- a )` | The data stack pointer at the start. | P W |
+| `src-fid` |  |  | P W |
 | `str` | `( n -- a u )` | Converts a signed number to a string in the current base. | P W |
 | `structures` | `( -- )` | Vocabulary for building C-style structures. | P W |
 | `tib` | `( -- a )` | The address of the terminal input buffer. | P W |
@@ -138,8 +149,8 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `CREATE-FILE` | `( a n fam -- fh ior )` | ANS. | P - |
 | `DELETE-FILE` | `( a n -- ior )` | ANS. | P - |
 | `file-exists?` | `( a n -- f )` | True if the named file can be opened. | P - |
-| `FILE-POSITION` | `( fh -- n ior )` | ANS. | P - |
-| `FILE-SIZE` | `( fh -- n ior )` | ANS. | P - |
+| `file-position` | `( fh -- ud ior )` | ANS. | P - |
+| `file-size` | `( fh -- ud ior )` | ANS. | P - |
 | `included?` | `( a n -- f )` | True if the file was already included. | P - |
 | `needs` | `( "name" -- )` | Includes a file unless it was already included. | P - |
 | `NON-BLOCK` | `( fh -- ior )` | Puts an open file or socket in non-blocking mode. | P - |
@@ -149,7 +160,8 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `R/W` | `( -- mode )` | ANS. | P - |
 | `READ-DIR` | `( dh -- a n )` | The name of the next entry of an open directory, or 0 at the end. | P - |
 | `READ-FILE` | `( a n fh -- n ior )` | ANS. | P - |
-| `REPOSITION-FILE` | `( n fh -- ior )` | ANS. | P - |
+| `reposition-file` | `( ud fh -- ior )` | ANS. | P - |
+| `require` | `( "name" -- )` |  | P - |
 | `streams` | `( -- )` | Vocabulary of byte streams (ring buffers). | P - |
 | `visual` | `( -- )` | Lazy loaded visual (full screen) editor. | P - |
 | `W/O` | `( -- mode )` | ANS. | P - |
@@ -200,6 +212,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 
 | Word | Stack | What it does | P W |
 |------|-------|--------------|-----|
+| `(defined?)` | `( "name" -- xt\|0 )` | the xt of the next word, in any state | P W |
 | `[ELSE]` | `( -- )` | ANS. Interpret time ELSE. | P W |
 | `[IF]` | `( f -- )` | ANS. Conditionally interpret the text the follows. | P W |
 | `[THEN]` | `( -- )` | ANS. Interpret time THEN. | P W |
@@ -230,6 +243,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 
 | Word | Stack | What it does | P W |
 |------|-------|--------------|-----|
+| `(FIND)` |  | Primitive defined in C. | P W |
 | `-rot` | `( a b c -- c a b )` | The reverse of `rot`. | P W |
 | `3dup` | `( a b c -- a b c a b c )` | Duplicates the top three cells. | P W |
 | `4*` | `( n -- n*4 )` | Multiplies by 4. | P W |
@@ -343,7 +357,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | Word | Stack | What it does | P W |
 |------|-------|--------------|-----|
 | `CREATE` | `( "name" -- )` | ANS. Primitive defined in C. | P W |
-| `FIND` | `( a n -- xt \| 0 )` | ANS. Primitive defined in C. | P W |
+| `find` | `( c-addr -- c-addr 0 \| xt 1 \| xt -1 )` | ANS. The standard FIND: a counted string in, 1 for an immediate word, -1 for the others, the string and 0 if missing. | P W |
 | `PARSE` | `( ch -- a n )` | ANS. Primitive defined in C. | P W |
 
 ### Standard words
@@ -363,7 +377,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `*/MOD` |  | ANS. Primitive defined in C. | P W |
 | `+` |  | ANS. Primitive defined in C. | P W |
 | `+!` | `( n a -- )` | ANS. Primitive defined in C. | P W |
-| `+loop` | `( n -- )` | ANS. | P W |
+| `+loop` | `( n -- )` | ANS. The loop ends on the signed overflow of x + n, x = index - limit + MIN_INT (see tier2_opcodes.h). | P W |
 | `,` | `( n -- )` | ANS. | P W |
 | `-` | `( n n -- n )` | ANS. Primitive defined in C. | P W |
 | `-trailing` | `( a n -- a n' )` | ANS. | P W |
@@ -385,7 +399,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `2*` |  | ANS. Primitive defined in C. | P W |
 | `2/` |  | ANS. Primitive defined in C. | P W |
 | `2>r` | `( a b -- )` | ANS. | P W |
-| `2@` | `( a -- x1 x2 )` | ANS. Primitive defined in C. | P W |
+| `2@` | `( a -- x1 x2 )` | ANS. As the standard has them: x2 is at a, x1 in the next cell. | P W |
 | `2constant` | `( a b "name" -- )` | ANS. | P W |
 | `2drop` | `( n n -- )` | ANS. Primitive defined in C. | P W |
 | `2dup` | `( a b -- a b a b )` | ANS. Primitive defined in C. | P W |
@@ -420,7 +434,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `\` |  | ANS. | P W |
 | `]` |  | ANS. | P W |
 | `abort` |  | ANS. | P W |
-| `abort"` |  | ANS. | P W |
+| `abort"` | `( x -- )` | ANS. | P W |
 | `abs` | `( n -- +n )` | ANS. Primitive defined in C. | P W |
 | `accept` | `( a n -- n )` | ANS. | P W |
 | `action-of` | `( "name" -- xt )` | ANS. | P W |
@@ -436,6 +450,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `begin` |  | ANS. | P W |
 | `bl` |  | ANS. Primitive defined in C. | P W |
 | `blank` |  | ANS. Primitive defined in C. | P W |
+| `blk` |  | ANS. | P W |
 | `buffer:` | `( u "name" -- )` | ANS. | P W |
 | `bye` |  | ANS. | P W |
 | `C!` |  | ANS. Primitive defined in C. | P W |
@@ -478,7 +493,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `dmin` | `( d1 d2 -- d )` | ANS. | P W |
 | `dnegate` | `( d -- d )` | ANS. | P W |
 | `do` | `( n n -- .. )` | ANS. | P W |
-| `DOES>` |  | ANS. Primitive defined in C. | P W |
+| `does>` |  | ANS. The locals of the defining part end at DOES>: the part that follows has its own. | P W |
 | `DROP` |  | ANS. Primitive defined in C. | P W |
 | `du<` | `( lo1 hi1 lo2 hi2 -- f )` | ANS. | P W |
 | `DUP` |  | ANS. Primitive defined in C. | P W |
@@ -515,6 +530,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `FEXP` |  | ANS. Primitive defined in C. | P W |
 | `fexpm1` | `( r -- r' )` | ANS. | P W |
 | `ffield:` | `( n1 "name" -- n2 )` | ANS. | P W |
+| `file-status` | `( a n -- x ior )` | ANS. | P - |
 | `fill` | `( a n ch -- )` | ANS. JavaScript function of the web page. | P W |
 | `FLN` |  | ANS. Primitive defined in C. | P W |
 | `flnp1` | `( r -- r' )` | ANS. | P W |
@@ -548,6 +564,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `if` |  | ANS. | P W |
 | `IMMEDIATE` |  | ANS. Primitive defined in C. | P W |
 | `include` | `( "name" -- )` | ANS. | P - |
+| `include-file` | `( fh -- )` | ANS. | P - |
 | `included` | `( a n -- )` | ANS. | P - |
 | `invert` | `( n -- ~n )` | ANS. Primitive defined in C. | P W |
 | `is` | `( xt "name -- )` | ANS. | P W |
@@ -560,7 +577,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `loop` |  | ANS. | P W |
 | `LSHIFT` |  | ANS. Primitive defined in C. | P W |
 | `m*` | `( n n -- d )` | ANS. | P W |
-| `m*/` | `( d1 n1 +n2 -- d2 )` | ANS. d1 * n1 / n2 through a triple-cell product, rounded toward zero. | P W |
+| `m*/` | `( d1 n1 +n2 -- d2 )` | ANS. d1 * n1 / n2 through a triple-cell product, floored as / is. | P W |
 | `m+` | `( d n -- d )` | ANS. | P W |
 | `marker` | `( "name" -- )` | ANS. | P W |
 | `max` |  | ANS. Primitive defined in C. | P W |
@@ -582,14 +599,15 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `quit` |  | ANS. | P W |
 | `R>` |  | ANS. Primitive defined in C. | P W |
 | `R@` |  | ANS. Primitive defined in C. | P W |
+| `read-line` | `( a u fh -- n f ior )` | ANS. | P - |
 | `recurse` |  | ANS. | P W |
-| `refill` |  | ANS. | P W |
+| `refill` | `( -- f )` | ANS. REFILL: the next line of the file being read, the next line typed at the keyboard, and false for the text of EVALUATE (or the end of the file). | P W |
 | `RENAME-FILE` | `( a n a n -- ior )` | ANS. | P - |
 | `repeat` |  | ANS. | P W |
 | `replaces` | `( a1 n1 a2 n2 -- )` | ANS. Gives the name a2 n2 the text a1 n1, for SUBSTITUTE. | P W |
 | `required` | `( a n -- )` | ANS. | P - |
 | `resize` | `( a n -- a ior )` | ANS. | P - |
-| `RESIZE-FILE` | `( n fh -- ior )` | ANS. | P - |
+| `resize-file` | `( ud fh -- ior )` | ANS. | P - |
 | `restore-input` | `( xn .. x1 n -- f )` | ANS. | P W |
 | `roll` | `( xu .. x0 u -- xu-1 .. x0 xu )` | ANS. | P W |
 | `rot` | `( a b c -- c a b )` | ANS. Primitive defined in C. | P W |
@@ -609,7 +627,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `sliteral` | `( a n -- )` | ANS. | P W |
 | `sm/rem` | `( lo hi n -- rem quot )` | ANS. | P W |
 | `source` | `( -- a n )` | ANS. | P W |
-| `source-id` | `( -- 0 \| -1 )` | ANS. 0 when the text comes from the keyboard, -1 from evaluate (and from a file). | P W |
+| `source-id` | `( -- 0 \| -1 \| fileid )` | ANS. the keyboard, EVALUATE text, an included file | P W |
 | `space` |  | ANS. | P W |
 | `spaces` | `( n -- )` | ANS. | P W |
 | `state` |  | ANS. Primitive defined in C. | P W |
@@ -638,6 +656,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `within` | `( n lo hi -- f )` | ANS. | P W |
 | `word` | `( ch -- a )` | ANS. | P W |
 | `wordlist` | `( -- wid )` | ANS. | P W |
+| `write-line` | `( a n fh -- ior )` | ANS. | P - |
 | `XOR` |  | ANS. Primitive defined in C. | P W |
 | `{:` | `( "args \| vals -- outs :}" -- )` | ANS. | P W |
 
@@ -650,7 +669,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `2-` | `( n -- n )` | Subtracts 2 from a number. | P W |
 | `>float` | `( a n -- r true \| false )` | The standard text of a float: the exponent may be left out, a blank text is 0. | P W |
 | `>name-length` | `( xt -- n )` | The length in bytes of the name of a definition. | - W |
-| `[defined]` | `( "name" -- f )` | True when the next word is found in the dictionary. Mostly used with [if]: [defined] foo [if] ... [then]. | P W |
+| `[defined]` | `( "name" -- f )` | True when the next word is found in the dictionary. Mostly used with [if]: [defined] foo [if] ... [then]. As the standard has it, the flag is left on the stack in any state: in a definition it is for a [if] (or [ [defined] foo ] literal). | P W |
 | `[undefined]` | `( "name" -- f )` | True when the next word is not found in the dictionary: the reverse of [defined]. | P W |
 | `alpha` | `( a -- )` | Sets the opacity of the drawing color, 0 to 255 (after `color`, which resets it). | - W |
 | `anew` | `( "name" -- )` | Like marker, but first forgets the word of that name and everything after it if it exists, so a file can be loaded again without piling up its words. | P W |
@@ -885,7 +904,9 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `digit-char` | `( n -- ch )` | The character of a digit 0 to 35: 0-9 then A-Z. | P |
 | `dirname` | `( a n -- )` |  | P |
 | `dl` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
+| `dlit` | `( lo hi -- )` |  | P |
 | `dn` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
+| `dnum?` | `( a n -- lo hi f )` |  | P |
 | `do-local` | `( n -- )` |  | P |
 | `do-notfound` | `( a n -- )` |  | P |
 | `DOCOL` |  | Primitive defined in C. | P |
@@ -900,6 +921,7 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `DOVAR` |  | Primitive defined in C. | P |
 | `dpath` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `dpos` | `( -- a )` | Variable: the position in `dbuf` of the digits being built. | P |
+| `dprefix` | `( ch -- base \| 0 )` |  | P |
 | `dump-line` | `( a -- a )` |  | P |
 | `e'` | `( n -- )` |  | P |
 | `e-add` | `( buf n i -- buf n' )` | the argument i and a blank, after the n bytes already there | P |
@@ -912,10 +934,12 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `el` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `en` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `ends/` | `( a n -- f )` |  | P |
+| `eol-char` |  |  | P |
 | `ep` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `errno` | `( -- err )` | -- ESP32 only as of v7.0.7.2 | P |
 | `evaluate&fill` |  |  | P |
 | `evaluate-buffer` |  |  | P |
+| `evaluate-lines` | `( a n fh -- )` | the text a n, one line at a time: SOURCE is the line being read | P |
 | `EVALUATE1` | `( -- )` | Primitive defined in C. | P |
 | `fbuf` |  |  | P |
 | `fdir` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
@@ -950,7 +974,7 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `immediate?` | `( xt -- f )` |  | P |
 | `IMMEDIATE_MARK` |  | Constant, 1. | P |
 | `include+` |  |  | P |
-| `include-file` | `( fh -- )` | Standard word, see the ANS Forth standard. | P |
+| `include-fid` | `( fh -- )` |  | P |
 | `included-files` |  |  | P |
 | `indent` |  |  | P |
 | `indent+!` | `( n -- )` |  | P |
@@ -960,8 +984,10 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `internalized` |  |  | P |
 | `internals-builtins` |  |  | P |
 | `interpret0` |  |  | P |
+| `known-xt?` | `( x -- f )` | True when x is the xt of a word: of a vocabulary, or a builtin of C. | P |
 | `la` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `last-vocabulary` |  |  | P |
+| `lc` | `( ch -- ch' )` |  | P |
 | `le-accept` | `( a n -- n )` | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `le-back` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `le-bs` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
@@ -1041,7 +1067,7 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `local-op` |  |  | P |
 | `local@` | `( n -- )` |  | P |
 | `locals-area` |  |  | P |
-| `locals-capacity` |  | Constant, 1024. | P |
+| `locals-capacity` |  | Constant, 1280. | P |
 | `locals-gap` |  |  | P |
 | `locals-here` |  |  | P |
 | `LONG-SIZE` |  |  | P |
@@ -1051,10 +1077,12 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `ls-loop` | `( dh -- )` | Helper of `ls`: prints the entries of the open directory dh. | P |
 | `lup` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `m-neg` |  |  | P |
+| `m-rem` |  |  | P |
 | `m-t0` |  |  | P |
 | `m-t1` |  |  | P |
 | `m-t2` |  |  | P |
 | `mem=` | `( a a n -- f )` |  | P |
+| `name=` | `( a1 n1 a2 n2 -- f )` | the names of a substitution: the case does not count, as for the words | P |
 | `nest-depth` |  |  | P |
 | `node-at` |  |  | P |
 | `node-name` | `( node -- a n )` |  | P |
@@ -1066,6 +1094,7 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `nr-ret` |  |  | P |
 | `onlines` | `( xt -- xt )` |  | P |
 | `opcode-as` | `( "op" "name" -- )` | A port with tier 2 opcodes has DO ?DO LOOP +LOOP in C: opcode-as (DO) DO gives the Forth DO the code field of the opcode, as BEGIN and IF are made above, so it stays the one word that see and utils.fs mark. Without them, on the web, the Forth versions run. | P |
+| `opcode-of` | `( xt -- xt' \| 0 )` | The builtin of C whose code field a word of the dictionary has, made by opcode-as as DO from (DO), or by create as BEGIN from NOP: 0 if none. | P |
 | `pa` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `park-forth` | `( -- a )` |  | P |
 | `park-heap` | `( -- a )` |  | P |
@@ -1101,6 +1130,7 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `pool-size` |  | Constant, 8192. | P |
 | `pool-used` |  | Internal state or helper of the list of candidate words kept by the Tab completion (common/lineedit.fs). | P |
 | `pool@` | `( p -- a n )` | Internal state or helper of the list of candidate words kept by the Tab completion (common/lineedit.fs). | P |
+| `postponed?` | `( a -- f )` | What postpone compiles for a word that is not immediate: the xt as a literal, then , | P |
 | `r-copy` | `( -- a )` | Variable: set at the end of the boot, from then `r"`, `r\|` and `r~` copy their text as `s"` does. | P |
 | `r-lit` | `( a n -- a n \| )` |  | P |
 | `raw-included` | `( a n -- )` |  | P |
@@ -1111,6 +1141,7 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `RECTYPE-CTL` |  |  | P |
 | `remember-filename` | `( -- a n )` | Deferred word specifying the platform specific default snapshot filename. | P |
 | `restore-name` | `( a n -- )` | Restore a snapshot from a file. | P |
+| `run-lines` |  |  | P |
 | `S>FLOAT?` |  |  | P |
 | `S>NUMBER?` | `( a n -- n f \| 0 )` |  | P |
 | `s\buf` |  |  | P |
@@ -1160,6 +1191,7 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `sub-pct` | `( a n -- a' n' )` | a is on a % | P |
 | `sub-s` | `( a n -- )` |  | P |
 | `subst-find` | `( a n -- node \| 0 )` |  | P |
+| `subst-run` | `( a1 n1 a2 n2 -- a2 n3 n4 )` |  | P |
 | `substitutions` |  |  | P |
 | `thrown` | `( -- a )` | Variable: the last value passed to `throw`, kept for the prompt. | P |
 | `tib-setup` |  |  | P |
@@ -1690,6 +1722,7 @@ System calls and constants of Linux and macOS, reached with `sysfunc`. `also pos
 | `+RECOGNIZER` | `( xt -- )` |  | P |
 | `-RECOGNIZER` | `( -- )` |  | P |
 | `GET-RECOGNIZERS` | `( -- xtn..xt1 n )` |  | P |
+| `REC-DNUM` | `( c-addr len -- lo hi xt addr1 \| addr2 )` |  | P |
 | `REC-FIND` | `( c-addr len -- xt addr1 \| addr2 )` |  | P |
 | `REC-FNUM` | `( c-addr len -- f addr1 \| addr2 )` |  | P |
 | `REC-NUM` | `( c-addr len -- n addr1 \| addr2 )` |  | P |

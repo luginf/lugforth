@@ -275,19 +275,56 @@ First run, and what it found. All fixed the same day:
   back in place after an error. Not done: the web build has its own `include-file`
   (`ports/web/utils.fs`), still one single line.
 
-To run it, in a checkout of the suite (the files `include` each other by relative name, and
+Second round (2026-10-28, version .2), all the word sets:
+
+- Files: `READ-LINE`, `WRITE-LINE`, `FILE-STATUS`, `REQUIRE`, public `INCLUDE-FILE` (the old
+  internal one is `include-fid`), `SOURCE-ID` gives the file id while a file is included.
+  `FILE-SIZE`, `FILE-POSITION`, `REPOSITION-FILE` and `RESIZE-FILE` take and give a double cell
+  number as the standard has it (`common/fileops.fs`, loaded before the first user of them; the
+  ports keep their single cell primitives). The callers in the editors, the examples, `blocks.fs`
+  and the gforth port were changed (`d>s`, `s>d`).
+- The file words no longer move `PAD`: `s>zt` is `s>z` that gives `here` back (the suite fills
+  `PAD`, opens a file and compares). `rename-file` keeps its first name with `s>z`.
+- The POSIX file words give the error of `close`, `fsync`, `unlink`, `rename` and `ftruncate`
+  (an `int` is sign extended first: `-1` was not negative on 64 bits).
+- `ABORT"` was unconditional: it now takes a flag. An undefined word throws -13 (it was -1).
+- `CMOVE` copies from the low end and `CMOVE>` from the high end, one character at a time, so
+  that overlapping regions give the standard result (`cmove_up` and `cmove_down` in `core.h`,
+  and in `web.template.js`). `RESIZE` leaves the old block as it was when it fails.
+- `1.` `-$ff.`: a number with a point at the end is a double (`REC-DNUM`, ansi_compat.fs).
+  `M*/` rounds as `/` does, down.
+- `SUBSTITUTE`: names are compared without the case, as the words are, and a source that
+  overlaps the destination gives a negative count. `REPLACES` keeps a zero length text.
+- Blocks: `BLK`; `LOAD` sets it, `EVALUATE` clears it; `\` in a block goes to the end of the
+  64 character line; `REFILL` goes on to the next block; `SAVE-INPUT` gives 4 values and
+  `RESTORE-INPUT` reads the block again; `EMPTY-BUFFERS` forgets the update.
+- `[DEFINED]` and `[UNDEFINED]` leave the flag in any state, `[IF]` works inside a definition,
+  `DOES>` ends the locals of the defining part, `#LOCALS` gives 16, the locals area holds 19.
+- A regression found by running the web build under node: the Forth `LOOP` and `+LOOP` of the
+  web build used `-1 1 rshift`, and the web `rshift` is arithmetic, so no loop ended. MIN_INT is
+  now `1 cells 8 * 1- 1 swap lshift`. Check `ninja web` and a `do loop` after a change there.
+
+`ninja forth2012` runs it (`tools/forth2012_test.py`: the suite is taken from `$F2012_DIR` or cloned
+into `out/forth2012-suite`; it fails when a word set has an error or a file is aborted). By hand,
+in a checkout of the suite (the files `include` each other by relative name, and
 `core.fr` asks for a line of text: give it one on stdin):
 
     printf 'hello world\n' | lugforth driver.fth
 
-with a driver that includes, by absolute path and in this order, `prelimtest.fth`, `tester.fr`,
-`core.fr`, `coreplustest.fth`, `utilities.fth`, `errorreport.fth`, one `...test.fth` of an
-optional word set, then calls `REPORT-ERRORS`.
+with a driver that includes, by absolute path and in the order of the suite's `runtests.fth`,
+`prelimtest.fth`, `tester.fr`, `core.fr`, `coreplustest.fth`, `utilities.fth`, `errorreport.fth`,
+then the `...test.fth` of the word sets (`coreexttest.fth` before `filetest.fth`: it defines
+`SI_INC`), then calls `REPORT-ERRORS`.
 
-Result (each word set run by itself): Core, Core plus, Facility and Search-order: no error.
-Still failing: Core ext hangs (not looked at), Exception 2, Memory 1, String 10; Double, Locals,
-Tools, Block and File stop on a word that is not there (see above: FILE has five words
-missing, Block is not done). So Lugforth is based on Forth 2012 but does not yet pass all of it.
+Result: all the word sets run by the driver pass (Core, Core extension, Block, Double,
+Exception, Facility, File-access, Locals, Memory-allocation, Programming-tools, Search-order,
+String): 0 errors. The floating point sets (`fp/`) were not run.
+
+For the comparison: pforth (upstream, 64 bit) passes Core and Facility, stops on `BUFFER:`,
+`{:`, `UNESCAPE`, `CS-PICK`, `BLOCK` and `REQUIRED`, and crashes on Double, Exception and
+Search-order. gforth 0.7.9 passes everything but 2 tests of String (a zero length
+substitution: the names of `REPLACES` are case sensitive there), and Search-order needs
+`FORTH-WORDLIST SET-CURRENT` first.
 
 ## DO LOOP in C - 2026-10-27
 

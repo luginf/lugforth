@@ -38,6 +38,7 @@ e: check-locals
   out: +to 
   out: to 
   out: exit 
+  out: does> 
   out: ; 
   out: { 
   out: (local) 
@@ -61,13 +62,18 @@ e: check-boot
   out: info 
   out: quit 
   out: evaluate 
+  out: \ 
+  out: blk 
+  out: (evaluate) 
   out: refill 
+  out: refill-keys 
   out: tib 
   out: accept 
   out: echo 
   out: abort" 
   out: abort 
   out: z>s 
+  out: s>zt 
   out: s>z 
   out: r~ 
   out: r| 
@@ -82,6 +88,7 @@ e: check-boot
   out: extend-line 
   out: refill-file 
   out: line-end 
+  out: src-fid 
   out: file-end 
   out: n. 
   out: ? 
@@ -385,6 +392,9 @@ e: check-blocks
   out: editor 
   out: list 
   out: copy 
+  out: restore-input 
+  out: save-input 
+  out: refill 
   out: thru 
   out: load 
   out: flush 
@@ -420,6 +430,7 @@ e: check-[]conds
   out: [ELSE] 
   out: [THEN] 
   out: DEFINED? 
+  out: (defined?) 
 ;e
 
 e: check-utils
@@ -482,10 +493,15 @@ e: check-args
 ;e
 
 e: check-imports
+  out: read-line 
+  out: write-line 
+  out: file-status 
   out: file-exists? 
+  out: require 
   out: needs 
   out: required 
   out: included? 
+  out: include-file 
   out: include 
   out: included 
 ;e
@@ -523,6 +539,18 @@ e: check-filetools
   check-imports
   check-snapshots
   check-fileops
+DEFINED? resize-file [IF]
+  out: resize-file 
+[THEN]
+DEFINED? reposition-file [IF]
+  out: reposition-file 
+[THEN]
+DEFINED? file-position [IF]
+  out: file-position 
+[THEN]
+DEFINED? file-size [IF]
+  out: file-size 
+[THEN]
   out: streams 
   out: ms 
   check-tasks

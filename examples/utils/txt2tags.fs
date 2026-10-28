@@ -72,7 +72,7 @@
 
 : slurp ( a n -- )   ( reads a whole file into src )
   r/o open-file throw { fh }
-  fh file-size throw to src-n
+  fh file-size throw d>s to src-n
   src-n 1+ allocate throw to src
   src src-n fh read-file throw drop
   fh close-file drop

@@ -132,11 +132,11 @@ opcode-as (?DO) ?DO
 : LEAVE   r> rdrop rdrop @ >r ;
 : leave   postpone LEAVE leaving, ; immediate
 \ The loop ends on the signed overflow of x + n, x = index - limit + MIN_INT (see tier2_opcodes.h).
-: +LOOP ( n -- ) r> swap r> 2dup r@ - -1 1 rshift invert + 2dup + rot over xor -rot xor and 0<
+: +LOOP ( n -- ) r> swap r> 2dup r@ - 1 cells 8 * 1- 1 swap lshift + 2dup + rot over xor -rot xor and 0<
                  if 2drop rdrop cell+ >r else + >r @ >r then ;
 opcode-as (+LOOP) +LOOP
 : +loop ( n -- ) postpone +LOOP , )leaving ; immediate
-: LOOP   r> 1 r> 2dup r@ - -1 1 rshift invert + 2dup + rot over xor -rot xor and 0<
+: LOOP   r> 1 r> 2dup r@ - 1 cells 8 * 1- 1 swap lshift + 2dup + rot over xor -rot xor and 0<
          if 2drop rdrop cell+ >r else + >r @ >r then ;
 opcode-as (LOOP) LOOP
 : loop   postpone LOOP , )leaving ; immediate

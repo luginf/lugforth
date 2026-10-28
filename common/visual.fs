@@ -99,7 +99,7 @@ start-size value capacity
      filename swap cmove
      filename filename# r/o open-file 0= if
          to fileh
-         fileh file-size throw to capacity
+         fileh file-size throw d>s to capacity
          text capacity 1+ resize throw to text
          capacity to length
          text length fileh read-file throw drop

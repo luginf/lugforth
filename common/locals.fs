@@ -19,7 +19,7 @@
 internals definitions
 
 ( Leave a region for locals definitions )
-1024 constant locals-capacity  128 constant locals-gap
+1280 constant locals-capacity  128 constant locals-gap
 create locals-area locals-capacity allot
 variable locals-here  locals-area locals-here !
 : <>locals   locals-here @ here locals-here ! here - allot ;
@@ -65,6 +65,8 @@ also forth definitions
       recurse (local) ; immediate
 ( TODO: Hide the words overriden here. )
 : ;   scope-clear postpone ; ; immediate
+\ The locals of the defining part end at DOES>: the part that follows has its own.
+: does>   scope-clear postpone does> ; immediate
 : exit   scope-exit postpone exit ; immediate
 : to ( n -- ) ' dup >flags if (to) else ['] ! value-bind then ; immediate
 : +to ( n -- ) ' dup >flags if (+to) else ['] +! value-bind then ; immediate

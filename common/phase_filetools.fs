@@ -14,6 +14,7 @@
 
 needs tasks.fs
 needs streams.fs
+needs fileops.fs
 needs filetools.fs
 needs including.fs
 needs blocks.fs

@@ -43,6 +43,17 @@ enum {
 #undef V
 };
 
+// CMOVE and CMOVE> copy one character at a time, from the low end and from the high end:
+// on overlapping regions that is the standard result, not that of memmove.
+static void cmove_up(void *d, void *s, cell_t n) {
+  char *dc = (char *) d, *sc = (char *) s;
+  while (n-- > 0) *dc++ = *sc++;
+}
+static void cmove_down(void *d, void *s, cell_t n) {
+  char *dc = (char *) d, *sc = (char *) s;
+  while (n-- > 0) dc[n] = sc[n];
+}
+
 static cell_t convert(const char *pos, cell_t n, cell_t base, cell_t *ret) {
   *ret = 0;
   cell_t negate = 0;

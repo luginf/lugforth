@@ -54,8 +54,8 @@
   X("2@", TWOAT, DUP; *sp = ((cell_t *) tos)[1]; tos = *(cell_t *) tos) \
   X("2!", TWOSTORE, *(cell_t *) tos = *sp; \
       ((cell_t *) tos)[1] = sp[-1]; sp -= 2; DROP) \
-  Y(cmove, memmove((void *) *sp, (void *) sp[-1], tos); sp -= 2; DROP) \
-  X("cmove>", cmove2, memmove((void *) *sp, (void *) sp[-1], tos); sp -= 2; DROP) \
+  Y(cmove, cmove_up((void *) *sp, (void *) sp[-1], tos); sp -= 2; DROP) \
+  X("cmove>", cmove2, cmove_down((void *) *sp, (void *) sp[-1], tos); sp -= 2; DROP) \
   Y(fill, memset((void *) sp[-1], tos, *sp); sp -= 2; DROP) \
   Y(erase, memset((void *) *sp, 0, tos); NIP; DROP) \
   Y(blank, memset((void *) *sp, ' ', tos); NIP; DROP) \

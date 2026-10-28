@@ -35,7 +35,7 @@ defer wd-go ( a n -- )
 
 : slurp ( a n -- a' n' )
   r/o open-file throw >r
-  r@ file-size throw dup allocate throw swap
+  r@ file-size throw d>s dup allocate throw swap
   2dup r@ read-file throw drop
   r> close-file throw ;
 : body ( a n -- a' n' )   ( the text between the first r| and the next line starting with a vertical bar )

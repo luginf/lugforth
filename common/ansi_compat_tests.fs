@@ -175,10 +175,10 @@ e: test-.(
   cell 8 = if 0 =assert 10000000000 =assert else 2drop then ;
 
 ( Conditional compilation and markers )
-: test-[defined]   [defined] dup assert [defined] nonexistent-word-xyz 0 =assert ;
-: test-[undefined]   [undefined] nonexistent-word-xyz assert [undefined] dup 0 =assert ;
-: t-defd [defined] dup ;
-: test-[defined]-compiled   t-defd assert ;
+: test-[defined]   [ [defined] dup ] literal assert [ [defined] nonexistent-word-xyz ] literal 0 =assert ;
+: test-[undefined]   [ [undefined] nonexistent-word-xyz ] literal assert [ [undefined] dup ] literal 0 =assert ;
+: t-defd [defined] dup [if] 1 [else] 2 [then] ;
+: test-[defined]-in-definition   t-defd 1 =assert ;
 : t-comp [compile] dup ;
 : test-[compile]   5 t-comp + 10 =assert ;
 : t-compc [ ' dup compile, ] + ;
@@ -219,13 +219,13 @@ e: test-anew
 defer tdefer
 : test-defer@   ['] dup ['] tdefer defer!  ['] tdefer defer@ ['] dup =assert
                 action-of tdefer ['] dup =assert ;
-: test-save-input   save-input dup 3 =assert restore-input 0 =assert ;
+: test-save-input   save-input dup 4 =assert restore-input 0 =assert ;
 : test-restore-input-other   1 2 2 restore-input -1 =assert depth 0 =assert ;
 : test-c"   c" hello" dup c@ 5 =assert count s" hello" str= assert ;
 : test-s\"   s\" a\tb\n\x41\"\\" nip 7 =assert
              s\" \x41\x7a" s" Az" str= assert
              s\" \q\m" nip 3 =assert ;
-: test-source-id   source-id -1 =assert ;
+: test-source-id   source-id dup -1 <> swap 0<> and assert ;   ( a file: neither the keyboard nor EVALUATE )
 : test-unused   unused 0 >assert ;
 
 ( Doubles )
@@ -234,7 +234,9 @@ defer tdefer
 : test-m*/   10 0 3 2 m*/ 0 =assert 15 =assert
              -10 -1 3 2 m*/ -1 =assert -15 =assert
              max-n 0 4 2 m*/ 0 =assert -2 =assert
-             max-n 0 max-n max-n m*/ 0 =assert max-n =assert ;
+             max-n 0 max-n max-n m*/ 0 =assert max-n =assert
+             5 0 -7 11 m*/ -1 =assert -4 =assert   ( floored, as / )
+             -5 -1 7 11 m*/ -1 =assert -4 =assert ;
 1 2 2value t2v
 : test-2value   1 2 to t2v t2v 2 =assert 1 =assert  3 4 to t2v t2v 4 =assert 3 =assert ;
 : t2v-set   7 8 to t2v ;
@@ -359,7 +361,7 @@ source nip src-len !
 : test-source-is-line   src-len @ 20 =assert ;
 refill 0 constant refill-skipped
 drop 1 constant refill-next
-: test-refill-file   [defined] refill-next assert   [defined] refill-skipped 0= assert ;
+: test-refill-file   [ [defined] refill-next ] literal assert   [ [defined] refill-skipped ] literal 0= assert ;
 ( a comment
   on two lines ) 7 constant after-ml-comment
 : test-ml-comment   after-ml-comment 7 =assert ;
@@ -374,4 +376,39 @@ bc" ;
 : test-ml-locals2   2 3 ml-locals2 6 =assert ;
 s" -1 throw" ' evaluate catch nip nip constant eval-caught
 2 constant after-eval-error
-: test-eval-error-keeps-file   eval-caught -1 =assert   [defined] after-eval-error assert ;
+: test-eval-error-keeps-file   eval-caught -1 =assert   [ [defined] after-eval-error ] literal assert ;
+: rf-eval   s" REFILL" evaluate ;
+: test-refill-evaluate   rf-eval 0 =assert ;
+( The files are not emulated on the ESP32 simulator. )
+DEFINED? esp 0= [IF]
+: test-file-ud   ( the file size and position are double cell numbers )
+   s" fileud.tmp" w/o create-file throw >r
+   s" 0123456789" r@ write-file throw
+   r@ file-size throw 10 0 d= assert
+   r> close-file throw
+   s" fileud.tmp" r/w open-file throw >r
+   4 0 r@ reposition-file throw
+   r@ file-position throw 4 0 d= assert
+   3 0 r@ resize-file throw
+   r@ file-size throw 3 0 d= assert
+   r> close-file throw
+   s" fileud.tmp" delete-file throw ;
+create rl-buf 16 allot
+: test-read-line
+   s" readline.tmp" w/o create-file throw >r
+   s" ab" r@ write-line throw   s" " r@ write-line throw   s" cde" r@ write-file throw
+   r> close-file throw
+   s" readline.tmp" r/o open-file throw >r
+   rl-buf 16 r@ read-line throw -1 =assert 2 =assert
+   rl-buf 16 r@ read-line throw -1 =assert 0 =assert
+   rl-buf 2 r@ read-line throw -1 =assert 2 =assert
+   rl-buf 16 r@ read-line throw -1 =assert 1 =assert
+   rl-buf 16 r@ read-line throw 0 =assert 0 =assert
+   r> close-file throw
+   s" readline.tmp" delete-file throw ;
+: test-file-status
+   s" fileud.tmp" file-status nip 0<> assert
+   s" fileud.tmp" w/o create-file throw close-file throw
+   s" fileud.tmp" file-status nip 0= assert
+   s" fileud.tmp" delete-file throw ;
+[THEN]

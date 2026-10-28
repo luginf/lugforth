@@ -14,14 +14,14 @@
 
 ( Interpret time conditionals )
 
-: DEFINED? ( "name" -- xt|0 )
-   begin bl parse dup 0= while 2drop refill 0= throw repeat
-   (find) state @ if aliteral then ; immediate
+: (defined?) ( "name" -- xt|0 )   ( the xt of the next word, in any state )
+   begin bl parse dup 0= while 2drop refill 0= throw repeat (find) ;
+: DEFINED? ( "name" -- xt|0 )   (defined?) state @ if aliteral then ; immediate
 defer [SKIP]
 : [THEN] ; immediate
 : [ELSE] [SKIP] ; immediate
 : [IF] 0= if [SKIP] then ; immediate
-: [SKIP]' 0 begin postpone defined? dup if
+: [SKIP]' 0 begin (defined?) dup if
     dup ['] [IF] = if swap 1+ swap then
     dup ['] [ELSE] = if swap dup 0 <= if 2drop exit then swap then
     dup ['] [THEN] = if swap 1- dup 0< if 2drop exit then swap then

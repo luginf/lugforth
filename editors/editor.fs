@@ -171,7 +171,7 @@ defer pre-key ( code -- code' )   defer wait-key ( -- code )   defer after-load
   flen 0= if exit then
   fname flen r/o open-file if drop s" New file" say exit then
   { fh }
-  fh file-size throw { n }
+  fh file-size throw d>s { n }
   n need
   text n fh read-file throw to len
   fh close-file throw ;
@@ -538,7 +538,7 @@ defer ini-load   defer ini-save
   repeat ;
 : ini-read ( a n -- flag )   \ reads the file; false when it cannot be opened
   r/o open-file if drop 0 exit then  { fh }
-  fh file-size throw { sz }
+  fh file-size throw d>s { sz }
   sz 1+ bytes { b }
   b sz fh read-file throw { got }
   fh close-file drop

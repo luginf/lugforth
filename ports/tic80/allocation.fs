@@ -16,4 +16,4 @@
 
 : allocate ( n -- a ior ) malloc dup 0= ;
 : free ( a -- ior ) sysfree 0 ;
-: resize ( a n -- a ior ) realloc dup 0= ;
+: resize ( a n -- a ior ) over >r realloc dup if rdrop 0 else drop r> -1 then ;   ( a failed resize leaves the old block as it was )

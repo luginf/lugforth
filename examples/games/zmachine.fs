@@ -661,8 +661,7 @@ tab: t0   tab: t1   tab: t2   tab: tv   tab: te
   5 0 do 0 i zs! loop
   0 mtop !  0 zwin !  0 ll !
   -1 zrun ! ;
-[defined] gforth [if] : zfsize ( fid -- n ) file-size throw drop ;   \ a double there
-[else] : zfsize ( fid -- n ) file-size throw ; [then]
+: zfsize ( fid -- n ) file-size throw d>s ;
 : zread-story ( a n -- ok )
   r/o open-file if drop 0 exit then >r
   r@ zfsize to zsize

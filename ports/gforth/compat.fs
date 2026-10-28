@@ -92,5 +92,3 @@ create dent 264 allot
 : termios@ ( a -- )   drop ;
 : termios! ( a -- )   drop ;
 
-\ ---- file-size gives one cell in ueForth (a double in ANS) ----
-: file-size ( fid -- n ior )   file-size >r d>s r> ;

@@ -41,18 +41,19 @@ internals definitions
 : sourcedirname ( -- a n ) sourcefilename dirname ;
 
 : run-lines   begin refill-file while evaluate-buffer repeat ;
-: evaluate-lines ( a n -- )   ( the text a n, one line at a time: SOURCE is the line being read )
-   'tib @ >r #tib @ >r >in @ >r file-end @ >r
-   over + file-end !  1- 'tib !  0 #tib !
+: evaluate-lines ( a n fh -- )   ( the text a n, one line at a time: SOURCE is the line being read )
+   'tib @ >r #tib @ >r >in @ >r file-end @ >r src-fid @ >r
+   src-fid !  over + file-end !  1- 'tib !  0 #tib !
    ['] run-lines catch
-   r> file-end ! r> >in ! r> #tib ! r> 'tib !  throw ;
+   r> src-fid ! r> file-end ! r> >in ! r> #tib ! r> 'tib !  throw ;
 
-: include-file ( fh -- )
-   dup file-size throw
-   dup allocate throw
-   swap over >r
-   rot read-file throw
-   r@ swap
+: include-fid ( fh -- )
+   dup file-size throw d>s
+   dup allocate throw           ( fh n a )
+   dup >r                       ( the text buffer waits on the return stack )
+   swap rot dup >r              ( a n fh )
+   read-file throw              ( n' )
+   r> r@ -rot                   ( a n' fh )
    src-ref @ >r  0 src-ref !
    evaluate-lines
    src-ref @ r> src-ref !
@@ -60,7 +61,7 @@ internals definitions
 
 : raw-included ( a n -- )
    r/o open-file throw
-   dup >r include-file
+   dup >r include-fid
    r> close-file throw ;
 
 0 value included-files
@@ -100,6 +101,7 @@ forth definitions internals
    r> r> sourcefilename! ;
 
 : include ( "name" -- ) bl parse included ;
+: include-file ( fh -- ) include-fid ;
 
 : included? { a n -- f }
   sourcedirname a n path-join to n to a
@@ -112,7 +114,26 @@ forth definitions internals
 
 : required ( a n -- ) 2dup included? if 2drop else included then ;
 : needs ( "name" -- ) bl parse required ;
+: require ( "name" -- ) needs ;
 
 : file-exists? ( "name" -- f ) r/o open-file if drop 0 else close-file throw -1 then ;
+: file-status ( a n -- x ior ) r/o open-file if drop 0 -37 else close-file throw 0 0 then ;
+
+( Reading and writing a line of a file. A line ends at a line feed, a carriage return before it goes. )
+internals definitions
+create eol-char 10 c,
+forth definitions internals
+: write-line ( a n fh -- ior ) dup >r write-file ?dup if r> drop exit then eol-char 1 r> write-file ;
+: read-line { a u fh -- n f ior }
+   0 { n }
+   begin n u < while
+     a n + 1 fh read-file ?dup if nip n 0 rot exit then   ( n2 )
+     0= if n if n -1 else 0 0 then 0 exit then
+     a n + c@ 10 = if
+       n dup if a n 1- + c@ 13 = if 1- then then -1 0 exit
+     then
+     1 +to n
+   repeat
+   n -1 0 ;
 
 forth
