@@ -141,3 +141,16 @@ e: test-do+loop-unsigned
   foo
   out: 11 
 ;e
+
+\ A step of a 256th of the range wraps the index round the whole circle: 256 turns, not 128
+\ (the sign of index - limit changes half a turn from the limit too, which must not end the loop).
+e: test-do+loop-big-step
+  variable bump
+  : gd8 ( n limit start step -- n' ) bump ! do 1+ bump @ +loop ;
+  : foo
+    0 -1 0 -1 8 rshift 1+ gd8 .
+    0 0 -1 -1 8 rshift 1+ negate gd8 .
+    0 -1 1 rshift -1 1 rshift invert -1 1 rshift 7 rshift 1+ gd8 . cr ;
+  foo
+  out: 256 256 256 
+;e

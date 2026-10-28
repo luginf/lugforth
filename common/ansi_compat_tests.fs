@@ -326,3 +326,52 @@ synonym tdup dup
 : test-<#-s>d      -42 dup >r abs s>d <# #s r> sign #> s" -42" str= assert ;
 : test-<#-hex      base @ hex 255 0 <# # # #> rot base ! s" FF" str= assert ;
 : test-<#-binary   base @ 2 base ! -1 -1 <# #s #> nip swap base ! cell 16 * =assert ;
+
+( FIND, as the standard has it: a counted string, 1 for an immediate word, -1 for the others )
+create find-cs 3 c, char d c, char u c, char p c,
+create find-imm 4 c, char t c, char h c, char e c, char n c,
+create find-none 6 c, char n c, char o c, char s c, char u c, char c c, char h c,
+: test-find-word   find-cs find over ['] dup =assert -1 =assert drop ;
+: test-find-immediate   find-imm find over ['] then =assert 1 =assert drop ;
+: test-find-missing   find-none find 0 =assert find-none =assert ;
+
+( Number prefixes and character literals of Forth 2012 )
+: test-prefix-dec   #1289 1289 =assert   #-1289 -1289 =assert   [ hex ] #10 [ decimal ] 10 =assert ;
+: test-prefix-hex   $ff 255 =assert   $-12eF -4847 =assert   -$ff -255 =assert ;
+: test-prefix-bin   %10010110 150 =assert   %-10010110 -150 =assert ;
+: test-char-lit     'z' 122 =assert   ''' 39 =assert   'Z' 90 =assert ;
+: t1 #8327 $-2cbe %011010111 ''' ;
+: test-prefix-in-def   t1 39 =assert 215 =assert -11454 =assert 8327 =assert ;
+
+( 2@ and 2! as the standard has them: x2 at the address, x1 in the next cell )
+create two-cells 5 , 6 ,
+create two-cells2 0 , 0 ,
+: test-2@-layout    two-cells 2@ 5 =assert 6 =assert ;
+: test-2!-layout    1 2 two-cells2 2!  two-cells2 @ 2 =assert  two-cells2 cell+ @ 1 =assert ;
+2 3 2value two-val-init
+4 5 2value two-val-to
+: test-2value-init  two-val-init 3 =assert 2 =assert ;
+: test-2value-to    7 8 to two-val-to  two-val-to 8 =assert 7 =assert ;
+
+( A file is read one line at a time: SOURCE is the line, REFILL the next one )
+create src-len 0 ,
+source nip src-len !
+: test-source-is-line   src-len @ 20 =assert ;
+refill 0 constant refill-skipped
+drop 1 constant refill-next
+: test-refill-file   [defined] refill-next assert   [defined] refill-skipped 0= assert ;
+( a comment
+  on two lines ) 7 constant after-ml-comment
+: test-ml-comment   after-ml-comment 7 =assert ;
+: ml-string   s" a
+bc" ;
+: test-ml-string   ml-string nip 4 =assert ;
+: ml-locals   { a b
+   -- d }  a b + ;
+: test-ml-locals   2 3 ml-locals 5 =assert ;
+: ml-locals2   {: a b
+   | c -- d :}  a b * ;
+: test-ml-locals2   2 3 ml-locals2 6 =assert ;
+s" -1 throw" ' evaluate catch nip nip constant eval-caught
+2 constant after-eval-error
+: test-eval-error-keeps-file   eval-caught -1 =assert   [defined] after-eval-error assert ;

@@ -166,7 +166,7 @@ forth definitions internals
    begin >in @ #tib @ < if tib >in @ + c@ ch = else 0 then
    while 1 >in +! repeat
    ch parse 255 min wbuf place wbuf ;
-: .( ( -- ) [char] ) parse type ; immediate
+: .( ( -- ) [char] ) parse-more type ; immediate
 forth definitions
 
 ( Number conversion )
@@ -190,10 +190,10 @@ forth definitions
 ( Conditional compilation helpers and markers )
 \ True when the next word is found in the dictionary. Mostly used with [if]: [defined] foo [if] ... [then].
 : [defined] ( "name" -- f )
-   bl parse find 0<> state @ if postpone literal then ; immediate
+   bl parse (find) 0<> state @ if postpone literal then ; immediate
 \ True when the next word is not found in the dictionary: the reverse of [defined].
 : [undefined] ( "name" -- f )
-   bl parse find 0= state @ if postpone literal then ; immediate
+   bl parse (find) 0= state @ if postpone literal then ; immediate
 : [compile] ( "name" -- ) ' , ; immediate
 : compile, ( xt -- ) , ;
 : marker ( "name" -- )
@@ -201,7 +201,7 @@ forth definitions
    does> dup @ current @ ! cell+ @ here - allot ;
 \ Like marker, but first forgets the word of that name and everything after it if it exists, so a file can be loaded again without piling up its words.
 : anew ( "name" -- )
-   >in @ dup bl parse find swap >in !
+   >in @ dup bl parse (find) swap >in !
    if dup >in ! forget then >in ! marker ;
 : environment? ( a n -- 0 | val -1 )
    2dup s" ADDRESS-UNIT-BITS" str= if 2drop 8 -1 exit then
@@ -243,7 +243,7 @@ forth definitions internals
 \ A counted string: the length in the first byte. Compiled as an s" whose text
 \ starts with that byte, so see and the r| copies treat it as any string.
 : c" ( "ccc<quote>" -- c-addr )
-   [char] " parse 255 min dup c"buf c! c"buf 1+ swap cmove c"buf dup c@ 1+
+   [char] " parse-more 255 min dup c"buf c! c"buf 1+ swap cmove c"buf dup c@ 1+
    state @ if postpone $@ dup , zplace postpone drop else here >r $place align r> then ; immediate
 internals definitions
 create s\buf 256 allot
@@ -385,10 +385,10 @@ forth definitions internals
 
 ( Locals of Forth 2012: {: in | uninitialized -- out :} and LOCALS| )
 internals definitions
-: skip-:} ( "... :}" -- ) begin bl parse dup 0= if 2drop exit then s" :}" str= until ;
+: skip-:} ( "... :}" -- ) begin parse-name-more dup 0= if 2drop exit then s" :}" str= until ;
 : :}? ( a n -- f ) s" :}" str= ;
 : {:uninit ( "names" -- )
-   begin bl parse
+   begin parse-name-more
       dup 0= if 2drop exit then
       2dup :}? if 2drop exit then
       2dup --? if 2drop skip-:} exit then
@@ -396,7 +396,7 @@ internals definitions
    again ;
 forth definitions internals
 : {: ( "args | vals -- outs :}" -- )
-   bl parse
+   parse-name-more
    dup 0= if 2drop exit then
    2dup :}? if 2drop exit then
    2dup --? if 2drop skip-:} exit then
@@ -404,7 +404,7 @@ forth definitions internals
    recurse (local) ; immediate
 \ The first name takes the top of the stack.
 : locals| ( "names |" -- )
-   begin bl parse
+   begin parse-name-more
       dup 0= if 2drop exit then
       2dup s" |" str= if 2drop exit then
       (local)
@@ -429,7 +429,7 @@ create saved-order 16 cells allot
 forth definitions internals
 : search-wordlist ( a n wid -- 0 | xt 1 | xt -1 )
    context saved-order 16 cells cmove
-   context ! 0 context cell+ ! find
+   context ! 0 context cell+ ! (find)
    saved-order context 16 cells cmove
    dup 0= if exit then dup immediate? if 1 else -1 then ;
 forth definitions internals
@@ -487,6 +487,9 @@ forth definitions internals
 : name>interpret ( nt -- xt ) ;
 : name>compile ( nt -- x xt ) dup immediate? if ['] execute else ['] compile, then ;
 : synonym ( "new" "old" -- ) create ' dup , immediate? if immediate then does> @ execute ;
+\ The standard FIND: a counted string in, 1 for an immediate word, -1 for the others, the string and 0 if missing.
+: find ( c-addr -- c-addr 0 | xt 1 | xt -1 )
+   dup count (find) dup if nip dup immediate? if 1 else -1 then else drop 0 then ;
 internals definitions
 variable nr-ret
 forth definitions internals

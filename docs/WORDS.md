@@ -381,11 +381,11 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `0>` | `( n -- f )` | ANS. | P W |
 | `1+` |  | ANS. Primitive defined in C. | P W |
 | `1-` |  | ANS. Primitive defined in C. | P W |
-| `2!` | `( lo hi a -- )` | ANS. Primitive defined in C. | P W |
+| `2!` | `( x1 x2 a -- )` | ANS. Primitive defined in C. | P W |
 | `2*` |  | ANS. Primitive defined in C. | P W |
 | `2/` |  | ANS. Primitive defined in C. | P W |
 | `2>r` | `( a b -- )` | ANS. | P W |
-| `2@` | `( a -- lo hi )` | ANS. Primitive defined in C. | P W |
+| `2@` | `( a -- x1 x2 )` | ANS. Primitive defined in C. | P W |
 | `2constant` | `( a b "name" -- )` | ANS. | P W |
 | `2drop` | `( n n -- )` | ANS. Primitive defined in C. | P W |
 | `2dup` | `( a b -- a b a b )` | ANS. Primitive defined in C. | P W |

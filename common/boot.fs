@@ -18,7 +18,7 @@ rp@ constant rp0
 fp@ constant fp0
 
 ( Quoting Words )
-: ' bl parse 2dup find dup >r -rot r> 0= 'notfound @ execute 2drop ;
+: ' bl parse 2dup (find) dup >r -rot r> 0= 'notfound @ execute 2drop ;
 : ['] ' aliteral ; immediate
 : char bl parse drop c@ ;
 : [char] char aliteral ; immediate
@@ -84,7 +84,7 @@ create RECSTACK 0 , bl 2/ ( 16 no numbers yet ) cells allot
 
 ( Setup recognizing words. )
 : REC-FIND ( c-addr len -- xt addr1 | addr2 )
-  find dup if
+  (find) dup if
     dup immediate? if RECTYPE-IMM else RECTYPE-WORD then
   else
     drop RECTYPE-NONE
@@ -120,7 +120,7 @@ variable leaving
 \ the Forth DO the code field of the opcode, as BEGIN and IF are made above, so it
 \ stays the one word that see and utils.fs mark. Without them, on the web, the
 \ Forth versions run.
-: opcode-as ( "op" "name" -- ) bl parse find ?dup if @ ' ! else bl parse 2drop then ;
+: opcode-as ( "op" "name" -- ) bl parse (find) ?dup if @ ' ! else bl parse 2drop then ;
 : DO ( n n -- .. ) swap r> -rot >r >r >r ;
 opcode-as (DO) DO
 : do ( lim s -- ) leaving( postpone DO here ; immediate
@@ -131,14 +131,13 @@ opcode-as (?DO) ?DO
 : UNLOOP   r> rdrop rdrop >r ;
 : LEAVE   r> rdrop rdrop @ >r ;
 : leave   postpone LEAVE leaving, ; immediate
-: +LOOP ( n -- ) r> r> dup r@ - >r rot + r> -rot
-                       dup r@ - -rot >r >r xor 0<
-                 if r> cell+ rdrop rdrop >r else r> @ >r then ;
+\ The loop ends on the signed overflow of x + n, x = index - limit + MIN_INT (see tier2_opcodes.h).
+: +LOOP ( n -- ) r> swap r> 2dup r@ - -1 1 rshift invert + 2dup + rot over xor -rot xor and 0<
+                 if 2drop rdrop cell+ >r else + >r @ >r then ;
 opcode-as (+LOOP) +LOOP
 : +loop ( n -- ) postpone +LOOP , )leaving ; immediate
-: LOOP   r> r> dup r@ - >r 1+ r> -rot
-               dup r@ - -rot >r >r xor 0<
-         if r> cell+ rdrop rdrop >r else r> @ >r then ;
+: LOOP   r> 1 r> 2dup r@ - -1 1 rshift invert + 2dup + rot over xor -rot xor and 0<
+         if 2drop rdrop cell+ >r else + >r @ >r then ;
 opcode-as (LOOP) LOOP
 : loop   postpone LOOP , )leaving ; immediate
 create I ' r@ @ ' i !  ( i is same as r@ )

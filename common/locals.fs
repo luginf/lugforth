@@ -58,9 +58,9 @@ also forth definitions
 : (local) ( a n -- )
    dup 0= if 2drop exit then 
    ?room <>locals scope-create <>locals postpone >r ;
-: {   bl parse
+: {   parse-name-more
       dup 0= if scope-clear -1 throw then
-      2dup --? if 2drop [char] } parse 2drop exit then
+      2dup --? if 2drop [char] } parse-more 2drop exit then
       2dup }? if 2drop exit then
       recurse (local) ; immediate
 ( TODO: Hide the words overriden here. )

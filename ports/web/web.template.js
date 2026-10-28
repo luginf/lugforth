@@ -320,8 +320,16 @@ function Convert(pos, n, base, ret) {
   i32[ret>>2] = 0;
   var negate = 0;
   if (!n) { return 0; }
+  // 'c' is the code of a character.
+  if (n == 3 && u8[pos] == 39 && u8[pos + 2] == 39) { i32[ret>>2] = u8[pos + 1]; return -1; }
   if (u8[pos] == '-'.charCodeAt(0)) { negate = -1; ++pos; --n; }
-  if (u8[pos] == '$'.charCodeAt(0)) { base = 16; ++pos; --n; }
+  // The prefixes # (decimal), $ (hex) and % (binary) set the base for this number only; the sign may follow them.
+  if (n && (u8[pos] == 36 || u8[pos] == 35 || u8[pos] == 37)) {
+    base = u8[pos] == 36 ? 16 : u8[pos] == 35 ? 10 : 2;
+    ++pos; --n;
+    if (!n) { return 0; }
+    if (!negate && u8[pos] == 45) { negate = -1; ++pos; --n; if (!n) { return 0; } }
+  }
   for (; n; --n) {
     var d = (UPPER(u8[pos]) - 48) >>> 0;
     if (d > 9) {

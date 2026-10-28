@@ -248,10 +248,46 @@ the builtins of C (forks) and smudged words; `{: a b | c -- d :}` is
 built on `(local)`, `|` locals start at 0. Tests in
 `ansi_compat_tests.fs` (posix); on the web build they were checked by
 hand (the test framework does not run there). Gerry Jackson's
-forth2012-test-suite has not been run yet. The pictured numeric output
+forth2012-test-suite was first run on 2026-10-28, see the section below. The pictured numeric output
 takes a double since 2026.10.27.2 (`#` divides by the base with three
 u/mod on half cells, `pad` is 160 bytes above `here` for the 128 digits
 of a binary double).
+
+## Forth 2012 test suite (Gerry Jackson's forth2012-test-suite) - 2026-10-28
+
+First run, and what it found. All fixed the same day:
+
+- `FIND` was ueForth's `( a n -- xt | 0 )`. The primitive is now `(FIND)`, and `FIND` is the
+  standard `( c-addr -- c-addr 0 | xt 1 | xt -1 )` (`ansi_compat.fs`).
+- Number prefixes `#` `$` `%` with a sign after them (`$-ff`), and character literals `'a'`
+  (`convert` in `common/core.h` and in `web.template.js`). `-$ff` still works.
+- `+LOOP` ended half a turn early with a large step: the test is now the signed overflow of
+  `index - limit + MIN_INT + step` (`tier2_opcodes.h`, and the Forth versions in `boot.fs`).
+- `2@` and `2!` had their cells swapped: the standard puts x2 at the address, x1 in the next
+  cell. This also fixes the initial value of a `2VALUE`. Callers that read two cells written
+  one by one got a `swap` (`esp32/optional/interrupts/timers.fs`, `sdl2_tests.fs`).
+- A file was evaluated as one single line: `SOURCE` was the whole file, so `SOURCE >IN !` (skip
+  the rest of the line, as `TESTING` of the suite does) jumped to the end of the file and the
+  rest was silently ignored. `include-file` now reads it line by line (`evaluate-lines` in
+  `including.fs`), `REFILL` gives the next line, and the words that read up to a delimiter
+  (`(`, `.(`, `s"`, `r"`, `r|`, `r~`, `{`, `{:`, `locals|`, `e:`) go on to the next lines when
+  they do not find it (`parse-more`, `parse-name-more` in `io.fs`). `evaluate` puts the input
+  back in place after an error. Not done: the web build has its own `include-file`
+  (`ports/web/utils.fs`), still one single line.
+
+To run it, in a checkout of the suite (the files `include` each other by relative name, and
+`core.fr` asks for a line of text: give it one on stdin):
+
+    printf 'hello world\n' | lugforth driver.fth
+
+with a driver that includes, by absolute path and in this order, `prelimtest.fth`, `tester.fr`,
+`core.fr`, `coreplustest.fth`, `utilities.fth`, `errorreport.fth`, one `...test.fth` of an
+optional word set, then calls `REPORT-ERRORS`.
+
+Result (each word set run by itself): Core, Core plus, Facility and Search-order: no error.
+Still failing: Core ext hangs (not looked at), Exception 2, Memory 1, String 10; Double, Locals,
+Tools, Block and File stop on a word that is not there (see above: FILE has five words
+missing, Block is not done). So Lugforth is based on Forth 2012 but does not yet pass all of it.
 
 ## DO LOOP in C - 2026-10-27
 

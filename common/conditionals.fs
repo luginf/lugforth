@@ -16,7 +16,7 @@
 
 : DEFINED? ( "name" -- xt|0 )
    begin bl parse dup 0= while 2drop refill 0= throw repeat
-   find state @ if aliteral then ; immediate
+   (find) state @ if aliteral then ; immediate
 defer [SKIP]
 : [THEN] ; immediate
 : [ELSE] [SKIP] ; immediate

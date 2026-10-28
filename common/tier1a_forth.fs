@@ -48,8 +48,9 @@
 ( Double Words )
 : 2drop ( n n -- ) drop drop ;
 : 2dup ( a b -- a b a b ) over over ;
-: 2@ ( a -- lo hi ) dup @ swap cell+ @ ;
-: 2! ( lo hi a -- ) dup >r cell+ ! r> ! ;
+\ As the standard has them: x2 is at a, x1 in the next cell.
+: 2@ ( a -- x1 x2 ) dup cell+ @ swap @ ;
+: 2! ( x1 x2 a -- ) swap over ! cell+ ! ;
 
 ( Heap Words )
 : here ( -- a ) 'sys @ ;

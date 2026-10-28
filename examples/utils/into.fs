@@ -29,13 +29,13 @@ also recognizers also internals
 
 : rec-> ( a n -- )
   s" ->" prefix? 0= if rectype-none exit then
-  find dup 0= if drop rectype-none exit then
+  (find) dup 0= if drop rectype-none exit then
   >body ['] ! rectype-to
 ; ' rec-> +recognizer
 
 : rec+-> ( a n -- )
   s" +->" prefix? 0= if rectype-none exit then
-  find dup 0= if drop rectype-none exit then
+  (find) dup 0= if drop rectype-none exit then
   >body ['] +! rectype-to
 ; ' rec+-> +recognizer
 

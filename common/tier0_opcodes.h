@@ -160,7 +160,7 @@ typedef struct {
   YV(internals, ALITERAL, COMMA(g_sys->DOLIT_XT); COMMA(tos); DROP) \
   Y(CELL, DUP; tos = sizeof(cell_t)) \
   XV(internals, "LONG-SIZE", LONG_SIZE, DUP; tos = sizeof(long)) \
-  Y(FIND, tos = find((const char *) *sp, tos); --sp) \
+  X("(FIND)", PFIND, tos = find((const char *) *sp, tos); --sp) \
   Y(PARSE, DUP; tos = parse(tos, sp)) \
   XV(internals, "S>NUMBER?", \
       CONVERT, tos = convert((const char *) *sp, tos, g_sys->base, sp); \

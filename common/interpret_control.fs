@@ -73,7 +73,7 @@ create ctl-table 32 cells allot   variable ctl-n   \ pairs: xt, delta
 : rec-ctl ( a n -- xt rectype | rectype-none )
   state @ 0= if ctl-abort then   \ a structure dropped by an error
   state @ if ctl-live? 0= if 2drop RECTYPE-NONE exit then then
-  find dup 0= if drop RECTYPE-NONE exit then
+  (find) dup 0= if drop RECTYPE-NONE exit then
   dup ctl-delta 0= if drop RECTYPE-NONE exit then
   state @ 0= if 2 <> if drop RECTYPE-NONE exit then else drop then
   RECTYPE-CTL ;

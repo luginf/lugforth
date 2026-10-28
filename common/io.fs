@@ -56,8 +56,34 @@ variable hld
 : ? ( a -- ) @ . ;
 : n. ( n -- ) base @ swap decimal 0 <# #s #> type base ! ;
 
+( A file is read one line at a time, as the standard has it: SOURCE is the current line and
+  REFILL the next. file-end is the end of the text being included, 0 for the keyboard and for
+  EVALUATE. A word that reads up to a delimiter, as a comment or a string does, goes on to the next lines
+  when it does not find the delimiter on the first one, see parse-more. )
+variable file-end
+: line-end ( a -- a' ) begin dup file-end @ < while dup c@ 10 = if exit then 1+ repeat ;
+: refill-file ( -- f )   ( the next line of the file is the input: false at the end of the file )
+  file-end @ 0= if 0 exit then
+  'tib @ #tib @ + 1+ dup file-end @ < 0= if drop 0 exit then
+  dup 'tib !  dup line-end swap - #tib !  0 >in !  -1 ;
+: extend-line ( -- f )   ( the input goes on to the end of the next line: false at the end of the file )
+  file-end @ 0= if 0 exit then
+  'tib @ #tib @ + 1+ dup file-end @ < 0= if drop 0 exit then
+  line-end 'tib @ - #tib ! -1 ;
+variable pm-start
+: parse-more ( ch -- a n )   ( as parse, but over as many lines of a file as it takes to find ch )
+  >in @ pm-start !  >r
+  begin
+    r@ parse 2dup + 'tib @ #tib @ + <
+    if rdrop exit then
+    extend-line if 2drop pm-start @ >in ! 0 else -1 then
+  until rdrop ;
+: parse-name-more ( -- a n )   ( the next name, over as many lines of a file as it takes: empty at the end )
+  begin bl parse dup 0= while 2drop extend-line 0= if 0 0 exit then repeat ;
+: (   [char] ) parse-more 2drop ; immediate
+
 ( Strings )
-: parse-quote ( -- a n ) [char] " parse ;
+: parse-quote ( -- a n ) [char] " parse-more ;
 : $place ( a n -- ) for aft dup c@ c, 1+ then next drop ;
 : zplace ( a n -- ) $place 0 c, align ;
 : $@   r@ dup cell+ swap @ r> dup @ 1+ aligned + cell+ >r ;
@@ -72,8 +98,8 @@ variable r-copy   ( set at the end of the boot: r" r| r~ then copy their text, a
   r-copy @ if postpone $@ dup , zplace exit then
   swap aliteral aliteral -1 src-ref ! ;
 : r"   parse-quote r-lit ; immediate
-: r|   [char] | parse r-lit ; immediate
-: r~   [char] ~ parse r-lit ; immediate
+: r|   [char] | parse-more r-lit ; immediate
+: r~   [char] ~ parse-more r-lit ; immediate
 : s>z ( a n -- z ) here >r zplace r> ;
 : z>s ( z -- a n ) 0 over begin dup c@ while 1+ swap 1+ swap repeat drop ;
 
@@ -120,7 +146,8 @@ create input-buffer   input-limit allot
 : tib-setup   input-buffer 'tib ! ;
 ( A platform can replace the line editor, see common/lineedit.fs )
 defer edit-accept   ' accept is edit-accept
-: refill   tib-setup tib input-limit edit-accept #tib ! 0 >in ! -1 ;
+: refill   refill-file if -1 exit then   file-end @ if 0 exit then
+         tib-setup tib input-limit edit-accept #tib ! 0 >in ! -1 ;
 
 ( Stack Guards )
 sp0 'stack-cells @ 2 3 */ cells + constant sp-limit
@@ -130,16 +157,18 @@ sp0 'stack-cells @ 2 3 */ cells + constant sp-limit
 ( REPL )
 : default-prompt   ."  ok" cr raw.s ;  ' default-prompt is prompt
 : evaluate-buffer   begin >in @ #tib @ < while ?stack +evaluate1 repeat ?stack ;
-: evaluate ( a n -- ) 'tib @ >r #tib @ >r >in @ >r
-                      #tib ! 'tib ! 0 >in ! evaluate-buffer
-                      r> >in ! r> #tib ! r> 'tib ! ;
+: evaluate ( a n -- ) 'tib @ >r #tib @ >r >in @ >r file-end @ >r
+                      0 file-end ! #tib ! 'tib ! 0 >in !
+                      ['] evaluate-buffer catch
+                      r> file-end ! r> >in ! r> #tib ! r> 'tib !   \ the input back in place, after an error too
+                      throw ;
 : evaluate&fill
    begin >in @ #tib @ >= if prompt refill drop then evaluate-buffer again ;
 variable thrown
 : quit
    #tib @ >in !
    begin ['] evaluate&fill catch dup thrown !
-         if 0 state ! sp0 sp! fp0 fp! rp0 rp!
+         if 0 state ! 0 file-end ! sp0 sp! fp0 fp! rp0 rp!
             thrown @ -28 = 0= if ."  ERROR " cr then   \ -28: stopped from the pager
          then
    again ;

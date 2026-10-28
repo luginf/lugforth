@@ -40,6 +40,13 @@ internals definitions
 : sourcefilename! ( a n -- ) to sourcefilename# to sourcefilename& ;
 : sourcedirname ( -- a n ) sourcefilename dirname ;
 
+: run-lines   begin refill-file while evaluate-buffer repeat ;
+: evaluate-lines ( a n -- )   ( the text a n, one line at a time: SOURCE is the line being read )
+   'tib @ >r #tib @ >r >in @ >r file-end @ >r
+   over + file-end !  1- 'tib !  0 #tib !
+   ['] run-lines catch
+   r> file-end ! r> >in ! r> #tib ! r> 'tib !  throw ;
+
 : include-file ( fh -- )
    dup file-size throw
    dup allocate throw
@@ -47,7 +54,7 @@ internals definitions
    rot read-file throw
    r@ swap
    src-ref @ >r  0 src-ref !
-   evaluate
+   evaluate-lines
    src-ref @ r> src-ref !
    r> swap if drop else free throw then ;   ( an r| r~ r" string points into the text: keep it )
 

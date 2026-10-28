@@ -47,8 +47,16 @@ static cell_t convert(const char *pos, cell_t n, cell_t base, cell_t *ret) {
   *ret = 0;
   cell_t negate = 0;
   if (!n) { return 0; }
+  // 'c' is the code of a character.
+  if (n == 3 && pos[0] == '\'' && pos[2] == '\'') { *ret = (unsigned char) pos[1]; return -1; }
   if (*pos == '-') { negate = -1; ++pos; --n; }
-  if (*pos == '$') { base = 16; ++pos; --n; }
+  // The prefixes # (decimal), $ (hex) and % (binary) set the base for this number only; the sign may follow them.
+  if (n && (*pos == '$' || *pos == '#' || *pos == '%')) {
+    base = *pos == '$' ? 16 : *pos == '#' ? 10 : 2;
+    ++pos; --n;
+    if (!n) { return 0; }
+    if (!negate && *pos == '-') { negate = -1; ++pos; --n; if (!n) { return 0; } }
+  }
   for (; n; --n) {
     uintptr_t d = UPPER(*pos) - '0';
     if (d > 9) {

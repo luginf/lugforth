@@ -75,6 +75,14 @@ e: check-boot
   out: z" 
   out: ." 
   out: s" 
+  out: ( 
+  out: parse-name-more 
+  out: parse-more 
+  out: pm-start 
+  out: extend-line 
+  out: refill-file 
+  out: line-end 
+  out: file-end 
   out: n. 
   out: ? 
   out: . 
@@ -264,7 +272,7 @@ e: check-tier0-opcodes
   out: R@ 
   out: EXECUTE 
   out: CELL 
-  out: FIND 
+  out: (FIND) 
   out: PARSE 
   out: CREATE 
   out: VARIABLE 
@@ -528,6 +536,7 @@ e: check-ansi-compat
   out: traverse-wordlist 
   out: nr> 
   out: n>r 
+  out: find 
   out: synonym 
   out: name>compile 
   out: name>interpret 

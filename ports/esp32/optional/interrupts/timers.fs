@@ -35,10 +35,10 @@ transfer timers-builtins
 : t>nx ( t -- n x ) dup 2/ 1 and swap 1 and ;
 
 create tmp 2 cells allot
-: timer@ ( t -- lo hi ) t>nx tmp timer_get_counter_value throw tmp 2@ ;
-: timer! ( lo hi t -- ) >r tmp 2! r> t>nx tmp timer_set_counter_value throw ;
-: alarm@ ( t -- lo hi ) t>nx tmp timer_get_alarm_value throw tmp 2@ ;
-: alarm! ( lo hi t -- ) >r tmp 2! r> t>nx tmp timer_set_alarm_value throw ;
+: timer@ ( t -- lo hi ) t>nx tmp timer_get_counter_value throw tmp 2@ swap ;
+: timer! ( lo hi t -- ) >r swap tmp 2! r> t>nx tmp timer_set_counter_value throw ;
+: alarm@ ( t -- lo hi ) t>nx tmp timer_get_alarm_value throw tmp 2@ swap ;
+: alarm! ( lo hi t -- ) >r swap tmp 2! r> t>nx tmp timer_set_alarm_value throw ;
 
 : enable! ( v t )
    swap >r t>nx r> if timer_start else timer_pause then throw ;

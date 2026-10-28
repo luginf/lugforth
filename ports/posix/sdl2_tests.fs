@@ -316,7 +316,7 @@ create got 64 cells allot   0 value ngot
 : test-play-volume
   beep-volume@ { keep }  s" v0 c" song  beep-volume@ 0 =assert  s" v15" song  beep-volume@ 6000 =assert
   keep beep-volume ;
-: vnote@ ( v k -- freq ms ) p-slot 2@ ;
+: vnote@ ( v k -- freq ms ) p-slot 2@ swap ;
 : test-play-voices
   4 to p-oct  4 to p-len  120 to p-tempo
   s" c d, o3 g2 w2 e, v8 c, r" p-parse

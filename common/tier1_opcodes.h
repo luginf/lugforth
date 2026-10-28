@@ -51,9 +51,9 @@
   X("2drop", TWODROP, NIP; DROP) \
   X("2dup", TWODUP, DUP; tos = sp[-1]; DUP; tos = sp[-1]) \
   X("3dup", THREEDUP, sp += 3; sp[-2] = tos; sp[-1] = sp[-4]; *sp = sp[-3]) \
-  X("2@", TWOAT, DUP; *sp = *(cell_t *) tos; tos = ((cell_t *) tos)[1]) \
-  X("2!", TWOSTORE, *(cell_t *) tos = sp[-1]; \
-      ((cell_t *) tos)[1] = *sp; sp -= 2; DROP) \
+  X("2@", TWOAT, DUP; *sp = ((cell_t *) tos)[1]; tos = *(cell_t *) tos) \
+  X("2!", TWOSTORE, *(cell_t *) tos = *sp; \
+      ((cell_t *) tos)[1] = sp[-1]; sp -= 2; DROP) \
   Y(cmove, memmove((void *) *sp, (void *) sp[-1], tos); sp -= 2; DROP) \
   X("cmove>", cmove2, memmove((void *) *sp, (void *) sp[-1], tos); sp -= 2; DROP) \
   Y(fill, memset((void *) sp[-1], tos, *sp); sp -= 2; DROP) \

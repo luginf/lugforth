@@ -19,8 +19,13 @@ also ansi also internals
 create expect-buffer expect-limit allot
 create result-buffer expect-limit allot
 variable expect-used   variable result-used
-: till;e ( -- n )
-   begin >in @ bl parse dup 0= >r s" ;e" str= r> or if exit then drop again ;
+: till;e ( -- n )   ( the offset after the word before the ;e that ends the test, over as many lines as it takes )
+   >in @
+   begin
+      bl parse
+      dup 0= if 2drop extend-line 0= if exit then
+             else s" ;e" str= if exit then drop >in @ then
+   again ;
 : e: ( "name" -- ) create >in @
    till;e over - swap tib + swap dup , $place
    does> dup cell+ swap @ evaluate ;
