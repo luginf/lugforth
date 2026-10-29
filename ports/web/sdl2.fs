@@ -17,7 +17,7 @@
 \ Same words and stack effects as ports/posix/sdl2.fs, so a game written with
 \ the short words (see examples/games/sdl2_breakout.fs) runs unchanged in both.
 \ Only the short words exist here, not the raw SDL_ names nor sdl2-image,
-\ sdl2-ttf and sdl2-mixer. See docs/SDL2-web.md.
+\ sdl2-ttf and sdl2-mixer. See docs/en/SDL2-web.md.
 \ NOTE: the block below is a string, so it must not contain a vertical bar,
 \ in Forth or in the JavaScript (write a ternary instead of a logical or).
 \ A tilde ends each JavaScript part.

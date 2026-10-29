@@ -2,7 +2,7 @@
 
 What a person or an agent working on Lugforth should read before
 touching the code. The rules of work (branches, commits, version) are in
-[CLAUDE.md](../../CLAUDE.md) at the root of the repository.
+[CLAUDE.md](../../../CLAUDE.md) at the root of the repository.
 
 | file | what |
 |---|---|
@@ -13,6 +13,6 @@ touching the code. The rules of work (branches, commits, version) are in
 | [IDEAS.md](IDEAS.md) | open questions (ideas left), ideas left, other Forths |
 
 For users: [MANUAL.md](../MANUAL.md) (tutorial and reference),
-[WORDS.md](../WORDS.md) (every word), [docs/pages](../pages) (the
-website), [attic/oldsite](../../attic/oldsite/README.md) (the pages
+[WORDS.md](../WORDS.md) (every word), [docs/pages](../../pages) (the
+website), [attic/oldsite](../../../attic/oldsite/README.md) (the pages
 inherited from uEforth).

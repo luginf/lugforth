@@ -1,8 +1,9 @@
 # Manuel de Lugforth
 
-*Traduction française de [MANUAL.md](MANUAL_fr.md) (la version anglaise
-fait foi). La liste des mots, [WORDS.md](../WORDS.md), reste en anglais:
-elle est générée à partir des interpréteurs.*
+*Traduction française de [docs/en/MANUAL.md](../en/MANUAL.md) (la
+version anglaise fait foi). La liste des mots,
+[WORDS.md](../en/WORDS.md), reste en anglais: elle est générée à partir
+des interpréteurs.*
 
 ## Objectif
 
@@ -17,8 +18,8 @@ on l'emporte sur une autre cible.
 Deux parties. **Apprendre** est un tutoriel: commencez au chapitre 1 et
 tapez chaque exemple. **Référence** détaille Lugforth lui-même
 (binaires, éditeurs, exemples, ports, compilation). Référence des mots:
-[docs/WORDS.md](../WORDS.md). Pièges:
-[docs/dev/PITFALLS.md](dev/PITFALLS_fr.md).
+[docs/en/WORDS.md](../en/WORDS.md). Pièges:
+[docs/en/dev/PITFALLS.md](dev/PITFALLS_fr.md).
 
 **Apprendre** [1 Premiers pas](#1-premiers-pas) - [2 La
 pile](#2-la-pile) - [3 Nouveaux mots](#3-nouveaux-mots) - [4
@@ -51,7 +52,7 @@ Lancez `lugforth` (voir [Binaires](#binaires), ou compilez-le avec
 `ninja posix`). Vous obtenez une bannière et l'invite:
 
 ```
-Lugforth v2026.10.28.5
+Lugforth v2026.10.29.4
 :; ===========>/>
 type 'info' for help
  ok
@@ -550,7 +551,7 @@ habitudes font gagner des heures:
 * `see mot` montre ce qui a réellement été compilé.
 * Un mot qui laisse la pile modifiée, ou qui prend plus qu'il ne
   devrait, est la cause de la plupart des bogues.
-* Plus de pièges dans [docs/dev/PITFALLS.md](dev/PITFALLS_fr.md).
+* Plus de pièges dans [docs/en/dev/PITFALLS.md](dev/PITFALLS_fr.md).
 
 ## 10. Trois petits programmes
 
@@ -610,7 +611,7 @@ Lugforth Lugforth Lugforth  ok
 `sdl2_breakout.fs` ([Exemples](#exemples)). `ed` et `writhdeck` sont
 aussi écrits en Forth, dans `ports/posix/`: les lire montre les mêmes
 mots à plus grande échelle. Pour le reste du langage,
-[docs/WORDS.md](../WORDS.md) liste chaque mot avec une courte
+[docs/en/WORDS.md](../en/WORDS.md) liste chaque mot avec une courte
 description. Pour aller plus loin, les livres classiques sont *Starting
 Forth* et *Thinking Forth* de Leo Brodie, tous deux libres en ligne.
 

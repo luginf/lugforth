@@ -19,7 +19,7 @@
     python3 tools/make_pages.py
 
 Needs pandoc. The pages come from the Markdown files of the repository
-(docs/WORDS.md, ports/posix/SDL2*.md, README files, NOTICE) plus
+(docs/en/WORDS.md, ports/posix/SDL2*.md, README files, NOTICE) plus
 docs/pages/index.md and the "new words" page computed by tools/words_added.py.
 """
 
@@ -40,8 +40,8 @@ NAV = [('index.html', 'Home'), ('demo/terminal.html', 'Try it'),
 # page file -> (title, source Markdown files; several are joined)
 PAGES = {
   'index.html': ('Lugforth', ['docs/pages/index.md']),
-  'words.html': ('Words', ['docs/WORDS.md']),
-  'sdl2.html': ('SDL2 graphics and sound', ['docs/SDL2.md', 'docs/SDL2-words.md', 'docs/SDL2-web.md']),
+  'words.html': ('Words', ['docs/en/WORDS.md']),
+  'sdl2.html': ('SDL2 graphics and sound', ['docs/en/SDL2.md', 'docs/en/SDL2-words.md', 'docs/en/SDL2-web.md']),
   'ports.html': ('Ports', ['docs/pages/ports.md', 'ports/android/README.md', 'ports/gba/README.md']),
   'examples.html': ('Examples', ['examples/README.md']),
   'credits.html': ('Credits', ['NOTICE']),
@@ -49,8 +49,8 @@ PAGES = {
 SITE_PAGES = set(['index.html', 'words.html', 'new-words.html', 'sdl2.html', 'ports.html',
                   'examples.html', 'credits.html'])
 # Markdown sources that have a page: links to them stay on the site
-LINKS = {'docs/WORDS.md': 'words.html', 'WORDS.md': 'words.html',
-         'docs/SDL2-words.md': 'sdl2.html', 'docs/SDL2.md': 'sdl2.html', 'docs/SDL2-web.md': 'sdl2.html',
+LINKS = {'docs/en/WORDS.md': 'words.html', 'WORDS.md': 'words.html',
+         'docs/en/SDL2-words.md': 'sdl2.html', 'docs/en/SDL2.md': 'sdl2.html', 'docs/en/SDL2-web.md': 'sdl2.html',
          'README.md': 'index.html', 'NOTICE': 'credits.html'}
 
 
@@ -92,7 +92,7 @@ Apache License 2.0.</footer></body></html>
 def new_words_md():
   """The page of the words Lugforth added, with the descriptions of WORDS.md."""
   desc = {}
-  for line in open(ROOT + 'docs/WORDS.md', encoding='utf-8'):
+  for line in open(ROOT + 'docs/en/WORDS.md', encoding='utf-8'):
     cells = [c.strip() for c in line.strip().strip('|').split('|')]
     if len(cells) >= 3 and cells[0].startswith('`') and cells[0].endswith('`'):
       desc.setdefault(cells[0].strip('`').lower(), (cells[1], cells[2]))
@@ -129,7 +129,7 @@ def main():
       parts.append(fix_links(page, src, pandoc(open(path, encoding='utf-8').read())))
     open(OUT + page, 'w', encoding='utf-8').write(layout(page, title, '\n<hr>\n'.join(parts)))
   open(OUT + 'new-words.html', 'w', encoding='utf-8').write(
-      layout('new-words.html', 'New words', fix_links('new-words.html', 'docs/WORDS.md',
+      layout('new-words.html', 'New words', fix_links('new-words.html', 'docs/en/WORDS.md',
                                                      pandoc(new_words_md()))))
   # the web version, with its games
   demo = ROOT + 'out/web/'

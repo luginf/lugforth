@@ -38,7 +38,7 @@ if MUSL_ENABLED:
               '$dst/posix/lugforth-static', '$src/editors/writhdeck_tests.fs'),
   ]))
 
-  # lugforth-static-sdl: the same with SDL2 and X11 linked in (no sound, no TrueType: see docs/dev/PORTS.md).
+  # lugforth-static-sdl: the same with SDL2 and X11 linked in (no sound, no TrueType: see docs/en/dev/PORTS.md).
   # ninja posix-static-sdl builds SDL2 and the X11 libraries against musl first (tools/build_musl_sdl.sh, needs curl,
   # cmake and the network the first time), then links.
   StaticSyms('$dst/gen/static_syms_sdl.h', flags='--sdl', implicit=['$src/tools/static_syms.py'])

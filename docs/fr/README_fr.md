@@ -9,4 +9,4 @@ racine):
 - [index.md](index_fr.md), [ports.md](ports_fr.md): pages d'accueil et
   des ports du site
 - [dev/](dev/README_fr.md): notes pour les développeurs
-- [WORDS.md](../WORDS.md): liste des mots, générée, en anglais
+- [WORDS.md](../en/WORDS.md): liste des mots, générée, en anglais

@@ -68,7 +68,7 @@ flickers: mode 3 is a single framebuffer.
   written with `h!`/`h@`.
 * The platform file must define `ok` itself: `common/fini.fs` runs it last.
 
-## Pitfalls met while porting (more in `docs/dev/PITFALLS.md`)
+## Pitfalls met while porting (more in `docs/en/dev/PITFALLS.md`)
 
 * `crt0.s` must copy `.data` to RAM as well as clear `.bss`. Missing, newlib's
   state was garbage and the screen stayed white.

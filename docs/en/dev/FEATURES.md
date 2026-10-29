@@ -1,13 +1,13 @@
 # Features and examples: what exists and how it was tested
 
 Editors, SDL2 words, games and ports of examples, with what was and was
-not checked. Part of [README.md](../../README.md).
+not checked. Part of [README.md](../../../README.md).
 
 ## SDL2 multimedia
 
 Short game-oriented words on top of libSDL2, for the POSIX build and
-(same source, same words) the web build. Full docs: `docs/SDL2.md`,
-`docs/SDL2-words.md` (every word), `docs/SDL2-web.md`. Examples:
+(same source, same words) the web build. Full docs: `docs/en/SDL2.md`,
+`docs/en/SDL2-words.md` (every word), `docs/en/SDL2-web.md`. Examples:
 `examples/graphics/sdl2_demo.fs`, `examples/games/sdl2_breakout.fs` and
 `examples/music/sdl2_drums.fs` (a 16 step drum machine); these two also
 run unchanged in the browser through `ports/web/sdl2_breakout.html` and
@@ -248,82 +248,104 @@ the builtins of C (forks) and smudged words; `{: a b | c -- d :}` is
 built on `(local)`, `|` locals start at 0. Tests in
 `ansi_compat_tests.fs` (posix); on the web build they were checked by
 hand (the test framework does not run there). Gerry Jackson's
-forth2012-test-suite was first run on 2026-10-28, see the section below. The pictured numeric output
-takes a double since 2026.10.27.2 (`#` divides by the base with three
-u/mod on half cells, `pad` is 160 bytes above `here` for the 128 digits
-of a binary double).
+forth2012-test-suite was first run on 2026-10-28, see the section below.
+The pictured numeric output takes a double since 2026.10.27.2 (`#`
+divides by the base with three u/mod on half cells, `pad` is 160 bytes
+above `here` for the 128 digits of a binary double).
 
 ## Forth 2012 test suite (Gerry Jackson's forth2012-test-suite) - 2026-10-28
 
 First run, and what it found. All fixed the same day:
 
-- `FIND` was ueForth's `( a n -- xt | 0 )`. The primitive is now `(FIND)`, and `FIND` is the
-  standard `( c-addr -- c-addr 0 | xt 1 | xt -1 )` (`ansi_compat.fs`).
-- Number prefixes `#` `$` `%` with a sign after them (`$-ff`), and character literals `'a'`
-  (`convert` in `common/core.h` and in `web.template.js`). `-$ff` still works.
-- `+LOOP` ended half a turn early with a large step: the test is now the signed overflow of
-  `index - limit + MIN_INT + step` (`tier2_opcodes.h`, and the Forth versions in `boot.fs`).
-- `2@` and `2!` had their cells swapped: the standard puts x2 at the address, x1 in the next
-  cell. This also fixes the initial value of a `2VALUE`. Callers that read two cells written
-  one by one got a `swap` (`esp32/optional/interrupts/timers.fs`, `sdl2_tests.fs`).
-- A file was evaluated as one single line: `SOURCE` was the whole file, so `SOURCE >IN !` (skip
-  the rest of the line, as `TESTING` of the suite does) jumped to the end of the file and the
-  rest was silently ignored. `include-file` now reads it line by line (`evaluate-lines` in
-  `including.fs`), `REFILL` gives the next line, and the words that read up to a delimiter
-  (`(`, `.(`, `s"`, `r"`, `r|`, `r~`, `{`, `{:`, `locals|`, `e:`) go on to the next lines when
-  they do not find it (`parse-more`, `parse-name-more` in `io.fs`). `evaluate` puts the input
-  back in place after an error. Not done: the web build has its own `include-file`
-  (`ports/web/utils.fs`), still one single line.
+- `FIND` was ueForth's `( a n -- xt | 0 )`. The primitive is now
+  `(FIND)`, and `FIND` is the standard
+  `( c-addr -- c-addr 0 | xt 1 | xt -1 )` (`ansi_compat.fs`).
+- Number prefixes `#` `$` `%` with a sign after them (`$-ff`), and
+  character literals `'a'` (`convert` in `common/core.h` and in
+  `web.template.js`). `-$ff` still works.
+- `+LOOP` ended half a turn early with a large step: the test is now the
+  signed overflow of `index - limit + MIN_INT + step`
+  (`tier2_opcodes.h`, and the Forth versions in `boot.fs`).
+- `2@` and `2!` had their cells swapped: the standard puts x2 at the
+  address, x1 in the next cell. This also fixes the initial value of a
+  `2VALUE`. Callers that read two cells written one by one got a `swap`
+  (`esp32/optional/interrupts/timers.fs`, `sdl2_tests.fs`).
+- A file was evaluated as one single line: `SOURCE` was the whole file,
+  so `SOURCE >IN !` (skip the rest of the line, as `TESTING` of the
+  suite does) jumped to the end of the file and the rest was silently
+  ignored. `include-file` now reads it line by line (`evaluate-lines` in
+  `including.fs`), `REFILL` gives the next line, and the words that read
+  up to a delimiter (`(`, `.(`, `s"`, `r"`, `r|`, `r~`, `{`, `{:`,
+  `locals|`, `e:`) go on to the next lines when they do not find it
+  (`parse-more`, `parse-name-more` in `io.fs`). `evaluate` puts the
+  input back in place after an error. Not done: the web build has its
+  own `include-file` (`ports/web/utils.fs`), still one single line.
 
 Second round (2026-10-28, version .2), all the word sets:
 
-- Files: `READ-LINE`, `WRITE-LINE`, `FILE-STATUS`, `REQUIRE`, public `INCLUDE-FILE` (the old
-  internal one is `include-fid`), `SOURCE-ID` gives the file id while a file is included.
-  `FILE-SIZE`, `FILE-POSITION`, `REPOSITION-FILE` and `RESIZE-FILE` take and give a double cell
-  number as the standard has it (`common/fileops.fs`, loaded before the first user of them; the
-  ports keep their single cell primitives). The callers in the editors, the examples, `blocks.fs`
-  and the gforth port were changed (`d>s`, `s>d`).
-- The file words no longer move `PAD`: `s>zt` is `s>z` that gives `here` back (the suite fills
-  `PAD`, opens a file and compares). `rename-file` keeps its first name with `s>z`.
-- The POSIX file words give the error of `close`, `fsync`, `unlink`, `rename` and `ftruncate`
-  (an `int` is sign extended first: `-1` was not negative on 64 bits).
-- `ABORT"` was unconditional: it now takes a flag. An undefined word throws -13 (it was -1).
-- `CMOVE` copies from the low end and `CMOVE>` from the high end, one character at a time, so
-  that overlapping regions give the standard result (`cmove_up` and `cmove_down` in `core.h`,
-  and in `web.template.js`). `RESIZE` leaves the old block as it was when it fails.
-- `1.` `-$ff.`: a number with a point at the end is a double (`REC-DNUM`, ansi_compat.fs).
-  `M*/` rounds as `/` does, down.
-- `SUBSTITUTE`: names are compared without the case, as the words are, and a source that
-  overlaps the destination gives a negative count. `REPLACES` keeps a zero length text.
-- Blocks: `BLK`; `LOAD` sets it, `EVALUATE` clears it; `\` in a block goes to the end of the
-  64 character line; `REFILL` goes on to the next block; `SAVE-INPUT` gives 4 values and
-  `RESTORE-INPUT` reads the block again; `EMPTY-BUFFERS` forgets the update.
-- `[DEFINED]` and `[UNDEFINED]` leave the flag in any state, `[IF]` works inside a definition,
-  `DOES>` ends the locals of the defining part, `#LOCALS` gives 16, the locals area holds 19.
-- A regression found by running the web build under node: the Forth `LOOP` and `+LOOP` of the
-  web build used `-1 1 rshift`, and the web `rshift` is arithmetic, so no loop ended. MIN_INT is
-  now `1 cells 8 * 1- 1 swap lshift`. Check `ninja web` and a `do loop` after a change there.
+- Files: `READ-LINE`, `WRITE-LINE`, `FILE-STATUS`, `REQUIRE`, public
+  `INCLUDE-FILE` (the old internal one is `include-fid`), `SOURCE-ID`
+  gives the file id while a file is included. `FILE-SIZE`,
+  `FILE-POSITION`, `REPOSITION-FILE` and `RESIZE-FILE` take and give a
+  double cell number as the standard has it (`common/fileops.fs`, loaded
+  before the first user of them; the ports keep their single cell
+  primitives). The callers in the editors, the examples, `blocks.fs` and
+  the gforth port were changed (`d>s`, `s>d`).
+- The file words no longer move `PAD`: `s>zt` is `s>z` that gives `here`
+  back (the suite fills `PAD`, opens a file and compares). `rename-file`
+  keeps its first name with `s>z`.
+- The POSIX file words give the error of `close`, `fsync`, `unlink`,
+  `rename` and `ftruncate` (an `int` is sign extended first: `-1` was
+  not negative on 64 bits).
+- `ABORT"` was unconditional: it now takes a flag. An undefined word
+  throws -13 (it was -1).
+- `CMOVE` copies from the low end and `CMOVE>` from the high end, one
+  character at a time, so that overlapping regions give the standard
+  result (`cmove_up` and `cmove_down` in `core.h`, and in
+  `web.template.js`). `RESIZE` leaves the old block as it was when it
+  fails.
+- `1.` `-$ff.`: a number with a point at the end is a double
+  (`REC-DNUM`, ansi_compat.fs). `M*/` rounds as `/` does, down.
+- `SUBSTITUTE`: names are compared without the case, as the words are,
+  and a source that overlaps the destination gives a negative count.
+  `REPLACES` keeps a zero length text.
+- Blocks: `BLK`; `LOAD` sets it, `EVALUATE` clears it; `\` in a block
+  goes to the end of the 64 character line; `REFILL` goes on to the next
+  block; `SAVE-INPUT` gives 4 values and `RESTORE-INPUT` reads the block
+  again; `EMPTY-BUFFERS` forgets the update.
+- `[DEFINED]` and `[UNDEFINED]` leave the flag in any state, `[IF]`
+  works inside a definition, `DOES>` ends the locals of the defining
+  part, `#LOCALS` gives 16, the locals area holds 19.
+- A regression found by running the web build under node: the Forth
+  `LOOP` and `+LOOP` of the web build used `-1 1 rshift`, and the web
+  `rshift` is arithmetic, so no loop ended. MIN_INT is now
+  `1 cells 8 * 1- 1 swap lshift`. Check `ninja web` and a `do loop`
+  after a change there.
 
-`ninja forth2012` runs it (`tools/forth2012_test.py`: the suite is taken from `$F2012_DIR` or cloned
-into `out/forth2012-suite`; it fails when a word set has an error or a file is aborted). By hand,
-in a checkout of the suite (the files `include` each other by relative name, and
+`ninja forth2012` runs it (`tools/forth2012_test.py`: the suite is taken
+from `$F2012_DIR` or cloned into `out/forth2012-suite`; it fails when a
+word set has an error or a file is aborted). By hand, in a checkout of
+the suite (the files `include` each other by relative name, and
 `core.fr` asks for a line of text: give it one on stdin):
 
     printf 'hello world\n' | lugforth driver.fth
 
-with a driver that includes, by absolute path and in the order of the suite's `runtests.fth`,
-`prelimtest.fth`, `tester.fr`, `core.fr`, `coreplustest.fth`, `utilities.fth`, `errorreport.fth`,
-then the `...test.fth` of the word sets (`coreexttest.fth` before `filetest.fth`: it defines
-`SI_INC`), then calls `REPORT-ERRORS`.
+with a driver that includes, by absolute path and in the order of the
+suite's `runtests.fth`, `prelimtest.fth`, `tester.fr`, `core.fr`,
+`coreplustest.fth`, `utilities.fth`, `errorreport.fth`, then the
+`...test.fth` of the word sets (`coreexttest.fth` before `filetest.fth`:
+it defines `SI_INC`), then calls `REPORT-ERRORS`.
 
-Result: all the word sets run by the driver pass (Core, Core extension, Block, Double,
-Exception, Facility, File-access, Locals, Memory-allocation, Programming-tools, Search-order,
-String): 0 errors. The floating point sets (`fp/`) were not run.
+Result: all the word sets run by the driver pass (Core, Core extension,
+Block, Double, Exception, Facility, File-access, Locals,
+Memory-allocation, Programming-tools, Search-order, String): 0 errors.
+The floating point sets (`fp/`) were not run.
 
-For the comparison: pforth (upstream, 64 bit) passes Core and Facility, stops on `BUFFER:`,
-`{:`, `UNESCAPE`, `CS-PICK`, `BLOCK` and `REQUIRED`, and crashes on Double, Exception and
-Search-order. gforth 0.7.9 passes everything but 2 tests of String (a zero length
-substitution: the names of `REPLACES` are case sensitive there), and Search-order needs
+For the comparison: pforth (upstream, 64 bit) passes Core and Facility,
+stops on `BUFFER:`, `{:`, `UNESCAPE`, `CS-PICK`, `BLOCK` and `REQUIRED`,
+and crashes on Double, Exception and Search-order. gforth 0.7.9 passes
+everything but 2 tests of String (a zero length substitution: the names
+of `REPLACES` are case sensitive there), and Search-order needs
 `FORTH-WORDLIST SET-CURRENT` first.
 
 ## DO LOOP in C - 2026-10-27
@@ -480,7 +502,13 @@ file may be edited by hand. The project folder is found by looking for
 copy, new folder in the file manager (needs a text field), mouse
 selection in terminal windows.
 
-`examples/utils/desktop_bm.fs`: the same idea for the bare-metal PC and Pi (no libSDL2 there): icons, draggable windows (file manager, settings with the mouse speed saved in lugforth.ini) with the short sdl2 words, runs `.fs`, Z-machine stories, `writhdeck` and `ed` (they take the screen, a key brings the desktop back). Tested under QEMU with the keyboard (2026-10-27); the mouse is the one of the sdl2 words (software arrow), never felt under OVMF.
+`examples/utils/desktop_bm.fs`: the same idea for the bare-metal PC and
+Pi (no libSDL2 there): icons, draggable windows (file manager, settings
+with the mouse speed saved in lugforth.ini) with the short sdl2 words,
+runs `.fs`, Z-machine stories, `writhdeck` and `ed` (they take the
+screen, a key brings the desktop back). Tested under QEMU with the
+keyboard (2026-10-27); the mouse is the one of the sdl2 words (software
+arrow), never felt under OVMF.
 
 ## Unicode in the console window (`lugforth --gui`)
 

@@ -1,7 +1,7 @@
 # Architecture, build and tests
 
 How the interpreter is built and tested. Part of the notes for
-developers (and for Claude): see [README.md](../../README.md).
+developers (and for Claude): see [README.md](../../../README.md).
 
 ## Overview
 
@@ -9,7 +9,11 @@ developers (and for Claude): see [README.md](../../README.md).
 minimalist C kernel. It targets multiple platforms: POSIX/Linux, ESP32
 (Arduino), pico-ice, Web (WASM/JS), and Windows.
 
-[WORDS.md](../WORDS.md) is a generated reference of the words of the `forth` vocabulary and the other Linux/web vocabularies, with stack effects and descriptions where known (`tools/words_reference.py`, run it again after adding words). SDL2 words have their own reference, [docs/SDL2-words.md](../../docs/SDL2-words.md).
+[WORDS.md](../WORDS.md) is a generated reference of the words of the
+`forth` vocabulary and the other Linux/web vocabularies, with stack
+effects and descriptions where known (`tools/words_reference.py`, run it
+again after adding words). SDL2 words have their own reference,
+[docs/en/SDL2-words.md](../SDL2-words.md).
 
 ## Build System
 
@@ -135,4 +139,4 @@ executing `interp forth test` and capturing output to `target`.
 - `tools/` — build-time Python scripts
 - `docs/pages/` — the GitHub Pages site (Markdown, built by
   `tools/make_pages.py`); `attic/oldsite/` — the documentation website
-  inherited from uEforth (see its README); `docs/dev/` — these notes
+  inherited from uEforth (see its README); `docs/en/dev/` — these notes

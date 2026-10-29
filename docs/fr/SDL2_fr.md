@@ -1,7 +1,7 @@
 # SDL2 pour la version POSIX
 
-*Traduction française de [SDL2.md](SDL2_fr.md) (la version anglaise fait
-foi).*
+*Traduction française de [docs/en/SDL2.md](../en/SDL2.md) (la version
+anglaise fait foi).*
 
 Fenêtres, dessin, clavier, souris, images, texte et son pour les jeux,
 grâce aux bibliothèques partagées de SDL2. Rien n'est lié dans

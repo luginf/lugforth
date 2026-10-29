@@ -13,8 +13,8 @@ target.
 Two parts. **Learn** is a tutorial: start at chapter 1 and type every
 example. **Reference** has the details of Lugforth itself (binaries,
 editors, examples, ports, building). Word reference:
-[docs/WORDS.md](WORDS.md). Pitfalls:
-[docs/dev/PITFALLS.md](dev/PITFALLS.md).
+[docs/en/WORDS.md](WORDS.md). Pitfalls:
+[docs/en/dev/PITFALLS.md](dev/PITFALLS.md).
 
 **Learn** [1 First steps](#1-first-steps) - [2 The
 stack](#2-the-stack) - [3 New words](#3-new-words) - [4
@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.10.28.5
+Lugforth v2026.10.29.4
 :; ===========>/>
 type 'info' for help
  ok
@@ -524,7 +524,7 @@ few habits save hours:
 * `see word` shows what was really compiled.
 * A word that leaves the stack changed, or takes more than it should, is
   the cause of most bugs.
-* More traps in [docs/dev/PITFALLS.md](dev/PITFALLS.md).
+* More traps in [docs/en/dev/PITFALLS.md](dev/PITFALLS.md).
 
 ## 10. Three small programs
 
@@ -582,9 +582,9 @@ of every word, [SDL2-web.md](SDL2-web.md) the web build): read
 `sdl2_breakout.fs` ([Examples](#examples)). `ed` and `writhdeck` are
 written in Forth too, in `ports/posix/`: reading them shows the same
 words at a larger scale. For the rest of the language,
-[docs/WORDS.md](WORDS.md) lists every word with a short description. To
-go deeper, the classic books are *Starting Forth* and *Thinking Forth*
-by Leo Brodie, both free online.
+[docs/en/WORDS.md](WORDS.md) lists every word with a short description.
+To go deeper, the classic books are *Starting Forth* and *Thinking
+Forth* by Leo Brodie, both free online.
 
 ## Answers to the exercises
 
@@ -927,7 +927,7 @@ status_right  = goal help_bar
 ## Examples
 
 `examples/` has games, benchmarks and demos; see
-[examples/README.md](../examples/README.md).
+[examples/README.md](../../examples/README.md).
 
 | Program | What |
 |---|---|
@@ -947,7 +947,7 @@ Marc Petremann ([eForth
 Windows](https://github.com/MPETREMANN11/eForth-Windows), GPL); tetris,
 snake and minesweeper follow [r3forth](https://github.com/phreda4/r3) by
 Pablo Hugo Reda (MIT, the Lugforth code is rewritten). The rest of the
-repository is Apache 2.0. See [NOTICE](../NOTICE).
+repository is Apache 2.0. See [NOTICE](../../NOTICE).
 
 Tests: `make -C examples test-ports` runs the logic tests,
 `make -C examples smoke` loads every SDL2 example headless.
@@ -1011,7 +1011,7 @@ make -C ports/rpi test                  # boots both machines and checks 121 thi
 ```
 
 What works where, what is tested, what needs a real board:
-[ports/rpi/README.md](../ports/rpi/README.md).
+[ports/rpi/README.md](../../ports/rpi/README.md).
 
 ### x86-64 PC, UEFI (`ports/efi`)
 
@@ -1053,7 +1053,7 @@ writing a file fails. One driver by hand:
 file not read, -2 refused by the firmware: not an x64 UEFI image or
 Secure Boot on, -3 its start failed). The stick itself stays FAT32.
 
-See [ports/efi/README.md](../ports/efi/README.md).
+See [ports/efi/README.md](../../ports/efi/README.md).
 
 ## Building
 

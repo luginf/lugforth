@@ -1,6 +1,6 @@
 # Examples
 
-The examples are in folders by kind (SDL2 words, see `docs/SDL2.md`):
+The examples are in folders by kind (SDL2 words, see `docs/en/SDL2.md`):
 
 | folder | what |
 |---|---|

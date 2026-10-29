@@ -1,6 +1,7 @@
 # Idées, questions ouvertes et autres Forth
 
-*Traduction française de [IDEAS.md](IDEAS_fr.md) (l'anglais fait foi).*
+*Traduction française de [docs/en/dev/IDEAS.md](../../en/dev/IDEAS.md)
+(l'anglais fait foi).*
 
 Décisions en attente et choses non faites. Fait partie de
 [README.md](README_fr.md). La liste de choses à faire des éditeurs est
@@ -77,3 +78,50 @@ d'inférence (`INFERENCE/docs/*.odt`), extras `3Dmodelisation` /
   `SDL_Quit`/`SDL_QUIT`. Cette branche utilise `dlopen` (seul le `.so`
   est nécessaire), a un vocabulaire de haut niveau, et est la seule qui
   tourne aussi dans un navigateur.
+
+## Portages vers des plateformes rétro (analyse du 2026-10-29)
+
+Faite à la lecture du dépôt, sans rien compiler. Ce qui compte: un
+compilateur C 32 bits pour la cible, assez de RAM, l'ordre des octets.
+Le noyau est en C/C++ avec des cellules de la taille d'un pointeur (32
+bits minimum); le port GBA tient dans 288 Ko de RAM sur un ARM7 à 16,8
+MHz; `lugforth-mini` fait 150 Ko sur PC. `common/*.h` ne gère pas
+l'ordre des octets: tout a été testé en petit-boutiste.
+
+Réalistes, du plus utile au moins utile:
+
+1. **Atari ST** (68000, 8 MHz, 512 Ko à 4 Mo): le meilleur candidat.
+   Compilateur `m68k-atari-mint-gcc`; fichiers par GEMDOS, console et
+   clavier par BIOS/XBIOS, écran par la mémoire vidéo. Risques: le 68000
+   est gros-boutiste (accès par octet à une cellule, `w@`, `l@`,
+   chaînes, dictionnaire) et refuse les accès mot à adresse impaire (`@`
+   et `,` s'ils le supposent permis). Hatari est installé sur ce PC; le
+   compilateur croisé manque.
+2. **Amiga** (68000, 512 Ko ou plus): mêmes risques, chaîne
+   `m68k-amigaos-gcc`; FS-UAE est installé ici.
+3. **DOS 386** (DJGPP, 32 bits protégé): le plus facile, cellules de 32
+   bits, petit-boutiste, mode VGA 13h.
+4. **Nintendo DS** (ARM9, 4 Mo): très proche de la GBA (devkitARM).
+5. **PlayStation 1, N64, Dreamcast, PSP** (MIPS, SH4, GCC): faisables
+   mais lourds en pilotes pour peu d'intérêt.
+
+Peu réalistes:
+
+- **C64, Atari 8 bits, ZX Spectrum, Amstrad** (6502, Z80, 64 Ko):
+  cellules de 32 bits trop lentes, noyau de 150 Ko trop gros pour 64 Ko,
+  chaînes C limitées (cc65 est un C89 partiel, llvm-mos plus complet).
+  Il faudrait un autre Forth à cellules de 16 bits écrit en assembleur,
+  comme DurexForth (cité plus haut): un projet à part.
+- **Sega Mega Drive**: 68000 correct mais 64 Ko de RAM, seulement avec
+  un noyau réduit.
+- **Atari Falcon, TT**: un Atari ST en plus gros.
+
+Autre voie pour les machines très anciennes: la machine virtuelle
+Uxn/Varvara que Lugforth exécute déjà (`examples/system/varvara`);
+plusieurs plateformes anciennes ont une implémentation Uxn (à vérifier
+lesquelles).
+
+Pour un Atari ST: installer le compilateur croisé 68k; compiler le noyau
+en simulateur POSIX avec un ordre d'octets inversé fictif, ou sous
+`qemu-m68k` / `hatari`, pour trouver les accès non portables; écrire
+`crt0` et les mots d'entrée/sortie et d'écran sur le modèle du port GBA.

@@ -23,7 +23,7 @@ transfer forth
 setup-saving-base
 ( From here on r" r| r~ copy their text into the definition. Before, in the boot, they )
 ( keep its address, which saves memory on the small boards: the boot text never goes away. )
-( To go back to addresses only, remove this line. See docs/dev/PITFALLS.md, "r| copies". )
+( To go back to addresses only, remove this line. See docs/en/dev/PITFALLS.md, "r| copies". )
 -1 r-copy !
 forth
 ( assumes an xt for autoboot is on the dstack )

@@ -1,7 +1,7 @@
 # Ports and platforms: state, limits, what was tested
 
 Android, Raspberry Pi, UEFI PC, the web console and the Game Boy
-Advance. Part of [README.md](../../README.md).
+Advance. Part of [README.md](../../../README.md).
 
 ## Android (ports/android, not buildable here)
 

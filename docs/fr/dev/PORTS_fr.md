@@ -1,6 +1,7 @@
 # Ports et plateformes: état, limites, ce qui a été testé
 
-*Traduction française de [PORTS.md](PORTS_fr.md) (l'anglais fait foi).*
+*Traduction française de [docs/en/dev/PORTS.md](../../en/dev/PORTS.md)
+(l'anglais fait foi).*
 
 Android, Raspberry Pi, PC UEFI, la console web et la Game Boy Advance.
 Fait partie de [README.md](README_fr.md).

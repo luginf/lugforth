@@ -7,7 +7,7 @@ on:
     branches: [ main ]
     # the site, and what goes into demo/: the web interpreter (common/, ports/web/),
     # the games it runs (examples/*/sdl2_*) and the HTML examples (examples/web/)
-    paths: [ 'docs/**', 'tools/make_pages.py', 'tools/words_added.py', 'docs/SDL2*.md',
+    paths: [ 'docs/**', 'tools/make_pages.py', 'tools/words_added.py', 'docs/en/SDL2*.md',
              'examples/README.md', 'NOTICE', '.github/workflows/pages.yml',
              'common/**', 'ports/web/**', 'examples/**' ]
   workflow_dispatch:

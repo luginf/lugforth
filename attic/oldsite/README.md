@@ -4,7 +4,7 @@ This folder is not the website of Lugforth. It holds the HTML pages of the origi
 (Brad Nelson), with its Google App Engine files (`app.yaml`, `eforth.go`, `static/`), kept because:
 
 - the pages describe the words of the standard vocabularies, and `tools/words_reference.py` still reads them
-  (with `tools/words_notes.py`) to write the descriptions of [docs/WORDS.md](../../docs/WORDS.md);
+  (with `tools/words_notes.py`) to write the descriptions of [docs/en/WORDS.md](../../docs/en/WORDS.md);
 - `attic/oldsite/BUILD` could build the deployable copy of the original site (`out/deploy`): the pages are
   templates run through `tools/importation.py` (`head.html`, `menu.html`, `common.html`... are the parts).
 

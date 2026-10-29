@@ -1,7 +1,7 @@
 # Pitfalls learned the hard way
 
 Read before touching Forth sources, the loaders, the web build or a new
-platform. Part of [README.md](../../README.md).
+platform. Part of [README.md](../../../README.md).
 
 ## Forth, loaders and SDL2
 
@@ -342,7 +342,7 @@ not just GBA:
 - `tools/words_reference.py` finds constants with a regex on the source
   line: `11 35 os constant EAGAIN` (Linux and macOS values) has its own
   pattern; a new way to write constants needs one too, or the
-  descriptions silently disappear from `docs/WORDS.md`.
+  descriptions silently disappear from `docs/en/WORDS.md`.
 
 ## Adding words
 
@@ -351,7 +351,7 @@ A new C function looked up by `sysfunc` also goes in the table of
 
 After adding words to the interpreter, build (`ninja posix web`) and run
 `python3 tools/words_reference.py`: it asks the real interpreters for
-their words and rewrites `docs/WORDS.md` (descriptions from
+their words and rewrites `docs/en/WORDS.md` (descriptions from
 `attic/oldsite/*.html`, `tools/words_notes.py`, the stack comments of
 the sources; add a note in `words_notes.py` for a word it leaves
 undescribed). `tools/words_added.py` lists what differs from upstream
@@ -364,9 +364,9 @@ above the definition. `words_reference.py` takes them (not from `*sdl2*`
 files nor `_tests.fs`). Helpers with a common prefix (`le-`, `pg-`,
 `hist`, `pool`) get a note per family (`PREFIX_NOTES` in
 `words_reference.py`). The words of `sdl2` are written by hand in
-`docs/SDL2-words.md` (`docs/SDL2.md` is the tour, `docs/SDL2-web.md` the
-web build): add a row there when a short word is added in one of the
-three `sdl2.fs`.
+`docs/en/SDL2-words.md` (`docs/en/SDL2.md` is the tour,
+`docs/en/SDL2-web.md` the web build): add a row there when a short word
+is added in one of the three `sdl2.fs`.
 
 ## Forth pitfalls hit again and again
 

@@ -7,7 +7,7 @@ navigateur, sur Android, sur des microcontrôleurs (ESP32, Pico, GBA) et sur du 
 x86-64 via UEFI).
 
 Site: [luginf.github.io/lugforth](https://luginf.github.io/lugforth/) -
-[Manuel](docs/fr/MANUAL_fr_fr.md) - [Référence des mots](docs/WORDS.md) (en anglais)
+[Manuel](docs/fr/MANUAL_fr.md) - [Référence des mots](docs/en/WORDS.md) (en anglais)
 
 ## Démarrage rapide
 
@@ -21,7 +21,7 @@ out/posix/lugforth
 À l'invite, `info` (ou `help`) montre la révision, la mémoire et quelques mots pour commencer.
 
 Les binaires (archive Linux et AppImage, APK Android) sont joints à chaque publication. Les compilations pour les
-autres cibles sont dans le [manuel](docs/fr/MANUAL_fr_fr.md#compilation).
+autres cibles sont dans le [manuel](docs/fr/MANUAL_fr.md#compilation).
 
 ## Ce qu'il contient
 
@@ -36,16 +36,16 @@ autres cibles sont dans le [manuel](docs/fr/MANUAL_fr_fr.md#compilation).
 * **Matériel nu**: la même invite, le même écran, clavier et fichiers sur un Raspberry Pi 3/4 et sur un PC
   démarré depuis une clé USB, sans système d'exploitation.
 
-Le détail de chacun est dans le [manuel](docs/fr/MANUAL_fr_fr.md).
+Le détail de chacun est dans le [manuel](docs/fr/MANUAL_fr.md).
 
 ## Documentation
 
-* [docs/fr/MANUAL_fr.md](docs/fr/MANUAL_fr_fr.md): un tutoriel dans l'esprit de Starting Forth, puis l'usage, les
+* [docs/fr/MANUAL_fr.md](docs/fr/MANUAL_fr.md): un tutoriel dans l'esprit de Starting Forth, puis l'usage, les
   éditeurs, les exemples, les ports, la compilation
-* [docs/WORDS.md](docs/WORDS.md): référence des mots (en anglais, générée)
-* [docs/fr/](docs/fr/README_fr_fr.md): toute la documentation en français
-* [docs/dev/](docs/fr/dev/README_fr_fr.md): notes pour les développeurs (architecture, fonctionnalités, ports, pièges,
-  idées), [en français](docs/fr/dev/README_fr_fr.md)
+* [docs/en/WORDS.md](docs/en/WORDS.md): référence des mots (en anglais, générée)
+* [docs/fr/](docs/fr/README_fr.md): toute la documentation en français
+* [docs/en/dev/](docs/fr/dev/README_fr.md): notes pour les développeurs (architecture, fonctionnalités, ports, pièges,
+  idées), [en français](docs/fr/dev/README_fr.md)
 * [examples/README.md](examples/README.md), [ports/rpi/README.md](ports/rpi/README.md),
   [ports/efi/README.md](ports/efi/README.md) (en anglais)
 

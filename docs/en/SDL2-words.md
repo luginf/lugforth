@@ -514,8 +514,8 @@ and Tunes (`ports/posix/sdl2.fs`, `sdl2_image.fs`, `sdl2_ttf.fs`,
 page (`ports/baremetal/sdl2.fs`, `ports/web/sdl2.fs`,
 `ports/web/sdl2_abc.fs`); `sound-off` and `snd-ok`
 (`ports/efi/sound_ini.fs`, `ports/efi/hda.h`). The generated list of the
-other words is `docs/WORDS.md` (see `docs/dev/PITFALLS.md`, "Adding
-words").
+other words is `docs/en/WORDS.md` (see `docs/en/dev/PITFALLS.md`,
+"Adding words").
 
 | Alias | Same as | Why |
 |-------|---------|-----|

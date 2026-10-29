@@ -1,7 +1,7 @@
 # Ideas, open questions and other Forths
 
 Decisions pending and things not done. Part of
-[README.md](../../README.md). The to-do list of the editors is in
+[README.md](../../../README.md). The to-do list of the editors is in
 [FEATURES.md](FEATURES.md).
 
 ## Control structures outside a definition - done 2026-10-23
@@ -74,3 +74,49 @@ Windows: more inference examples (`INFERENCE/docs/*.odt`),
   that also runs in a browser.
 
 
+
+## Ports to retro platforms (analysis of 2026-10-29)
+
+Made by reading the repository, nothing was compiled. What matters: a
+32-bit C compiler for the target, enough RAM, the byte order. The kernel
+is C/C++ with pointer-sized cells (32 bits at least); the GBA port fits
+in 288 KB of RAM on a 16.8 MHz ARM7; `lugforth-mini` is 150 KB on a PC.
+`common/*.h` does not deal with byte order: everything was tested
+little-endian.
+
+Realistic, from most to least useful:
+
+1. **Atari ST** (68000, 8 MHz, 512 KB to 4 MB): the best candidate.
+   Compiler `m68k-atari-mint-gcc`; files through GEMDOS, console and
+   keyboard through BIOS/XBIOS, screen through video memory. Risks: the
+   68000 is big-endian (byte access to a cell, `w@`, `l@`, strings, the
+   dictionary) and refuses word accesses at odd addresses (`@` and `,`
+   if they assume it is allowed). Hatari is installed on this PC; the
+   cross compiler is missing.
+2. **Amiga** (68000, 512 KB or more): same risks, `m68k-amigaos-gcc`
+   toolchain; FS-UAE is installed here.
+3. **DOS 386** (DJGPP, 32-bit protected mode): the easiest, 32-bit
+   cells, little-endian, VGA mode 13h.
+4. **Nintendo DS** (ARM9, 4 MB): very close to the GBA (devkitARM).
+5. **PlayStation 1, N64, Dreamcast, PSP** (MIPS, SH4, GCC): possible but
+   heavy in drivers for little interest.
+
+Not realistic:
+
+- **C64, Atari 8-bit, ZX Spectrum, Amstrad** (6502, Z80, 64 KB): 32-bit
+  cells are too slow, a 150 KB kernel is too big for 64 KB, the C
+  toolchains are limited (cc65 is a partial C89, llvm-mos is more
+  complete). It would take another Forth with 16-bit cells written in
+  assembly, like DurexForth (quoted above): a separate project.
+- **Sega Mega Drive**: decent 68000 but 64 KB of RAM, only with a
+  reduced kernel.
+- **Atari Falcon, TT**: a bigger Atari ST.
+
+Another way for very old machines: the Uxn/Varvara virtual machine that
+Lugforth already runs (`examples/system/varvara`); several old platforms
+have a Uxn implementation (which ones: to be checked).
+
+For an Atari ST: install the 68k cross compiler; build the kernel as a
+POSIX simulator with a fake reversed byte order, or under `qemu-m68k` /
+`hatari`, to find the non-portable accesses; write `crt0` and the
+input/output and screen words on the model of the GBA port.

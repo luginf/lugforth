@@ -1,8 +1,8 @@
 # Référence des mots SDL2
 
-*Traduction française de [SDL2-words.md](SDL2-words_fr.md) (la version
-anglaise fait foi). Les noms de mots et les colonnes « Pile » sont ceux
-de Forth et restent tels quels.*
+*Traduction française de [docs/en/SDL2-words.md](../en/SDL2-words.md)
+(la version anglaise fait foi). Les noms de mots et les colonnes « Pile
+» sont ceux de Forth et restent tels quels.*
 
 Chaque mot du vocabulaire `sdl2`, pour la version POSIX
 (`out/posix/lugforth`). Pour une visite guidée avec des exemples, lisez
@@ -523,8 +523,8 @@ Son et Airs (`ports/posix/sdl2.fs`, `sdl2_image.fs`, `sdl2_ttf.fs`,
 (`ports/baremetal/sdl2.fs`, `ports/web/sdl2.fs`,
 `ports/web/sdl2_abc.fs`); `sound-off` et `snd-ok`
 (`ports/efi/sound_ini.fs`, `ports/efi/hda.h`). La liste générée des
-autres mots est `docs/WORDS.md` (voir `docs/dev/PITFALLS.md`, « Adding
-words »).
+autres mots est `docs/en/WORDS.md` (voir `docs/en/dev/PITFALLS.md`, «
+Adding words »).
 
 | Alias | Pareil que | Pourquoi |
 |-------|---------|-----|

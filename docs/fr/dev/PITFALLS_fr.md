@@ -1,6 +1,7 @@
 # Pièges appris à la dure
 
-*Traduction française de [PITFALLS.md](PITFALLS_fr.md) (l'anglais fait
+*Traduction française de
+[docs/en/dev/PITFALLS.md](../../en/dev/PITFALLS.md) (l'anglais fait
 foi).*
 
 À lire avant de toucher aux sources Forth, aux chargeurs, à la version
@@ -386,7 +387,7 @@ démarrage de toute nouvelle plateforme, pas seulement GBA:
   régulière sur la ligne de source: `11 35 os constant EAGAIN` (valeurs
   Linux et macOS) a son propre motif; une nouvelle façon d'écrire des
   constantes en demande un aussi, sinon les descriptions disparaissent
-  silencieusement de `docs/WORDS.md`.
+  silencieusement de `docs/en/WORDS.md`.
 
 ## Ajouter des mots
 
@@ -396,7 +397,7 @@ Une nouvelle fonction C cherchée par `sysfunc` va aussi dans la table de
 Après avoir ajouté des mots à l'interpréteur, compilez
 (`ninja posix web`) et lancez `python3 tools/words_reference.py`: il
 interroge les vrais interpréteurs sur leurs mots et réécrit
-`docs/WORDS.md` (descriptions tirées de `attic/oldsite/*.html`,
+`docs/en/WORDS.md` (descriptions tirées de `attic/oldsite/*.html`,
 `tools/words_notes.py`, des commentaires de pile des sources; ajoutez
 une note dans `words_notes.py` pour un mot qu'il laisse sans
 description). `tools/words_added.py` liste ce qui diffère d'uEforth
@@ -409,8 +410,8 @@ sur la même ligne, ou des lignes `\` juste au-dessus de la définition.
 `_tests.fs`). Les aides qui ont un préfixe commun (`le-`, `pg-`, `hist`,
 `pool`) reçoivent une note par famille (`PREFIX_NOTES` dans
 `words_reference.py`). Les mots de `sdl2` sont écrits à la main dans
-`docs/SDL2-words.md` (`docs/SDL2.md` est la visite guidée,
-`docs/SDL2-web.md` la version web): ajoutez-y une ligne quand un mot
+`docs/en/SDL2-words.md` (`docs/en/SDL2.md` est la visite guidée,
+`docs/en/SDL2-web.md` la version web): ajoutez-y une ligne quand un mot
 court est ajouté dans l'un des trois `sdl2.fs`.
 
 ## Pièges Forth rencontrés encore et encore

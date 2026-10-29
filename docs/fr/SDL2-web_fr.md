@@ -1,7 +1,7 @@
 # Mots courts sdl2 pour le web
 
-*Traduction française de [SDL2-web.md](SDL2-web_fr.md) (la version
-anglaise fait foi).*
+*Traduction française de [docs/en/SDL2-web.md](../en/SDL2-web.md) (la
+version anglaise fait foi).*
 
 La version web a les mêmes mots courts `sdl2` que la version Linux
 ([SDL2.md](SDL2_fr.md)), dessinés sur un canevas HTML. Un jeu écrit avec

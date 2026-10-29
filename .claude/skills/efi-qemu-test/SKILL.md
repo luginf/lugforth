@@ -3,7 +3,7 @@ name: efi-qemu-test
 description: Boot the bare-metal EFI image (ports/efi) under QEMU + OVMF and check it, or type into it; use after touching ports/efi, ports/baremetal, or the EFI side of an example
 ---
 
-Facts and limits: section "UEFI PC" of `docs/dev/PORTS.md`. The procedure:
+Facts and limits: section "UEFI PC" of `docs/en/dev/PORTS.md`. The procedure:
 
 - Full test: `make -C ports/efi test` (124 checks, `tools/efi_qemu_test.py`). Needs `gnu-efi ovmf qemu-system-x86
   dosfstools mtools`; without root, unpack them from `apt download` and pass

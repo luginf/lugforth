@@ -1,6 +1,7 @@
 # Fonctionnalités et exemples: ce qui existe et comment ça a été testé
 
-*Traduction française de [FEATURES.md](FEATURES_fr.md) (l'anglais fait
+*Traduction française de
+[docs/en/dev/FEATURES.md](../../en/dev/FEATURES.md) (l'anglais fait
 foi).*
 
 Éditeurs, mots SDL2, jeux et portages d'exemples, avec ce qui a été
@@ -10,8 +11,8 @@ vérifié ou non. Fait partie de [README.md](README_fr.md).
 
 Des mots courts orientés jeu au-dessus de libSDL2, pour la version POSIX
 et (même source, mêmes mots) la version web. Docs complètes:
-`docs/SDL2.md`, `docs/SDL2-words.md` (chaque mot), `docs/SDL2-web.md`.
-Exemples: `examples/graphics/sdl2_demo.fs`,
+`docs/en/SDL2.md`, `docs/en/SDL2-words.md` (chaque mot),
+`docs/en/SDL2-web.md`. Exemples: `examples/graphics/sdl2_demo.fs`,
 `examples/games/sdl2_breakout.fs` et `examples/music/sdl2_drums.fs` (une
 boîte à rythmes de 16 pas); ces deux derniers tournent aussi sans
 changement dans le navigateur par `ports/web/sdl2_breakout.html` et

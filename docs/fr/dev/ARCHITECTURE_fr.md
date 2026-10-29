@@ -1,7 +1,8 @@
 # Architecture, compilation et tests
 
-*Traduction française de [ARCHITECTURE.md](ARCHITECTURE_fr.md)
-(l'anglais fait foi).*
+*Traduction française de
+[docs/en/dev/ARCHITECTURE.md](../../en/dev/ARCHITECTURE.md) (l'anglais
+fait foi).*
 
 Comment l'interpréteur est construit et testé. Fait partie des notes
 pour les développeurs (et pour Claude): voir [README.md](README_fr.md).
@@ -12,11 +13,12 @@ pour les développeurs (et pour Claude): voir [README.md](README_fr.md).
 partir d'un noyau C minimaliste. Elle vise plusieurs plateformes:
 POSIX/Linux, ESP32 (Arduino), pico-ice, Web (WASM/JS) et Windows.
 
-[WORDS.md](../../WORDS.md) est une référence générée des mots du vocabulaire `forth` et des autres vocabulaires
+[WORDS.md](../../en/WORDS.md) est une référence générée des mots du
+vocabulaire `forth` et des autres vocabulaires
 Linux/web, avec effets de pile et descriptions quand ils sont connus
 (`tools/words_reference.py`, relancez-le après avoir ajouté des mots).
 Les mots SDL2 ont leur propre référence,
-[docs/SDL2-words.md](../SDL2-words_fr.md).
+[docs/en/SDL2-words.md](../SDL2-words_fr.md).
 
 ## Système de compilation
 
@@ -151,4 +153,4 @@ exécutant `interp forth test` et en capturant la sortie dans `target`.
 - `tools/` — scripts Python de compilation
 - `docs/pages/` — le site GitHub Pages (Markdown, construit par
   `tools/make_pages.py`); `attic/oldsite/` — le site de documentation
-  hérité d'uEforth (voir son README); `docs/dev/` — ces notes
+  hérité d'uEforth (voir son README); `docs/en/dev/` — ces notes

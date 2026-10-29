@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""docs/lugforth_manual.pdf: every Markdown file of docs/ (not docs/pages, which is the website)
+"""docs/lugforth_manual.pdf: every Markdown file of docs/en (not docs/pages, which is the website)
 in one PDF, with pandoc and xelatex.  Usage: python3 tools/make_pdf.py [--fr] [output.pdf]"""
 import os
 import re
@@ -11,6 +11,7 @@ FR = '--fr' in sys.argv   # the French translation (docs/fr), docs/lugforth_manu
 sys.argv = [a for a in sys.argv if a != '--fr']
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(ROOT, 'docs')
+EN = os.path.join(DOCS, 'en')
 ORDER = ['MANUAL.md', 'SDL2.md', 'SDL2-words.md', 'SDL2-web.md', 'WORDS.md']
 DEV = ['README.md', 'ARCHITECTURE.md', 'FEATURES.md', 'PORTS.md', 'PITFALLS.md', 'IDEAS.md']
 
@@ -20,10 +21,10 @@ def files():
     out = [os.path.join(DOCS, 'fr', f[:-3] + '_fr.md') for f in ORDER if f != 'WORDS.md']
     out += [os.path.join(DOCS, 'fr', 'dev', f[:-3] + '_fr.md') for f in DEV]
     return [f for f in out if os.path.exists(f)]
-  out = [os.path.join(DOCS, f) for f in ORDER]
+  out = [os.path.join(EN, f) for f in ORDER]
   known = set(DEV)
-  out += [os.path.join(DOCS, 'dev', f) for f in DEV]
-  out += [os.path.join(DOCS, 'dev', f) for f in sorted(os.listdir(os.path.join(DOCS, 'dev')))
+  out += [os.path.join(EN, 'dev', f) for f in DEV]
+  out += [os.path.join(EN, 'dev', f) for f in sorted(os.listdir(os.path.join(EN, 'dev')))
           if f.endswith('.md') and f not in known]
   return [f for f in out if os.path.exists(f)]
 
