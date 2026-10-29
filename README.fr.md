@@ -55,7 +55,7 @@ Le détail de chacun est dans le [manuel](docs/fr/MANUAL_fr.md).
   Il n'est pas officiel et n'est pas approuvé par lui.
 * [eForth Windows](https://github.com/MPETREMANN11/eForth-Windows) de Marc Petremann: 2048, la bibliothèque 3D
   et le moteur d'inférence sont des portages de son travail.
-* [Forth is Fun](https://gitlab.com/garvalf/forth-is-fun) d'Eric Forgeot (garvalf): forthtoise, la tortue
+* [Forth is Fun](https://gitlab.com/garvalf/forth-is-fun) : forthtoise, la tortue
   graphique (`examples/graphics/sdl2_turtle.fs`)
 * [r3forth](https://github.com/phreda4/r3) de Pablo Hugo Reda (phreda): tetris, snake et démineur sont
   réécrits d'après ses jeux.

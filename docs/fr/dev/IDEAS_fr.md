@@ -125,3 +125,36 @@ Pour un Atari ST: installer le compilateur croisé 68k; compiler le noyau
 en simulateur POSIX avec un ordre d'octets inversé fictif, ou sous
 `qemu-m68k` / `hatari`, pour trouver les accès non portables; écrire
 `crt0` et les mots d'entrée/sortie et d'écran sur le modèle du port GBA.
+
+## Unifier les mots graphiques, sortir du nom `sdl2` (2026-10-29)
+
+Décision de principe, renommage plus tard. Les mots courts (`dot`,
+`box`, `line`, `flip`, `pressed?`...) tournent déjà là où il n'y a pas
+de SDL: le framebuffer du matériel nu (`ports/baremetal/sdl2.fs`,
+`screen.h`), le canvas du web (`ports/web/sdl2.fs`), à côté du vrai SDL2
+chargé par `dlopen` sous Linux, Windows et macOS. Le nom `sdl2` et les
+fichiers `sdl2_*.fs` sont trompeurs. Seuls `sdl2-image`, `sdl2-ttf` et
+`sdl2-mixer` sont vraiment liés à SDL2.
+
+Décidé:
+
+- Les mots directement inspirés de SDL2 gardent une API compatible avec
+  SDL2 (noms et arguments), pour ceux qui portent du code C.
+- Le reste passe au préfixe `gfx_`: fichiers d'exemples `gfx_*.fs` au
+  lieu de `sdl2_*.fs`, et un vocabulaire neutre (`gfx`; `gfx-on` existe
+  déjà pour `graphic`). `sdl2` reste un alias qui charge la nouvelle
+  couche, pour que ni exemple ni doc ne casse; les anciens noms de
+  fichiers restent des alias un temps.
+- Le son va sous le même parapluie: `gfx_` partout (décision du
+  2026-10-29, l'idée d'un vocabulaire `snd` est abandonnée).
+- `graphic` (dessin à l'invite) est déjà la moitié de cette couche
+  neutre: les réconcilier.
+- Les docs (`SDL2.md`, `SDL2-words.md`, `SDL2-web.md`) deviennent des
+  docs graphiques avec une section pour les liaisons SDL2.
+
+Ouvert, pour plus tard: où se définit la taille de l'écran. Les
+programmes supposent une taille (Space Invaders 224x240, magnoquill
+800x800), mais la GBA fait 240x160, la console EFI 640x480 et le canvas
+web est choisi par la page. Le contrat devrait dire comment un programme
+demande la taille (`screen-w`, `screen-h`?) et s'il doit s'adapter
+(magnoquill a déjà un mode petit écran) ou si la couche met à l'échelle.

@@ -120,3 +120,36 @@ For an Atari ST: install the 68k cross compiler; build the kernel as a
 POSIX simulator with a fake reversed byte order, or under `qemu-m68k` /
 `hatari`, to find the non-portable accesses; write `crt0` and the
 input/output and screen words on the model of the GBA port.
+
+## Unifying the graphics words, away from the `sdl2` name (2026-10-29)
+
+Decision of principle, renaming later. The short words (`dot`, `box`,
+`line`, `flip`, `pressed?`...) already run where there is no SDL: the
+bare-metal framebuffer (`ports/baremetal/sdl2.fs`, `screen.h`), the web
+canvas (`ports/web/sdl2.fs`), next to the real SDL2 loaded by `dlopen`
+on Linux, Windows and macOS. The name `sdl2` and the files `sdl2_*.fs`
+are misleading. Only `sdl2-image`, `sdl2-ttf` and `sdl2-mixer` are
+really tied to SDL2.
+
+Decided:
+
+- Words directly inspired by SDL2 keep an SDL2-compatible API (names and
+  arguments), for people who port C code.
+- The rest moves to the `gfx_` prefix: example files `gfx_*.fs` instead
+  of `sdl2_*.fs`, and a neutral vocabulary (`gfx`; `gfx-on` already
+  exists for `graphic`). `sdl2` stays as an alias that loads the new
+  layer, so no example or doc breaks; old file names are kept as aliases
+  for a while.
+- Sound goes under the same umbrella: `gfx_` everywhere (decision of
+  2026-10-29, the `snd` vocabulary idea is dropped).
+- `graphic` (drawing at the prompt) is already half of this neutral
+  layer; reconcile them.
+- The docs (`SDL2.md`, `SDL2-words.md`, `SDL2-web.md`) become graphics
+  docs with a section for the SDL2 bindings.
+
+Open, for later: where the screen size is defined. Programs assume a
+size (Space Invaders 224x240, magnoquill 800x800), but the GBA is
+240x160, the EFI console 640x480 and the web canvas is chosen by the
+page. The contract should say how a program asks for the size
+(`screen-w`, `screen-h`?) and whether it must adapt (magnoquill already
+has a small-screen mode) or the layer scales.

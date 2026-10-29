@@ -51,7 +51,7 @@ Details of each are in the [manual](docs/en/MANUAL.md).
   It is unofficial and not endorsed by him.
 * [eForth Windows](https://github.com/MPETREMANN11/eForth-Windows) by Marc Petremann: 2048, the 3D
   library and the inference engine are ports of his work.
-* [Forth is Fun](https://gitlab.com/garvalf/forth-is-fun) by Eric Forgeot (garvalf): forthtoise, the turtle graphics (`examples/graphics/sdl2_turtle.fs`)
+* [Forth is Fun](https://gitlab.com/garvalf/forth-is-fun): forthtoise, the turtle graphics (`examples/graphics/sdl2_turtle.fs`)
 * [r3forth](https://github.com/phreda4/r3) by Pablo Hugo Reda (phreda): tetris, snake and minesweeper
   are rewritten after his games.
 * [WrithDeck](https://github.com/luginf/writhdeck): the model of `writhdeck`.
