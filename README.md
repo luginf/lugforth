@@ -8,6 +8,13 @@ on Android, on microcontrollers (ESP32, Pico, GBA) and on bare metal (Raspberry 
 Site: [luginf.github.io/lugforth](https://luginf.github.io/lugforth/) -
 [Manual](docs/en/MANUAL.md) - [Word reference](docs/en/WORDS.md)
 
+> **Standard conformance:** Lugforth passes the whole
+> [Forth 2012 test suite](https://github.com/gerryjackson/forth2012-test-suite)
+> (John Hayes, Gerry Jackson) on the POSIX build, with no failure in its 12 word sets: Core
+> (with the extra Core tests), Core Extension, Block, Double-Number, Exception, Facility, File-Access,
+> Locals, Memory-Allocation, Programming-Tools, Search-Order and String. The floating-point set of the
+> suite is not run. Check it yourself with `ninja forth2012` (needs the network the first time).
+
 ## Quick start
 
 ```

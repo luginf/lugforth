@@ -9,6 +9,14 @@ x86-64 via UEFI).
 Site: [luginf.github.io/lugforth](https://luginf.github.io/lugforth/) -
 [Manuel](docs/fr/MANUAL_fr.md) - [Référence des mots](docs/en/WORDS.md) (en anglais)
 
+> **Conformité au standard:** Lugforth passe toute la
+> [suite de tests Forth 2012](https://github.com/gerryjackson/forth2012-test-suite)
+> (John Hayes, Gerry Jackson) sur la version POSIX, sans aucun échec dans ses 12 jeux de mots: Core
+> (avec les tests Core supplémentaires), Core Extension, Block, Double-Number, Exception, Facility,
+> File-Access, Locals, Memory-Allocation, Programming-Tools, Search-Order et String. Le jeu en virgule
+> flottante de la suite n'est pas exécuté. À vérifier avec `ninja forth2012` (réseau requis la première
+> fois).
+
 ## Démarrage rapide
 
 ```
