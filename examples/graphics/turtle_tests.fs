@@ -35,10 +35,10 @@ clearscreen 20 avance 90 droite 20 avance  nseg 2 t=
 \ the shell: lines are kept, then drawn
 : l ( a n -- ) line swap dup to llen move do-line ;
 clearscreen  0 to plen
-s" 100 forward" l   s" 4 0 do 30 forward 90 right loop" l   plen 0 > -1 t=   nseg 0 t=
+s" 100 forward" l   s" 4 0 do 30 forward 90 right loop" l   plen 0 > -1 t=   nseg 5 t=   \ a line runs at once
 s" go" l  nseg 5 t=
-s" 1 2 bogus" l  s" go" l  nseg 0 t=  depth 0 t=
-s" undo" l  nseg 5 t=
+s" 1 2 bogus" l  plen 0 > -1 t=  s" go" l  nseg 5 t=  depth 0 t=   \ a bad line is not kept
+s" undo" l  nseg 1 t=
 s" new" l  plen 0 t=  nseg 0 t=
 s" demo" l  s" go" l  nseg 100 > -1 t=
 s" speed 7" l  play-ms 7 t=

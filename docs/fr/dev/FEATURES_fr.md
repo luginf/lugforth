@@ -328,8 +328,9 @@ dans une liste et redessinés à chaque image), tests dans
 shell (`logo`): les lignes tapées dans une invite dessinée sous l'image
 (une police 8x8 faite de `box`, donc sans fichier de police; `typed` et
 `unpress` de sdl2.fs lisent les touches; `type` est redirigé vers le
-journal avec `['] type >body !`) sont gardées comme un programme, `go` /
-`play` l'exécutent (compilé comme un mot `logo-prog`; `safe-eval`
+journal avec `['] type >body !`) s'exécutent tout de suite et sont gardées
+comme un programme si elles marchent; `go` / `play` le redessinent
+(compilé comme un mot `logo-prog`; `safe-eval`
 restaure le source après une exception, `evaluate` non). Le shell marche
 sur POSIX (Xvfb, saisie par xdotool) et sur le web (Chrome headless,
 touches par CDP), non automatisé. Pièges rencontrés: un `)` dans un

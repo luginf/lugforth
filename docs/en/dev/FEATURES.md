@@ -395,8 +395,8 @@ list and redrawn each frame), tests in `turtle_tests.fs` (`make -C
 examples test-ports`). Running it starts a shell (`logo`): lines typed
 in a prompt drawn under the picture (an 8x8 font made of `box`es, so no
 font file; `typed` and `unpress` from sdl2.fs read the keys; `type` is
-redirected to the log with `['] type >body !`) are kept as a program,
-`go` / `play` run it (compiled as a word `logo-prog`; `safe-eval`
+redirected to the log with `['] type >body !`) run at once and are kept as
+a program if they work; `go` / `play` draw it again (compiled as a word `logo-prog`; `safe-eval`
 restores the source after a throw, `evaluate` does not). The shell works
 on POSIX (Xvfb, xdotool typing) and on the web (headless Chrome, key
 events over CDP), not automated. Traps met: a `)` inside a `( ... )`

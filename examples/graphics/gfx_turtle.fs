@@ -32,8 +32,9 @@
 \
 \ Run the file to get the shell: the window shows the drawing and, below it, a prompt
 \ where the commands are typed (no terminal needed, so it works on the web and on a
-\ Linux console too; Esc clears the line, the wheel scrolls the log). A line is not drawn at once, it is added to the program;
-\ then `go` draws it instantly and `play` draws it stroke by stroke.
+\ Linux console too; Esc clears the line, the wheel scrolls the log).
+\ A line runs at once and is also kept in a program;
+\ `go` draws the whole program again instantly and `play` draws it stroke by stroke.
 \     logo> 100 forward 90 right 50 forward        add a line
 \     logo> go                                     draw instantly
 \     logo> speed 100  and  play                   draw slowly, 100 ms a stroke (Esc stops)
@@ -440,7 +441,10 @@ previous
   s" demo" is? if demo-lines s" demo added: go or play" say exit then
   s" help" is? if help-shell exit then
   s" bye" is? if quit! exit then
-  line llen prog-add ;
+  line llen safe-eval ?dup if   ( runs at once; kept in the program only if it works )
+    0 state !  s" error " type dup -1 = if drop s" unknown word" type else . then cr exit
+  then
+  line llen prog-add  render ;
 
 ( ---- The line typed in the window ---- )
 : recall ( -- )   last-line line last-n move  last-n to llen ;
