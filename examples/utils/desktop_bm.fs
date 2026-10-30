@@ -60,7 +60,7 @@ create dk-ic icon-max 96 * allot
   0 s" Games" s" /games" dk-icon
   1 s" Writhdeck" s" writhdeck" dk-icon
   1 s" Editor" s" ed" dk-icon
-  4 s" Mouse" s" include /graphics/sdl2_mouse_test.fs" dk-icon
+  4 s" Mouse" s" include /graphics/gfx_mouse_test.fs" dk-icon
   4 s" Cave" s" include /games/zmachine.fs zplay /games/zmachine/cave.z5" dk-icon
   2 s" Forth" s" " dk-icon
   5 s" Settings" s" " dk-icon ;

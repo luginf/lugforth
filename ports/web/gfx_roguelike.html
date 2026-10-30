@@ -20,10 +20,10 @@ limitations under the License.
 <title>Lugforth Roguelike</title>
 <!--
   Roguelike written once with the sdl2 short words and a tile sheet: the very
-  same file, examples/games/sdl2_roguelike.fs, also runs on Linux with SDL2.
+  same file, examples/games/gfx_roguelike.fs, also runs on Linux with SDL2.
   Arrows or w a s d move (walk into a monster to hit it), space waits, a click
   steps toward the clicked tile, Esc quits. The tiles are loaded from
-  sdl2_tiles.png, next to this page.
+  gfx_tiles.png, next to this page.
   The Forth file is fetched with XMLHttpRequest, so serve it over http
   from out/web, where ninja web copies this page, its .fs files and lugforth.js:
   ninja web && cd out/web && python3 -m http.server
@@ -52,5 +52,5 @@ limitations under the License.
     }, 300);
   })();
 </script>
-<script type="text/forth" src="sdl2_roguelike.fs"></script>
+<script type="text/forth" src="gfx_roguelike.fs"></script>
 <script src="lugforth.js"></script>

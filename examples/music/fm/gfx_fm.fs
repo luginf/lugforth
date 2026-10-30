@@ -16,7 +16,7 @@
 
 \ A two operator FM synthesizer with SDL2, MIDI in and a keyboard on screen.
 \ The same file runs on Linux (SDL2, ALSA MIDI) and in the browser (canvas, WebAudio,
-\ Web MIDI): see sdl2_fm.html.
+\ Web MIDI): see gfx_fm.html.
 \
 \ One modulator oscillator bends the phase of one carrier. Nine sliders shape the
 \ sound (drag them, or use the mouse wheel), six buttons load a sound.

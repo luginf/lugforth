@@ -45,7 +45,7 @@ SOURCES := main.c libc.h files.h builtins.h start.S \
 # The examples keep their folders on the disk (games/, graphics/, music/, utils/, system/varvara/)
 EXAMPLE_FILES := $(foreach c,games graphics music utils,$(foreach f,$(wildcard $(ROOT)/examples/$(c)/*.fs),$(f)=$(c)/$(notdir $(f))))
 
-ASSETS ?= $(ROOT)/examples/games/sdl2_tiles.png $(ROOT)/examples/games/sdl2_tiles_alt.png
+ASSETS ?= $(ROOT)/examples/games/gfx_tiles.png $(ROOT)/examples/games/gfx_tiles_alt.png
 FORTH := efi_boot.fs platform.fs sound_ini.fs $(wildcard $(ROOT)/ports/baremetal/*.fs) $(wildcard $(ROOT)/common/*.fs)
 
 all: $(OUT)/BOOTX64.EFI

@@ -1,4 +1,4 @@
-\ Tests of the logic of sdl2_tetris.fs, sdl2_snake.fs, sdl2_invaders.fs, sdl2_minesweeper.fs and sdl2_mastermind.fs,
+\ Tests of the logic of gfx_tetris.fs, gfx_snake.fs, gfx_invaders.fs, gfx_minesweeper.fs and gfx_mastermind.fs,
 \ loaded without their game loop:  lugforth examples/games/games_tests.fs
 \ (the output ends with PASS). Needs libSDL2, but opens no window.
 
@@ -10,7 +10,7 @@ variable tn   variable tfail
 
 ( ---- Tetris ---- )
 : tetris-no-run ;
-include sdl2_tetris.fs
+include gfx_tetris.fs
 1 rand-seed !
 
 : fill-row ( y n -- )   ( the n first cells of row y )
@@ -40,7 +40,7 @@ depth 0 t=
 
 ( ---- Snake ---- )
 : snake-no-run ;
-include sdl2_snake.fs
+include gfx_snake.fs
 1 rand-seed !
 
 new-game   len 5 t=   0 at 11 cols * 8 + t=   state 0 t=
@@ -61,7 +61,7 @@ depth 0 t=
 
 ( ---- Space Invaders ---- )
 : invaders-no-run ;
-include sdl2_invaders.fs
+include gfx_invaders.fs
 1 rand-seed !
 
 : shield-count ( -- n )   0  4 ssize * 0 do shields i + c@ + loop ;
@@ -94,7 +94,7 @@ depth 0 t=
 
 ( ---- Minesweeper ---- )
 : minesweeper-no-run ;
-include sdl2_minesweeper.fs
+include gfx_minesweeper.fs
 
 : mine-count ( -- n ) 0  cols rows * 0 do i mine has? if 1+ then loop ;
 \ the first cell opened never has a mine on it or around it
@@ -133,7 +133,7 @@ depth 0 t=
 
 ( ---- Mastermind ---- )
 : mastermind-no-run ;
-include sdl2_mastermind.fs
+include gfx_mastermind.fs
 1 rand-seed !
 
 : secret! ( a b c d -- ) secret 3 + c! secret 2 + c! secret 1+ c! secret c! ;

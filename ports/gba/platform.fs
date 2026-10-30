@@ -87,7 +87,7 @@ $100 constant KEY_R      $200 constant KEY_L
 : gba-dot ( x y color -- )
   { x y c } c  VRAM  gba-width y * x +  2 *  +  h! ;
 
-\ examples/games/sdl2_tiles.png, converted by convert_tiles.py: plain RGB15
+\ examples/games/gfx_tiles.png, converted by convert_tiles.py: plain RGB15
 \ pixels, no palette (mode 3 has none), one tile after another, row-major
 \ within a tile. $ffff (rgb15 never sets bit 15: max is $7fff) marks a
 \ transparent pixel, skipped rather than drawn.
@@ -111,7 +111,7 @@ gba_tiles constant TILES
     loop
   loop ;
 
-\ ---- added while porting examples/games/sdl2_roguelike.fs (see ports/gba/roguelike.fs):
+\ ---- added while porting examples/games/gfx_roguelike.fs (see ports/gba/roguelike.fs):
 \ a per-channel tint (SDL2's image-tint, done by hand: no surface blending
 \ here, just a multiply on each 5-bit channel of a color already in hand)
 \ and a couple of plain rectangle-fill helpers, since mode 3 has no box/cls
@@ -130,7 +130,7 @@ gba_tiles constant TILES
 \ lshift swap 5 lshift or swap or` actually ORs the un-shifted top-of-stack
 \ arg in last, at the bottom), so the first channel extracted below has to
 \ be the low bits ($1f and, no shift), not the high ones -- got this
-\ backwards once while porting examples/games/sdl2_roguelike.fs (red and blue
+\ backwards once while porting examples/games/gfx_roguelike.fs (red and blue
 \ swapped, not a crash, just wrong colors) and fixed it here.
 : tint ( color tint -- color' )   ( each channel: color * tint / 31 )
   { c t }
@@ -143,7 +143,7 @@ gba_tiles constant TILES
 \ `tile-pixel`+`tint`+`gba-dot`) loop same as draw-tile above. That worked,
 \ but a redraw is 500+ tiles, 30000+ pixels, and each pixel cost several
 \ interpreted word dispatches -- confirmed unplayable by the user on real
-\ mgba (about 20 seconds per redraw) once examples/games/sdl2_roguelike.fs was
+\ mgba (about 20 seconds per redraw) once examples/games/gfx_roguelike.fs was
 \ ported and actually redrawing that much every turn. GBA-BLIT-TILE and
 \ GBA-FILL-RECT (gba_blit_tile/gba_fill_rect in main.c) do the exact same
 \ pixel math natively instead; same Forth-level names and stack effects as

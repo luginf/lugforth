@@ -12,7 +12,7 @@
 \ See the License for the specific language governing permissions and
 \ limitations under the License.
 
-\ A GBA port of examples/games/sdl2_roguelike.fs. The game logic (room/corridor
+\ A GBA port of examples/games/gfx_roguelike.fs. The game logic (room/corridor
 \ generation, turn-based combat, monster AI, potions/stairs, line of sight)
 \ is untouched Forth, copied straight from there. Everything that touched
 \ SDL2 -- drawing, input, sound -- is rewritten against ports/gba/platform.fs's
@@ -21,7 +21,7 @@
 \ its own separate piece of work, deferred on purpose.
 \
 \ Differences from the SDL2 version, all for GBA hardware/software reasons,
-\ see ports/gba/README.md's "sdl2_roguelike.fs port" section for the long version:
+\ see ports/gba/README.md's "gfx_roguelike.fs port" section for the long version:
 \   - The map is still 40x24 tiles, but the GBA screen only fits 30x18 map
 \     tiles (plus a 2-tile status bar) at native 8px, so the view scrolls,
 \     following the player, instead of showing the whole map at once.

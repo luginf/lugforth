@@ -14,15 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Draws examples/games/sdl2_tiles.png, the tile sheet of sdl2_roguelike.fs.
+"""Draws examples/games/gfx_tiles.png, the tile sheet of gfx_roguelike.fs.
 
-This is the Python version of examples/games/make_sdl2_tiles.fs, which does the
+This is the Python version of examples/games/make_gfx_tiles.fs, which does the
 same in lugforth; both write the same pixels. Here zlib compresses the image
 (352 bytes), the Forth version writes the PNG by hand and does not compress it.
 
 The tiles are drawn here as text, 8 characters by 8 lines each, and the
 letters are looked up in PALETTE ('.' is transparent). Edit them and run
-    python3 examples/games/make_sdl2_tiles.py
+    python3 examples/games/make_gfx_tiles.py
 to write the sheet again: a 64x8 PNG holding 8 tiles side by side, in the
 order of TILES. Only the Python standard library is needed.
 """
@@ -90,7 +90,7 @@ def main():
            chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 6, 0, 0, 0)) +
            chunk(b'IDAT', zlib.compress(bytes(raw), 9)) +
            chunk(b'IEND', b''))
-    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sdl2_tiles.png')
+    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gfx_tiles.png')
     with open(out, 'wb') as f:
         f.write(png)
     print('wrote', out, width, 'x', height)

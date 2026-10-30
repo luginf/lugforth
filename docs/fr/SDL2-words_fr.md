@@ -101,6 +101,8 @@ Listes de mots: [index alphabétique](#index-alphabétique).
 | `pressed?` | `( key -- f )` | Vrai tant que la touche ou le bouton de souris est tenu, d'après le dernier `events`. La touche est un caractère (`[char] a`, casse ignorée), une constante `key-`, ou une constante `-BUTTON`. Un appui relâché dans la même image n'est pas vu. |
 | `scan?` | `( scancode -- f )` | Vrai tant que la touche à cette place du clavier est tenue (code de balayage SDL: 4 à 29 sont A à Z d'un QWERTY, 30 à 39 sont 1 à 9 et 0, 54 55 56 sont virgule, point, barre oblique), quelle que soit la disposition. |
 | `last-key` | `( -- n )` | Valeur. Code de la dernière touche pressée. |
+| `typed` | `( -- c )` | Le prochain caractère tapé, ou 0 s'il n'y en a pas. Les caractères imprimables viennent des événements de saisie de texte (majuscules, accents et AltGr sont donc justes), plus 13 pour Entrée, 8 pour Retour arrière et 1 pour la flèche haut. À lire en boucle après `events` pour une invite dans la fenêtre (examples/graphics/gfx_turtle.fs). Les plus anciens sont perdus si le programme ne les lit pas. |
+| `unpress` | `( key -- )` | Oublie une touche enfoncée: `pressed?` dit non jusqu'à ce qu'elle soit pressée de nouveau (pour prendre un Échap une seule fois). |
 | `mouse-x` `mouse-y` | `( -- n )` | Valeurs. Dernière position de la souris vue dans les événements, en pixels logiques (la taille de `screen`), quel que soit le `zoom`. |
 | `wheel` | `( -- n )` | Valeur. Mouvement de la molette traité par le dernier `events` (vers le haut est positif). |
 | `key-left` `key-right` `key-up` `key-down` | `( -- n )` | Constantes. Flèches, pour `pressed?`. |
@@ -575,4 +577,4 @@ Adding words »).
 `TTF_Quit` `TTF_RenderUTF8_Blended` `TTF_SizeUTF8` `tune-bpm`
 `tune-level` `tune-loop` `tune-midi` `tune-ms` `tune-notes` `tune-play`
 `tune-playing?` `tune-program` `tune-save` `tune-send` `tune-stop`
-`wait` `wave` `wheel` `white` `width` `window-handle` `yellow` `zoom`
+`typed` `unpress` `wait` `wave` `wheel` `white` `width` `window-handle` `yellow` `zoom`

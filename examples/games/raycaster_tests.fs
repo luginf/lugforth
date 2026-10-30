@@ -1,4 +1,4 @@
-\ Tests of the logic of sdl2_raycaster.fs, loaded without its game loop:
+\ Tests of the logic of gfx_raycaster.fs, loaded without its game loop:
 \   lugforth examples/games/raycaster_tests.fs
 \ (the output ends with PASS). Needs libSDL2, but opens no window.
 
@@ -11,7 +11,7 @@ variable tn   variable tfail
   >r over - abs r> > if ." FAIL test (near) " tn @ . cr 1 tfail +! then 1 tn +! drop ;
 
 : raycaster-no-run ;
-include sdl2_raycaster.fs
+include gfx_raycaster.fs
 
 \ sines in 16.16: a quarter turn is 1024 units
 0 sin@ 0 t=   1024 sin@ 65536 t=   2048 sin@ 0 t=   3072 sin@ -65536 t=

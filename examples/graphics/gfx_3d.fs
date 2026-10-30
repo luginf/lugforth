@@ -10,7 +10,8 @@
 \   esc              quits (or close the window)
 \ Needs libSDL2.
 
-include 3d.fs
+\ On the web the page loads 3d.fs itself first (terminal.html?run=3d.fs,gfx_3d.fs).
+[undefined] init-sintab [if] include 3d.fs [then]
 
 sdl2
 

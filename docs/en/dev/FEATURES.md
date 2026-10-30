@@ -8,23 +8,23 @@ not checked. Part of [README.md](../../../README.md).
 Short game-oriented words on top of libSDL2, for the POSIX build and
 (same source, same words) the web build. Full docs: `docs/en/SDL2.md`,
 `docs/en/SDL2-words.md` (every word), `docs/en/SDL2-web.md`. Examples:
-`examples/graphics/sdl2_demo.fs`, `examples/games/sdl2_breakout.fs` and
-`examples/music/sdl2_drums.fs` (a 16 step drum machine); these two also
-run unchanged in the browser through `ports/web/sdl2_breakout.html` and
-`ports/web/sdl2_drums.html`. `examples/games/sdl2_roguelike.fs` uses the
-tile sheet `examples/games/sdl2_tiles.png` (drawn by
-`examples/games/make_sdl2_tiles.fs`, a lugforth program that writes the
+`examples/graphics/gfx_demo.fs`, `examples/games/gfx_breakout.fs` and
+`examples/music/gfx_drums.fs` (a 16 step drum machine); these two also
+run unchanged in the browser through `ports/web/gfx_breakout.html` and
+`ports/web/gfx_drums.html`. `examples/games/gfx_roguelike.fs` uses the
+tile sheet `examples/games/gfx_tiles.png` (drawn by
+`examples/games/make_gfx_tiles.fs`, a lugforth program that writes the
 PNG by hand with CRC-32, Adler-32 and a stored zlib block: no outside
-assets; `examples/games/make_sdl2_tiles.py` is the same program in
+assets; `examples/games/make_gfx_tiles.py` is the same program in
 Python, kept to compare the two, same pixels) through `sdl2-image`
 (`draw-part`, `image-tint`); `ports/web/sdl2.fs` has the same image
-words on canvas and `ports/web/sdl2_roguelike.html` runs the same file.
+words on canvas and `ports/web/gfx_roguelike.html` runs the same file.
 `load-image` retries a missing name without its directories on both
 platforms. `examples/music/fm/` is a two operator FM synthesizer with a
 keyboard on screen and MIDI input, on both platforms, deliberately kept
 out of the interpreter (see its README); the interpreter only has the
 hooks `render-hook`, `active-hook`, `latency` and `scan?`.
-`examples/music/sdl2_pianoroll.fs` is a piano-roll sequencer (4 tracks,
+`examples/music/gfx_pianoroll.fs` is a piano-roll sequencer (4 tracks,
 chainable 16-step patterns, MIDI+soundfont playback, `.mid` and ABC
 export); POSIX only, not ported to the web build.
 
@@ -45,7 +45,7 @@ export); POSIX only, not ported to the web build.
   `SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy out/posix/lugforth ports/posix/sdl2_tests.fs`
   (22 tests) `ports/posix/sdl2_media_tests.fs` (7 tests),
   `ports/posix/sdl2_abc_tests.fs` (18 tests) and
-  `examples/music/fm/sdl2_fm_tests.fs` (24 tests: MIDI parser and ALSA
+  `examples/music/fm/gfx_fm_tests.fs` (24 tests: MIDI parser and ALSA
   events, voices, pitch). `common/forth_namespace_tests.fs` lists the
   new vocabularies.
 
@@ -212,19 +212,19 @@ runs the logic tests, `make smoke` the SDL2 one):
   only the inspiration, no code of it is used.
 - `2048.fs` (+ `2048_tests.fs`): terminal game, `2048-play`. Tested in a
   pty; colors/layout not seen by eye.
-- `3d.fs` (+ `3d_tests.fs`) and `sdl2_3d.fs`: math, objects, rotation,
+- `3d.fs` (+ `3d_tests.fs`) and `gfx_3d.fs`: math, objects, rotation,
   perspective; SDL2 drawing checked only with the dummy video driver
   (pixel counts), not on a real screen.
 - `inference/` (inference.fs, weather.fs, lamp_diagnosis.fs, tests,
   Makefile, READMEs): facts, rules, `infer`.
-- `sdl2_2048.fs`: SDL2 front end of 2048.fs (bitmap digits,
+- `gfx_2048.fs`: SDL2 front end of 2048.fs (bitmap digits,
   arrows/wasd/mouse swipe, slide+pop animation, `--no-anim`); checked
   with the dummy driver (pixel colors of tiles and digits), not by eye.
   Could be added to the Android Examples list. Ideas left: more
   inference examples from his docs (`INFERENCE/docs/*.odt`),
   `3Dmodelisation`/`dumpTool` extras, other upstream projects (lotto,
   6809, flog, BMP, HTTP). Verified in a real X window (display :0) for
-  sdl2_2048: see [PITFALLS.md](PITFALLS.md), last bullets. Gotchas met:
+  gfx_2048: see [PITFALLS.md](PITFALLS.md), last bullets. Gotchas met:
   `include` is relative to the including file; `if` at top level does
   not work (wrap in a word); `<# #s #>` takes a double, as in the
   standard (since 2026.10.27.2; before, one cell as in eForth):
@@ -368,7 +368,7 @@ ignored); the runtime `DO` is in the vocabulary `internalized`:
 `0 10000000 0 do i + loop` on posix: 554 ms before, 71 ms after. Same
 results as gforth on `+LOOP` with negative steps and `LEAVE`.
 
-## Games after r3forth (examples/games/sdl2_tetris.fs, sdl2_snake.fs, sdl2_minesweeper.fs) - done 2026-10-19
+## Games after r3forth (examples/games/gfx_tetris.fs, gfx_snake.fs, gfx_minesweeper.fs) - done 2026-10-19
 
 r3forth (https://github.com/phreda4/r3, Pablo Reda, MIT, credited in
 NOTICE) has its own syntax (`cond? ( ... )`, `:word`, fixed point
@@ -380,7 +380,7 @@ etc. defined, which skips the game loop
 tools/efi_qemu_test.py plays them from the stick (screendump checks).
 Not seen on the Pi under QEMU (same sdl2.fs). `color` resets the alpha
 to 255: set `alpha` after `color`. Edges of keys: `just` keeps the last
-state per key. `sdl2_mastermind.fs` (ours, not from r3) follows the same
+state per key. `gfx_mastermind.fs` (ours, not from r3) follows the same
 pattern: `mastermind-no-run`, tests in games_tests.fs, efi test. Other
 r3 candidates: bdash (Boulder Dash, own sprites needed), sokoban (levels
 of unclear license), raycaster, term demos (fire, matrix, torus),
@@ -389,17 +389,22 @@ util/penner.r3 easing, lib/sdl2poly.r3 polygon fill.
 ## Forth is Fun (turtle)
 
 Forth is Fun (https://gitlab.com/garvalf/forth-is-fun, Eric Forgeot,
-MIT/Apache): `examples/graphics/sdl2_turtle.fs` is written after its
+MIT/Apache): `examples/graphics/gfx_turtle.fs` is written after its
 forthtoise.fs (same word names, English and French; strokes kept in a
-list and redrawn each frame), tests in `turtle_tests.fs`
-(`make -C examples test-ports`). Running it starts a shell (`logo`):
-lines typed in the terminal are kept as a program, `go` / `play` run it
-(compiled as a word `logo-prog`, ; `safe-eval` restores the source after
-a throw, `evaluate` does not). The shell loop was checked in a pty under
-Xvfb, not automated. Still to borrow: bresenham, the CYOA (choose your
-own adventure, also in French), glitch patterns. Trap met:
-`fdup f>s s>f f< if` left a wrong value here; round with
-`fdup f0< if 0.5e f- else 0.5e f+ then f>s`.
+list and redrawn each frame), tests in `turtle_tests.fs` (`make -C
+examples test-ports`). Running it starts a shell (`logo`): lines typed
+in a prompt drawn under the picture (an 8x8 font made of `box`es, so no
+font file; `typed` and `unpress` from sdl2.fs read the keys; `type` is
+redirected to the log with `['] type >body !`) are kept as a program,
+`go` / `play` run it (compiled as a word `logo-prog`; `safe-eval`
+restores the source after a throw, `evaluate` does not). The shell works
+on POSIX (Xvfb, xdotool typing) and on the web (headless Chrome, key
+events over CDP), not automated. Traps met: a `)` inside a `( ... )`
+comment ends it (the rest ran as code: STACK UNDERFLOW at load); two `{
+}` in one definition break; the web build has no `fold-case`. Still to
+borrow: bresenham, the CYOA (choose your own adventure, also in French),
+glitch patterns. Trap met: `fdup f>s s>f f< if` left a wrong value here;
+round with `fdup f0< if 0.5e f- else 0.5e f+ then f>s`.
 
 ## Drawing at the prompt (`graphic`) - done 2026-10-20
 

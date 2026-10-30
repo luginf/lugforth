@@ -1,12 +1,12 @@
 \ 3D wireframe objects: points, edges, rotation and perspective, without any display.
-\ `sdl2_3d.fs` draws them.
+\ `gfx_3d.fs` draws them.
 \
 \ Port of the 3Dforms project of Marc Petremann (eForth Windows,
 \ https://github.com/MPETREMANN11/eForth-Windows), GNU General Public License.
 \ His part: `3Dobject:`, `3Dedge:`, `3Dpoint,`, `3Dedge,`, `get3Dpoint`, `set3Dpoint`,
 \ `project`, the sine table (`get-sin-90`, `get-cos-90`) and the cube. The original draws with
 \ the Windows GDI; the rotations, the pyramid and the octahedron are new, and the
-\ drawing is in sdl2_3d.fs.
+\ drawing is in gfx_3d.fs.
 
 \ ---- Sine table: 256 * sin(a) for a = 0 ... 90 degrees ----
 create SINTAB 91 cells allot

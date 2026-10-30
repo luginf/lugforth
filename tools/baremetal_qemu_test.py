@@ -16,7 +16,7 @@
 """Boots the bare-metal ports/rpi images under QEMU and talks to them over
 the serial console: arithmetic, floats, timer, faults, allocation, GPIO,
 and that `bye` makes QEMU exit. On raspi3b it also loads
-examples/games/sdl2_breakout.fs over the serial line, plays it, and checks the
+examples/games/gfx_breakout.fs over the serial line, plays it, and checks the
 screen's pixels (QEMU monitor `screendump`); the same on virt with
 -device ramfb. Each board also gets a FAT disk (made with dosfstools and
 mtools: FAT16 and FAT12 on virt's virtio-blk, MBR + FAT32 on raspi3b's SD
@@ -260,7 +260,7 @@ def test_images(b):
   root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
   sys.path.insert(0, os.path.join(root, 'tools'))
   import baremetal_assets
-  iw, ih, px = baremetal_assets.decode_png(open(os.path.join(root, 'examples', 'games', 'sdl2_tiles.png'), 'rb').read())
+  iw, ih, px = baremetal_assets.decode_png(open(os.path.join(root, 'examples', 'games', 'gfx_tiles.png'), 'rb').read())
   w, h, bg = 120, 60, 0x101830
   fb = [[bg] * w for _ in range(h)]
 
@@ -287,7 +287,7 @@ def test_images(b):
   draw(16, 0, 8, 8, 100, 40, 24, 24, 0xff8040, 255)          # draw-part, tinted
   draw(8, 0, 8, 8, 10, 40, 16, 16, 0xffffff, 128)            # half transparent
   b.run('sdl2 1 to zoom %d %d screen $101830 color cls' % (w, h))
-  r = b.run('s" examples/games/sdl2_tiles.png" load-image value img  img image-size . .')
+  r = b.run('s" examples/games/gfx_tiles.png" load-image value img  img image-size . .')
   check('image-size', r, r.split()[:2] == [str(ih), str(iw)])
   b.run('img 2 2 draw  img -10 14 %d %d draw-size' % (2 * iw, 3 * ih))
   b.run('img $ff8040 image-tint  img 16 0 8 8 100 40 24 24 draw-part  img $ffffff image-tint')
@@ -510,12 +510,12 @@ def paste(b, text, wait_prompt=True):
 
 
 def test_roguelike(b):
-  """examples/games/sdl2_roguelike.fs (images, tints, mouse, ABC tunes in r~
+  """examples/games/gfx_roguelike.fs (images, tints, mouse, ABC tunes in r~
   strings over several lines) sent with paste: it draws and plays."""
   root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
   t0 = time.time()
   start = len(b.out)
-  paste(b, open(os.path.join(root, 'examples', 'games', 'sdl2_roguelike.fs'), 'rb').read(), False)
+  paste(b, open(os.path.join(root, 'examples', 'games', 'gfx_roguelike.fs'), 'rb').read(), False)
   b.wait_for('esc: quit', b.pos, 60)
   check('roguelike received by paste (%.1f s)' % (time.time() - t0), '', True)
   time.sleep(1.5)
@@ -743,10 +743,10 @@ def check_disk(path, spec, what, long_create=False, mkdir=False):
 
 
 def test_breakout(b):
-  """Loads examples/games/sdl2_breakout.fs line by line (the line `run` starts
+  """Loads examples/games/gfx_breakout.fs line by line (the line `run` starts
   the game), checks the screen, launches the ball, quits with Esc."""
   root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-  lines = open(os.path.join(root, 'examples', 'games', 'sdl2_breakout.fs')).read().split('\n')
+  lines = open(os.path.join(root, 'examples', 'games', 'gfx_breakout.fs')).read().split('\n')
   start = lines.index('run')
   errors = ''
   for line in lines[:start]:

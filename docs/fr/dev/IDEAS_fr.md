@@ -39,7 +39,7 @@ vérifiée avant d'emprunter du code: écrire le nôtre) suggère, pour
 `graphic` et `play`:
 - dessin: `paint ( x y -- )` remplissage, `plot`, `peek`, `pen` en mode
   inverse (XOR), `line` depuis le dernier point;
-- tortue (examples/graphics/sdl2_turtle.fs): `back`, `turtle@` /
+- tortue (examples/graphics/gfx_turtle.fs): `back`, `turtle@` /
   `turtle!` (sauvegarde et restauration de l'état, pour les fractales
   récursives), `moveto ( x y deg -- )`;
 - son: `voice! note! cutoff! filter!` à la SID (l'enveloppe ADSR,
@@ -136,7 +136,13 @@ chargé par `dlopen` sous Linux, Windows et macOS. Le nom `sdl2` et les
 fichiers `sdl2_*.fs` sont trompeurs. Seuls `sdl2-image`, `sdl2-ttf` et
 `sdl2-mixer` sont vraiment liés à SDL2.
 
-Décidé:
+Fait le 2026-10-30 pour les exemples: les programmes
+`examples/*/sdl2_*.fs` (jeux, graphismes, musique, le synthé FM, les
+planches de tuiles, les pages web) sont maintenant `gfx_*.fs`, toutes
+les références changées; aucun alias gardé (les URL des pages de démo web
+ont changé, et le fichier `.ini` du bureau qui nomme un ancien chemin
+est à corriger). Le vocabulaire `sdl2` et les fichiers de bibliothèque
+(`ports/posix/sdl2*.fs`, `ports/web/sdl2.fs`) gardent leur nom. Décidé:
 
 - Les mots directement inspirés de SDL2 gardent une API compatible avec
   SDL2 (noms et arguments), pour ceux qui portent du code C.

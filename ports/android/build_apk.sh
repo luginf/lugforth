@@ -62,14 +62,14 @@ $BT/d8 --min-api $API --lib $JAR --output $W $(find $W/classes -name '*.class')
 # 4. Assets: the web pages, the examples (as for the AppImage, minus what needs
 # SDL_image or SDL_mixer, which are not built here), the Forth files of the app
 cp ports/android/app/assets/index.html $W/assets/web/
-for f in terminal.html lugforth.js sdl2_breakout.html sdl2_breakout.fs \
-         sdl2_drums.html sdl2_drums.fs sdl2_roguelike.html sdl2_roguelike.fs \
-         sdl2_tiles.png; do
+for f in terminal.html lugforth.js gfx_breakout.html gfx_breakout.fs \
+         gfx_drums.html gfx_drums.fs gfx_roguelike.html gfx_roguelike.fs \
+         gfx_tiles.png; do
   cp out/web/$f $W/assets/web/
 done
 cp -R examples/. $W/assets/examples/
 (cd $W/assets/examples && rm -rf bench Makefile system/*xtensa* system/espnow.fs \
-   music/*.sf2 music/*.mid music/sdl2_pianoroll* games/sdl2_roguelike.fs games/sdl2_tiles*.png games/*.py)
+   music/*.sf2 music/*.mid music/gfx_pianoroll* games/gfx_roguelike.fs games/gfx_tiles*.png games/*.py)
 cp ports/android/app/assets/forth/main.fs $W/assets/forth/
 # the font of the console (DejaVu Sans Mono, free license); without it the bitmap font stays
 DEJAVU=/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf

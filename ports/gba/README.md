@@ -4,7 +4,7 @@ Same kernel (`common/*.h`) and boot chain shape as `ports/pico-ice/`, built with
 `arm-none-eabi-gcc` (288K RAM: 256K EWRAM + 32K IWRAM). Hand-written `crt0.s` and
 `gba.ld`, no libgba or devkitARM. Boot files: `gba_boot.fs` (tile demo),
 `gba_roguelike_boot.fs` (game), `gba_magnoquill_boot.fs` (the point cloud of
-`examples/graphics/sdl2_magnoquill.fs`).
+`examples/graphics/gfx_magnoquill.fs`).
 
 ## Simulator
 
@@ -41,7 +41,7 @@ files are not in git.)
 
 ## Magnoquill
 
-`magnoquill.fs`: the demo `examples/graphics/sdl2_magnoquill.fs` in mode 3,
+`magnoquill.fs`: the demo `examples/graphics/gfx_magnoquill.fs` in mode 3,
 160x160 centered in the 240x160 screen. UP/DOWN speed, LEFT/RIGHT number of
 points (100 to 1500, 400 at start), A rainbow or white, B pause, START time
 back to 0. The first version, with the formulas in Forth floats, needed more
@@ -62,14 +62,14 @@ under Xvfb); not on a real console.
 
 ## Tiles
 
-`python3 ports/gba/convert_tiles.py` turns `examples/games/sdl2_tiles.png` into
+`python3 ports/gba/convert_tiles.py` turns `examples/games/gfx_tiles.png` into
 `tiles_data.h`: plain RGB15 pixels (mode 3 has no palette), 64 per 8x8 tile;
 `$ffff` marks a transparent pixel. `platform.fs` has `draw-tile ( tile x y -- )`
 and `tile-pixel ( tile px py -- color )`.
 
 ## Roguelike
 
-`roguelike.fs` is `examples/games/sdl2_roguelike.fs` ported, without music: the same
+`roguelike.fs` is `examples/games/gfx_roguelike.fs` ported, without music: the same
 game logic, a scrolling 30x18 viewport over the 40x24 map, d-pad and A/B/START
 for input. Drawing goes through two C opcodes (`GBA-BLIT-TILE`,
 `GBA-FILL-RECT`), because a per-pixel Forth loop took about 20 seconds per

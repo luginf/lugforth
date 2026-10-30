@@ -34,9 +34,12 @@ jobs:
           [ -e /usr/bin/nodejs ] || sudo ln -s "$(command -v node)" /usr/bin/nodejs
           ./configure.py
           ninja out/posix/lugforth out/web/lugforth.js out/web/terminal.html \
-            out/web/sdl2_breakout.html out/web/sdl2_breakout.fs out/web/sdl2_drums.html \
-            out/web/sdl2_drums.fs out/web/sdl2_fm.html out/web/sdl2_fm.fs out/web/fm_midi_parser.fs out/web/fm_engine_web.fs out/web/sdl2_roguelike.html out/web/sdl2_roguelike.fs \
-            out/web/sdl2_tiles.png out/web/sdl2_raycaster.html out/web/sdl2_raycaster.fs out/web/sdl2_pinball.html out/web/pinball_common.fs out/web/pinball_raid.fs out/web/pinball_night.fs out/web/pinball_menu.fs
+            out/web/gfx_breakout.html out/web/gfx_breakout.fs out/web/gfx_drums.html \
+            out/web/gfx_drums.fs out/web/gfx_fm.html out/web/gfx_fm.fs out/web/fm_midi_parser.fs out/web/fm_engine_web.fs out/web/gfx_roguelike.html out/web/gfx_roguelike.fs \
+            out/web/gfx_tiles.png out/web/gfx_raycaster.html out/web/gfx_raycaster.fs out/web/gfx_pinball.html out/web/pinball_common.fs out/web/pinball_raid.fs out/web/pinball_night.fs out/web/pinball_menu.fs \
+            out/web/gfx_2048.fs out/web/2048.fs out/web/gfx_snake.fs out/web/gfx_tetris.fs \
+            out/web/gfx_minesweeper.fs out/web/gfx_mastermind.fs out/web/gfx_invaders.fs \
+            out/web/gfx_magnoquill.fs out/web/gfx_demo.fs out/web/gfx_3d.fs out/web/3d.fs out/web/gfx_turtle.fs
       - name: Build the site
         run: python3 tools/make_pages.py
       - uses: actions/upload-pages-artifact@v3

@@ -18,8 +18,13 @@ Raspberry Pi et PC UEFI. Les zips contiennent `examples/` et `docs/`.
 web](https://luginf.github.io/lugforth/demo/terminal.html), avec le
 casse-briques, les percussions, un roguelike, un labyrinthe 3D (le
 raycaster, dirigé à la souris) et un flipper (boutons tactiles sur
-téléphone). Tout fichier de jeu tourne aussi avec
-`terminal.html?run=sdl2_roguelike.fs`. Du dessin depuis des boutons
+téléphone). D'autres jeux tournent dans la même page: 2048
+(`?run=2048.fs,gfx_2048.fs`), Snake, Tetris, Minesweeper, Mastermind,
+Space Invaders, Magnoquill, un cube 3D (`?run=3d.fs,gfx_3d.fs`), la tortue Logo
+(`gfx_turtle.fs`, les commandes se tapent sous le dessin) et la
+visite SDL2 (`gfx_demo.fs`). Tout fichier de jeu tourne aussi avec
+`terminal.html?run=gfx_roguelike.fs` (plusieurs fichiers séparés par
+des virgules). Du dessin depuis des boutons
 HTML: un mot Forth appelé par un bouton, des lettres vectorielles, des
 lettres en contour, du string art
 ([sources](https://github.com/luginf/lugforth/tree/main/examples/web)).

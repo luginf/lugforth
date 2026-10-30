@@ -21,11 +21,11 @@ Additions and modifications, Copyright 2026 Luginfo10, under the same license:
 Files adapted from upstream carry both the original notice and a line
 "Modifications Copyright 2026 Luginfo10".
 
-examples/games/2048.fs, examples/graphics/3d.fs, examples/graphics/sdl2_3d.fs, examples/utils/inference/inference.fs and examples/utils/inference/weather.fs
+examples/games/2048.fs, examples/graphics/3d.fs, examples/graphics/gfx_3d.fs, examples/utils/inference/inference.fs and examples/utils/inference/weather.fs
 (and their tests) derive from the 2048-game, 3Dforms and INFERENCE projects of Marc Petremann
 (https://github.com/MPETREMANN11/eForth-Windows), GNU General Public License. They are GPL, not Apache 2.0.
 
-examples/graphics/sdl2_turtle.fs is written after forthtoise.fs of Eric Forgeot (https://gitlab.com/garvalf/forth-is-fun),
+examples/graphics/gfx_turtle.fs is written after forthtoise.fs of Eric Forgeot (https://gitlab.com/garvalf/forth-is-fun),
 MIT license, which itself builds on gforth-turtle (Robert Coffey) and WAForth (Remko Troncon); it keeps the
 names of the words, the code is new and under the Apache License 2.0 like the rest.
 
@@ -47,7 +47,7 @@ names of the words, the code is new and under the Apache License 2.0 like the re
   CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
   IN THE SOFTWARE.
 
-examples/games/sdl2_raycaster.fs is written after the raycasting demo of JS-Forth (https://github.com/CCurl/JS-Forth),
+examples/games/gfx_raycaster.fs is written after the raycasting demo of JS-Forth (https://github.com/CCurl/JS-Forth),
 by Chris Curl, under the MIT license below; the new code is under the Apache License 2.0 like the rest.
 
   MIT License
@@ -70,7 +70,7 @@ by Chris Curl, under the MIT license below; the new code is under the Apache Lic
   CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
   IN THE SOFTWARE.
 
-examples/games/sdl2_tetris.fs, examples/games/sdl2_snake.fs and examples/games/sdl2_minesweeper.fs are written after
+examples/games/gfx_tetris.fs, examples/games/gfx_snake.fs and examples/games/gfx_minesweeper.fs are written after
 tetris.r3, snake.r3 and minesweeper.r3 of r3forth (https://github.com/phreda4/r3), by Pablo Hugo
 Reda, under the MIT license below; the new code is under the Apache License 2.0 like the rest.
 

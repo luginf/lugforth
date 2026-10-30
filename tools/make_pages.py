@@ -135,13 +135,18 @@ def main():
   demo = ROOT + 'out/web/'
   if os.path.isdir(demo):
     os.makedirs(OUT + 'demo')
-    for name in ('terminal.html', 'lugforth.js', 'sdl2_breakout.html', 'sdl2_breakout.fs',
-                 'sdl2_drums.html', 'sdl2_drums.fs', 'sdl2_fm.html', 'sdl2_fm.fs',
-                 'fm_midi_parser.fs', 'fm_engine_web.fs', 'sdl2_roguelike.html',
-                 'sdl2_roguelike.fs', 'sdl2_tiles.png', 'sdl2_raycaster.html', 'sdl2_raycaster.fs',
-                 'sdl2_pinball.html',
+    for name in ('terminal.html', 'lugforth.js', 'gfx_breakout.html', 'gfx_breakout.fs',
+                 'gfx_drums.html', 'gfx_drums.fs', 'gfx_fm.html', 'gfx_fm.fs',
+                 'fm_midi_parser.fs', 'fm_engine_web.fs', 'gfx_roguelike.html',
+                 'gfx_roguelike.fs', 'gfx_tiles.png', 'gfx_raycaster.html', 'gfx_raycaster.fs',
+                 'gfx_pinball.html',
                  'pinball_common.fs', 'pinball_raid.fs', 'pinball_night.fs',
-                 'pinball_menu.fs'):
+                 'pinball_menu.fs',
+                 # games without a page of their own: terminal.html?run=<file>.fs
+                 'gfx_2048.fs', '2048.fs', 'gfx_snake.fs', 'gfx_tetris.fs',
+                 'gfx_minesweeper.fs', 'gfx_mastermind.fs', 'gfx_invaders.fs',
+                 'gfx_magnoquill.fs', 'gfx_demo.fs', 'gfx_3d.fs', '3d.fs',
+                 'gfx_turtle.fs'):
       if os.path.exists(demo + name):
         shutil.copy(demo + name, OUT + 'demo/' + name)
   # the HTML examples of examples/web, which load lugforth.js from out/web in the repository

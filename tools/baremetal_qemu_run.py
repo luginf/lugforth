@@ -17,8 +17,8 @@
 QEMU window, sends Forth files over the serial line, then turns this
 terminal into the board's keyboard and console.
 
-  tools/baremetal_qemu_run.py examples/games/sdl2_breakout.fs
-  tools/baremetal_qemu_run.py --board virt examples/games/sdl2_breakout.fs   (ramfb screen)
+  tools/baremetal_qemu_run.py examples/games/gfx_breakout.fs
+  tools/baremetal_qemu_run.py --board virt examples/games/gfx_breakout.fs   (ramfb screen)
   tools/baremetal_qemu_run.py --gui                  (the Forth console in the window)
 
 The keyboard and mouse of the QEMU window work too (USB on raspi3b,

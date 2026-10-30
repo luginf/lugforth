@@ -25,8 +25,8 @@
 #                     screen, keys from the window (BOARD=virt: with -device ramfb)
 #                     ZOOM=1 (640x480) or ZOOM=2 (1280x960, the default) sets its
 #                     size at boot; `1 console-zoom` changes it at the prompt
-#   make breakout     the same, with examples/games/sdl2_breakout.fs sent and started
-#   make roguelike    the same with examples/games/sdl2_roguelike.fs (images, tunes)
+#   make breakout     the same, with examples/games/gfx_breakout.fs sent and started
+#   make roguelike    the same with examples/games/gfx_roguelike.fs (images, tunes)
 #                     (BOARD=virt: on QEMU virt, -device ramfb, with sound)
 #   make disk         out/rpi/disk.img: an SD card image (MBR, FAT32) with the
 #                     examples, varvara/ and disk/autoexec.fs (azerty) as autoexec.fs, for DISK=out/rpi/disk.img (needs dosfstools, mtools)
@@ -53,7 +53,7 @@ SOURCES := start.S main.c builtins.h $(addprefix $(ROOT)/ports/baremetal/,builti
 # The examples keep their folders on the disk (games/, graphics/, music/, utils/, system/varvara/)
 EXAMPLE_FILES := $(foreach c,games graphics music utils,$(foreach f,$(wildcard $(ROOT)/examples/$(c)/*.fs),$(f)=$(c)/$(notdir $(f))))
 
-ASSETS ?= $(ROOT)/examples/games/sdl2_tiles.png $(ROOT)/examples/games/sdl2_tiles_alt.png
+ASSETS ?= $(ROOT)/examples/games/gfx_tiles.png $(ROOT)/examples/games/gfx_tiles_alt.png
 FORTH := rpi_boot.fs platform.fs $(wildcard $(ROOT)/ports/baremetal/*.fs) $(wildcard $(ROOT)/common/*.fs)
 
 # virt: RAM at 1G (QEMU's default -m 128M). Pi: loaded at 0x80000 by the
@@ -115,10 +115,10 @@ gui: all
 	$(RUN) --gui
 
 breakout: all
-	$(RUN) $(ROOT)/examples/games/sdl2_breakout.fs
+	$(RUN) $(ROOT)/examples/games/gfx_breakout.fs
 
 roguelike: all
-	$(RUN) $(ROOT)/examples/games/sdl2_roguelike.fs
+	$(RUN) $(ROOT)/examples/games/gfx_roguelike.fs
 
 disk:
 	mkdir -p $(OUT)

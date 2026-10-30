@@ -52,7 +52,7 @@ Lancez `lugforth` (voir [Binaires](#binaires), ou compilez-le avec
 `ninja posix`). Vous obtenez une bannière et l'invite:
 
 ```
-Lugforth v2026.10.30.7
+Lugforth v2026.10.30.8
 :; ===========>/>
 type 'info' for help
  ok
@@ -607,8 +607,8 @@ Lugforth Lugforth Lugforth  ok
 ([SDL2.md](SDL2_fr.md) est la visite guidée,
 [SDL2-words.md](SDL2-words_fr.md) la liste de tous les mots,
 [SDL2-web.md](SDL2-web_fr.md) la version web): lisez
-`examples/games/sdl2_snake.fs`, le plus court, puis `sdl2_tetris.fs` et
-`sdl2_breakout.fs` ([Exemples](#exemples)). `ed` et `writhdeck` sont
+`examples/games/gfx_snake.fs`, le plus court, puis `gfx_tetris.fs` et
+`gfx_breakout.fs` ([Exemples](#exemples)). `ed` et `writhdeck` sont
 aussi écrits en Forth, dans `ports/posix/`: les lire montre les mêmes
 mots à plus grande échelle. Pour le reste du langage,
 [docs/en/WORDS.md](../en/WORDS.md) liste chaque mot avec une courte
@@ -970,15 +970,15 @@ status_right  = goal help_bar
 
 | Programme | Quoi |
 |---|---|
-| `sdl2_breakout.fs` | casse-briques |
-| `sdl2_roguelike.fs` | roguelike |
-| `sdl2_tetris.fs`, `sdl2_snake.fs`, `sdl2_minesweeper.fs` | réécrits d'après les jeux de r3forth |
-| `sdl2_mastermind.fs` | mastermind: quatre couleurs sur six en dix essais, clavier ou souris |
-| `sdl2_3d.fs` | fils de fer qui tournent |
-| `sdl2_2048.fs` | tuiles coulissantes; `--no-anim` coupe l'animation |
+| `gfx_breakout.fs` | casse-briques |
+| `gfx_roguelike.fs` | roguelike |
+| `gfx_tetris.fs`, `gfx_snake.fs`, `gfx_minesweeper.fs` | réécrits d'après les jeux de r3forth |
+| `gfx_mastermind.fs` | mastermind: quatre couleurs sur six en dix essais, clavier ou souris |
+| `gfx_3d.fs` | fils de fer qui tournent |
+| `gfx_2048.fs` | tuiles coulissantes; `--no-anim` coupe l'animation |
 | `2048.fs` | 2048 dans le terminal |
 | `zmachine.fs` | interpréteur de Z-machine en un seul fichier: joue les histoires Infocom et Inform (`.z3 .z4 .z5 .z8`), `zplay story.z5` (essayez `lugforth examples/games/zmachine.fs examples/games/zmachine/cave.z5`, ou `cave_fr.z5` en français); aussi sous gforth (`ports/gforth/zmachine-gforth.fs`) |
-| `fm/sdl2_fm.fs` | synthétiseur FM, clavier MIDI sous Linux et dans le navigateur |
+| `fm/gfx_fm.fs` | synthétiseur FM, clavier MIDI sous Linux et dans le navigateur |
 | `inference/` | petit moteur d'inférence à règles, README en anglais et en français, Makefile avec des scénarios |
 
 Licences: 2048, 3d et le moteur d'inférence sont des portages de projets
@@ -1042,7 +1042,7 @@ et un Pi 4 (écrit à l'aveugle). La console est la ligne série. Les mots
 `sdl2` sont là: écran, texte, images, clavier et souris, bips et airs
 ABC. Les fichiers sont sur la carte SD (FAT12/16/32): `include`, `ls`,
 et un `autoexec.fs` exécuté au démarrage.
-`examples/games/sdl2_breakout.fs` et `sdl2_roguelike.fs` tournent sans
+`examples/games/gfx_breakout.fs` et `gfx_roguelike.fs` tournent sans
 changement.
 
 ```

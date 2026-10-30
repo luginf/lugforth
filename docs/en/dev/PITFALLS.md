@@ -94,7 +94,7 @@ platform. Part of [README.md](../../../README.md).
   `{ pat trk anchor from to }`) silently shadows it for the rest of that
   word: `from 1+ to et-c` then just pushes two numbers instead of
   assigning, with no error at all (`et-c` quietly keeps its old value).
-  Found in `examples/music/sdl2_pianoroll.fs` (a local called `to` broke
+  Found in `examples/music/gfx_pianoroll.fs` (a local called `to` broke
   its own `to et-c`, making a drag-to-extend-a-held-note gesture always
   extend back to column 0). Avoid common word names (`to`, `over`, `n`,
   ...) for locals; when a word misbehaves with no error at all, grep its
@@ -112,7 +112,7 @@ platform. Part of [README.md](../../../README.md).
   `line`, `step`...) hides it for the code defined after, and `sdl2`
   comes first in the search order, so your later calls to the name run
   the sdl2 one: on the bare-metal boots `draw` (images, `img x y --`)
-  gave "stack underflow" in sdl2_mouse_test.fs while POSIX was fine. Use
+  gave "stack underflow" in gfx_mouse_test.fs while POSIX was fine. Use
   `paint`, `render`... for your own.
 - Test tricks: `SDL_RenderReadPixels` to check pixels, `SDL_PushEvent`
   to fake input, Xvfb + `xdotool` for a real pointer, headless Chrome
@@ -139,7 +139,7 @@ platform. Part of [README.md](../../../README.md).
   SIGSEGV/SIGBUS/SIGFPE/SIGINT into the same silent throw, so check with
   `gdb -batch -ex run -ex bt` first: a clean process exit, not a caught
   signal, points at exactly this). Once found in
-  `examples/music/sdl2_pianoroll.fs` (its own `remember` collided this
+  `examples/music/gfx_pianoroll.fs` (its own `remember` collided this
   way, only visible when the app was launched with a cwd where
   evaluation order happened to expose it), the fix was to rename the
   word (`key-remember`). Give any word defined after `also posix` a name
@@ -161,7 +161,7 @@ platform. Part of [README.md](../../../README.md).
   `begin` or `do` at top level (outside a definition) does not work, no
   error: `s" --x" option? if false to flag then` ran its `then` part
   every time, which silently switched off the animation of
-  `sdl2_2048.fs`. Put it in a word. `<# #s #>` takes a double, as in ANS
+  `gfx_2048.fs`. Put it in a word. `<# #s #>` takes a double, as in ANS
   since 2026.10.27.2 (it took one cell before, as in eForth): write
   `n 0 <# #s #>`, or `s>d` for a signed number. `include` is relative to
   the file that includes, not to the working directory. `b@` and `b!` in
@@ -260,7 +260,7 @@ not just GBA:
   shared-machine sandbox) can look exactly like this same bug in a
   screenshot taken too early — give it real wall-clock time before
   concluding the screen is actually stuck.
-- **Ported while porting `examples/games/sdl2_roguelike.fs` to
+- **Ported while porting `examples/games/gfx_roguelike.fs` to
   `ports/gba/roguelike.fs`** (this Forth's `{ local }` locals and
   boolean chains have two more sharp edges, neither specific to GBA):
   - A boolean `and`/`or` chain of more than two terms needs one
@@ -279,7 +279,7 @@ not just GBA:
     iteration — so a loop body that declares one leaks a return-stack
     cell every time around, silently corrupting the loop's own
     index/limit living on that same stack.
-    `examples/games/sdl2_roguelike.fs`'s original `draw-bar` sidesteps
+    `examples/games/gfx_roguelike.fs`'s original `draw-bar` sidesteps
     this by using a stateful `shade` word instead of a per-iteration
     local in its hearts loop; the fix when porting is either the same
     (leave the value on the data stack instead of naming it) or factor

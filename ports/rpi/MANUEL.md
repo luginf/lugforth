@@ -24,7 +24,7 @@ sudo apt install dosfstools mtools        # pour fabriquer l'image de la carte S
 | `make run` | QEMU `virt`, console dans le terminal (Ctrl-A puis X pour quitter) |
 | `make run-pi3` | QEMU raspi3b, console dans le terminal |
 | `make screen` | fenêtre pour les graphiques, console dans le terminal |
-| `make breakout` | idem, avec le jeu `examples/games/sdl2_breakout.fs` |
+| `make breakout` | idem, avec le jeu `examples/games/gfx_breakout.fs` |
 | `make test` | démarre les cartes sous QEMU et vérifie tout (écran, clavier, fichiers, son, Varvara) |
 
 Pour quitter la fenêtre de `make gui` : fermer la fenêtre QEMU.
@@ -159,7 +159,7 @@ Différences avec Linux, dues à la FAT de la carte :
 ## 5. Graphiques : les mots `sdl2`
 
 Les mêmes mots courts que sous Linux et sur le web (`screen`, `color`, `box`,
-`line`, `text`, `flip`, `events`, `pressed?`, `beep`...). `examples/games/sdl2_breakout.fs`
+`line`, `text`, `flip`, `events`, `pressed?`, `beep`...). `examples/games/gfx_breakout.fs`
 tourne sans changement.
 
 ```forth

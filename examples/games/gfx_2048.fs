@@ -9,10 +9,11 @@
 \   r                   new game
 \   esc                 quits (or close the window)
 \ The tiles slide, merged ones and new ones pop; `--no-anim` after the file name turns that off:
-\   lugforth examples/games/sdl2_2048.fs --no-anim
+\   lugforth examples/games/gfx_2048.fs --no-anim
 \ Needs libSDL2.
 
-include 2048.fs
+\ On the web the page loads 2048.fs itself first (terminal.html?run=2048.fs,gfx_2048.fs).
+[undefined] grid-init [if] include 2048.fs [then]
 
 sdl2
 

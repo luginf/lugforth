@@ -17,30 +17,33 @@ limitations under the License.
 <!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lugforth Breakout</title>
+<title>Lugforth FM synth</title>
 <!--
-  Breakout written once with the sdl2 short words: the very same file,
-  examples/games/sdl2_breakout.fs, also runs on Linux with SDL2.
-  Left/right arrows or mouse or touch move the paddle. Space or click
-  launches the ball. Esc quits.
+  Two operator FM synthesizer written once with the sdl2 short words: the very same
+  file, examples/music/fm/gfx_fm.fs, also runs on Linux with SDL2 and ALSA MIDI.
+  Play with the mouse on the keyboard, the computer keyboard (read by key position, so
+  it works on AZERTY and QWERTY) or a MIDI keyboard through Web MIDI. Sliders and
+  sounds are on the screen. The browser keeps the sound off until your first click or
+  key press (a MIDI message does not count), and asks before it opens MIDI. Web MIDI
+  needs Chrome, Edge or Opera (or Firefox), on https or localhost.
   The Forth file is fetched with XMLHttpRequest, so serve it over http
   from out/web, where ninja web copies this page, its .fs files and lugforth.js:
   ninja web && cd out/web && python3 -m http.server
 -->
 <style>
-  body { background: #101830; color: #fff; font-family: sans-serif; }
+  body { background: #14182c; color: #fff; font-family: sans-serif; }
   #again { position: fixed; inset: 0; display: none; align-items: center;
            justify-content: center; flex-direction: column; gap: 1em;
-           z-index: 200000; background: #101830; color: #fff; }
+           z-index: 200000; background: #14182c; color: #fff; }
   #again button { font-size: 1.5em; padding: 0.5em 1.5em; cursor: pointer; }
 </style>
 <div id="again">
-  <div>Game closed.</div>
-  <button onclick="location.reload()">Play again</button>
+  <div>Synthesizer closed.</div>
+  <button onclick="location.reload()">Start again</button>
 </div>
 <script>
-  // Show "Play again" when the game closes its screen (Esc). The Forth
-  // interpreter stops there because the game file ends with bye.
+  // Show "Start again" when the synth closes its screen (Esc). The Forth
+  // interpreter stops there because the file ends with bye.
   (function() {
     var was = false;
     setInterval(function() {
@@ -51,5 +54,12 @@ limitations under the License.
     }, 300);
   })();
 </script>
-<script type="text/forth" src="sdl2_breakout.fs"></script>
+<script>var lugforth = null;</script>
+<script type="text/forth" src="fm_midi_parser.fs"></script>
+<script type="text/forth" src="fm_engine_web.fs"></script>
+<script type="text/forth" src="gfx_fm.fs"></script>
 <script src="lugforth.js"></script>
+<script>
+  // lugforth.js hands its context over (window.lugforth) instead of starting by itself.
+  window.addEventListener('load', function() { lugforth.Start(); });
+</script>

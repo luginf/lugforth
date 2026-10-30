@@ -15,7 +15,7 @@
 ( Lazy load the sdl2 short words for the Web: canvas, keys, mouse, beeps )
 \
 \ Same words and stack effects as ports/posix/sdl2.fs, so a game written with
-\ the short words (see examples/games/sdl2_breakout.fs) runs unchanged in both.
+\ the short words (see examples/games/gfx_breakout.fs) runs unchanged in both.
 \ Only the short words exist here, not the raw SDL_ names nor sdl2-image,
 \ sdl2-ttf and sdl2-mixer. See docs/en/SDL2-web.md.
 \ NOTE: the block below is a string, so it must not contain a vertical bar,
@@ -35,7 +35,7 @@ r~
     style: 'rgb(0,0,0)', r: 0, g: 0, b: 0, a: 255,
     down: new Uint8Array(256), hit: new Uint8Array(256), snap: new Uint8Array(256),
     sdown: new Uint8Array(512), shit: new Uint8Array(512), ssnap: new Uint8Array(512),
-    mx: 0, my: 0, wheel: 0, pwheel: 0, lastKey: 0, quit: 0, frame: false,
+    mx: 0, my: 0, wheel: 0, pwheel: 0, lastKey: 0, quit: 0, frame: false, typed: [],
     ac: null, beepEnd: 0, hitEnd: 0, nodes: [], noise: null, cursorHidden: false,
     layer: false, spacer: null   // layer: the drawing above the text of the terminal (graphic)
   };
@@ -230,6 +230,9 @@ r~
         if (!S.sdown[sc]) { S.shit[sc] = 1; }
         S.sdown[sc] = 1;
       }
+      var ch = e.key.length === 1 ? e.key.charCodeAt(0) :
+        (e.key === 'Enter' ? 13 : (e.key === 'Backspace' ? 8 : (e.key === 'ArrowUp' ? 1 : 0)));
+      if (ch > 0 && ch < 256 && S.typed.length < 64) { S.typed.push(ch); }
       e.preventDefault(); e.stopImmediatePropagation();
     }, true);
     window.addEventListener('keyup', function(e) {
@@ -472,6 +475,15 @@ JSWORD: events { }
 JSWORD: pressed? { k -- f }
   if (k >= 65 && k <= 90) { k += 32; }
   return context.sdl.snap[k & 255] ? -1 : 0;
+~
+JSWORD: typed { -- n }
+  var c = context.sdl.typed.shift();
+  return c ? c : 0;
+~
+JSWORD: unpress { k -- }
+  if (k >= 65 && k <= 90) { k += 32; }
+  k &= 255;
+  context.sdl.down[k] = 0; context.sdl.hit[k] = 0; context.sdl.snap[k] = 0;
 ~
 JSWORD: scan? { k -- f }
   return context.sdl.ssnap[k & 511] ? -1 : 0;

@@ -34,7 +34,7 @@ become THROW. Not tried on a real Pi; Pi 4 written blind (QEMU 8.2 has
 no raspi4b). See ports/rpi/README.md. Graphics: `sdl2` short words on
 the mailbox framebuffer (ports/baremetal/sdl2.fs, screen.h), keys from
 the UART; `make -C ports/rpi breakout` plays
-examples/games/sdl2_breakout.fs in a QEMU raspi3b window (`BOARD=virt`:
+examples/games/gfx_breakout.fs in a QEMU raspi3b window (`BOARD=virt`:
 virt with `-device ramfb`, set up through fw_cfg), `make test` checks
 both by screendump. Text (font8x8), images (PNGs built in by
 tools/baremetal_assets.py), keyboard/mouse (virtio-input on virt with
@@ -42,7 +42,7 @@ tools/baremetal_assets.py), keyboard/mouse (virtio-input on virt with
 through QMP input-send-event), sound (sound.h mixer, virtio-sound on
 virt checked from a -audiodev wav file; Pi 3 PWM+DMA written blind),
 `paste` (a whole file over serial, then Ctrl-D: multi-line strings
-work). `make roguelike` runs examples/games/sdl2_roguelike.fs. QEMU runs
+work). `make roguelike` runs examples/games/gfx_roguelike.fs. QEMU runs
 a whole bcm2835 DMA chain at once: a looping chain hangs it (even
 SIGTERM), so never start one blindly. Files: storage.h (Pi SDHCI/EMMC
 polled, virt virtio-blk) + fat.h (FAT12/16/32, MBR or not, long names
@@ -101,7 +101,7 @@ rpi/sound.h), checked by the test through `-audiodev wav` with QEMU
 intel-hda + hda-duplex (`make run` has them too, AUDIODEV=pa);
 `sound-off` / `sound` keep the choice in lugforth.ini
 (ports/efi/sound_ini.fs); not tried on a real PC. Booted from a real USB
-stick (prompt, sdl2_3d, roguelike work); ports/efi/README.md has the
+stick (prompt, gfx_3d, roguelike work); ports/efi/README.md has the
 steps (Secure Boot off, one-time boot menu). Other file systems:
 `load-driver` (pc, files.h: LoadImage from a buffer, StartImage,
 connect_all) and ports/efi/disk/drivers.fs (on the stick, NOT run at
@@ -149,7 +149,7 @@ while others live, F5+ terminals.
 ## Web (ports/web)
 
 - The cells are 32 bits (the other builds have 64): a 16.16 fixed point
-  product must go through `*/` (see `examples/games/sdl2_raycaster.fs`).
+  product must go through `*/` (see `examples/games/gfx_raycaster.fs`).
   Pages are copied to `out/web` by `ports/web/BUILD` and must be served
   from there (`ninja web && cd out/web && python3 -m http.server`);
   `tools/make_pages.py` copies them to `demo/` on the site.
@@ -217,7 +217,7 @@ A prototype with a roguelike. See `ports/gba/README.md`; the boot-chain
 traps met are in [PITFALLS.md](PITFALLS.md).
 
 Since 2026.10.30.7 a second cartridge, `gba_magnoquill_boot.fs`: the
-point cloud of `sdl2_magnoquill.fs`, its maths in C in fixed point
+point cloud of `gfx_magnoquill.fs`, its maths in C in fixed point
 (`GBA-MAGNO`), at about 20 pictures a second for 400 points under mgba
 (checked there, not on a console). The linker script now has an IWRAM
 section and aligns the ROM images that `crt0.s` copies; the roguelike
@@ -225,7 +225,7 @@ and the tile demo still boot after that (screenshots under mgba).
 
 ## The bare-metal disk and the USB stick
 
-The folders of `examples/` are kept (`include games/sdl2_snake.fs`,
+The folders of `examples/` are kept (`include games/gfx_snake.fs`,
 `system/varvara/varvara_rpi.fs`), with `lib/` (editors), `MANUAL.md` and
 `WORDS.md` (docs/), `autoexec.fs`. Built by the Makefiles of ports/rpi
 (`disk`) and ports/efi (`usb`, `stage`).
@@ -249,7 +249,7 @@ another client owns the DRM master).
 
 What was found on that tty (2026-10-30):
 
-- `sdl2_magnoquill.fs`, `sdl2_mouse_test.fs`, `sdl2_demo.fs` and
+- `gfx_magnoquill.fs`, `gfx_mouse_test.fs`, `gfx_demo.fs` and
   `desktop.fs` run, with sound, with no `SDL_AUDIODRIVER` and no
   `AUDIODEV` (`alsa`, `pulseaudio` and `pipewire` all work). The first
   runs of the demo and the desktop froze; with `SDL_AUDIODRIVER=dummy`
@@ -260,11 +260,11 @@ What was found on that tty (2026-10-30):
   `mouse-x mouse-y` when `screen` found the `KMSDRM` driver
   (`soft-cursor`; SDL names the driver in upper case, the first version
   compared with `kmsdrm` and never matched), unless the program asked
-  `0 cursor` (as `sdl2_mouse_test.fs`, which draws its own cross). The
+  `0 cursor` (as `gfx_mouse_test.fs`, which draws its own cross). The
   desktop also shows its frame five times a second there. Not drawn by
   the SDL console (`sdl2_console.fs`) nor by `varvara.fs`, which
   present the frame themselves.
-- `Error including: ...sdl2_demo.fs` after Esc is a caught `-9`
+- `Error including: ...gfx_demo.fs` after Esc is a caught `-9`
   (segfault) in `SDL_DestroyWindow`, and in `SDL_Quit` too (it destroys
   the windows), once frames were shown (a window opened and closed
   without drawing did not crash). Probably a KMSDRM/GBM bug of SDL
@@ -281,7 +281,7 @@ What was found on that tty (2026-10-30):
 - Audio card: `AUDIODEV=plughw:0,0`, which `main.c` forces for the
   static build, would be wrong on that PC (card 0 is the NVIDIA HDMI,
   with no device 0; the sound card is card 1, `plughw:1,0`).
-- `make -C examples smoke`: `sdl2_magnoquill.fs` did not stop under
+- `make -C examples smoke`: `gfx_magnoquill.fs` did not stop under
   `timeout 5` on this PC (dummy drivers, also with the previous
   `sdl2.fs`), where it runs fine by hand. Not understood.
 
@@ -456,7 +456,7 @@ whatever its libc.
   for this build).
 - Tested here: `all_tests`, `sdl2_console_tests`, `editors_pty_test.py`,
   `--gui` under Xvfb (accent typed with xdotool, drawn with the TrueType
-  font), the raycaster, `sdl2_roguelike.fs` (image sheet loaded, mixer
+  font), the raycaster, `gfx_roguelike.fs` (image sheet loaded, mixer
   opened) under Xvfb, a C program linked the same way. Not tested: a
   machine without X libraries (it should not need any), Wayland-only
   desktops (XWayland needed), audible sound, other keyboards than

@@ -1,4 +1,4 @@
-\ Tests of sdl2_turtle.fs, loaded without its demo:  lugforth examples/graphics/turtle_tests.fs
+\ Tests of gfx_turtle.fs, loaded without its demo:  lugforth examples/graphics/turtle_tests.fs
 \ (the output ends with PASS). Needs libSDL2 and SDL_VIDEODRIVER=dummy for no window on screen.
 
 variable tn   variable tfail
@@ -8,7 +8,7 @@ variable tn   variable tfail
   then 2drop ;
 
 : turtle-no-run ;
-include sdl2_turtle.fs
+include gfx_turtle.fs
 
 : square ( n -- ) 4 0 do dup forward 90 right loop drop ;
 : where ( -- x y ) tpos ;

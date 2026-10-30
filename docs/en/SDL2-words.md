@@ -96,6 +96,8 @@ Word lists: [alphabetical index](#alphabetical-index).
 | `pressed?` | `( key -- f )` | True while the key or mouse button is held, as of the last `events`. Key is a character (`[char] a`, case ignored), a `key-` constant, or a `-BUTTON` constant. A press released within the same frame is not seen. |
 | `scan?` | `( scancode -- f )` | True while the key at that place of the keyboard is held (SDL scancode: 4 to 29 are A to Z of a QWERTY, 30 to 39 are 1 to 9 and 0, 54 55 56 are comma, period, slash), whatever the layout. |
 | `last-key` | `( -- n )` | Value. Code of the last key pressed. |
+| `typed` | `( -- c )` | The next character typed, or 0 when there is none. Printable characters come from the text input events (so shift, accents and AltGr are right), plus 13 for Enter, 8 for Backspace and 1 for the up arrow. Read it in a loop after `events` for a prompt inside the window (examples/graphics/gfx_turtle.fs). The oldest characters are dropped if the program does not read them. |
+| `unpress` | `( key -- )` | Forget a key that is down, so that `pressed?` says no until it is pressed again (to take an Esc once). |
 | `mouse-x` `mouse-y` | `( -- n )` | Values. Last mouse position seen in events, in logical pixels (the `screen` size), whatever the `zoom`. |
 | `wheel` | `( -- n )` | Value. Mouse wheel movement handled by the last `events` (up is positive). |
 | `key-left` `key-right` `key-up` `key-down` | `( -- n )` | Constants. Arrow keys, for `pressed?`. |
@@ -566,5 +568,5 @@ other words is `docs/en/WORDS.md` (see `docs/en/dev/PITFALLS.md`,
 `TTF_Quit` `TTF_RenderUTF8_Blended` `TTF_SizeUTF8` `tune-bpm`
 `tune-level` `tune-loop` `tune-midi` `tune-ms` `tune-notes` `tune-play`
 `tune-playing?` `tune-program` `tune-save` `tune-send` `tune-stop`
-`wait` `wave` `wheel` `white` `width` `window-handle` `yellow` `zoom`
+`typed` `unpress` `wait` `wave` `wheel` `white` `width` `window-handle` `yellow` `zoom`
 

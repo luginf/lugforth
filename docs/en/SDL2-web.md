@@ -2,15 +2,15 @@
 
 The web build has the same `sdl2` short words as the Linux build
 ([SDL2.md](SDL2.md)), drawn on an HTML canvas. A game written with them
-runs unchanged in both: `examples/games/sdl2_breakout.fs` is loaded as
-is by `ports/web/sdl2_breakout.html`, `examples/music/sdl2_drums.fs` by
-`ports/web/sdl2_drums.html`, `examples/music/fm/sdl2_fm.fs` (an FM
+runs unchanged in both: `examples/games/gfx_breakout.fs` is loaded as
+is by `ports/web/gfx_breakout.html`, `examples/music/gfx_drums.fs` by
+`ports/web/gfx_drums.html`, `examples/music/fm/gfx_fm.fs` (an FM
 synthesizer with MIDI input, see `examples/music/fm/README.md`) by
-`examples/music/fm/sdl2_fm.html`, `examples/games/sdl2_roguelike.fs`
-(with its tile sheet `examples/games/sdl2_tiles.png`) by
-`ports/web/sdl2_roguelike.html` and `examples/games/pinball/` by
-`ports/web/sdl2_pinball.html`, and `examples/games/sdl2_raycaster.fs` (a
-3D maze, steered with the mouse) by `ports/web/sdl2_raycaster.html`. The
+`examples/music/fm/gfx_fm.html`, `examples/games/gfx_roguelike.fs`
+(with its tile sheet `examples/games/gfx_tiles.png`) by
+`ports/web/gfx_roguelike.html` and `examples/games/pinball/` by
+`ports/web/gfx_pinball.html`, and `examples/games/gfx_raycaster.fs` (a
+3D maze, steered with the mouse) by `ports/web/gfx_raycaster.html`. The
 cells of the web build are 32 bits: a game that works in 16.16 fixed
 point must multiply through `*/` (see the raycaster).
 
@@ -39,11 +39,11 @@ refuse on `file://`, so serve the build directory over http:
 ```sh
 ninja web
 cd out/web && python3 -m http.server
-# then open http://localhost:8000/sdl2_breakout.html
-# or            http://localhost:8000/sdl2_drums.html
-# or            http://localhost:8000/sdl2_fm.html
-# or            http://localhost:8000/sdl2_roguelike.html
-# or            http://localhost:8000/sdl2_pinball.html
+# then open http://localhost:8000/gfx_breakout.html
+# or            http://localhost:8000/gfx_drums.html
+# or            http://localhost:8000/gfx_fm.html
+# or            http://localhost:8000/gfx_roguelike.html
+# or            http://localhost:8000/gfx_pinball.html
 ```
 
 Arrows, mouse or touch move the paddle. Space, click or tap launches the
@@ -116,7 +116,7 @@ These words have the same names and stack effects as on Linux, see
   `load-image` waits for the file (the interpreter yields meanwhile) and
   throws if it cannot be loaded. As on Linux, a name with directories
   that is not found is tried again without them:
-  `s" examples/games/sdl2_tiles.png"` finds `sdl2_tiles.png` next to the
+  `s" examples/games/gfx_tiles.png"` finds `gfx_tiles.png` next to the
   page. `image-tint` multiplies the colors, as in SDL, using a copy of
   the image kept for each color.
 * **Sound** starts after the first key press or click, because browsers
@@ -164,3 +164,18 @@ remembered tiles are darker, monsters chase and hurt, Esc closes the
 screen. Its music was checked too: the tune is read (37 notes, 21.8 s at
 88 bpm), all its notes are scheduled and repeat, `m` stops and restarts
 it, and Esc stops it. Firefox and Safari are not tested.
+
+## Games without a page of their own
+
+`terminal.html?run=<file>.fs` runs any game file served next to the page
+(several files, loaded in this order: `?run=2048.fs,gfx_2048.fs`).
+Tested in headless Chromium on 2026-10-30 (the screen opens and is
+drawn): `gfx_2048` (with `2048.fs`), `gfx_snake`, `gfx_tetris`,
+`gfx_minesweeper`, `gfx_mastermind`, `gfx_invaders`, `gfx_magnoquill`,
+`gfx_demo`, `gfx_3d` (with `3d.fs`), `gfx_turtle` (commands typed in a
+prompt under the drawing). They are copied to `out/web` by
+`ports/web/BUILD` and linked from the home page. Do not run on the web:
+`gfx_mouse_test` (needs `sdl2-ttf`), `gfx_pianoroll` (a soundfont; not
+tried). A file that does `include` needs the guard `[undefined] word
+[if] include file.fs [then]` and its included file listed first in
+`run=`.

@@ -45,6 +45,7 @@ z" SDL_DestroyWindow" 1 sdl SDL_DestroyWindow ( a -- void )
 z" SDL_SetWindowTitle" 2 sdl SDL_SetWindowTitle ( a z -- void )
 z" SDL_SetWindowFullscreen" 2 sdl SDL_SetWindowFullscreen ( a n -- n )
 z" SDL_ShowCursor" 1 sdl SDL_ShowCursor ( n -- n )
+z" SDL_StartTextInput" 0 sdl SDL_StartTextInput ( -- void )
 z" SDL_GetCurrentVideoDriver" 0 sdl SDL_GetCurrentVideoDriver ( -- z )
 z" SDL_CreateRenderer" 3 sdl SDL_CreateRenderer ( a n n -- a )
 z" SDL_DestroyRenderer" 1 sdl SDL_DestroyRenderer ( a -- void )
@@ -157,6 +158,7 @@ create ev 64 allot
   renderer width height SDL_RenderSetLogicalSize drop
   renderer SDL_BLENDMODE_BLEND SDL_SetRenderDrawBlendMode drop
   kmsdrm? to soft-cursor
+  SDL_StartTextInput drop
   0 to quitting
 ;
 
@@ -299,11 +301,24 @@ create scans 512 allot   scans 512 erase   ( keys by SDL scancode, whatever the 
 
 : key-index ( sym scancode -- n )
   swap dup $40000000 and if drop $7f and 128 + else nip $ff and then ;
+( ---- Typed characters: `typed` gives the next one, or 0. Printable characters come
+  from the text input events so shift, accents and AltGr are right; plus 13 enter,
+  8 backspace and 1 for the up arrow. Not read by the program: the oldest are dropped. )
+create tq 64 allot   0 value tq-r   0 value tq-w
+$303 constant SDL_TEXTINPUT
+: tq-push ( c -- )
+  tq-w tq-r - 64 < if tq-w 63 and tq + c!  1 +to tq-w else drop then ;
+: typed ( -- c )
+  tq-r tq-w = if 0 exit then
+  tq-r 63 and tq + c@  1 +to tq-r ;
+: special-key ( k -- )
+  dup 13 = over 8 = or if tq-push exit then
+  210 = if 1 tq-push then ;
 : key-event ( f -- )
   ev 20 + sl@ ev 16 + sl@ key-index { f k }
   f k keys + c!
   f ev 16 + sl@ $1ff and scans + c!
-  f if k to last-key then
+  f if k to last-key  k special-key then
 ;
 : button-event ( f -- )
   256 ev 16 + c@ - keys + c!
@@ -314,6 +329,7 @@ create scans 512 allot   scans 512 erase   ( keys by SDL scancode, whatever the 
   dup SDL_QUIT = if drop -1 to quitting exit then
   dup SDL_KEYDOWN = if drop 1 key-event exit then
   dup SDL_KEYUP = if drop 0 key-event exit then
+  dup SDL_TEXTINPUT = if drop ev 12 + begin dup c@ dup while tq-push 1+ repeat 2drop exit then
   dup SDL_MOUSEMOTION = if drop
     ev 20 + sl@ to mouse-x   ev 24 + sl@ to mouse-y exit then
   dup SDL_MOUSEBUTTONDOWN = if drop 1 button-event exit then
@@ -329,6 +345,8 @@ create scans 512 allot   scans 512 erase   ( keys by SDL scancode, whatever the 
 : quit! ( -- ) -1 to quitting ;
 : fold-case ( k -- k ) dup 65 >= over 90 <= and if 32 + then ;
 : pressed? ( k -- f ) fold-case $ff and keys + c@ 0<> ;
+: unpress ( k -- )   ( forget a key that is down, so pressed? says no until it is pressed again )
+  fold-case $ff and keys + 0 swap c! ;
 : scan? ( scancode -- f ) $1ff and scans + c@ 0<> ;   ( by place on the keyboard: 4 is the key A of a QWERTY )
 
 ( ---- Beeps: square, triangle, saw and noise waves through a queue ---- )

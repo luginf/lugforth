@@ -177,7 +177,7 @@ Limits, by design:
   never polls the USB mouse or tablet (QEMU keeps the PS/2 mouse as the active
   one), so there is no mouse under QEMU and `make test` does not check it.
   `mouse-info` prints what the firmware reports (pointers, last raw dx dy, resolution);
-  `examples/graphics/sdl2_mouse_test.fs` shows position, buttons, wheel and a speed figure.
+  `examples/graphics/gfx_mouse_test.fs` shows position, buttons, wheel and a speed figure.
   The sdl2 words draw a small arrow (in `fb_flip`, put back after the copy) unless the
   program says `0 cursor`; `n mouse-cursor` toggles it.
 * A small desktop: `include utils/desktop_bm.fs` (it starts at once; `desk` brings it back). Icons, a file

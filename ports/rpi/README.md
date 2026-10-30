@@ -40,8 +40,8 @@ on every run, 121 checks in all:
   released, absolute and relative motion, and typing at the prompt.
 * virt's sound is recorded with `-audiodev wav` and analyzed: frequency
   and length of beeps, the fade of a hit, the notes of a tune.
-* `examples/games/sdl2_breakout.fs` (sent line by line) and
-  `examples/games/sdl2_roguelike.fs` (sent with `paste`) run unchanged.
+* `examples/games/gfx_breakout.fs` (sent line by line) and
+  `examples/games/gfx_roguelike.fs` (sent with `paste`) run unchanged.
 * Each machine gets a FAT disk made by `tools/baremetal_mkdisk.py`: FAT16 and
   FAT12 on virt, MBR + FAT32 on raspi3b's SD card. The test runs `include`,
   `needs` into a subdirectory and a long name. It writes 20000 bytes over
@@ -139,7 +139,7 @@ and `SND-QUEUED` (a queue of stereo frames played with the mixer's sound), `UNIX
 
 The vocabulary `sdl2` has the same short words as Linux
 (`docs/en/SDL2-words.md`) and the web (`docs/en/SDL2-web.md`). So
-`examples/games/sdl2_breakout.fs` runs unchanged, sent over the serial line:
+`examples/games/gfx_breakout.fs` runs unchanged, sent over the serial line:
 
 ```sh
 make -C ports/rpi breakout             # QEMU raspi3b window; play from this terminal
@@ -172,8 +172,8 @@ The words that exist:
 * Images: `load-image free-image image-size draw draw-size draw-part
   image-alpha image-tint` (and `sdl2-image`, which does nothing). There is
   no PNG decoder on the board, so the images are built into the kernel: the PNG files of
-  `ASSETS` in the Makefile (`examples/games/sdl2_tiles.png`,
-  `examples/games/sdl2_tiles_alt.png`) are turned into pixels by
+  `ASSETS` in the Makefile (`examples/games/gfx_tiles.png`,
+  `examples/games/gfx_tiles_alt.png`) are turned into pixels by
   `tools/baremetal_assets.py`. That script has its own PNG decoder and needs only
   zlib. `load-image` finds them by name, ignoring directories, and throws
   -38 for any other name. Add your own with
@@ -270,7 +270,7 @@ disk was found.
 
 ```sh
 make -C ports/rpi disk                          # out/rpi/disk.img: the examples
-make -C ports/rpi screen DISK=out/rpi/disk.img  # then: ls  include sdl2_roguelike.fs
+make -C ports/rpi screen DISK=out/rpi/disk.img  # then: ls  include gfx_roguelike.fs
 tools/baremetal_mkdisk.py card.img prog.fs lib/util.fs=util.fs autoexec.fs
 ```
 
@@ -302,7 +302,7 @@ tools/baremetal_mkdisk.py card.img prog.fs lib/util.fs=util.fs autoexec.fs
 
 Without a card, type `paste`, send the text, then Ctrl-D (byte 4).
 The text is kept and evaluated at once, as `include` would, so strings and
-comments may span lines: `examples/games/sdl2_roguelike.fs` keeps its tunes in
+comments may span lines: `examples/games/gfx_roguelike.fs` keeps its tunes in
 `r~ ... ~` over several lines, which line by line sending breaks.
 `tools/baremetal_qemu_run.py` sends files this way (`make roguelike`). Up to
 `paste-max` bytes (256K).

@@ -5,7 +5,7 @@
 \ shader https://github.com/Rage997/Magnoquill-Driftflare-Quiverbloom
 \ (a point cloud driven by a few sines, in rainbow colors, additive blending).
 \
-\ Run:  out/posix/lugforth examples/graphics/sdl2_magnoquill.fs
+\ Run:  out/posix/lugforth examples/graphics/gfx_magnoquill.fs
 \
 \ Controls:
 \   Up/Down      animation speed 1..10 (held)

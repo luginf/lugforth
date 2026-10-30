@@ -14,7 +14,7 @@
 
 ( The sdl2 short words on bare metal: the HDMI framebuffer, keys from the UART )
 \ Same names and stack effects as ports/posix/sdl2.fs and ports/web/sdl2.fs,
-\ so a game written with the short words (examples/games/sdl2_breakout.fs) runs
+\ so a game written with the short words (examples/games/gfx_breakout.fs) runs
 \ unchanged. Drawing is in C (FB- words in ports/baremetal/screen.h). Drawing,
 \ text (a built-in 8x8 font), images (built into the kernel), timing, keys
 \ and mouse, beeps and ABC tunes. See ports/rpi/README.md.
@@ -158,6 +158,10 @@ forget-keys
 : mouse-x ( -- n ) input-mouse-x ;
 : mouse-y ( -- n ) input-mouse-y ;
 : wheel ( -- n ) input-wheel ;
+
+: typed ( -- c )   ( the next typed character, or 0; no shift or accents here, the serial line and the keyboard give characters already )
+  key? if key else 0 then ;
+: unpress ( k -- )   255 and cells key-times + -1000000 swap ! ;
 
 ( ---- Text: one built-in 8x8 font, scaled ---- )
 \ As sdl2-ttf on Linux, but no TrueType: load-font ignores the file name and

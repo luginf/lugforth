@@ -14,7 +14,7 @@
 
 ( A 2 operator FM synthesizer with MIDI input, for the POSIX build )
 \
-\ Not part of the interpreter: include it (examples/music/fm/sdl2_fm.fs does), then type sdl2-fm,
+\ Not part of the interpreter: include it (examples/music/fm/gfx_fm.fs does), then type sdl2-fm,
 \ which loads the words like the other sdl2 extensions. Usage:
 \   include engine_posix.fs
 \   sdl2-fm

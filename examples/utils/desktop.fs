@@ -748,11 +748,11 @@ create line-buf 400 allot
   1 s" Writhdeck" s" writhdeck" icon
   1 s" Ed" s" ed" icon
   3 s" Settings" s" " icon
-  2 s" Snake" s" examples/games/sdl2_snake.fs" icon
-  2 s" 2048" s" examples/games/sdl2_2048.fs" icon
-  2 s" Tetris" s" examples/games/sdl2_tetris.fs" icon
-  2 s" Minesweeper" s" examples/games/sdl2_minesweeper.fs" icon
-  2 s" Demo" s" examples/graphics/sdl2_demo.fs" icon ;
+  2 s" Snake" s" examples/games/gfx_snake.fs" icon
+  2 s" 2048" s" examples/games/gfx_2048.fs" icon
+  2 s" Tetris" s" examples/games/gfx_tetris.fs" icon
+  2 s" Minesweeper" s" examples/games/gfx_minesweeper.fs" icon
+  2 s" Demo" s" examples/graphics/gfx_demo.fs" icon ;
 
 0 value saved-argc
 : argc@ ( -- n ) [ also internals ] 'argc @ [ previous ] ;

@@ -14,13 +14,26 @@ MinGW, with the SDL2 DLLs, examples and docs), macOS (zip), Android
 <code>examples/</code> and <code>docs/</code>.</div>
 <div class="card"><h3>Try it</h3>
 The <a href="demo/terminal.html">web version</a>, with
-<a href="demo/sdl2_breakout.html">Breakout</a>,
-<a href="demo/sdl2_drums.html">drums</a>, a
-<a href="demo/sdl2_roguelike.html">roguelike</a>, a 3D maze with the
-<a href="demo/sdl2_raycaster.html">raycaster</a> (steered with the mouse) and a
-<a href="demo/sdl2_pinball.html">pinball</a> (touch buttons on phones).
+<a href="demo/gfx_breakout.html">Breakout</a>,
+<a href="demo/gfx_drums.html">drums</a>, a
+<a href="demo/gfx_roguelike.html">roguelike</a>, a 3D maze with the
+<a href="demo/gfx_raycaster.html">raycaster</a> (steered with the mouse) and a
+<a href="demo/gfx_pinball.html">pinball</a> (touch buttons on phones).
+More games, run in the same page:
+<a href="demo/terminal.html?run=2048.fs,gfx_2048.fs">2048</a>,
+<a href="demo/terminal.html?run=gfx_snake.fs">Snake</a>,
+<a href="demo/terminal.html?run=gfx_tetris.fs">Tetris</a>,
+<a href="demo/terminal.html?run=gfx_minesweeper.fs">Minesweeper</a>,
+<a href="demo/terminal.html?run=gfx_mastermind.fs">Mastermind</a>,
+<a href="demo/terminal.html?run=gfx_invaders.fs">Space Invaders</a>,
+<a href="demo/terminal.html?run=gfx_magnoquill.fs">Magnoquill</a>,
+<a href="demo/terminal.html?run=3d.fs,gfx_3d.fs">a 3D cube</a>,
+<a href="demo/terminal.html?run=gfx_turtle.fs">Logo turtle</a> (type commands under the
+drawing) and the
+<a href="demo/terminal.html?run=gfx_demo.fs">SDL2 tour</a>.
 Any game file also runs with
-<code>terminal.html?run=sdl2_roguelike.fs</code>. Drawing from HTML
+<code>terminal.html?run=gfx_roguelike.fs</code> (several files:
+<code>?run=2048.fs,gfx_2048.fs</code>). Drawing from HTML
 buttons: <a href="demo/button.html">Forth word called by a button</a>,
 <a href="demo/vector_logo.html">vector lettering</a>,
 <a href="demo/vector_logo_outline.html">outline lettering</a>,

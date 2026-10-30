@@ -13,7 +13,7 @@
 \ limitations under the License.
 
 \ Magnoquill Driftflare Quiverbloom on the Game Boy Advance: the point cloud of
-\ examples/graphics/sdl2_magnoquill.fs (a few sines, rainbow colors), drawn in mode 3
+\ examples/graphics/gfx_magnoquill.fs (a few sines, rainbow colors), drawn in mode 3
 \ (240x160). The formulas are the same, but they run in C, in 16.16 fixed point
 \ with a sine table (`gba_magno` in main.c, opcode GBA-MAGNO): the first version,
 \ in Forth floats, took more than ten seconds per picture for 250 points (the

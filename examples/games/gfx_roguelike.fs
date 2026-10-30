@@ -16,11 +16,11 @@
 
 \ A minimal roguelike with SDL2 and a tile sheet: random rooms and corridors,
 \ line of sight, monsters that chase you, potions and stairs down. One turn
-\ per move. The 8x8 tiles come from examples/games/sdl2_tiles.png (a row of 8 tiles:
+\ per move. The 8x8 tiles come from examples/games/gfx_tiles.png (a row of 8 tiles:
 \ wall, floor, stairs, potion, player, monster, skull, heart), drawn with
 \ sdl2-image; run it from the lugforth directory or from examples/. It also
-\ runs in the browser (ports/web/sdl2_roguelike.html). examples/games/make_sdl2_tiles.fs
-\ draws the sheet (make_sdl2_tiles.py is the same in Python), edit it to
+\ runs in the browser (ports/web/gfx_roguelike.html). examples/games/make_gfx_tiles.fs
+\ draws the sheet (make_gfx_tiles.py is the same in Python), edit it to
 \ change the tiles.
 \   arrows or w a s d    move; walk into a monster to hit it
 \   space or .           wait a turn (or start again after dying)
@@ -34,7 +34,7 @@
 \
 \ Music: two short tunes written in ABC notation (the text format of
 \ abcnotation.com) below, played by sdl2-abc. On Linux they are played as MIDI
-\ through SDL2_mixer, with the soundfont sdl2_roguelike.sf2 if you put one
+\ through SDL2_mixer, with the soundfont gfx_roguelike.sf2 if you put one
 \ beside this file (any General MIDI .sf2 or .sf3, renamed), else the one of
 \ the system. In the browser a simple synthesizer plays them. If nothing can
 \ play them the game stays silent.
@@ -350,17 +350,17 @@ create digit-bits
 
 ." arrows or wasd: move and hit  space: wait  click: step  m: music  esc: quit" cr
 3 to zoom
-s" sdl2_roguelike.sf2" soundfont? drop
+s" gfx_roguelike.sf2" soundfont? drop
 60 music-volume
 320 208 screen
 s" Roguelike" title
 \ the sheet is beside this file: found from the repository root, from examples/ or from here
 : tiles-name ( -- a n )   ( the browser and the boards find it by its name alone )
-  s" sdl2_tiles.png" ;
+  s" gfx_tiles.png" ;
 [defined] posix [if]
 : tiles-path ( -- a n )
-  s" examples/games/sdl2_tiles.png" 2dup file-exists? if exit then 2drop
-  s" games/sdl2_tiles.png" 2dup file-exists? if exit then 2drop
+  s" examples/games/gfx_tiles.png" 2dup file-exists? if exit then 2drop
+  s" games/gfx_tiles.png" 2dup file-exists? if exit then 2drop
   tiles-name ;
 [else]
 : tiles-path ( -- a n ) tiles-name ;

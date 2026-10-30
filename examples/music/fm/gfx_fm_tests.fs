@@ -15,7 +15,7 @@
 ( Tests of the FM synthesizer and of its MIDI byte parser )
 \
 \ Not part of the default build. Run with:
-\   SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy lugforth examples/music/fm/sdl2_fm_tests.fs
+\   SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy lugforth examples/music/fm/gfx_fm_tests.fs
 
 needs ../../../common/testing.fs
 

@@ -16,14 +16,14 @@ sdl2                          \ charge, sdl2 devient votre vocabulaire
 run
 ```
 
-Exemples: `sdl2_demo.fs` (visite des mots), `sdl2_breakout.fs` (un jeu,
-environ 200 lignes), `sdl2_drums.fs` (boîte à rythmes de 16 pas),
-`fm/sdl2_fm.fs` (synthétiseur FM à deux opérateurs, entrée MIDI, gardé
-hors de l'interpréteur: voir `fm/README.md`), `sdl2_pianoroll.fs` (piano
+Exemples: `gfx_demo.fs` (visite des mots), `gfx_breakout.fs` (un jeu,
+environ 200 lignes), `gfx_drums.fs` (boîte à rythmes de 16 pas),
+`fm/gfx_fm.fs` (synthétiseur FM à deux opérateurs, entrée MIDI, gardé
+hors de l'interpréteur: voir `fm/README.md`), `gfx_pianoroll.fs` (piano
 roll avec lecture par soundfont et export en `.mid` et ABC, POSIX
-seulement), `sdl2_roguelike.fs` (planche de tuiles, avec musique),
-`sdl2_3d.fs` (cube, pyramide et octaèdre en fil de fer qui tournent),
-`sdl2_2048.fs` (2048 avec une animation de glissement, `--no-anim` la
+seulement), `gfx_roguelike.fs` (planche de tuiles, avec musique),
+`gfx_3d.fs` (cube, pyramide et octaèdre en fil de fer qui tournent),
+`gfx_2048.fs` (2048 avec une animation de glissement, `--no-anim` la
 coupe; chiffres dessinés à partir d'un bitmap 3x5), `pinball/pinball.fs`
 (un flipper dans le style de Night Mission, physique en virgule fixe).
 Le casse-briques, les percussions, le synthétiseur FM et le roguelike
@@ -75,15 +75,16 @@ Boucle d'image: `events` (à appeler une fois par image), `quit?`,
 `quit!`, `wait`, `ticks ( -- ms )`, `delay ( ms -- )`, `dt` (ms prises
 par la dernière image).
 
-Entrées: `pressed? ( key -- f )` avec `[char] a`,
-`key-left key-right key-up key-down key-space key-enter key-esc key-tab key-backspace`,
+Entrées: `pressed? ( key -- f )` avec `[char] a`, `key-left key-right
+key-up key-down key-space key-enter key-esc key-tab key-backspace`,
 `LEFT-BUTTON MIDDLE-BUTTON RIGHT-BUTTON`, `mouse-x`, `mouse-y`,
-`last-key`, `wheel`. Mêmes noms et même sens que l'interface graphique
-générique. `scan? ( scancode -- f )` dit si une touche est tenue d'après
-sa place sur le clavier (code de balayage SDL: 4 est la touche A d'un
-QWERTY, 20 est Q...), quelle que soit la disposition: servez-vous-en
-pour un piano ou une rangée de touches de type WASD qui ne doit pas
-bouger sur un clavier AZERTY.
+`last-key`, `wheel`, `typed` (le prochain caractère tapé, pour une
+invite dans la fenêtre), `unpress`. Mêmes noms et même sens que
+l'interface graphique générique. `scan? ( scancode -- f )` dit si une
+touche est tenue d'après sa place sur le clavier (code de balayage SDL:
+4 est la touche A d'un QWERTY, 20 est Q...), quelle que soit la
+disposition: servez-vous-en pour un piano ou une rangée de touches de
+type WASD qui ne doit pas bouger sur un clavier AZERTY.
 
 Bips (aucune bibliothèque au-delà de libSDL2): `beep ( freq ms -- )` met
 une tonalité en file, donc plusieurs `beep` de suite jouent une mélodie.

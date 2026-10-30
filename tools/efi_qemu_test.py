@@ -94,7 +94,7 @@ def volumes(b):
   check('0 mount: back on the boot stick', r, 'EFI/' in r and 'second.txt' not in r)
   r = b.run('9 mount')
   check('mount of a missing volume says so', r, 'no such volume' in r)
-  b.run('variable hf  s" games/sdl2_snake.fs" r/o open-file drop hf !')
+  b.run('variable hf  s" games/gfx_snake.fs" r/o open-file drop hf !')
   r = b.run('1 mount pc volume-now . forth')
   check('mount refused while a file is open', r, 'close the open files first' in r and r.split()[-2] == '0')
   b.run('hf @ close-file drop')
@@ -197,7 +197,7 @@ def history(b):
   b.pos = i + len(PROMPT)
   check('Tab completes swa to swap', r, 'NOT FOUND' not in r and r.split()[-3:] == ['1', '2', 'ok'])
 
-  for typed, want in [('include games/sdl2_rog\t', 'games/sdl2_roguelike.fs'), ('include lib/edi\t', 'lib/editor.fs'),
+  for typed, want in [('include games/sdl2_rog\t', 'games/gfx_roguelike.fs'), ('include lib/edi\t', 'lib/editor.fs'),
                       ('s" lib/ev\t', 'lib/eval_copy.fs')]:
     b.send(typed.encode())
     time.sleep(0.7)
@@ -415,7 +415,7 @@ def games(b):
   pieces = {'00d8e0', 'e8d000', 'a040e0', '30c030', 'e03030', '3060f0', 'f08020'}
   def floor_cells(scr):   # the cells of the bottom row filled (their middle: the ghost is an outline)
     return sum(1 for c in range(10) if pixel(scr, (8 + c * 11 + 5) * 3 + 1, (10 + 19 * 11 + 5) * 3 + 1) in pieces)
-  start('games/sdl2_tetris.fs', (600, 720))
+  start('games/gfx_tetris.fs', (600, 720))
   scr = b.screen()
   check('tetris: the well drawn', pixel(scr, 60 * 3, 120 * 3), pixel(scr, 60 * 3, 120 * 3) == '0c0c14')
   before = floor_cells(scr)
@@ -425,13 +425,13 @@ def games(b):
   check('tetris: space drops the piece to the floor (%d -> %d)' % (before, after), '', before == 0 and after >= 2)
   leave('tetris')
 
-  start('games/sdl2_snake.fs', (960, 720))
+  start('games/gfx_snake.fs', (960, 720))
   scr = b.screen()
   n_head, n_body, n_fruit = count(scr, {'f0f040'}, 1), count(scr, {'30b040', '40c850'}), count(scr, {'e03030'}, 1)
   check('snake: head, body and fruit drawn (%d %d %d)' % (n_head, n_body, n_fruit), '', n_head and n_body and n_fruit)
   leave('snake')
 
-  start('games/sdl2_minesweeper.fs', (1104, 660))
+  start('games/gfx_minesweeper.fs', (1104, 660))
   scr = b.screen()
   closed = count(scr, {'a8a8b0'})
   check('minesweeper: the board drawn, all closed (%d)' % closed, '', closed > 1000 and count(scr, {'d0d0d8'}) == 0)
@@ -446,7 +446,7 @@ def games(b):
     return pixel(scr, 120 * 3 + 1, y)
   def tries_y(r):
     return (9 - r) * 18 + 22 + 9 + 2
-  start('games/sdl2_mastermind.fs', (540, 720))
+  start('games/gfx_mastermind.fs', (540, 720))
   scr = b.screen()
   check('mastermind: the first row is the one played', band(scr, 0) + band(scr, 1), band(scr, 0) == '8a6038' and band(scr, 1) == '6b4a2b')
   for k in ['1', '2', '3', '4']:
@@ -540,9 +540,9 @@ def main():
     with open(os.path.join(tmpd, name), 'wb') as f:
       f.write(data)
     baremetal_mkdisk.put(spec, os.path.join(tmpd, name), name)
-  for src, dest in [('examples/games/sdl2_roguelike.fs', 'games/sdl2_roguelike.fs'),
-                    ('examples/games/sdl2_tetris.fs', 'games/sdl2_tetris.fs'), ('examples/games/sdl2_snake.fs', 'games/sdl2_snake.fs'),
-                    ('examples/games/sdl2_minesweeper.fs', 'games/sdl2_minesweeper.fs'), ('examples/games/sdl2_mastermind.fs', 'games/sdl2_mastermind.fs'),
+  for src, dest in [('examples/games/gfx_roguelike.fs', 'games/gfx_roguelike.fs'),
+                    ('examples/games/gfx_tetris.fs', 'games/gfx_tetris.fs'), ('examples/games/gfx_snake.fs', 'games/gfx_snake.fs'),
+                    ('examples/games/gfx_minesweeper.fs', 'games/gfx_minesweeper.fs'), ('examples/games/gfx_mastermind.fs', 'games/gfx_mastermind.fs'),
                     ('editors/editor.fs', 'lib/editor.fs'), ('editors/writhdeck.fs', 'lib/writhdeck.fs'),
                     ('ports/posix/eval_copy.fs', 'lib/eval_copy.fs'), ('ports/efi/disk/drivers.fs', 'drivers.fs')]:
     baremetal_mkdisk.put(spec, os.path.join(ROOT, src), dest)
@@ -592,7 +592,7 @@ def main():
     games(b)
     drivers_errors(b)
     b.region = (960, 624)
-    b.send(b'include games/sdl2_roguelike.fs\r')   # the game: the prompt comes back after Esc
+    b.send(b'include games/gfx_roguelike.fs\r')   # the game: the prompt comes back after Esc
   except Exception as e:
     check('session', str(e), False)
   try:

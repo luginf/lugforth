@@ -12,24 +12,24 @@ vérifié ou non. Fait partie de [README.md](README_fr.md).
 Des mots courts orientés jeu au-dessus de libSDL2, pour la version POSIX
 et (même source, mêmes mots) la version web. Docs complètes:
 `docs/en/SDL2.md`, `docs/en/SDL2-words.md` (chaque mot),
-`docs/en/SDL2-web.md`. Exemples: `examples/graphics/sdl2_demo.fs`,
-`examples/games/sdl2_breakout.fs` et `examples/music/sdl2_drums.fs` (une
+`docs/en/SDL2-web.md`. Exemples: `examples/graphics/gfx_demo.fs`,
+`examples/games/gfx_breakout.fs` et `examples/music/gfx_drums.fs` (une
 boîte à rythmes de 16 pas); ces deux derniers tournent aussi sans
-changement dans le navigateur par `ports/web/sdl2_breakout.html` et
-`ports/web/sdl2_drums.html`. `examples/games/sdl2_roguelike.fs` utilise
-la planche de tuiles `examples/games/sdl2_tiles.png` (dessinée par
-`examples/games/make_sdl2_tiles.fs`, un programme lugforth qui écrit le
+changement dans le navigateur par `ports/web/gfx_breakout.html` et
+`ports/web/gfx_drums.html`. `examples/games/gfx_roguelike.fs` utilise
+la planche de tuiles `examples/games/gfx_tiles.png` (dessinée par
+`examples/games/make_gfx_tiles.fs`, un programme lugforth qui écrit le
 PNG à la main avec CRC-32, Adler-32 et un bloc zlib non compressé:
-aucune ressource extérieure; `examples/games/make_sdl2_tiles.py` est le
+aucune ressource extérieure; `examples/games/make_gfx_tiles.py` est le
 même programme en Python, gardé pour comparer les deux, mêmes pixels)
 par `sdl2-image` (`draw-part`, `image-tint`); `ports/web/sdl2.fs` a les
-mêmes mots d'image sur canevas et `ports/web/sdl2_roguelike.html`
+mêmes mots d'image sur canevas et `ports/web/gfx_roguelike.html`
 exécute le même fichier. `load-image` réessaie un nom manquant sans ses
 dossiers sur les deux plateformes. `examples/music/fm/` est un
 synthétiseur FM à deux opérateurs avec clavier à l'écran et entrée MIDI,
 sur les deux plateformes, volontairement gardé hors de l'interpréteur
 (voir son README); l'interpréteur n'a que les crochets `render-hook`,
-`active-hook`, `latency` et `scan?`. `examples/music/sdl2_pianoroll.fs`
+`active-hook`, `latency` et `scan?`. `examples/music/gfx_pianoroll.fs`
 est un séquenceur piano-roll (4 pistes, motifs de 16 pas chaînables,
 lecture MIDI+soundfont, export `.mid` et ABC); POSIX seulement, pas
 porté sur le web.
@@ -51,7 +51,7 @@ porté sur le web.
   `SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy out/posix/lugforth ports/posix/sdl2_tests.fs`
   (22 tests) `ports/posix/sdl2_media_tests.fs` (7 tests),
   `ports/posix/sdl2_abc_tests.fs` (18 tests) et
-  `examples/music/fm/sdl2_fm_tests.fs` (24 tests: lecteur MIDI et
+  `examples/music/fm/gfx_fm_tests.fs` (24 tests: lecteur MIDI et
   événements ALSA, voix, hauteur). `common/forth_namespace_tests.fs`
   liste les nouveaux vocabulaires.
 
@@ -233,12 +233,12 @@ lance les tests de logique, `make smoke` celui de SDL2):
   utilisé.
 - `2048.fs` (+ `2048_tests.fs`): jeu en terminal, `2048-play`. Testé
   dans un pty; couleurs/disposition pas vues à l'œil.
-- `3d.fs` (+ `3d_tests.fs`) et `sdl2_3d.fs`: mathématiques, objets,
+- `3d.fs` (+ `3d_tests.fs`) et `gfx_3d.fs`: mathématiques, objets,
   rotation, perspective; dessin SDL2 vérifié seulement avec le pilote
   vidéo factice (comptes de pixels), pas sur un vrai écran.
 - `inference/` (inference.fs, weather.fs, lamp_diagnosis.fs, tests,
   Makefile, READMEs): faits, règles, `infer`.
-- `sdl2_2048.fs`: interface SDL2 de 2048.fs (chiffres en bitmap,
+- `gfx_2048.fs`: interface SDL2 de 2048.fs (chiffres en bitmap,
   flèches/wasd/glissement à la souris, animation de glissement+pop,
   `--no-anim`); vérifié avec le pilote factice (couleurs de pixels des
   tuiles et des chiffres), pas à l'œil. Pourrait être ajouté à la liste
@@ -246,7 +246,7 @@ lance les tests de logique, `make smoke` celui de SDL2):
   de ses docs (`INFERENCE/docs/*.odt`), extras
   `3Dmodelisation`/`dumpTool`, autres projets en amont (lotto, 6809,
   flog, BMP, HTTP). Vérifié dans une vraie fenêtre X (affichage :0) pour
-  sdl2_2048: voir [PITFALLS.md](PITFALLS_fr.md), derniers points. Pièges
+  gfx_2048: voir [PITFALLS.md](PITFALLS_fr.md), derniers points. Pièges
   rencontrés: `include` est relatif au fichier qui inclut; `if` au
   niveau supérieur ne marche pas (enveloppez-le dans un mot); `<# #s #>`
   prend un double, comme dans le standard (depuis 2026.10.27.2; avant,
@@ -299,7 +299,7 @@ est ignorée); le `DO` d'exécution est dans le vocabulaire
 `0 10000000 0 do i + loop` sous posix: 554 ms avant, 71 ms après. Mêmes
 résultats que gforth pour `+LOOP` avec des pas négatifs et `LEAVE`.
 
-## Jeux d'après r3forth (examples/games/sdl2_tetris.fs, sdl2_snake.fs, sdl2_minesweeper.fs) - fait le 2026-10-19
+## Jeux d'après r3forth (examples/games/gfx_tetris.fs, gfx_snake.fs, gfx_minesweeper.fs) - fait le 2026-10-19
 
 r3forth (https://github.com/phreda4/r3, Pablo Reda, MIT, crédité dans
 NOTICE) a sa propre syntaxe (`cond? ( ... )`, `:mot`, virgule fixe
@@ -311,7 +311,7 @@ ses idées. Chiffres du bitmap 3x5 du casse-briques, pas de polices.
 tools/efi_qemu_test.py les joue depuis la clé (vérifications par copie
 d'écran). Pas vus sur le Pi sous QEMU (même sdl2.fs). `color` remet
 l'alpha à 255: fixez `alpha` après `color`. Fronts des touches: `just`
-garde le dernier état par touche. `sdl2_mastermind.fs` (le nôtre, pas de
+garde le dernier état par touche. `gfx_mastermind.fs` (le nôtre, pas de
 r3) suit le même schéma: `mastermind-no-run`, tests dans games_tests.fs,
 test efi. Autres candidats de r3: bdash (Boulder Dash, sprites propres
 nécessaires), sokoban (niveaux de licence peu claire), raycaster, démos
@@ -321,18 +321,24 @@ lib/sdl2poly.r3 (remplissage de polygones).
 ## Forth is Fun (tortue)
 
 Forth is Fun (https://gitlab.com/garvalf/forth-is-fun, Eric Forgeot,
-MIT/Apache): `examples/graphics/sdl2_turtle.fs` est écrit d'après son
+MIT/Apache): `examples/graphics/gfx_turtle.fs` est écrit d'après son
 forthtoise.fs (mêmes noms de mots, anglais et français; traits gardés
 dans une liste et redessinés à chaque image), tests dans
 `turtle_tests.fs` (`make -C examples test-ports`). L'exécuter lance un
-shell (`logo`): les lignes tapées dans le terminal sont gardées comme un
-programme, `go` / `play` l'exécutent (compilé comme un mot `logo-prog`;
-`safe-eval` restaure le source après une exception, `evaluate` non). La
-boucle du shell a été vérifiée dans un pty sous Xvfb, non automatisée.
-Reste à emprunter: bresenham, le CYOA (livre dont vous êtes le héros,
-aussi en français), les motifs glitch. Piège rencontré:
-`fdup f>s s>f f< if` laissait une mauvaise valeur ici; arrondissez avec
-`fdup f0< if 0.5e f- else 0.5e f+ then f>s`.
+shell (`logo`): les lignes tapées dans une invite dessinée sous l'image
+(une police 8x8 faite de `box`, donc sans fichier de police; `typed` et
+`unpress` de sdl2.fs lisent les touches; `type` est redirigé vers le
+journal avec `['] type >body !`) sont gardées comme un programme, `go` /
+`play` l'exécutent (compilé comme un mot `logo-prog`; `safe-eval`
+restaure le source après une exception, `evaluate` non). Le shell marche
+sur POSIX (Xvfb, saisie par xdotool) et sur le web (Chrome headless,
+touches par CDP), non automatisé. Pièges rencontrés: un `)` dans un
+commentaire `( ... )` le ferme (le reste s'exécutait: STACK UNDERFLOW au
+chargement); deux `{ }` dans une définition cassent; le web n'a pas
+`fold-case`. Reste à emprunter: bresenham, le CYOA (livre dont vous êtes
+le héros, aussi en français), les motifs glitch. Piège rencontré: `fdup
+f>s s>f f< if` laissait une mauvaise valeur ici; arrondissez avec `fdup
+f0< if 0.5e f- else 0.5e f+ then f>s`.
 
 ## Dessiner à l'invite (`graphic`) - fait le 2026-10-20
 

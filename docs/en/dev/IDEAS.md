@@ -35,7 +35,7 @@ checked before borrowing code: write our own) suggests, for `graphic`
 and `play`:
 - drawing: `paint ( x y -- )` flood fill, `plot`, `peek`, `pen` in
   inverse (XOR) mode, `line` from the last point;
-- turtle (examples/graphics/sdl2_turtle.fs): `back`, `turtle@` /
+- turtle (examples/graphics/gfx_turtle.fs): `back`, `turtle@` /
   `turtle!` (save and restore the state, for recursive fractals),
   `moveto ( x y deg -- )`;
 - sound: SID-like `voice! note! cutoff! filter!` (the ADSR envelope,
@@ -131,7 +131,13 @@ on Linux, Windows and macOS. The name `sdl2` and the files `sdl2_*.fs`
 are misleading. Only `sdl2-image`, `sdl2-ttf` and `sdl2-mixer` are
 really tied to SDL2.
 
-Decided:
+Done on 2026-10-30 for the examples: the programs `examples/*/sdl2_*.fs`
+(games, graphics, music, the FM synth, the tile sheets, the web pages)
+are now `gfx_*.fs`, with every reference changed; no alias was kept (the
+URLs of the web demo pages changed, and the `.ini` file of the desktop
+that names an old path must be edited). The `sdl2` vocabulary and the
+library files (`ports/posix/sdl2*.fs`, `ports/web/sdl2.fs`) keep their
+names. Decided:
 
 - Words directly inspired by SDL2 keep an SDL2-compatible API (names and
   arguments), for people who port C code.

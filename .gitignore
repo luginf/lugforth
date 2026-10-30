@@ -2,7 +2,7 @@ out
 build.ninja
 attic/jotblk/env
 __pycache__
-examples/music/sdl2_pianoroll.sf2
+examples/music/gfx_pianoroll.sf2
 examples/bench/bench_sieve
 examples/bench/bench_lines
 examples/bench/*.rom

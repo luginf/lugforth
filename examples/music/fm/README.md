@@ -2,10 +2,10 @@
 
 A two operator FM synthesizer with MIDI input, as an example: it is **not** part of the interpreter, nothing here is compiled into `lugforth` or `lugforth.js`.
 
-* `sdl2_fm.fs`: the instrument (sliders, six sounds, keyboard on screen). `lugforth examples/music/fm/sdl2_fm.fs` on Linux; `sdl2_fm.html` in a browser (`python3 -m http.server` in `out/web`, built by `ninja web`).
+* `gfx_fm.fs`: the instrument (sliders, six sounds, keyboard on screen). `lugforth examples/music/fm/gfx_fm.fs` on Linux; `gfx_fm.html` in a browser (`python3 -m http.server` in `out/web`, built by `ninja web`).
 * `engine_posix.fs`, `engine_web.fs`: the synthesizer words for each platform (Forth samples and ALSA MIDI; WebAudio and Web MIDI). `include` one, then type `sdl2-fm`.
 * `midi_parser.fs`: the MIDI byte parser both share.
-* `sdl2_fm_tests.fs`: 24 tests. `SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy lugforth examples/music/fm/sdl2_fm_tests.fs`.
+* `gfx_fm_tests.fs`: 24 tests. `SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy lugforth examples/music/fm/gfx_fm_tests.fs`.
 
 The interpreter only offers three small generic hooks used here: `render-hook` and `active-hook` (extra sources for the mix of `pump`), `latency` as a value, and `scan?` (keys by place).
 
@@ -15,8 +15,8 @@ The interpreter only offers three small generic hooks used here: `render-hook` a
 as in a DX7, each with its own envelope; 8 voices) with MIDI input. The samples are
 computed in Forth (about 10 percent of one core with 8 voices sounding) and mixed with the hits of
 `drum-hit` into the same audio queue, so a loop that calls `flip` or `delay` is enough.
-`sdl2_fm.fs` is a complete instrument with sliders, six sounds and a keyboard
-on screen, and runs unchanged in the browser (`sdl2_fm.html`).
+`gfx_fm.fs` is a complete instrument with sliders, six sounds and a keyboard
+on screen, and runs unchanged in the browser (`gfx_fm.html`).
 
 ```forth
 sdl2-fm
@@ -115,5 +115,5 @@ The web engine has the same words as on
   (`midi-in?` turns true once an input is there). MIDI messages do not count as a user
   gesture, so the sound still waits for a click or a key press on the page. For tests,
   `window.lugforth.sdl.midiIn([0x90, 60, 100])` pushes MIDI bytes as if a keyboard sent them
-  (the page has to expose `lugforth` as `sdl2_fm.html` does). `midi-client` answers -1,
+  (the page has to expose `lugforth` as `gfx_fm.html` does). `midi-client` answers -1,
   `midi-raw` false, and `latency` exists but does nothing.

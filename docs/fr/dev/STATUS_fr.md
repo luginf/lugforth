@@ -15,7 +15,7 @@ PC par UEFI); elle fait **32 bits** sur le web (WebAssembly), dans
 TIC-80 et sur la Game Boy Advance (`docs/en/dev/PORTS.md`). Pour les
 microcontrôleurs (ESP32, Pico) la documentation ne le dit pas; ce sont
 des cibles 32 bits. Conséquence: un produit en virgule fixe 16.16 passe
-par `*/` pour tourner partout (voir `sdl2_raycaster.fs`).
+par `*/` pour tourner partout (voir `gfx_raycaster.fs`).
 
 ## Passer en 32 bits exclusivement?
 

@@ -107,7 +107,7 @@ web ou à une nouvelle plateforme. Fait partie de
   `{ pat trk anchor from to }`) le masque silencieusement pour le reste
   de ce mot: `from 1+ to et-c` empile alors simplement deux nombres au
   lieu d'affecter, sans aucune erreur (`et-c` garde tranquillement son
-  ancienne valeur). Trouvé dans `examples/music/sdl2_pianoroll.fs` (une
+  ancienne valeur). Trouvé dans `examples/music/gfx_pianoroll.fs` (une
   locale appelée `to` cassait son propre `to et-c`, si bien qu'un geste
   de glisser pour allonger une note tenue l'allongeait toujours jusqu'à
   la colonne 0). Évitez les noms de mots courants (`to`, `over`, `n`,
@@ -130,7 +130,7 @@ web ou à une nouvelle plateforme. Fait partie de
   vient en premier dans l'ordre de recherche, donc vos appels ultérieurs
   au nom exécutent celui de sdl2: sur les démarrages en matériel nu
   `draw` (images, `img x y --`) donnait « stack underflow » dans
-  sdl2_mouse_test.fs alors que POSIX allait bien. Utilisez `paint`,
+  gfx_mouse_test.fs alors que POSIX allait bien. Utilisez `paint`,
   `render`... pour les vôtres.
 - Astuces de test: `SDL_RenderReadPixels` pour vérifier des pixels,
   `SDL_PushEvent` pour simuler des entrées, Xvfb + `xdotool` pour un
@@ -159,7 +159,7 @@ web ou à une nouvelle plateforme. Fait partie de
   vrai SIGSEGV/SIGBUS/SIGFPE/SIGINT en la même exception silencieuse,
   donc vérifiez d'abord avec `gdb -batch -ex run -ex bt`: une sortie
   propre du processus, pas un signal attrapé, désigne exactement ce
-  cas). Trouvé une fois dans `examples/music/sdl2_pianoroll.fs` (son
+  cas). Trouvé une fois dans `examples/music/gfx_pianoroll.fs` (son
   propre `remember` entrait ainsi en collision, visible seulement quand
   l'application était lancée depuis un dossier où l'ordre d'évaluation
   l'exposait), la correction fut de renommer le mot (`key-remember`).
@@ -184,7 +184,7 @@ web ou à une nouvelle plateforme. Fait partie de
   `begin` ou `do` au niveau supérieur (hors définition) ne marche pas,
   sans erreur: `s" --x" option? if false to flag then` exécutait sa
   partie `then` à chaque fois, ce qui coupait silencieusement
-  l'animation de `sdl2_2048.fs`. Mettez-le dans un mot. `<# #s #>` prend
+  l'animation de `gfx_2048.fs`. Mettez-le dans un mot. `<# #s #>` prend
   un double, comme en ANS depuis 2026.10.27.2 (il prenait une cellule
   avant, comme dans eForth): écrivez `n 0 <# #s #>`, ou `s>d` pour un
   nombre signé. `include` est relatif au fichier qui inclut, pas au
@@ -290,7 +290,7 @@ démarrage de toute nouvelle plateforme, pas seulement GBA:
   sable partagé sans GPU) peut ressembler exactement à ce même bogue sur
   une capture prise trop tôt — laissez-lui du vrai temps d'horloge avant
   de conclure que l'écran est réellement bloqué.
-- **Trouvé en portant `examples/games/sdl2_roguelike.fs` vers
+- **Trouvé en portant `examples/games/gfx_roguelike.fs` vers
   `ports/gba/roguelike.fs`** (les locales `{ local }` et les chaînes
   booléennes de ce Forth ont deux autres arêtes vives, aucune propre à
   la GBA):
@@ -312,7 +312,7 @@ démarrage de toute nouvelle plateforme, pas seulement GBA:
     une fuit une cellule de la pile de retour à chaque tour, corrompant
     silencieusement l'indice et la limite de la boucle, qui vivent sur
     cette même pile. Le `draw-bar` d'origine de
-    `examples/games/sdl2_roguelike.fs` l'évite en employant un mot
+    `examples/games/gfx_roguelike.fs` l'évite en employant un mot
     `shade` à état au lieu d'une locale par itération dans sa boucle de
     cœurs; la correction en portant est soit la même (laisser la valeur
     sur la pile de données au lieu de la nommer), soit de factoriser le

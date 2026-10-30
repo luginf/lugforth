@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.10.30.7
+Lugforth v2026.10.30.8
 :; ===========>/>
 type 'info' for help
  ok
@@ -578,8 +578,8 @@ Lugforth Lugforth Lugforth  ok
 **Where next.** Games with graphics and sound use the SDL2 words
 ([SDL2.md](SDL2.md) is the tour, [SDL2-words.md](SDL2-words.md) the list
 of every word, [SDL2-web.md](SDL2-web.md) the web build): read
-`examples/games/sdl2_snake.fs`, the shortest, then `sdl2_tetris.fs` and
-`sdl2_breakout.fs` ([Examples](#examples)). `ed` and `writhdeck` are
+`examples/games/gfx_snake.fs`, the shortest, then `gfx_tetris.fs` and
+`gfx_breakout.fs` ([Examples](#examples)). `ed` and `writhdeck` are
 written in Forth too, in `ports/posix/`: reading them shows the same
 words at a larger scale. For the rest of the language,
 [docs/en/WORDS.md](WORDS.md) lists every word with a short description.
@@ -931,15 +931,15 @@ status_right  = goal help_bar
 
 | Program | What |
 |---|---|
-| `sdl2_breakout.fs` | breakout |
-| `sdl2_roguelike.fs` | roguelike |
-| `sdl2_tetris.fs`, `sdl2_snake.fs`, `sdl2_minesweeper.fs` | rewritten after the games of r3forth |
-| `sdl2_mastermind.fs` | mastermind: four colors out of six in ten tries, keyboard or mouse |
-| `sdl2_3d.fs` | turning wireframes |
-| `sdl2_2048.fs` | sliding tiles; `--no-anim` turns the animation off |
+| `gfx_breakout.fs` | breakout |
+| `gfx_roguelike.fs` | roguelike |
+| `gfx_tetris.fs`, `gfx_snake.fs`, `gfx_minesweeper.fs` | rewritten after the games of r3forth |
+| `gfx_mastermind.fs` | mastermind: four colors out of six in ten tries, keyboard or mouse |
+| `gfx_3d.fs` | turning wireframes |
+| `gfx_2048.fs` | sliding tiles; `--no-anim` turns the animation off |
 | `2048.fs` | 2048 in the terminal |
 | `zmachine.fs` | Z-machine interpreter in one file: plays Infocom and Inform stories (`.z3 .z4 .z5 .z8`), `zplay story.z5` (try `lugforth examples/games/zmachine.fs examples/games/zmachine/cave.z5`, or `cave_fr.z5` in French); also under gforth (`ports/gforth/zmachine-gforth.fs`) |
-| `fm/sdl2_fm.fs` | FM synthesizer, MIDI keyboard on Linux and in the browser |
+| `fm/gfx_fm.fs` | FM synthesizer, MIDI keyboard on Linux and in the browser |
 | `inference/` | small rule based inference engine, README in English and French, Makefile with scenarios |
 
 Licenses: 2048, 3d and the inference engine are ports of projects of
@@ -1000,8 +1000,8 @@ Lugforth runs with no operating system on 64-bit ARM: QEMU `virt` and
 (written blind). The console is the serial line. The `sdl2` words are
 there: screen, text, images, keyboard and mouse, beeps and ABC tunes.
 Files are on the SD card (FAT12/16/32): `include`, `ls`, and an
-`autoexec.fs` run at boot. `examples/games/sdl2_breakout.fs` and
-`sdl2_roguelike.fs` run unchanged.
+`autoexec.fs` run at boot. `examples/games/gfx_breakout.fs` and
+`gfx_roguelike.fs` run unchanged.
 
 ```
 sudo apt install gcc-aarch64-linux-gnu picolibc-aarch64-linux-gnu qemu-system-arm

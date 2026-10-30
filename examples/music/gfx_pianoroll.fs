@@ -40,7 +40,7 @@
 \                   the current pattern at the end of the song
 \   play button     play / stop the whole song, from the start
 \   - and +         tempo, 1 bpm with the left button, 5 with the right
-\   SAV             writes sdl2_pianoroll_song.mid and .abc
+\   SAV             writes gfx_pianoroll_song.mid and .abc
 \   X               quit
 \ Keyboard: space play/stop, up/down tempo, 1-4 pick the track, esc quit.
 \ Editing (a note, an instrument, a pattern, the song or the tempo) stops playback, since
@@ -49,7 +49,7 @@
 
 sdl2
 sdl2-mixer
-s" sdl2_pianoroll.sf2" soundfont? drop   \ optional, a soundfont beside this file
+s" gfx_pianoroll.sf2" soundfont? drop   \ optional, a soundfont beside this file
 
 ( ---- sizes and the pattern bank ---- )
 16 constant steps            4 constant tracks
@@ -289,9 +289,9 @@ create abc-letter  0 , 0 , 1 , 1 , 2 , 3 , 3 , 4 , 4 , 5 , 5 , 6 ,
   tracks 0 do i abc-track loop ;
 
 : save-song ( -- )
-  build-smf   smf smf-n s" sdl2_pianoroll_song.mid" dump-file
-  build-abc   abctxt abc-n s" sdl2_pianoroll_song.abc" dump-file
-  cr ." saved sdl2_pianoroll_song.mid and sdl2_pianoroll_song.abc" cr ;
+  build-smf   smf smf-n s" gfx_pianoroll_song.mid" dump-file
+  build-abc   abctxt abc-n s" gfx_pianoroll_song.abc" dump-file
+  cr ." saved gfx_pianoroll_song.mid and gfx_pianoroll_song.abc" cr ;
 
 ( ---- playing the song: MIDI through the soundfont ---- )
 also posix   ( sysfunc, and the raw z/mkstemps/close/fluidsynth bindings below, live there )

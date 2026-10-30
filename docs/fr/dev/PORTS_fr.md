@@ -39,7 +39,7 @@ un vrai Pi; Pi 4 écrit à l'aveugle (QEMU 8.2 n'a pas raspi4b). Voir
 ports/rpi/README.md. Graphismes: mots courts `sdl2` sur le framebuffer
 de la boîte aux lettres (ports/baremetal/sdl2.fs, screen.h), touches
 venant de l'UART; `make -C ports/rpi breakout` joue
-examples/games/sdl2_breakout.fs dans une fenêtre QEMU raspi3b
+examples/games/gfx_breakout.fs dans une fenêtre QEMU raspi3b
 (`BOARD=virt`: virt avec `-device ramfb`, configuré par fw_cfg),
 `make test` vérifie les deux par copie d'écran. Texte (font8x8), images
 (PNG intégrés par tools/baremetal_assets.py), clavier/souris
@@ -48,7 +48,7 @@ USB HID DWC2 sur pi3; testé par input-send-event de QMP), son (mixer de
 sound.h, virtio-sound sur virt vérifié depuis un fichier
 `-audiodev wav`; PWM+DMA du Pi 3 écrit à l'aveugle), `paste` (un fichier
 entier sur la ligne série, puis Ctrl-D: les chaînes multilignes
-marchent). `make roguelike` lance examples/games/sdl2_roguelike.fs. QEMU
+marchent). `make roguelike` lance examples/games/gfx_roguelike.fs. QEMU
 lance d'un coup toute une chaîne DMA bcm2835: une chaîne qui boucle le
 bloque (même par SIGTERM), donc n'en démarrez jamais une à l'aveugle.
 Fichiers: storage.h (SDHCI/EMMC du Pi par scrutation, virtio-blk de
@@ -113,7 +113,7 @@ mixer partagé dans ports/baremetal/mixer.h avec rpi/sound.h), vérifié
 par le test avec `-audiodev wav` et QEMU intel-hda + hda-duplex
 (`make run` les a aussi, AUDIODEV=pa); `sound-off` / `sound` gardent le
 choix dans lugforth.ini (ports/efi/sound_ini.fs); pas essayé sur un vrai
-PC. Démarré depuis une vraie clé USB (l'invite, sdl2_3d, roguelike
+PC. Démarré depuis une vraie clé USB (l'invite, gfx_3d, roguelike
 marchent); ports/efi/README.md donne les étapes (Secure Boot désactivé,
 menu de démarrage ponctuel). Autres systèmes de fichiers: `load-driver`
 (pc, files.h: LoadImage depuis un tampon, StartImage, connect_all) et
@@ -167,7 +167,7 @@ premier tant que d'autres vivent, les terminaux F5+.
 
 - Les cellules font 32 bits (les autres versions 64): un produit en
   virgule fixe 16.16 doit passer par `*/` (voir
-  `examples/games/sdl2_raycaster.fs`). Les pages sont copiées dans
+  `examples/games/gfx_raycaster.fs`). Les pages sont copiées dans
   `out/web` par `ports/web/BUILD` et doivent être servies de là
   (`ninja web && cd out/web && python3 -m http.server`);
   `tools/make_pages.py` les copie dans `demo/` sur le site.
@@ -240,7 +240,7 @@ de la chaîne de démarrage rencontrés sont dans
 [PITFALLS.md](PITFALLS_fr.md).
 
 Depuis 2026.10.30.7, une seconde cartouche, `gba_magnoquill_boot.fs`:
-le nuage de points de `sdl2_magnoquill.fs`, ses calculs en C en virgule
+le nuage de points de `gfx_magnoquill.fs`, ses calculs en C en virgule
 fixe (`GBA-MAGNO`), à environ 20 images par seconde pour 400 points sous
 mgba (vérifié là, pas sur une console). Le script de liens a
 maintenant une section IWRAM et aligne les images ROM que `crt0.s`
@@ -249,7 +249,7 @@ copie; le roguelike et la démo des tuiles démarrent toujours après cela
 
 ## Le disque en matériel nu et la clé USB
 
-Les dossiers de `examples/` sont gardés (`include games/sdl2_snake.fs`,
+Les dossiers de `examples/` sont gardés (`include games/gfx_snake.fs`,
 `system/varvara/varvara_rpi.fs`), avec `lib/` (éditeurs), `MANUAL.md` et
 `WORDS.md` (docs/), `autoexec.fs`. Construit par les Makefile de
 ports/rpi (`disk`) et ports/efi (`usb`, `stage`).
@@ -273,7 +273,7 @@ autre client tient le maître DRM).
 
 Ce qu'on a trouvé sur ce tty (2026-10-30):
 
-- `sdl2_magnoquill.fs`, `sdl2_mouse_test.fs`, `sdl2_demo.fs` et
+- `gfx_magnoquill.fs`, `gfx_mouse_test.fs`, `gfx_demo.fs` et
   `desktop.fs` tournent, avec le son, sans `SDL_AUDIODRIVER` ni
   `AUDIODEV` (`alsa`, `pulseaudio` et `pipewire` marchent tous). Les
   premiers essais du démo et du bureau se sont figés; avec
@@ -285,11 +285,11 @@ Ce qu'on a trouvé sur ce tty (2026-10-30):
   une petite flèche en `mouse-x mouse-y` quand `screen` a trouvé le
   pilote `KMSDRM` (`soft-cursor`; SDL écrit le nom en majuscules, la
   première version comparait avec `kmsdrm` et ne marchait jamais), sauf
-  si le programme a demandé `0 cursor` (comme `sdl2_mouse_test.fs`, qui
+  si le programme a demandé `0 cursor` (comme `gfx_mouse_test.fs`, qui
   dessine sa propre croix). Le bureau y montre aussi son image cinq
   fois par seconde. Pas dessinée par la console SDL (`sdl2_console.fs`)
   ni par `varvara.fs`, qui présentent l'image eux-mêmes.
-- `Error including: ...sdl2_demo.fs` après Échap est un `-9` intercepté
+- `Error including: ...gfx_demo.fs` après Échap est un `-9` intercepté
   (erreur de segmentation) dans `SDL_DestroyWindow`, et aussi dans
   `SDL_Quit` (qui détruit les fenêtres), une fois des images
   affichées (une fenêtre ouverte et refermée sans rien dessiner ne
@@ -307,7 +307,7 @@ Ce qu'on a trouvé sur ce tty (2026-10-30):
 - Carte son: `AUDIODEV=plughw:0,0`, que `main.c` impose au binaire
   statique, serait faux sur ce PC (la carte 0 est le HDMI NVIDIA, sans
   périphérique 0; la carte son est la carte 1, `plughw:1,0`).
-- `make -C examples smoke`: `sdl2_magnoquill.fs` ne s'est pas arrêté
+- `make -C examples smoke`: `gfx_magnoquill.fs` ne s'est pas arrêté
   sous `timeout 5` sur ce PC (pilotes factices, aussi avec l'ancien
   `sdl2.fs`), alors qu'il tourne bien à la main. Non compris.
 
@@ -491,7 +491,7 @@ avec un serveur X, quelle que soit sa libc.
   `sdlttf`, `sdlmix` (seulement pour cette version).
 - Testé ici: `all_tests`, `sdl2_console_tests`, `editors_pty_test.py`,
   `--gui` sous Xvfb (accent tapé avec xdotool, dessiné avec la police
-  TrueType), le raycaster, `sdl2_roguelike.fs` (planche d'images
+  TrueType), le raycaster, `gfx_roguelike.fs` (planche d'images
   chargée, mixer ouvert) sous Xvfb, un programme C lié de la même façon.
   Non testé: une machine sans bibliothèques X (elle ne devrait pas en
   avoir besoin), les bureaux Wayland seul (XWayland nécessaire), le son
