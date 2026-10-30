@@ -49,7 +49,7 @@ Do not `pkill -f` a pattern that appears in your own command line (it kills your
 
 At each modification of the code, tools or ports, raise the version, even by a fraction (a change that only adds to the docs does not need it): in the root `BUILD`,
 `SetVersions(version='YYYY.MM.DD.N', date='YYYY-MM-DD')` (the date of the change, N = 1, 2... for the changes of that day; `info` shows it
-under the revision), and the banner of `docs/en/MANUAL.md` (`Lugforth vYYYY.MM.DD.N`). Now 2026.10.30.6 (2026-10-30). The release tag is
+under the revision), and the banner of `docs/en/MANUAL.md` (`Lugforth vYYYY.MM.DD.N`). Now 2026.10.30.7 (2026-10-30). The release tag is
 `v` + this version (`v2026.10.23.1`): the release workflow refuses a tag that differs from `BUILD`. Dotted digits on purpose (the release
 workflow, the packages and the Android `versionCode` read it). Do it in the same change set. (Before 2026.10.23.1 it was 7.0.11.N, and the
 tags v0.5.x.)

@@ -64,6 +64,8 @@
 // Forth-level names/signatures as before, so nothing above platform.fs had
 // to change.
 #define GBA_FAST_BLIT_SUPPORT \
+  XV(internals, "GBA-MAGNO", GBA_MAGNO, \
+     gba_magno((int) n2, (int) n1, (int) n0); DROPn(3)) \
   XV(internals, "GBA-BLIT-TILE", GBA_BLIT_TILE, \
      gba_blit_tile((int) n3, (int) n2, (int) n1, (unsigned) n0); DROPn(4)) \
   XV(internals, "GBA-FILL-RECT", GBA_FILL_RECT, \

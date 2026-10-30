@@ -239,6 +239,14 @@ Un prototype avec un roguelike. Voir `ports/gba/README.md`; les pièges
 de la chaîne de démarrage rencontrés sont dans
 [PITFALLS.md](PITFALLS_fr.md).
 
+Depuis 2026.10.30.7, une seconde cartouche, `gba_magnoquill_boot.fs`:
+le nuage de points de `sdl2_magnoquill.fs`, ses calculs en C en virgule
+fixe (`GBA-MAGNO`), à environ 20 images par seconde pour 400 points sous
+mgba (vérifié là, pas sur une console). Le script de liens a
+maintenant une section IWRAM et aligne les images ROM que `crt0.s`
+copie; le roguelike et la démo des tuiles démarrent toujours après cela
+(captures sous mgba).
+
 ## Le disque en matériel nu et la clé USB
 
 Les dossiers de `examples/` sont gardés (`include games/sdl2_snake.fs`,

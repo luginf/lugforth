@@ -22,12 +22,13 @@ MEMORY
 {
   rom   (rx)  : ORIGIN = 0x08000000, LENGTH = 4M
   ewram (rwx) : ORIGIN = 0x02000000, LENGTH = 256K
+  iwram (rwx) : ORIGIN = 0x03000000, LENGTH = 24K   /* the top 8K stay for the stack, see crt0.s */
 }
 
 SECTIONS
 {
   .header : { *(.header) } > rom
-  .text   : { *(.text) *(.text.*) *(.rodata) *(.rodata.*) *(.glue_7) *(.glue_7t) } > rom
+  .text   : { *(.text) *(.text.*) *(.rodata) *(.rodata.*) *(.glue_7) *(.glue_7t) . = ALIGN(8); } > rom   /* crt0.s copies .data and .iwram by words */
 
   . = ORIGIN(ewram);
   .data : {
@@ -36,6 +37,16 @@ SECTIONS
     __data_end = .;
   } > ewram AT > rom
   __data_load = LOADADDR(.data);
+
+  /* Hot code and tables (gba_magno and its sine table, main.c): IWRAM is a
+     32-bit bus with no wait state, a lot faster than code run from the
+     cartridge or from EWRAM. Loaded after .data, copied by crt0.s. */
+  .iwram : AT(ALIGN(LOADADDR(.data) + SIZEOF(.data), 8)) {
+    __iwram_start = .;
+    *(.iwram_code) *(.iwram_data)
+    __iwram_end = .;
+  } > iwram
+  __iwram_load = LOADADDR(.iwram);
   .bss (NOLOAD) : {
     __bss_start = .;
     *(.bss) *(.bss.*) *(COMMON)

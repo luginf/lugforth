@@ -71,6 +71,22 @@ _boot:
 	str	r3, [r1], #4
 	b	1b
 2:
+	@ Same for the IWRAM code and tables (.iwram in gba.ld).
+	ldr	r0, =__iwram_load
+	ldr	r1, =__iwram_start
+	ldr	r2, =__iwram_end
+5:	cmp	r1, r2
+	bge	6f
+	ldr	r3, [r0], #4
+	str	r3, [r1], #4
+	b	5b
+6:
+	@ Cartridge wait states: ROM first access 3, second 1, prefetch on (the
+	@ usual 0x4317; the reset value is the slowest setting).
+	ldr	r0, =0x04000204
+	ldr	r1, =0x4317
+	strh	r1, [r0]
+
 	@ Clear .bss (sim_vram-equivalent statics live in EWRAM/main.c's own
 	@ heap array, not here, but plain C globals still need zeroing).
 	ldr	r0, =__bss_start
@@ -82,4 +98,4 @@ _boot:
 	b	3b
 4:
 	bl	main
-5:	b	5b                      @ main() never returns (raw_terminate halts too)
+7:	b	7b                      @ main() never returns (raw_terminate halts too)

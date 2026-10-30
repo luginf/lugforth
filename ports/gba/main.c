@@ -177,6 +177,119 @@ static void gba_fill_rect(int x, int y, int w, int h, unsigned color) {
   }
 }
 
+
+// ---- Magnoquill (ports/gba/magnoquill.fs): the whole point cloud in 16.16
+// fixed point. The ARM7TDMI has no FPU, and the same formulas as Forth floats
+// (software sin/cos) took more than ten seconds for 250 points; with a sine
+// table and 64-bit integer products one point costs under a thousand cycles.
+// Same formulas as examples/graphics/sdl2_magnoquill.fs, scaled 0.4 into
+// 240x160 (the 800x800 picture is 160x160 here, centered), each point erases
+// the pixel it drew in the previous frame (mode 3 is a single buffer).
+#include "ports/gba/magno_sin.h"
+#define MAGNO_MAX 1500
+typedef long long q64;
+static unsigned short *magno_old[MAGNO_MAX];
+static int magno_old_n;
+static inline q64 q_mul(q64 a, q64 b) { return (a * b) >> 16; }
+static inline q64 q_sin(q64 a) {   // a in radians, 16.16
+  return magno_sin_table[(int) ((a * 10680626ll) >> 32) & 1023];
+}
+static inline q64 q_cos(q64 a) { return q_sin(a + 102944); }   // + pi/2
+static inline q64 q_abs(q64 a) { return a < 0 ? -a : a; }
+// a / n without a division: the ARM7TDMI has none, and a 64-bit division is a
+// library call of about a thousand cycles (the first version spent 24000
+// cycles a point, most of it in those). k = 2^32 / n.
+#define Q_DIV(a, k) ((int) (((a) * (q64) (k)) >> 32))
+#define Q_DIV_64(a, k) (((a) * (q64) (k)) >> 32)
+#define K11 390451572ll
+#define K14 306783378ll
+#define K235 18276456ll
+#define K9 477218588ll
+#define K17 252645135ll
+#define K49 87652393ll
+#define K1000 4294967ll
+#define K10000 429497ll
+#define K100 42949673ll
+#define K10 429496730ll
+#define K60 71582788ll
+#define IWRAM_CODE __attribute__((section(".iwram_code"), noinline))
+IWRAM_CODE static unsigned q_isqrt(unsigned long long v) {   // floor(sqrt(v))
+  unsigned long long r = 0, bit = 1ull << 62;
+  while (bit > v) bit >>= 2;
+  while (bit) {
+    if (v >= r + bit) { v -= r + bit; r = (r >> 1) + bit; }
+    else r >>= 1;
+    bit >>= 2;
+  }
+  return (unsigned) r;
+}
+static inline int q_chan(q64 v, q64 bright) {   // v and bright 0..1 -> 0..31
+  int n = (int) ((q_mul(v, bright) * 31) >> 16);
+  return n < 0 ? 0 : n > 31 ? 31 : n;
+}
+
+IWRAM_CODE static void gba_magno(int t, int npts, int colormode) {
+  unsigned short *vram = (unsigned short *) gba_vram();
+  int i;
+  if (npts > MAGNO_MAX) npts = MAGNO_MAX;
+  if (npts < 1) npts = 1;
+  for (i = npts; i < magno_old_n; i++)             // fewer points than last frame
+    if (magno_old[i]) { *magno_old[i] = 0; magno_old[i] = 0; }
+  magno_old_n = npts;
+  q64 qt = t;
+  q64 xstep = (10000ll << 16) / npts;
+  q64 ct20 = ((qt >> 1) * 20) % (360ll << 16);
+  for (i = 0; i < npts; i++) {
+    if (magno_old[i]) { *magno_old[i] = 0; magno_old[i] = 0; }
+    q64 x = (10000ll << 16) - i * xstep;
+    q64 y = Q_DIV_64(x, K235);
+    q64 k = q_mul((4 << 16) + q_sin(Q_DIV_64(x, K11) + qt * 8), q_cos(Q_DIV_64(x, K14)));
+    q64 e = (y >> 3) - (19 << 16);
+    q64 kk = q_mul(k, k) + q_mul(e, e);
+    q64 d = (q64) q_isqrt((unsigned long long) kk << 16) + q_sin(Q_DIV_64(y, K9) + qt * 2);
+    q64 a = q_mul(2 * q_sin(y - 3 * d) + (9 << 16), k);
+    q64 q = q_mul(q_mul(a, q_sin(Q_DIV_64(y, K17))), 1 << 16) + 2 * q_sin(2 * k);
+    q64 c = Q_DIV_64(q_mul(d, d), K49) - qt;
+    q64 px = q + 50 * q_cos(c) + (200 << 16);
+    q64 py = q_mul(q, q_sin(c)) + 39 * d - (440 << 16);
+    q64 bright = q_abs(q_sin(qt * 2 + Q_DIV_64(x, K1000))) + 32768;
+    int sx = (int) ((px * 26214) >> 32) + 40;         // px * 0.4 + 40
+    int sy = (int) ((((400ll << 16) - py) * 26214) >> 32);
+    if (sx < 0 || sx >= 240 || sy < 0 || sy >= 160) continue;
+    int r = 31, g = 31, b = 31;
+    if (colormode) {
+      q64 ct = qt >> 1;
+      q64 ph1 = (q_sin(Q_DIV_64(x, K10000) + ct) >> 1) + 32768;
+      q64 ph2 = (q_sin(Q_DIV_64(y, K100) + Q_DIV_64(ct * 13, K10)) >> 1) + 32768;
+      q64 ph3 = (q_sin(Q_DIV_64(d, K10) + Q_DIV_64(ct * 7, K10)) >> 1) + 32768;
+      q64 hue = ph1 * 360 + ct20;
+      if (hue >= (360ll << 16)) hue -= 360ll << 16;
+      q64 sat = q_mul(ph2, 26214) + 39322;             // 0.6 .. 1
+      q64 val = q_mul(ph3, 13107) + 52429;             // 0.8 .. 1
+      q64 cc = q_mul(val, sat);
+      q64 hp = Q_DIV_64(hue, K60);                               // 0 .. 6
+      q64 hm = q_abs((hp & 0x1ffff) - (1 << 16));
+      q64 xc = q_mul(cc, (1 << 16) - hm);
+      q64 m = val - cc;
+      q64 rr, gg, bb;
+      switch ((int) (hp >> 16)) {
+        case 0: rr = cc; gg = xc; bb = 0; break;
+        case 1: rr = xc; gg = cc; bb = 0; break;
+        case 2: rr = 0; gg = cc; bb = xc; break;
+        case 3: rr = 0; gg = xc; bb = cc; break;
+        case 4: rr = xc; gg = 0; bb = cc; break;
+        default: rr = cc; gg = 0; bb = xc; break;
+      }
+      r = q_chan(rr + m, bright); g = q_chan(gg + m, bright); b = q_chan(bb + m, bright);
+    } else {
+      r = g = b = q_chan(1 << 16, bright);
+    }
+    unsigned short *p = vram + sy * 240 + sx;
+    *p = (unsigned short) (r | (g << 5) | (b << 10));
+    magno_old[i] = p;
+  }
+}
+
 #include "ports/gba/builtins.h"
 
 // TODO: real fault handling (data abort, etc.); not attempted yet.

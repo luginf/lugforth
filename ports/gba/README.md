@@ -3,7 +3,8 @@
 Same kernel (`common/*.h`) and boot chain shape as `ports/pico-ice/`, built with
 `arm-none-eabi-gcc` (288K RAM: 256K EWRAM + 32K IWRAM). Hand-written `crt0.s` and
 `gba.ld`, no libgba or devkitARM. Boot files: `gba_boot.fs` (tile demo),
-`gba_roguelike_boot.fs` (game).
+`gba_roguelike_boot.fs` (game), `gba_magnoquill_boot.fs` (the point cloud of
+`examples/graphics/sdl2_magnoquill.fs`).
 
 ## Simulator
 
@@ -34,7 +35,30 @@ python3 fix_header.py gba.gba
 mgba gba.gba
 ```
 
-For the roguelike, use `gba_roguelike_boot.fs` and write `roguelike.gba`.
+For the roguelike, use `gba_roguelike_boot.fs` and write `roguelike.gba`; for
+the point cloud, `gba_magnoquill_boot.fs` and `magnoquill.gba`. (The `.gba`
+files are not in git.)
+
+## Magnoquill
+
+`magnoquill.fs`: the demo `examples/graphics/sdl2_magnoquill.fs` in mode 3,
+160x160 centered in the 240x160 screen. UP/DOWN speed, LEFT/RIGHT number of
+points (100 to 1500, 400 at start), A rainbow or white, B pause, START time
+back to 0. The first version, with the formulas in Forth floats, needed more
+than ten seconds per picture for 250 points (no FPU: software sin and cos).
+Now the formulas run in C in 16.16 fixed point with a 1024-entry sine table
+(`gba_magno` in `main.c`, opcode `GBA-MAGNO`, word `gba-magno`): about 50 ms
+per picture for 600 points under mgba, measured with a hardware timer. What
+made the difference, in order: no 64-bit division (a library call of about a
+thousand cycles: replaced by multiplications by `2^32/n`; 24000 cycles a
+point went down to 7400), then the code and the sine table in IWRAM
+(`.iwram_code`, `gba.ld`, copied by `crt0.s`: 1400 cycles a point), and the
+cartridge wait states (`REG_WAITCNT` = `$4317` in `crt0.s`). `.text` and
+`.data` now end on a multiple of 8 in the ROM: `crt0.s` copies by words, and
+an unaligned `ldr` would read garbage. Mode 3 has no additive blending and a
+single buffer: each point erases the pixel it drew in the previous frame
+instead of the screen being cleared. Checked under mgba 0.10.2 (screenshots
+under Xvfb); not on a real console.
 
 ## Tiles
 

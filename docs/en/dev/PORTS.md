@@ -216,6 +216,13 @@ or task words.
 A prototype with a roguelike. See `ports/gba/README.md`; the boot-chain
 traps met are in [PITFALLS.md](PITFALLS.md).
 
+Since 2026.10.30.7 a second cartridge, `gba_magnoquill_boot.fs`: the
+point cloud of `sdl2_magnoquill.fs`, its maths in C in fixed point
+(`GBA-MAGNO`), at about 20 pictures a second for 400 points under mgba
+(checked there, not on a console). The linker script now has an IWRAM
+section and aligns the ROM images that `crt0.s` copies; the roguelike
+and the tile demo still boot after that (screenshots under mgba).
+
 ## The bare-metal disk and the USB stick
 
 The folders of `examples/` are kept (`include games/sdl2_snake.fs`,

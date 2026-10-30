@@ -154,4 +154,8 @@ gba_tiles constant TILES
 
 : gba-cls ( color -- )   { c }   0 0 gba-width gba-height c gba-box ;
 
+\ The whole point cloud of magnoquill.fs, in C (gba_magno in main.c): the time in
+\ 16.16 fixed point, the number of points, 0 for white or 1 for rainbow.
+: gba-magno ( t npts colormode -- )   GBA-MAGNO ;
+
 forth definitions
