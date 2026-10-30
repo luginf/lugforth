@@ -45,6 +45,7 @@ z" SDL_DestroyWindow" 1 sdl SDL_DestroyWindow ( a -- void )
 z" SDL_SetWindowTitle" 2 sdl SDL_SetWindowTitle ( a z -- void )
 z" SDL_SetWindowFullscreen" 2 sdl SDL_SetWindowFullscreen ( a n -- n )
 z" SDL_ShowCursor" 1 sdl SDL_ShowCursor ( n -- n )
+z" SDL_GetCurrentVideoDriver" 0 sdl SDL_GetCurrentVideoDriver ( -- z )
 z" SDL_CreateRenderer" 3 sdl SDL_CreateRenderer ( a n n -- a )
 z" SDL_DestroyRenderer" 1 sdl SDL_DestroyRenderer ( a -- void )
 z" SDL_RenderSetLogicalSize" 3 sdl SDL_RenderSetLogicalSize ( a n n -- n )
@@ -139,6 +140,11 @@ create ev 64 allot
   window-handle -1 SDL_RENDERER_SOFTWARE SDL_CreateRenderer
 ;
 
+-1 value cursor-shown   \ what `cursor` asked for
+0 value soft-cursor     \ -1 when the video driver shows no mouse cursor (KMSDRM, seen on a tty): flip draws an arrow
+: kmsdrm? ( -- f )   \ SDL names it "KMSDRM", upper case
+  SDL_GetCurrentVideoDriver dup if dup c@ $df and [char] K = swap 1+ c@ $df and [char] M = and then ;
+
 : screen ( w h -- )
   screen-open? if close-screen then
   to height to width
@@ -150,6 +156,7 @@ create ev 64 allot
   make-renderer dup 0= if sdl-error type cr -1 throw then to renderer
   renderer width height SDL_RenderSetLogicalSize drop
   renderer SDL_BLENDMODE_BLEND SDL_SetRenderDrawBlendMode drop
+  kmsdrm? to soft-cursor
   0 to quitting
 ;
 
@@ -158,7 +165,7 @@ create ev 64 allot
   window-handle swap if SDL_WINDOW_FULLSCREEN_DESKTOP else 0 then
   SDL_SetWindowFullscreen drop
 ;
-: cursor ( f -- ) SDL_ShowCursor drop ;
+: cursor ( f -- ) dup to cursor-shown SDL_ShowCursor drop ;
 
 ( ---- Colors and drawing ---- )
 0 value pen-r   0 value pen-g   0 value pen-b   255 value pen-a
@@ -257,7 +264,19 @@ create px 4 allot
 0 value last-flip
 0 value dt   ( milliseconds taken by the last frame )
 
+0 value mouse-x   0 value mouse-y
+
+( The arrow of a KMSDRM tty, where SDL shows no cursor: black triangle, white inside, at the mouse position )
+: draw-cursor ( -- )
+  mouse-x mouse-y { cx cy }
+  renderer 0 0 0 255 SDL_SetRenderDrawColor drop
+  16 0 do renderer cx cy i + cx i 2/ 1+ + cy i + SDL_RenderDrawLine drop loop
+  renderer 255 255 255 255 SDL_SetRenderDrawColor drop
+  14 2 do renderer cx 1+ cy i + cx i 2/ + cy i + SDL_RenderDrawLine drop loop
+  renderer pen-r pen-g pen-b pen-a SDL_SetRenderDrawColor drop ;
+
 : flip ( -- )
+  soft-cursor cursor-shown and if draw-cursor then
   renderer SDL_RenderPresent drop
   run-audio-hook
   ticks { now }
@@ -273,7 +292,6 @@ create px 4 allot
 32 constant key-space    13 constant key-enter    27 constant key-esc
 9 constant key-tab       8 constant key-backspace
 
-0 value mouse-x   0 value mouse-y
 0 value last-key
 0 value wheel
 create keys 256 allot   keys 256 erase

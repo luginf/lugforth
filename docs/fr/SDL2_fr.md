@@ -53,6 +53,12 @@ où vont vos définitions.
 avant `screen`), `title ( a n -- )`, `fullscreen ( f -- )`,
 `cursor ( f -- )`, `width`, `height`.
 
+Sur une console texte Linux (ni X ni Wayland), SDL2 dessine avec son
+pilote KMSDRM; les fenêtres, le clavier et la souris marchent, et `flip`
+dessine une flèche pour la souris. Il faut être dans le groupe `input`,
+et `SDL_VIDEODRIVER` est choisi par SDL (ou mettre
+`SDL_VIDEODRIVER=kmsdrm`). Détails et pièges: `docs/en/dev/PORTS.md`.
+
 Couleurs: `color ( $rrggbb -- )`, `rgb ( r g b -- )`,
 `rgba ( r g b a -- )`, `alpha ( a -- )`, et les couleurs nommées
 `black white red green blue yellow cyan magenta orange purple pink brown gray`

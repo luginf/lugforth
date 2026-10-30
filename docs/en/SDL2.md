@@ -48,6 +48,12 @@ Screen: `screen ( w h -- )`, `close-screen`, `zoom` (value, set before
 `screen`), `title ( a n -- )`, `fullscreen ( f -- )`, `cursor ( f -- )`,
 `width`, `height`.
 
+On a Linux text console (no X, no Wayland) SDL2 draws with its KMSDRM
+driver; the windows, keyboard and mouse work and `flip` draws an arrow
+for the mouse. You must be in the `input` group, and `SDL_VIDEODRIVER`
+is chosen by SDL (or set `SDL_VIDEODRIVER=kmsdrm`). Details and traps:
+`docs/en/dev/PORTS.md`.
+
 Colors: `color ( $rrggbb -- )`, `rgb ( r g b -- )`,
 `rgba ( r g b a -- )`, `alpha ( a -- )`, and named colors
 `black white red green blue yellow cyan magenta orange purple pink brown gray`

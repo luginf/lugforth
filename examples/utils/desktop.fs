@@ -713,15 +713,19 @@ create line-buf 400 allot
   want-launch 0< 0= if want-launch -1 to want-launch do-launch exit then
   open-pending if do-open then ;
 
+0 value last-soft
 : phase ( -- n )   \ changes twice a second (the cursor), and when the message of the taskbar expires
   ticks 500 / 1 and  dk-msg-n if ticks dk-msg-t - 4000 < 2 and or then ;
+: soft-tick ( -- f )   \ KMSDRM (soft-cursor): the screen is shown again 5 times a second even if nothing changed
+  soft-cursor 0= if 0 exit then
+  ticks 200 / dup last-soft <> swap to last-soft ;
 : frame-body ( -- )
   no-viewport
   pump
   file-win dup 0< 0= if drop fl-quit if file-win win-close 0 to fl-quit -1 to dk-dirty then else drop then
   do-pending
   phase last-phase <> if phase to last-phase -1 to dk-dirty then
-  dk-dirty if
+  dk-dirty soft-tick or if
     0 to dk-dirty
     draw-all
     flip

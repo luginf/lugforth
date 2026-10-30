@@ -1162,10 +1162,6 @@ also termios
 : set-form-hook ( -- )   ['] con-form to form-hook ;
 previous
 : con-open ( -- )
-  menu-on win? 0= and if
-    z" DISPLAY" c-getenv 0=  z" WAYLAND_DISPLAY" c-getenv 0=  and  z" SDL_VIDEODRIVER" c-getenv 0=  and
-    if -1 throw then
-  then
   menu-on if 1024 640 else 960 540 then screen
   renderer 0= if -1 throw then
   menu-on if s" Lugforth" title then

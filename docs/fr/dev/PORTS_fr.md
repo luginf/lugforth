@@ -246,6 +246,63 @@ Les dossiers de `examples/` sont gardés (`include games/sdl2_snake.fs`,
 `WORDS.md` (docs/), `autoexec.fs`. Construit par les Makefile de
 ports/rpi (`disk`) et ports/efi (`usb`, `stage`).
 
+## SDL2 sur une console texte Linux (KMSDRM, sans X)
+
+Signalé le 2026-10-29, testé par le mainteneur sur un tty (Ubuntu
+24.04, SDL 2.30.0, pilote NVIDIA propriétaire 595): `out/posix/lugforth`
+lancé depuis un tty, sans serveur X ni Wayland, ouvre ses fenêtres
+`sdl2`. Le binaire est lié à la libSDL2 du système, qui a sous
+Debian/Ubuntu le pilote vidéo KMSDRM (libdrm, libgbm): sans `DISPLAY`
+ni `WAYLAND_DISPLAY`, SDL le choisit seul et dessine par DRM/KMS.
+Clavier et souris viennent alors d'evdev: il faut être dans le groupe
+`input` (ou root). Pour le forcer: `SDL_VIDEODRIVER=kmsdrm`.
+`lugforth-static-sdl` ne peut pas: son SDL est compilé pour X11
+seulement. Depuis 2026.10.29.5, `con-open` (`sdl2_console.fs`) ne
+refuse plus d'ouvrir la fenêtre de la console quand `DISPLAY`,
+`WAYLAND_DISPLAY` et `SDL_VIDEODRIVER` sont tous absents. Impossible à
+tester depuis une session graphique (`kmsdrm not available` tant qu'un
+autre client tient le maître DRM).
+
+Ce qu'on a trouvé sur ce tty (2026-10-30):
+
+- `sdl2_magnoquill.fs`, `sdl2_mouse_test.fs`, `sdl2_demo.fs` et
+  `desktop.fs` tournent, avec le son, sans `SDL_AUDIODRIVER` ni
+  `AUDIODEV` (`alsa`, `pulseaudio` et `pipewire` marchent tous). Les
+  premiers essais du démo et du bureau se sont figés; avec
+  `SDL_AUDIODRIVER=dummy` non, et les essais suivants non plus: la
+  cause n'a pas été trouvée. Ouvrir et jouer du son seul n'a jamais
+  bloqué, quel que soit le pilote.
+- SDL n'affiche **aucun curseur de souris** sous KMSDRM (les clics
+  marchent). Depuis 2026.10.30.6, `flip` (`ports/posix/sdl2.fs`) dessine
+  une petite flèche en `mouse-x mouse-y` quand `screen` a trouvé le
+  pilote `KMSDRM` (`soft-cursor`; SDL écrit le nom en majuscules, la
+  première version comparait avec `kmsdrm` et ne marchait jamais), sauf
+  si le programme a demandé `0 cursor` (comme `sdl2_mouse_test.fs`, qui
+  dessine sa propre croix). Le bureau y montre aussi son image cinq
+  fois par seconde. Pas dessinée par la console SDL (`sdl2_console.fs`)
+  ni par `varvara.fs`, qui présentent l'image eux-mêmes.
+- `Error including: ...sdl2_demo.fs` après Échap est un `-9` intercepté
+  (erreur de segmentation) dans `SDL_DestroyWindow`, et aussi dans
+  `SDL_Quit` (qui détruit les fenêtres), une fois des images
+  affichées (une fenêtre ouverte et refermée sans rien dessiner ne
+  plante pas). Sans doute un défaut KMSDRM/GBM de SDL 2.30.0 avec le
+  pilote NVIDIA (pas prouvé). Fermer l'audio d'abord, attendre 300 ms
+  ou détruire la fenêtre avant le renderer n'a rien changé. Le message
+  est sans gravité: le tty reste utilisable.
+- **Ne pas sauter `SDL_DestroyWindow` ni `SDL_Quit` sous KMSDRM** pour
+  éviter ce message (essayé en 2026.10.30.2, annulé): le démo s'est
+  affiché, puis le tty était mort (plus de clavier; le mainteneur a dû
+  tuer lightdm), très probablement parce que `SDL_Quit` rend la console
+  et le clavier. Pareil après avoir tué un programme qui tient l'écran.
+  Si le clavier est mort, depuis une autre console `sudo kbd_mode -u -C
+  /dev/tty1` peut aider (non testé).
+- Carte son: `AUDIODEV=plughw:0,0`, que `main.c` impose au binaire
+  statique, serait faux sur ce PC (la carte 0 est le HDMI NVIDIA, sans
+  périphérique 0; la carte son est la carte 1, `plughw:1,0`).
+- `make -C examples smoke`: `sdl2_magnoquill.fs` ne s'est pas arrêté
+  sous `timeout 5` sur ce PC (pilotes factices, aussi avec l'ancien
+  `sdl2.fs`), alors qu'il tourne bien à la main. Non compris.
+
 ## SDL2 sur Windows et macOS
 
 Les liaisons de `ports/posix/sdl2*.fs` demandent leur bibliothèque par
