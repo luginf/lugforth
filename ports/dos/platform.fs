@@ -57,6 +57,13 @@ also dos
 : rd ( "dir" -- )   bl parse rmdir if ." cannot remove the directory (not empty?)" cr then ;
 previous
 
+( The keyboard of the sdl2 screens, read by interrupt: US by default, or French )
+( AZERTY with AltGr. In text mode the BIOS gives the characters, laid out by KEYB. )
+also dos
+: azerty ( -- )   1 keyboard! ;
+: qwerty ( -- )   0 keyboard! ;
+previous
+
 ( The size of the text screen, for the editors and the pager )
 also dos
 : form ( -- rows cols )   con-rows ?dup 0= if 25 then con-cols ;

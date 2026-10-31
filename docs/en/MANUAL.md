@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.10.31.3
+Lugforth v2026.10.31.4
 :; ===========>/>
 type 'info' for help
  ok
@@ -1136,14 +1136,15 @@ See [ports/efi/README.md](../../ports/efi/README.md).
 
 `ports/dos` builds `lugforth.exe` for DOS with the DJGPP cross compiler:
 a 32-bit protected mode program for a 386 or better, with about 5 MB of
-memory and a DPMI host. For now the prompt in text mode and the files;
-no graphics or sound yet.
+memory and a DPMI host. The prompt in text mode, the files, and the
+`sdl2` words: graphics in a VESA mode, the keyboard and the mouse, the
+sound of a Sound Blaster 16, so the games of `examples/games` run.
 
 ```
 make -C ports/dos            # out/dos/lugforth.exe
 make -C ports/dos hdpmi      # out/dos/HDPMI32.EXE, a DPMI host
 make -C ports/dos run        # in DOSBox
-make -C ports/dos test       # 27 checks in DOSBox
+make -C ports/dos test       # 30 checks in DOSBox
 ```
 
 DOSBox has no DPMI host: start `hdpmi32 -r` once, then `lugforth`. On
@@ -1153,7 +1154,12 @@ screen without ANSI.SYS; `cd`, `pwd`, `md`, `rd`, `ls` and the file
 words use the disks of DOS (names in 8.3 unless DOS has long names).
 `autoexec.fs` in the current directory runs at start.
 `lugforth < in.txt > out.txt` runs the lines of a file. Ctrl+Break
-stops a running word. Tried in DOSBox only. See
+stops a running word. `screen` takes the smallest VESA mode of 32 bits
+that holds the screen and its zoom; `close-screen` gives the text mode
+back. The sound needs a Sound Blaster 16 (the `BLASTER` variable, which
+DOSBox sets). DOS without long names (DOSBox) cannot open
+`gfx_breakout.fs`: copy the games under 8.3 names (`breakout.fs`).
+Tried in DOSBox only. See
 [ports/dos/README.md](../../ports/dos/README.md).
 
 ## Building

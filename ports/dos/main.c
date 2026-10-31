@@ -19,7 +19,8 @@
 // console is the screen through conio, the ANSI codes of the line editor,
 // the pager and the editors are turned into conio calls here, so no
 // ANSI.SYS is needed; with stdin or stdout redirected (lugforth < in > out)
-// the bytes go through as they are. Files: files.h.
+// the bytes go through as they are. Files: files.h. Graphics, the keyboard
+// by interrupt and the mouse while a screen is open: video.h. Sound: sb16.h.
 
 #include <conio.h>
 #include <crt0.h>
@@ -27,6 +28,7 @@
 #include <dos.h>
 #include <dpmi.h>
 #include <errno.h>
+#include <go32.h>
 #include <fcntl.h>
 #include <io.h>
 #include <math.h>
@@ -38,6 +40,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/exceptn.h>
+#include <sys/farptr.h>
+#include <sys/movedata.h>
+#include <sys/nearptr.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
@@ -58,6 +63,7 @@ static double dos_fmax(double a, double b) { return a != a ? b : b != b ? a : a 
 #define STACK_CELLS (8 * 1024)
 #define BOARD_NAME "dos"
 
+int _crt0_startup_flags = _CRT0_FLAG_NONMOVE_SBRK;   // the heap stays where it is: video.h keeps near pointers
 unsigned _stklen = 512 * 1024;                     // the C stack (DJGPP's default is 256K)
 char **__crt0_glob_function(char *arg) { (void) arg; return 0; }   // no wildcard expansion of the arguments
 
@@ -183,6 +189,9 @@ static cell_t screen_char(cell_t col, cell_t row) {   // the character at col ro
   return ch;
 }
 
+#include "ports/dos/video.h"
+#include "ports/dos/sb16.h"
+
 // ---- the keyboard: BIOS keys, the special ones turned into the ANSI
 // sequences of a terminal; or stdin when it is a file ----
 static char key_queue[16];
@@ -221,6 +230,7 @@ static int key_get(void) {                         // a byte, or -1
     key_head = (key_head + 1) % sizeof key_queue;
     return c;
   }
+  if (kbd_installed) { usb_poll(); return in_get_char(); }   // a screen is open: input.h has the keys
   if (!key_tty) {
     unsigned char c;
     int r = read(0, &c, 1);
@@ -239,14 +249,18 @@ static int getchar_timeout_us(cell_t us) {
     int c = key_get();
     if (c >= 0) return c;
     if (us_ticks() >= end) return -1;
+    snd_pump();
     __dpmi_yield();
   }
 }
 
-static void dos_terminate(cell_t code) {
+static void dos_cleanup(void) {                    // at exit: the text mode, the keyboard, the sound card as they were
+  con_init();
+  sb_stop();
   if (con_tty) { textattr(7); _setcursortype(_NORMALCURSOR); }
-  exit((int) code);
 }
+
+static void dos_terminate(cell_t code) { exit((int) code); }
 
 // ---- faults: DJGPP turns the processor's exceptions into signals ----
 static jmp_buf g_forth_fault;
@@ -289,6 +303,7 @@ int main(int argc, char *argv[]) {
   if (con_tty) { gppconio_init(); con_attr(); }
   else setmode(1, O_BINARY);                       // the CR LF of cr as they are, not CR CR LF
   fs_init();
+  atexit(dos_cleanup);
   void *heap = malloc(HEAP_SIZE);
   if (!heap) { fputs("lugforth: not enough memory (4 MB needed)\n", stderr); return 1; }
   forth_init(argc, argv, heap, HEAP_SIZE, boot, sizeof(boot));

@@ -21,5 +21,7 @@ needs ../../common/phase_filetools.fs
 needs platform.fs
 needs ../../common/lineedit.fs
 needs ../../common/pager.fs
+needs ../../common/abc.fs
+needs ../baremetal/sdl2.fs
 needs autoboot.fs
 needs ../../common/fini.fs

@@ -18,10 +18,11 @@ output redirected to files (lugforth < IN.TXT > OUT.TXT), and checks the
 answers: the banner, autoexec.fs, numbers, floats, a fault, the file words
 (the files are then read on the Linux side), directories, blocks, time.
 HDPMI32.EXE (the DPMI host, see the Makefile) must be beside the program.
-Then, if Xvfb and xdotool are installed, DOSBox in a window of a virtual X
-display, typed into with xdotool: the text screen, the keyboard, the line
-editor (history, Home) and blocks-editor; the screen is written to a file
-by screen-char and read back.
+Then, if Xvfb, xdotool and ImageMagick are installed, DOSBox in a window of
+a virtual X display, typed into with xdotool: the text screen, the keyboard,
+the line editor (history, Home) and blocks-editor (the screen written to a
+file by screen-char and read back), two beeps on the Sound Blaster (recorded
+by DOSBox, Ctrl+F6), breakout in a VESA mode (screenshots), Esc.
 
   tools/dos_test.py [out/dos]          (what `make -C ports/dos test` runs)
 """
@@ -92,20 +93,44 @@ def answers(out, script):
   return parts[0], res
 
 
-DUMP = r'''also dos
+DUMP = r"""also dos
 create crlf 13 c, 10 c,
-: dump-screen ( -- )
-  s" screen.txt" w/o create-file throw { fh }
+: dump-screen ( a n -- )   \ the text screen into the file a n
+  w/o create-file throw { fh }
   con-rows 0 do  con-cols 0 do  i j screen-char pad c! pad 1 fh write-file throw  loop
     crlf 2 fh write-file throw  loop
   fh close-file throw ;
-dump-screen bye
-'''
+"""
+
+
+def wav_check(path):
+  """The two beeps recorded by DOSBox (Ctrl+F6): 440 Hz for 300 ms, then 660 Hz."""
+  import wave
+  import struct
+  sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+  import baremetal_qemu_test as bt
+  try:
+    w = wave.open(path)
+  except (OSError, EOFError, wave.Error) as e:
+    check('sound: DOSBox recorded it', str(e), False)
+    return
+  rate, ch = w.getframerate(), w.getnchannels()
+  d = w.readframes(w.getnframes())
+  x = struct.unpack('<%dh' % (len(d) // 2), d)[::ch]
+  segs = [(a, b) for a, b in bt.wav_segments(x, rate) if b - a > rate * 0.05]
+  if not segs:
+    check('sound: the Sound Blaster plays', 'silence', False)
+    return
+  a, b = segs[0]
+  m = a + int(rate * 0.3)
+  f1, f2 = bt.wav_freq(x, a + 500, m - 500, rate), bt.wav_freq(x, m + 500, b - 500, rate)
+  check('sound: beep 440 Hz then 660 Hz on the Sound Blaster (%.0f, %.0f Hz, %.2f s)' % (f1, f2, (b - a) / rate),
+        segs, abs(f1 - 440) < 5 and abs(f2 - 660) < 5 and abs((b - a) / rate - 0.6) < 0.02)
 
 
 def interactive(exe, dpmi):
-  if not shutil.which('Xvfb') or not shutil.which('xdotool'):
-    print('  skip  the text screen and the keyboard (Xvfb and xdotool needed)')
+  if not shutil.which('Xvfb') or not shutil.which('xdotool') or not shutil.which('import'):
+    print('  skip  the text screen, the keyboard, graphics and sound (Xvfb, xdotool, ImageMagick needed)')
     return
   d = tempfile.mkdtemp(prefix='lugdosi')
   xvfb = subprocess.Popen(['Xvfb', ':97', '-screen', '0', '1024x768x24'],
@@ -114,11 +139,15 @@ def interactive(exe, dpmi):
   try:
     shutil.copy(exe, os.path.join(d, 'LUGFORTH.EXE'))
     shutil.copy(dpmi, os.path.join(d, 'HDPMI32.EXE'))
+    root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+    shutil.copy(os.path.join(root, 'examples', 'games', 'gfx_breakout.fs'), os.path.join(d, 'BREAKOUT.FS'))
     with open(os.path.join(d, 'DUMP.FS'), 'w') as f:
       f.write(DUMP.replace('\n', '\r\n'))
+    cap = os.path.join(d, 'cap')
+    os.mkdir(cap)
     conf = os.path.join(d, 'dosbox.conf')
     with open(conf, 'w') as f:
-      f.write('[cpu]\ncycles=max\n[sdl]\nusescancodes=false\n')
+      f.write('[dosbox]\ncaptures=%s\n[cpu]\ncycles=max\n[sdl]\nusescancodes=false\n' % cap)
     env = dict(os.environ, DISPLAY=':97', SDL_AUDIODRIVER='dummy')
     time.sleep(1)
     box = subprocess.Popen(['dosbox', '-conf', conf, '-c', 'mount c "%s"' % d, '-c', 'c:',
@@ -138,27 +167,61 @@ def interactive(exe, dpmi):
       subprocess.run(['xdotool', 'key', '--delay', '150'] + list(names), env=env)
       time.sleep(0.8)
 
+    def hold(name):   # a game reads keys held, not typed
+      subprocess.run(['xdotool', 'keydown', name], env=env)
+      time.sleep(0.3)
+      subprocess.run(['xdotool', 'keyup', name], env=env)
+
+    def shot():       # the whole X screen, raw RGB
+      raw = os.path.join(d, 'shot.rgb')
+      subprocess.run(['import', '-window', 'root', '-depth', '8', 'rgb:' + raw], env=env)
+      return open(raw, 'rb').read() if os.path.exists(raw) else b''
+
+    def count(rgb, color):
+      c = bytes.fromhex(color)
+      return sum(1 for i in range(0, len(rgb) - 2, 3 * 7) if rgb[i:i + 3] == c)
+
+    def screen(name):
+      f = host(d, name)
+      return [r.rstrip() for r in open(f, encoding='latin-1').read().split('\n')] if f else []
+
+    typ('include dump.fs'); key('Return')
     typ('use e.fb  blocks-editor 1'); key('Return'); time.sleep(1)   # first: it clears the screen when it ends
     typ(': cube dup dup * * ;'); key('ctrl+s'); key('ctrl+q')
     typ('1 load 3 cube .'); key('Return')
     typ('7 8 * .'); key('Return')
     key('Up', 'Home'); typ('100 . '); key('Return')          # the line again, with 100 . in front
-    typ('include dump.fs'); key('Return')
+    typ('s" s1.txt" dump-screen'); key('Return')
+    key('ctrl+F6')                                           # DOSBox records its sound
+    typ('sdl2 440 300 beep 660 300 beep 700 ms previous'); key('Return'); time.sleep(1.5)
+    key('ctrl+F6')
+    typ('include breakout.fs'); key('Return'); time.sleep(4)
+    game = shot()
+    hold('space'); time.sleep(0.5)
+    moving1 = shot(); time.sleep(0.3)
+    moving2 = shot()
+    hold('Escape'); time.sleep(2)
+    typ('2 3 * .'); key('Return')
+    typ('s" s2.txt" dump-screen bye'); key('Return')
     for _ in range(20):
       if box.poll() is not None:
         break
       time.sleep(0.5)
-    scr = host(d, 'screen.txt')
-    text = open(scr, encoding='latin-1').read() if scr else ''
-    rows = [r.rstrip() for r in text.split('\n')]
+    rows = screen('s1.txt')
     check('the text screen: an answer after its line', rows, '> 7 8 * .' in rows and '56  ok' in rows)
     check('the line editor: Up, Home, typing in front', rows, '> 100 . 7 8 * .' in rows and '100 56  ok' in rows)
     check('blocks-editor: typed, saved, loaded', rows, '27  ok' in rows)
     b = host(d, 'e.fb')
     blk = open(b, 'rb').read()[1024:1024 + 20] if b else b''
     check('blocks-editor: the block on the disk', blk, blk == b': cube dup dup * * ;')
-    if failures:
-      print(text)
+    wavs = [os.path.join(cap, f) for f in os.listdir(cap) if f.lower().endswith('.wav')]
+    wav_check(wavs[0] if wavs else os.path.join(cap, 'none.wav'))
+    got = {c: count(game, c) for c in ('101830', 'ff0000', '00ffff', 'ffffff')}
+    check('breakout in VESA: background, red and cyan bricks, paddle %r' % got, got,
+          got['101830'] > 5000 and got['ff0000'] > 300 and got['00ffff'] > 300 and got['ffffff'] > 20)
+    check('breakout: the space held launches the ball (the picture moves)', '', moving1 != moving2 and moving1 != game)
+    rows = screen('s2.txt')
+    check('Esc ends the game, the text prompt is back', rows, '6  ok' in rows)
   finally:
     if box and box.poll() is None:
       box.kill()

@@ -23,7 +23,7 @@
 
 #define REQUIRED_SYSTEM_SUPPORT \
   X("MS-TICKS", MS_TICKS, PUSH ms_ticks()) \
-  XV(internals, "RAW-YIELD", RAW_YIELD, __dpmi_yield()) \
+  XV(internals, "RAW-YIELD", RAW_YIELD, snd_pump(); __dpmi_yield()) \
   XV(internals, "RAW-TERMINATE", RAW_TERMINATE, dos_terminate(n0); DROP) \
   YV(internals, getchar_timeout_us, n0 = getchar_timeout_us(n0)) \
   XV(internals, "RAW-TYPE", RAW_TYPE, con_write(b1, n0); DROPn(2))
@@ -41,10 +41,27 @@
 #define BM_VOC dos
 #include "ports/baremetal/builtins.h"
 
+// The input words of ports/baremetal/sdl2.fs; the terminals and the console
+// on the framebuffer of the boards have no counterpart here.
+#define DOS_INPUT_SUPPORT \
+  XV(dos, "INPUT-EVENTS", INPUT_EVENTS, input_snapshot()) \
+  XV(dos, "INPUT-DOWN?", INPUT_DOWN, n0 = input_down(n0)) \
+  XV(dos, "INPUT-LAST-KEY", INPUT_LAST_KEY, PUSH input_last_key()) \
+  XV(dos, "INPUT-MOUSE-X", INPUT_MOUSE_X, PUSH in_mouse_x) \
+  XV(dos, "INPUT-MOUSE-Y", INPUT_MOUSE_Y, PUSH in_mouse_y) \
+  XV(dos, "INPUT-TEXT", INPUT_TEXT, PUSH in_get_text()) \
+  XV(dos, "INPUT-WHEEL", INPUT_WHEEL, PUSH in_wheel) \
+  XV(dos, "KEYBOARD!", KEYBOARD_SET, in_azerty = n0 != 0; DROP) \
+  XV(dos, "UART-KEY", UART_KEY, PUSH uart_getc_nowait()) \
+  XV(dos, "SND-ENABLE", SND_ENABLE, sb_off = !n0; if (!n0) sb_stop(); DROP)
+
 #define PLATFORM_OPCODE_LIST \
   REQUIRED_MEMORY_SUPPORT \
   REQUIRED_SYSTEM_SUPPORT \
   DOS_SUPPORT \
+  BM_SCREEN_SUPPORT \
+  DOS_INPUT_SUPPORT \
+  BM_SOUND_SUPPORT \
   BM_FILES_SUPPORT \
   CALLING_OPCODE_LIST \
   FLOATING_POINT_LIST

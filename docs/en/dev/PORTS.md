@@ -239,20 +239,42 @@ and ports/baremetal/files.fs serve unchanged; the vocabulary `dos` is also
 named `rpi` for common/pager.fs. DJGPP's libm has no `fmin` / `fmax`
 (defined in main.c).
 
-Test: `make -C ports/dos test` (tools/dos_test.py, 27 checks): DOSBox
+Second step done the same day: the `sdl2` words. `video.h` sets the
+smallest VESA mode of 32 bits with a linear framebuffer that holds the
+screen (mapped by `__dpmi_physical_address_mapping`, written through a
+near pointer: `_CRT0_FLAG_NONMOVE_SBRK` keeps it valid) and lets
+ports/baremetal/screen.h draw in it as on the boards; while it is open
+the keyboard is read by interrupt (IRQ 1, chained with
+`_go32_dpmi_chain_protected_mode_interrupt_vector`, so DJGPP's Ctrl+Break
+and the BIOS still run; the BIOS's copy is emptied) and set-1 scan codes
+go to input.h as Linux key codes; the mouse through INT 33h.
+`close-screen` sets text mode 3 back (and `atexit`). `sb16.h` is a
+Sound Blaster 16 output for ports/baremetal/mixer.h, on the model of
+hda.h: 44100 Hz 16-bit stereo, auto-init DMA on the high channel of
+`BLASTER`, a ring of 8192 frames in conventional memory filled behind
+the DMA position at each pause. screen.h now builds on a 32-bit i386:
+`line_wide` (int64_t without `__int128`) and no `sfence` without SSE.
+In DOSBox 0.74 breakout runs at zoom 2: no 32-bit mode with a linear
+framebuffer held its 960x720 at zoom 3, and `screen` lowers the zoom.
+
+Test: `make -C ports/dos test` (tools/dos_test.py, 30 checks): DOSBox
 0.74 without a window, `lugforth < in.txt > out.txt`, then DOSBox in a
 window of Xvfb typed into with xdotool, the screen read back by the word
-`screen-char`. DOSBox has no DPMI host: `make hdpmi` downloads HDPMI32
+`screen-char`, two beeps recorded by DOSBox itself (Ctrl+F6 writes a wav
+in the `captures` folder of its configuration, measured with the
+functions of baremetal_qemu_test.py), breakout from screenshots (`import
+-window root rgb:`). DOSBox needs `SDL_AUDIODRIVER=dummy` here, or it
+stops without a sound device. DOSBox has no DPMI host: `make hdpmi` downloads HDPMI32
 (HX DOS extender, freeware) from its GitHub release (delorie.com, the
 home of CWSDPMI, is not reachable from the cloud sessions). The files
 DOSBox creates have capital names on the Linux side.
 
-Next: graphics through ports/baremetal/screen.h (VGA 13h or a VESA
-linear framebuffer, with `__djgpp_nearptr_enable`), the keyboard by
-interrupt (IRQ 1, port 0x60: key releases, which UEFI lacks), PC speaker
-`beep`; `ed` and `writhdeck` once their files have 8.3 names (or with
-long names on Windows 9x / DOSLFN); `lugforth prog.fs`. Not tried on a
-real PC, FreeDOS or Windows 9x.
+Next: `ed` and `writhdeck` once their files have 8.3 names (or with
+long names on Windows 9x / DOSLFN); `lugforth prog.fs`; a disk image or
+folder with the examples under 8.3 names; VGA 13h and the PC speaker
+for older machines; `graphic`. The mouse is not tested (DOSBox's moves
+with the X pointer, not tried). Not tried on a real PC, FreeDOS or
+Windows 9x.
 
 ## The bare-metal disk and the USB stick
 

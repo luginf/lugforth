@@ -53,7 +53,7 @@ Lancez `lugforth` (voir [Binaires](#binaires), ou compilez-le avec
 `ninja posix`). Vous obtenez une bannière et l'invite:
 
 ```
-Lugforth v2026.10.31.3
+Lugforth v2026.10.31.4
 :; ===========>/>
 type 'info' for help
  ok
@@ -1185,14 +1185,16 @@ Voir [ports/efi/README.md](../../ports/efi/README.md).
 
 `ports/dos` construit `lugforth.exe` pour DOS avec le compilateur croisé
 DJGPP: un programme en mode protégé 32 bits pour un 386 ou mieux, avec
-environ 5 Mo de mémoire et un hôte DPMI. Pour l'instant l'invite en mode
-texte et les fichiers; pas encore de graphisme ni de son.
+environ 5 Mo de mémoire et un hôte DPMI. L'invite en mode texte, les
+fichiers, et les mots `sdl2`: le graphisme dans un mode VESA, le clavier
+et la souris, le son d'une Sound Blaster 16; les jeux de
+`examples/games` tournent donc.
 
 ```
 make -C ports/dos            # out/dos/lugforth.exe
 make -C ports/dos hdpmi      # out/dos/HDPMI32.EXE, un hôte DPMI
 make -C ports/dos run        # dans DOSBox
-make -C ports/dos test       # 27 vérifications dans DOSBox
+make -C ports/dos test       # 30 vérifications dans DOSBox
 ```
 
 DOSBox n'a pas d'hôte DPMI: lancez `hdpmi32 -r` une fois, puis
@@ -1202,8 +1204,12 @@ marchent sur l'écran texte sans ANSI.SYS; `cd`, `pwd`, `md`, `rd`, `ls`
 et les mots de fichiers utilisent les disques de DOS (noms en 8.3 sauf
 si DOS a les noms longs). `autoexec.fs` du répertoire courant s'exécute
 au démarrage. `lugforth < in.txt > out.txt` exécute les lignes d'un
-fichier. Ctrl+Pause arrête un mot en cours. Essayé dans DOSBox
-seulement. Voir [ports/dos/README.md](../../ports/dos/README.md).
+fichier. Ctrl+Pause arrête un mot en cours. `screen` prend le plus
+petit mode VESA de 32 bits qui contient l'écran et son zoom;
+`close-screen` rend le mode texte. Le son demande une Sound Blaster 16
+(la variable `BLASTER`, que DOSBox définit). Un DOS sans noms longs
+(DOSBox) ne peut pas ouvrir `gfx_breakout.fs`: copiez les jeux sous des
+noms 8.3 (`breakout.fs`). Essayé dans DOSBox seulement. Voir [ports/dos/README.md](../../ports/dos/README.md).
 
 ## Compilation
 

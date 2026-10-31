@@ -265,22 +265,45 @@ quels; le vocabulaire `dos` s'appelle aussi `rpi` pour
 common/pager.fs. La libm de DJGPP n'a pas `fmin` / `fmax` (définis dans
 main.c).
 
-Test: `make -C ports/dos test` (tools/dos_test.py, 27 vérifications):
+Deuxième étape faite le même jour: les mots `sdl2`. `video.h` choisit
+le plus petit mode VESA de 32 bits à framebuffer linéaire qui contient
+l'écran (projeté par `__dpmi_physical_address_mapping`, écrit par un
+pointeur proche: `_CRT0_FLAG_NONMOVE_SBRK` le garde valable) et laisse
+ports/baremetal/screen.h y dessiner comme sur les cartes; tant qu'il
+est ouvert, le clavier est lu par interruption (IRQ 1, enchaînée par
+`_go32_dpmi_chain_protected_mode_interrupt_vector`, si bien que le
+Ctrl+Pause de DJGPP et le BIOS tournent encore; la copie du BIOS est
+vidée) et les codes de balayage du jeu 1 vont à input.h comme codes de
+touches Linux; la souris par l'INT 33h. `close-screen` remet le mode
+texte 3 (et `atexit`). `sb16.h` est une sortie Sound Blaster 16 pour
+ports/baremetal/mixer.h, sur le modèle de hda.h: 44100 Hz 16 bits
+stéréo, DMA auto-init sur le canal haut de `BLASTER`, un anneau de
+8192 trames en mémoire conventionnelle rempli derrière la position du
+DMA à chaque pause. screen.h se compile maintenant sur un i386 32 bits:
+`line_wide` (int64_t sans `__int128`) et pas de `sfence` sans SSE. Dans
+DOSBox 0.74 le casse-briques tourne au zoom 2: aucun mode 32 bits à
+framebuffer linéaire ne contenait ses 960x720 au zoom 3, et `screen`
+baisse le zoom.
+
+Test: `make -C ports/dos test` (tools/dos_test.py, 30 vérifications):
 DOSBox 0.74 sans fenêtre, `lugforth < in.txt > out.txt`, puis DOSBox
 dans une fenêtre de Xvfb où xdotool tape, l'écran relu par le mot
-`screen-char`. DOSBox n'a pas d'hôte DPMI: `make hdpmi` télécharge
+`screen-char`, deux bips enregistrés par DOSBox lui-même (Ctrl+F6 écrit
+un wav dans le dossier `captures` de sa configuration, mesuré avec les
+fonctions de baremetal_qemu_test.py), le casse-briques par captures
+d'écran (`import -window root rgb:`). DOSBox a besoin ici de
+`SDL_AUDIODRIVER=dummy`, sinon il s'arrête faute de carte son. DOSBox n'a pas d'hôte DPMI: `make hdpmi` télécharge
 HDPMI32 (extenseur DOS HX, freeware) depuis sa version sur GitHub
 (delorie.com, d'où vient CWSDPMI, n'est pas joignable depuis les
 sessions dans le cloud). Les fichiers créés par DOSBox ont des noms en
 capitales côté Linux.
 
-Suite: le graphisme par ports/baremetal/screen.h (VGA 13h ou un
-framebuffer linéaire VESA, avec `__djgpp_nearptr_enable`), le clavier
-par interruption (IRQ 1, port 0x60: les relâchements de touches,
-qu'UEFI n'a pas), `beep` sur le haut-parleur; `ed` et `writhdeck` quand
-leurs fichiers auront des noms 8.3 (ou avec les noms longs de Windows 9x
-/ DOSLFN); `lugforth prog.fs`. Pas essayé sur un vrai PC, FreeDOS ni
-Windows 9x.
+Suite: `ed` et `writhdeck` quand leurs fichiers auront des noms 8.3
+(ou avec les noms longs de Windows 9x / DOSLFN); `lugforth prog.fs`; une
+image disque ou un dossier avec les exemples sous des noms 8.3; VGA 13h
+et le haut-parleur pour les machines plus anciennes; `graphic`. La
+souris n'est pas testée (celle de DOSBox suit le pointeur X, pas
+essayé). Pas essayé sur un vrai PC, FreeDOS ni Windows 9x.
 
 ## Le disque en matériel nu et la clé USB
 

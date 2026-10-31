@@ -32,10 +32,13 @@ DOSBOX ?= dosbox
 VERSION := $(shell sed -n "s/.*version='\([^']*\)'.*/\1/p" $(ROOT)/BUILD | head -1)
 REVISION := $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
 
-CFLAGS := -O2 -Wall -Werror -Wno-unused-function -Wno-missing-braces -std=gnu11 -march=i386 -mtune=i686 -I $(ROOT) -I $(OUT)
-SOURCES := main.c files.h builtins.h $(ROOT)/ports/baremetal/builtins.h
+CFLAGS := -O2 -Wall -Werror -Wno-unused-function -Wno-unused-variable -Wno-missing-braces -std=gnu11 -march=i386 -mtune=i686 -I $(ROOT) -I $(OUT)
+SOURCES := main.c files.h builtins.h video.h sb16.h $(ROOT)/ports/baremetal/builtins.h \
+  $(ROOT)/ports/baremetal/screen.h $(ROOT)/ports/baremetal/input.h $(ROOT)/ports/baremetal/mixer.h \
+  $(ROOT)/ports/baremetal/font8x8.h $(ROOT)/ports/baremetal/term.h
+ASSETS ?= $(ROOT)/examples/games/gfx_tiles.png $(ROOT)/examples/games/gfx_tiles_alt.png
 FORTH := dos_boot.fs platform.fs autoboot.fs $(ROOT)/ports/baremetal/allocation.fs \
-  $(ROOT)/ports/baremetal/files.fs $(wildcard $(ROOT)/common/*.fs)
+  $(ROOT)/ports/baremetal/files.fs $(ROOT)/ports/baremetal/sdl2.fs $(wildcard $(ROOT)/common/*.fs)
 
 all: $(OUT)/lugforth.exe
 
@@ -49,7 +52,11 @@ $(OUT)/gen/dos_boot.h: $(FORTH) $(OUT)/gen/REVISION
 	  --name boot --header cpp -DVERSION=$(VERSION) -DSTABLE_VERSION=$(VERSION) \
 	  -FREVISION=$(OUT)/gen/REVISION -FREVSHORT=$(OUT)/gen/REVSHORT
 
-$(OUT)/lugforth.exe: $(SOURCES) $(OUT)/gen/dos_boot.h
+$(OUT)/gen/baremetal_assets.h: $(ASSETS) $(ROOT)/tools/baremetal_assets.py
+	mkdir -p $(OUT)/gen
+	python3 $(ROOT)/tools/baremetal_assets.py -o $@ $(ASSETS)
+
+$(OUT)/lugforth.exe: $(SOURCES) $(OUT)/gen/dos_boot.h $(OUT)/gen/baremetal_assets.h
 	$(CC) $(CFLAGS) main.c -o $@ -lm
 
 HX_ZIP := https://github.com/Baron-von-Riedesel/HX/releases/download/v2.23/HXRT223.zip
