@@ -3,7 +3,8 @@
 *English - [Français](README.fr.md)*
 
 A small, case-insensitive, 64-bit Forth built on a minimal C kernel. It runs on Linux, in the browser,
-on Android, on microcontrollers (ESP32, Pico, GBA) and on bare metal (Raspberry Pi, x86-64 PC via UEFI).
+on Android, on microcontrollers (ESP32, Pico, GBA), on bare metal (Raspberry Pi, x86-64 PC via UEFI) and on
+DOS (386 and up, the prompt in text mode for now).
 
 Site: [luginf.github.io/lugforth](https://luginf.github.io/lugforth/) -
 [Manual](docs/en/MANUAL.md) - [Word reference](docs/en/WORDS.md)
@@ -50,7 +51,7 @@ Details of each are in the [manual](docs/en/MANUAL.md).
 * [docs/en/WORDS.md](docs/en/WORDS.md): reference of the words
 * [docs/en/dev/](docs/en/dev/README.md): notes for developers (architecture, features, ports, pitfalls, ideas)
 * [examples/README.md](examples/README.md), [ports/rpi/README.md](ports/rpi/README.md),
-  [ports/efi/README.md](ports/efi/README.md)
+  [ports/efi/README.md](ports/efi/README.md), [ports/dos/README.md](ports/dos/README.md)
 
 ## Inspiration
 

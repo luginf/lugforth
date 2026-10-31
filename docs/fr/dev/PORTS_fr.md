@@ -247,6 +247,41 @@ maintenant une section IWRAM et aligne les images ROM que `crt0.s`
 copie; le roguelike et la démo des tuiles démarrent toujours après cela
 (captures sous mgba).
 
+## DOS (ports/dos) - commencé le 2026-10-31
+
+`lugforth.exe` construit avec le compilateur croisé DJGPP (gcc 12.2,
+des versions de github.com/andrewwutw/build-djgpp, décompressé dans
+`/opt/djgpp-x`; pas dans apt, seules ses binutils y sont): mode protégé
+32 bits, cellules de 32 bits, tas de 4 Mo. Première étape faite:
+l'invite en mode texte et les fichiers. `main.c` interprète les codes
+ANSI en appels conio (sans ANSI.SYS), traduit les touches spéciales du
+BIOS en séquences de terminal, utilise `uclock` pour MS-TICKS, les
+signaux pour les fautes (`setjmp` dans FAULT_ENTRY), stdout en binaire
+quand il est redirigé. `files.h` donne l'API `fat_*` des cartes sur la
+libc de DJGPP (errno ramené aux numéros d'Unix, répertoires lus par
+findfirst/findnext), si bien que BM_FILES_SUPPORT de
+ports/baremetal/builtins.h et ports/baremetal/files.fs servent tels
+quels; le vocabulaire `dos` s'appelle aussi `rpi` pour
+common/pager.fs. La libm de DJGPP n'a pas `fmin` / `fmax` (définis dans
+main.c).
+
+Test: `make -C ports/dos test` (tools/dos_test.py, 27 vérifications):
+DOSBox 0.74 sans fenêtre, `lugforth < in.txt > out.txt`, puis DOSBox
+dans une fenêtre de Xvfb où xdotool tape, l'écran relu par le mot
+`screen-char`. DOSBox n'a pas d'hôte DPMI: `make hdpmi` télécharge
+HDPMI32 (extenseur DOS HX, freeware) depuis sa version sur GitHub
+(delorie.com, d'où vient CWSDPMI, n'est pas joignable depuis les
+sessions dans le cloud). Les fichiers créés par DOSBox ont des noms en
+capitales côté Linux.
+
+Suite: le graphisme par ports/baremetal/screen.h (VGA 13h ou un
+framebuffer linéaire VESA, avec `__djgpp_nearptr_enable`), le clavier
+par interruption (IRQ 1, port 0x60: les relâchements de touches,
+qu'UEFI n'a pas), `beep` sur le haut-parleur; `ed` et `writhdeck` quand
+leurs fichiers auront des noms 8.3 (ou avec les noms longs de Windows 9x
+/ DOSLFN); `lugforth prog.fs`. Pas essayé sur un vrai PC, FreeDOS ni
+Windows 9x.
+
 ## Le disque en matériel nu et la clé USB
 
 Les dossiers de `examples/` sont gardés (`include games/gfx_snake.fs`,

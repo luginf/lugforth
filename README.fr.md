@@ -3,8 +3,8 @@
 *Français - [English](README.md)*
 
 Un petit Forth 64 bits, insensible à la casse, construit sur un noyau C minimal. Il tourne sous Linux, dans le
-navigateur, sur Android, sur des microcontrôleurs (ESP32, Pico, GBA) et sur du matériel nu (Raspberry Pi, PC
-x86-64 via UEFI).
+navigateur, sur Android, sur des microcontrôleurs (ESP32, Pico, GBA), sur du matériel nu (Raspberry Pi, PC
+x86-64 via UEFI) et sous DOS (386 et plus, l'invite en mode texte pour l'instant).
 
 Site: [luginf.github.io/lugforth](https://luginf.github.io/lugforth/) -
 [Manuel](docs/fr/MANUAL_fr.md) - [Référence des mots](docs/en/WORDS.md) (en anglais)
@@ -55,7 +55,7 @@ Le détail de chacun est dans le [manuel](docs/fr/MANUAL_fr.md).
 * [docs/en/dev/](docs/fr/dev/README_fr.md): notes pour les développeurs (architecture, fonctionnalités, ports, pièges,
   idées), [en français](docs/fr/dev/README_fr.md)
 * [examples/README.md](examples/README.md), [ports/rpi/README.md](ports/rpi/README.md),
-  [ports/efi/README.md](ports/efi/README.md) (en anglais)
+  [ports/efi/README.md](ports/efi/README.md), [ports/dos/README.md](ports/dos/README.md) (en anglais)
 
 ## Inspiration
 

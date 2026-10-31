@@ -223,6 +223,37 @@ point cloud of `gfx_magnoquill.fs`, its maths in C in fixed point
 section and aligns the ROM images that `crt0.s` copies; the roguelike
 and the tile demo still boot after that (screenshots under mgba).
 
+## DOS (ports/dos) - started 2026-10-31
+
+`lugforth.exe` built with the DJGPP cross compiler (gcc 12.2, from
+github.com/andrewwutw/build-djgpp releases, unpacked in `/opt/djgpp-x`;
+not in apt, only its binutils are): 32-bit protected mode, cells of 32
+bits, 4 MB heap. First step done: the prompt in text mode and the files.
+`main.c` interprets the ANSI codes into conio calls (no ANSI.SYS), maps
+the BIOS's special keys to terminal sequences, uses `uclock` for
+MS-TICKS, signals for faults (`setjmp` in FAULT_ENTRY), stdout in binary
+when redirected. `files.h` gives the `fat_*` API of the boards over
+DJGPP's libc (errno mapped to the Unix numbers, directories read with
+findfirst/findnext), so BM_FILES_SUPPORT of ports/baremetal/builtins.h
+and ports/baremetal/files.fs serve unchanged; the vocabulary `dos` is also
+named `rpi` for common/pager.fs. DJGPP's libm has no `fmin` / `fmax`
+(defined in main.c).
+
+Test: `make -C ports/dos test` (tools/dos_test.py, 27 checks): DOSBox
+0.74 without a window, `lugforth < in.txt > out.txt`, then DOSBox in a
+window of Xvfb typed into with xdotool, the screen read back by the word
+`screen-char`. DOSBox has no DPMI host: `make hdpmi` downloads HDPMI32
+(HX DOS extender, freeware) from its GitHub release (delorie.com, the
+home of CWSDPMI, is not reachable from the cloud sessions). The files
+DOSBox creates have capital names on the Linux side.
+
+Next: graphics through ports/baremetal/screen.h (VGA 13h or a VESA
+linear framebuffer, with `__djgpp_nearptr_enable`), the keyboard by
+interrupt (IRQ 1, port 0x60: key releases, which UEFI lacks), PC speaker
+`beep`; `ed` and `writhdeck` once their files have 8.3 names (or with
+long names on Windows 9x / DOSLFN); `lugforth prog.fs`. Not tried on a
+real PC, FreeDOS or Windows 9x.
+
 ## The bare-metal disk and the USB stick
 
 The folders of `examples/` are kept (`include games/gfx_snake.fs`,

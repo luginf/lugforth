@@ -31,7 +31,7 @@ window](#console-window) - [Mini build](#mini-build) - [Line
 editing](#line-editing) - [Pager](#pager) - [ed](#ed) -
 [writhdeck](#writhdeck) - [Blocks](#blocks) - [Examples](#examples) -
 [Varvara](#varvara-running-uxn-roms) - [Bare metal](#bare-metal) -
-[Building](#building)
+[DOS](#dos) - [Building](#building)
 
 # Learn
 
@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.10.31.2
+Lugforth v2026.10.31.3
 :; ===========>/>
 type 'info' for help
  ok
@@ -1131,6 +1131,30 @@ file not read, -2 refused by the firmware: not an x64 UEFI image or
 Secure Boot on, -3 its start failed). The stick itself stays FAT32.
 
 See [ports/efi/README.md](../../ports/efi/README.md).
+
+## DOS
+
+`ports/dos` builds `lugforth.exe` for DOS with the DJGPP cross compiler:
+a 32-bit protected mode program for a 386 or better, with about 5 MB of
+memory and a DPMI host. For now the prompt in text mode and the files;
+no graphics or sound yet.
+
+```
+make -C ports/dos            # out/dos/lugforth.exe
+make -C ports/dos hdpmi      # out/dos/HDPMI32.EXE, a DPMI host
+make -C ports/dos run        # in DOSBox
+make -C ports/dos test       # 27 checks in DOSBox
+```
+
+DOSBox has no DPMI host: start `hdpmi32 -r` once, then `lugforth`. On
+a real DOS, `CWSDPMI.EXE` beside `lugforth.exe` is enough. The line
+editor, the pager, the blocks and `blocks-editor` work on the text
+screen without ANSI.SYS; `cd`, `pwd`, `md`, `rd`, `ls` and the file
+words use the disks of DOS (names in 8.3 unless DOS has long names).
+`autoexec.fs` in the current directory runs at start.
+`lugforth < in.txt > out.txt` runs the lines of a file. Ctrl+Break
+stops a running word. Tried in DOSBox only. See
+[ports/dos/README.md](../../ports/dos/README.md).
 
 ## Building
 
