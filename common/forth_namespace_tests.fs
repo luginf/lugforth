@@ -533,6 +533,7 @@ e: check-desktop
 ;e
 
 e: check-filetools
+  out: blocks-editor 
   out: visual 
   check-ansi
   check-blocks

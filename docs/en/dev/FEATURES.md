@@ -177,6 +177,33 @@ Still to do, from the original (priority order):
    `definitions` after `previous` would otherwise leave the caller
    defining in `sdl2`.
 
+## Blocks and `blocks-editor` (common/blocks.fs, blocks_editor.fs) - 2026-10-31
+
+`common/blocks.fs` (uEforth) has the standard block words and a line
+editor (`editor` vocabulary: `l n p r a d e wipe`). One buffer only: a
+block that loads another breaks (the rest of the first is read from
+the second), checked. `block` grows the file to n*1024 bytes only, the
+write of `save-buffers` makes it (n+1)*1024: `blocks-editor` shows
+`max(file blocks, n+1)`. Before `use`, any block word creates
+`blocks.fb` in the current directory (a `1 list` in the repo leaves
+one).
+
+`blocks-editor [n]` (`common/blocks_editor.fs`, loaded by
+phase_filetools.fs after visual.fs, so in every boot with files) is a
+string compiled on first use, like `visual`: no vertical bar inside
+(`124 emit` draws the bars). 63 editable places per line (the 64th is
+the newline of blocks.fs, moved with the line by cut/paste). Keys and
+use: MANUAL.md, section Blocks. Raw mode as ed's `editor-raw` (IXON and
+ISIG off, so Ctrl+S, Ctrl+Q, Ctrl+C reach it). Traps met: `vocabulary
+x x definitions` without `also` replaces the top of the search order
+(here termios: `[defined] new-termios` became false and Ctrl+S froze
+the pty); the editor's words are early bound, so Ctrl+L loads with the
+caller's order. Tested: `tools/blocks_editor_pty_test.py` (17 checks,
+posix) and `blocks()` in tools/efi_qemu_test.py (3 checks: typed on
+the serial line, Ctrl+C/Ctrl+V, saved on the FAT, loaded). Not tried:
+the `--gui` window, the Pi, Windows, ESP32 (the string adds about 7 KB
+to the boot).
+
 ## Ports from eForth Windows (Marc Petremann, GPL) - done 2026-10-13
 
 Source: https://github.com/MPETREMANN11/eForth-Windows (clone it into

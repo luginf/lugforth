@@ -81,7 +81,7 @@ platform.fs (azerty, console-zoom, keys).
 
 `make -C ports/efi test` builds out/efi/BOOTX64.EFI (gcc + gnu-efi) and
 boots it under QEMU q35 + OVMF from a USB stick image (MBR + FAT32,
-tools/baremetal_mkdisk.py), 124 checks (tools/efi_qemu_test.py, which
+tools/baremetal_mkdisk.py), 129 checks (tools/efi_qemu_test.py, which
 reuses baremetal_qemu_test.py). Needs
 `gnu-efi ovmf qemu-system-x86 dosfstools mtools`. Stays in boot
 services: GOP screen, ConIn keyboard (no releases: a key is held 120 ms
@@ -222,6 +222,91 @@ point cloud of `gfx_magnoquill.fs`, its maths in C in fixed point
 (checked there, not on a console). The linker script now has an IWRAM
 section and aligns the ROM images that `crt0.s` copies; the roguelike
 and the tile demo still boot after that (screenshots under mgba).
+
+## DOS (ports/dos) - started 2026-10-31
+
+`lugforth.exe` built with the DJGPP cross compiler (gcc 12.2, from
+github.com/andrewwutw/build-djgpp releases, unpacked in `/opt/djgpp-x`;
+not in apt, only its binutils are): 32-bit protected mode, cells of 32
+bits, 4 MB heap. First step done: the prompt in text mode and the files.
+`main.c` interprets the ANSI codes into conio calls (no ANSI.SYS), maps
+the BIOS's special keys to terminal sequences, uses `uclock` for
+MS-TICKS, signals for faults (`setjmp` in FAULT_ENTRY), stdout in binary
+when redirected. `files.h` gives the `fat_*` API of the boards over
+DJGPP's libc (errno mapped to the Unix numbers, directories read with
+findfirst/findnext), so BM_FILES_SUPPORT of ports/baremetal/builtins.h
+and ports/baremetal/files.fs serve unchanged; the vocabulary `dos` is also
+named `rpi` for common/pager.fs. DJGPP's libm has no `fmin` / `fmax`
+(defined in main.c).
+
+Second step done the same day: the `sdl2` words. `video.h` sets the
+smallest VESA mode of 32 bits with a linear framebuffer that holds the
+screen (mapped by `__dpmi_physical_address_mapping`, written through a
+near pointer: `_CRT0_FLAG_NONMOVE_SBRK` keeps it valid) and lets
+ports/baremetal/screen.h draw in it as on the boards; while it is open
+the keyboard is read by interrupt (IRQ 1, chained with
+`_go32_dpmi_chain_protected_mode_interrupt_vector`, so DJGPP's Ctrl+Break
+and the BIOS still run; the BIOS's copy is emptied) and set-1 scan codes
+go to input.h as Linux key codes; the mouse through INT 33h.
+`close-screen` sets text mode 3 back (and `atexit`). `sb16.h` is a
+Sound Blaster 16 output for ports/baremetal/mixer.h, on the model of
+hda.h: 44100 Hz 16-bit stereo, auto-init DMA on the high channel of
+`BLASTER`, a ring of 8192 frames in conventional memory filled behind
+the DMA position at each pause. screen.h now builds on a 32-bit i386:
+`line_wide` (int64_t without `__int128`) and no `sfence` without SSE.
+In DOSBox 0.74 breakout runs at zoom 2: no 32-bit mode with a linear
+framebuffer held its 960x720 at zoom 3, and `screen` lowers the zoom.
+
+Third step: `make stage` (tools/dos_stage.py) makes out/dos/disk with
+every name cut to 8.3 as DOS cuts it (base 8, extension 3): DOS without
+long names (DOSBox included, checked) cuts the names a program opens the
+same way, so the long names in the sources (`include
+games/gfx_breakout.fs`, `needs eval_copy.fs` in editor.fs) find the
+files; two names that would collide are reported. `ed` and `writhdeck`
+are read from LIB beside the program (`home`: the folder of argv 0).
+`lugforth prog.fs` (autoboot.fs, as on Linux). The ANSI interpreter of
+main.c has a terminal's pending wrap: a character in the last column
+does not move to the next line until the next character (ed's status
+line on the last row scrolled the screen and hid the text).
+editors/editor.fs keeps its theme colors in a byte table now: the 48-bit
+literal of before did not fit 32-bit cells (wrong colors of numbers and
+names with 32-bit cells).
+
+Fourth step: DOSBox-X (apt) as a second emulator: `DOSBOX=dosbox-x`
+runs the same test (all but the recording of the beeps: its shortcuts
+are F12 + ..., not Ctrl+F6), `DOS_LFN=1` with DOS 7.1 and long names.
+With long names DOS no longer cuts the names, so files.h tries a path
+that does not exist again cut to 8.3 (`path_short`, the rule of
+dos_stage.py). A 16-bit VESA mode (5-6-5) when no 32-bit mode holds the
+screen even at zoom 1 (2048's 484x640: DOSBox's S3 has 1024x768 in 16
+bits only): screen.h draws in a copy in RAM, `dos_fb_flip` converts the
+rows that changed (memcmp with the copy of the last flip);
+`dos_fb_open` refuses 16 bits while a 32-bit mode exists at zoom 1, so
+sdl2.fs lowers the zoom instead (breakout stays at zoom 2 in 32 bits:
+converting 960x720 at each flip was too slow in DOSBox, the ball did
+not move). Both are macros over the functions of screen.h (`#define
+fb_flip dos_fb_flip` after screen.h, before builtins.h). Traps met: a
+run that never ends with stdin redirected (a game) filled the disk with
+its output, run DOSBox under `ulimit -f`; Xvfb killed with SIGKILL
+leaves /tmp/.X<n>-lock and the next one on that display does not start
+(the test uses `-displayfd` and SIGTERM).
+
+Test: `make -C ports/dos test` (tools/dos_test.py, 38 checks): DOSBox
+0.74 without a window, `lugforth < in.txt > out.txt`, then DOSBox in a
+window of Xvfb typed into with xdotool, the screen read back by the word
+`screen-char`, two beeps recorded by DOSBox itself (Ctrl+F6 writes a wav
+in the `captures` folder of its configuration, measured with the
+functions of baremetal_qemu_test.py), breakout from screenshots (`import
+-window root rgb:`). DOSBox needs `SDL_AUDIODRIVER=dummy` here, or it
+stops without a sound device. DOSBox has no DPMI host: `make hdpmi` downloads HDPMI32
+(HX DOS extender, freeware) from its GitHub release (delorie.com, the
+home of CWSDPMI, is not reachable from the cloud sessions). The files
+DOSBox creates have capital names on the Linux side.
+
+Next: a disk or floppy image of out/dos/disk; VGA 13h and the PC
+speaker for older machines; `graphic`. The mouse is not tested (DOSBox's moves
+with the X pointer, not tried). Not tried on a real PC, FreeDOS or
+Windows 9x.
 
 ## The bare-metal disk and the USB stick
 

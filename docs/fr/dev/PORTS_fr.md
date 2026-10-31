@@ -92,7 +92,7 @@ platform.fs (azerty, console-zoom, touches).
 
 `make -C ports/efi test` construit out/efi/BOOTX64.EFI (gcc + gnu-efi)
 et le démarre sous QEMU q35 + OVMF depuis une image de clé USB (MBR +
-FAT32, tools/baremetal_mkdisk.py), 124 vérifications
+FAT32, tools/baremetal_mkdisk.py), 129 vérifications
 (tools/efi_qemu_test.py, qui réutilise baremetal_qemu_test.py). Demande
 `gnu-efi ovmf qemu-system-x86 dosfstools mtools`. Reste dans les
 services de démarrage: écran GOP, clavier ConIn (pas de relâchements:
@@ -246,6 +246,99 @@ mgba (vérifié là, pas sur une console). Le script de liens a
 maintenant une section IWRAM et aligne les images ROM que `crt0.s`
 copie; le roguelike et la démo des tuiles démarrent toujours après cela
 (captures sous mgba).
+
+## DOS (ports/dos) - commencé le 2026-10-31
+
+`lugforth.exe` construit avec le compilateur croisé DJGPP (gcc 12.2,
+des versions de github.com/andrewwutw/build-djgpp, décompressé dans
+`/opt/djgpp-x`; pas dans apt, seules ses binutils y sont): mode protégé
+32 bits, cellules de 32 bits, tas de 4 Mo. Première étape faite:
+l'invite en mode texte et les fichiers. `main.c` interprète les codes
+ANSI en appels conio (sans ANSI.SYS), traduit les touches spéciales du
+BIOS en séquences de terminal, utilise `uclock` pour MS-TICKS, les
+signaux pour les fautes (`setjmp` dans FAULT_ENTRY), stdout en binaire
+quand il est redirigé. `files.h` donne l'API `fat_*` des cartes sur la
+libc de DJGPP (errno ramené aux numéros d'Unix, répertoires lus par
+findfirst/findnext), si bien que BM_FILES_SUPPORT de
+ports/baremetal/builtins.h et ports/baremetal/files.fs servent tels
+quels; le vocabulaire `dos` s'appelle aussi `rpi` pour
+common/pager.fs. La libm de DJGPP n'a pas `fmin` / `fmax` (définis dans
+main.c).
+
+Deuxième étape faite le même jour: les mots `sdl2`. `video.h` choisit
+le plus petit mode VESA de 32 bits à framebuffer linéaire qui contient
+l'écran (projeté par `__dpmi_physical_address_mapping`, écrit par un
+pointeur proche: `_CRT0_FLAG_NONMOVE_SBRK` le garde valable) et laisse
+ports/baremetal/screen.h y dessiner comme sur les cartes; tant qu'il
+est ouvert, le clavier est lu par interruption (IRQ 1, enchaînée par
+`_go32_dpmi_chain_protected_mode_interrupt_vector`, si bien que le
+Ctrl+Pause de DJGPP et le BIOS tournent encore; la copie du BIOS est
+vidée) et les codes de balayage du jeu 1 vont à input.h comme codes de
+touches Linux; la souris par l'INT 33h. `close-screen` remet le mode
+texte 3 (et `atexit`). `sb16.h` est une sortie Sound Blaster 16 pour
+ports/baremetal/mixer.h, sur le modèle de hda.h: 44100 Hz 16 bits
+stéréo, DMA auto-init sur le canal haut de `BLASTER`, un anneau de
+8192 trames en mémoire conventionnelle rempli derrière la position du
+DMA à chaque pause. screen.h se compile maintenant sur un i386 32 bits:
+`line_wide` (int64_t sans `__int128`) et pas de `sfence` sans SSE. Dans
+DOSBox 0.74 le casse-briques tourne au zoom 2: aucun mode 32 bits à
+framebuffer linéaire ne contenait ses 960x720 au zoom 3, et `screen`
+baisse le zoom.
+
+Troisième étape: `make stage` (tools/dos_stage.py) fait out/dos/disk
+avec tous les noms coupés en 8.3 comme DOS les coupe (base 8, extension
+3): un DOS sans noms longs (DOSBox compris, vérifié) coupe de la même
+façon les noms qu'un programme ouvre, si bien que les noms longs des
+sources (`include games/gfx_breakout.fs`, `needs eval_copy.fs` dans
+editor.fs) trouvent les fichiers; deux noms qui se confondraient sont
+signalés. `ed` et `writhdeck` sont lus dans LIB à côté du programme
+(`home`: le dossier de argv 0). `lugforth prog.fs` (autoboot.fs, comme
+sous Linux). L'interpréteur ANSI de main.c a le retour à la ligne
+différé d'un terminal: un caractère dans la dernière colonne ne passe à
+la ligne suivante qu'au caractère suivant (la ligne d'état de ed sur la
+dernière ligne faisait défiler l'écran et cachait le texte).
+editors/editor.fs garde maintenant les couleurs de ses thèmes dans une
+table d'octets: le littéral de 48 bits d'avant ne tenait pas dans une
+cellule de 32 bits (mauvaises couleurs des nombres et des noms avec des
+cellules de 32 bits).
+
+Quatrième étape: DOSBox-X (apt) comme second émulateur:
+`DOSBOX=dosbox-x` lance le même test (tout sauf l'enregistrement des
+bips: ses raccourcis sont F12 + ..., pas Ctrl+F6), `DOS_LFN=1` avec DOS
+7.1 et les noms longs. Avec les noms longs DOS ne coupe plus les noms:
+files.h réessaie un chemin qui n'existe pas coupé en 8.3 (`path_short`,
+la règle de dos_stage.py). Un mode VESA 16 bits (5-6-5) quand aucun mode
+32 bits ne contient l'écran même au zoom 1 (les 484x640 de 2048: le S3
+de DOSBox n'a le 1024x768 qu'en 16 bits): screen.h dessine dans une
+copie en RAM, `dos_fb_flip` convertit les lignes qui ont changé (memcmp
+avec la copie du flip précédent); `dos_fb_open` refuse le 16 bits tant
+qu'un mode 32 bits existe au zoom 1, si bien que sdl2.fs baisse plutôt
+le zoom (le casse-briques reste au zoom 2 en 32 bits: convertir
+960x720 à chaque flip était trop lent dans DOSBox, la balle ne bougeait
+pas). Les deux sont des macros sur les fonctions de screen.h (`#define
+fb_flip dos_fb_flip` après screen.h, avant builtins.h). Pièges
+rencontrés: un programme qui ne finit jamais avec stdin redirigé (un
+jeu) a rempli le disque de sa sortie, lancer DOSBox sous `ulimit -f`;
+un Xvfb tué par SIGKILL laisse /tmp/.X<n>-lock et le suivant ne démarre
+pas sur cet affichage (le test utilise `-displayfd` et SIGTERM).
+
+Test: `make -C ports/dos test` (tools/dos_test.py, 38 vérifications):
+DOSBox 0.74 sans fenêtre, `lugforth < in.txt > out.txt`, puis DOSBox
+dans une fenêtre de Xvfb où xdotool tape, l'écran relu par le mot
+`screen-char`, deux bips enregistrés par DOSBox lui-même (Ctrl+F6 écrit
+un wav dans le dossier `captures` de sa configuration, mesuré avec les
+fonctions de baremetal_qemu_test.py), le casse-briques par captures
+d'écran (`import -window root rgb:`). DOSBox a besoin ici de
+`SDL_AUDIODRIVER=dummy`, sinon il s'arrête faute de carte son. DOSBox n'a pas d'hôte DPMI: `make hdpmi` télécharge
+HDPMI32 (extenseur DOS HX, freeware) depuis sa version sur GitHub
+(delorie.com, d'où vient CWSDPMI, n'est pas joignable depuis les
+sessions dans le cloud). Les fichiers créés par DOSBox ont des noms en
+capitales côté Linux.
+
+Suite: une image disque ou disquette de out/dos/disk; VGA 13h et le
+haut-parleur pour les machines plus anciennes; `graphic`. La
+souris n'est pas testée (celle de DOSBox suit le pointeur X, pas
+essayé). Pas essayé sur un vrai PC, FreeDOS ni Windows 9x.
 
 ## Le disque en matériel nu et la clé USB
 

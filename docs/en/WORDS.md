@@ -55,6 +55,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `block` | `( n -- a )` | ANS. Get a 1024 byte block | P - |
 | `block-fid` | `( -- n )` | Value. The file handle of the file that holds the blocks, -1 if none. | P - |
 | `block-id` | `( -- n )` | Value. The number of the block now in the block buffer, -1 if none. | P - |
+| `blocks-editor` | `( "n" -- )` | Full screen editor of block n (or of the block last listed) of the file chosen with use; compiled on first use. | P - |
 | `buffer` | `( n -- a )` | ANS. Get a 1024 byte block without regard to old contents | P - |
 | `copy` | `( from to -- )` | Copies a block to another block. | P - |
 | `default-use` | `( -- )` | Deferred word run to open the default block file, `blocks.fb`. | P - |

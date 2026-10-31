@@ -194,6 +194,35 @@ Reste à faire, d'après l'original (par ordre de priorité):
    le fait varvara_rpi.fs: `definitions` après `previous` laisserait
    sinon l'appelant définir dans `sdl2`.
 
+## Blocs et `blocks-editor` (common/blocks.fs, blocks_editor.fs) - 2026-10-31
+
+`common/blocks.fs` (uEforth) a les mots de blocs standard et un
+éditeur de lignes (vocabulaire `editor`: `l n p r a d e wipe`). Un seul
+tampon: un bloc qui en charge un autre casse (la suite du premier est
+lue dans le second), vérifié. `block` n'agrandit le fichier qu'à n*1024
+octets, l'écriture de `save-buffers` le porte à (n+1)*1024:
+`blocks-editor` affiche `max(blocs du fichier, n+1)`. Avant `use`, tout
+mot de bloc crée `blocks.fb` dans le répertoire courant (un `1 list`
+dans le dépôt en laisse un).
+
+`blocks-editor [n]` (`common/blocks_editor.fs`, chargé par
+phase_filetools.fs après visual.fs, donc dans toute amorce avec
+fichiers) est une chaîne compilée au premier usage, comme `visual`: pas
+de barre verticale dedans (`124 emit` dessine les barres). 63 places
+éditables par ligne (la 64e est le saut de ligne de blocks.fs, déplacé
+avec la ligne par couper/coller). Touches et usage: MANUAL_fr.md,
+section Blocs. Mode brut comme `editor-raw` de ed (IXON et ISIG
+coupés, pour que Ctrl+S, Ctrl+Q, Ctrl+C lui arrivent). Pièges
+rencontrés: `vocabulary x x definitions` sans `also` remplace le haut
+de l'ordre de recherche (ici termios: `[defined] new-termios` devenait
+faux et Ctrl+S gelait le pty); les mots de l'éditeur sont liés à la
+compilation, donc Ctrl+L charge avec l'ordre de l'appelant. Testé:
+`tools/blocks_editor_pty_test.py` (17 vérifications, posix) et
+`blocks()` dans tools/efi_qemu_test.py (3 vérifications: frappe sur la
+ligne série, Ctrl+C/Ctrl+V, écrit sur la FAT, chargé). Pas essayé: la
+fenêtre `--gui`, le Pi, Windows, l'ESP32 (la chaîne ajoute environ
+7 Ko à l'amorce).
+
 ## Portages d'eForth Windows (Marc Petremann, GPL) - fait le 2026-10-13
 
 Source: https://github.com/MPETREMANN11/eForth-Windows (à cloner dans le

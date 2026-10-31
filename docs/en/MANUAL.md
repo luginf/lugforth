@@ -29,9 +29,9 @@ programs](#10-three-small-programs) -
 **Reference** [Layout](#layout) - [Binaries](#binaries) - [Console
 window](#console-window) - [Mini build](#mini-build) - [Line
 editing](#line-editing) - [Pager](#pager) - [ed](#ed) -
-[writhdeck](#writhdeck) - [Examples](#examples) -
+[writhdeck](#writhdeck) - [Blocks](#blocks) - [Examples](#examples) -
 [Varvara](#varvara-running-uxn-roms) - [Bare metal](#bare-metal) -
-[Building](#building)
+[DOS](#dos) - [Building](#building)
 
 # Learn
 
@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.10.30.9
+Lugforth v2026.10.31.6
 :; ===========>/>
 type 'info' for help
  ok
@@ -504,6 +504,10 @@ Load it, then use the words:
 library once. To run a program directly: `lugforth squares.fs`. Add
 `bye` as the last line to exit afterward.
 
+The older way of Forth, source kept in numbered blocks of 1024
+characters and edited with `blocks-editor`, works too: see
+[Blocks](#blocks).
+
 If a file produces `Error including: file` and nothing else, an error
 was thrown while loading: bisect by putting `.` or `.s` lines in the
 file to find where it stops.
@@ -924,6 +928,79 @@ status_center = words
 status_right  = goal help_bar
 ```
 
+## Blocks
+
+Before files, Forth kept its source in **blocks**: 1024 characters,
+shown as 16 lines of 64. Lugforth has them on every build with files
+(PC, Windows, Raspberry Pi, UEFI PC, ESP32; code `common/blocks.fs`,
+from uEforth). A block file is a plain file of 1024-byte blocks
+numbered from 0. In Lugforth the 64th character of each line is a
+newline, so the file also reads as text, 63 characters per line.
+
+| Word | Action |
+|---|---|
+| `use name` | choose the block file (created if missing); without it, the first block word opens `blocks.fb` in the current directory |
+| `block ( n -- a )` | address of the 1024 characters of block n, read from the file |
+| `buffer ( n -- a )` | the same without reading, to fill it whole |
+| `update` | the block in memory changed: it is written before another one is read |
+| `save-buffers`, `flush` | write it now; `flush` also forgets it |
+| `empty-buffers` | forget it without writing |
+| `load ( n -- )`, `thru ( a b -- )` | interpret block n, or blocks a to b, as if typed |
+| `copy ( from to -- )` | copy a block onto another |
+| `list ( n -- )` | show a block; `scr` keeps its number |
+
+Only one block is in memory: an address given by `block` is good until
+another block is read. So a block cannot `load` another one (the text
+being read is replaced): run `thru` at the prompt or from a file.
+Reading a block past the end makes the file longer.
+
+The line editor of uEforth works on the block last listed, after
+`editor` (`forth` leaves it): `l` lists it again, `n` / `p` go to the
+next / previous one, `3 r text` replaces line 3, `3 a text` inserts a
+line there, `3 d` deletes it, `3 e` empties it, `wipe` empties the
+block.
+
+```
+> use squares.fb  1 list
+> editor
+> 0 r : square ( n -- n*n )  dup * ;
+> 1 r : squares ( n -- )  1+ 1 ?do i square . loop ;
+> flush forth
+> 1 load  5 squares
+1 4 9 16 25  ok
+```
+
+### blocks-editor
+
+`blocks-editor` edits the block last listed, `blocks-editor 5` block 5
+of the file chosen with `use`, full screen: a title line (block
+number, blocks in the file, insert or overwrite, `modified`), the 16
+numbered lines, a message line and a reminder of the keys. Code:
+`common/blocks_editor.fs`, compiled on first use; test:
+`python3 tools/blocks_editor_pty_test.py out/posix/lugforth`.
+
+| Keys | Action |
+|---|---|
+| arrows, Home, End (Ctrl+A, Ctrl+E), Tab | move; End goes after the last character of the line, Tab four places right |
+| Enter | start of the next line |
+| Backspace, Delete (Ctrl+D) | delete before or under the cursor, the rest of the line comes left |
+| Insert, Ctrl+T | insert or overwrite (the default); inserting pushes the line right, its last character is lost |
+| PageUp, PageDown | previous, next block |
+| Ctrl+G | go to a block: type its number, Enter (Esc cancels) |
+| Ctrl+X, Ctrl+C, Ctrl+V | cut, copy the line; paste it above the cursor |
+| Ctrl+N | insert an empty line (the last line of the block is lost) |
+| Ctrl+U | undo the changes since the block was last written |
+| Ctrl+S | save |
+| Ctrl+L | save and `load` the block, show what it printed until a key |
+| Ctrl+Q | save and quit |
+
+Changes are written by Ctrl+S, Ctrl+L, Ctrl+Q, or when another block
+is shown. Words defined by Ctrl+L stay after quitting. Characters
+below space show as spaces, those above `~` as dots; only plain ASCII
+can be typed. Tested in a terminal (pty test) and on the UEFI PC under
+QEMU (`make -C ports/efi test`); not tried in the `--gui` window, on
+the Raspberry Pi, Windows or the ESP32.
+
 ## Examples
 
 `examples/` has games, benchmarks and demos; see
@@ -1026,7 +1103,7 @@ only), no mouse.
 sudo apt install gnu-efi ovmf qemu-system-x86 dosfstools mtools
 make -C ports/efi usb     # out/efi/usb.img, to dd onto a stick
 make -C ports/efi run     # the same image under QEMU with OVMF
-make -C ports/efi test    # 124 checks under QEMU
+make -C ports/efi test    # 129 checks under QEMU
 ```
 
 Several sticks: `volumes` lists the FAT volumes (`*` marks the one in
@@ -1054,6 +1131,40 @@ file not read, -2 refused by the firmware: not an x64 UEFI image or
 Secure Boot on, -3 its start failed). The stick itself stays FAT32.
 
 See [ports/efi/README.md](../../ports/efi/README.md).
+
+## DOS
+
+`ports/dos` builds `lugforth.exe` for DOS with the DJGPP cross compiler:
+a 32-bit protected mode program for a 386 or better, with about 5 MB of
+memory and a DPMI host. The prompt in text mode, the files, and the
+`sdl2` words: graphics in a VESA mode, the keyboard and the mouse, the
+sound of a Sound Blaster 16, so the games of `examples/games` run.
+
+```
+make -C ports/dos            # out/dos/lugforth.exe
+make -C ports/dos hdpmi      # out/dos/HDPMI32.EXE, a DPMI host
+make -C ports/dos stage      # out/dos/disk: the program, examples, editors
+make -C ports/dos run        # in DOSBox, on out/dos/disk
+make -C ports/dos test       # 38 checks in DOSBox
+```
+
+DOSBox has no DPMI host: start `hdpmi32 -r` once, then `lugforth`. On
+a real DOS, `CWSDPMI.EXE` beside `lugforth.exe` is enough. The line
+editor, the pager, the blocks and `blocks-editor` work on the text
+screen without ANSI.SYS; `cd`, `pwd`, `md`, `rd`, `ls` and the file
+words use the disks of DOS (names in 8.3 unless DOS has long names).
+`autoexec.fs` in the current directory runs at start.
+`lugforth < in.txt > out.txt` runs the lines of a file. Ctrl+Break
+stops a running word. `screen` takes the smallest VESA mode of 32 bits
+that holds the screen and its zoom; `close-screen` gives the text mode
+back. The sound needs a Sound Blaster 16 (the `BLASTER` variable, which
+DOSBox sets). Copy the folder `out/dos/disk` to the DOS disk: its names
+are cut to 8.3 as DOS cuts them, so `include games/gfx_breakout.fs`
+works without long names; `ed` and `writhdeck` come from its LIB.
+`lugforth prog.fs` includes the file at start. Tried in DOSBox and
+DOSBox-X.
+See
+[ports/dos/README.md](../../ports/dos/README.md).
 
 ## Building
 

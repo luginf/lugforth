@@ -100,7 +100,8 @@ Réalistes, du plus utile au moins utile:
 2. **Amiga** (68000, 512 Ko ou plus): mêmes risques, chaîne
    `m68k-amigaos-gcc`; FS-UAE est installé ici.
 3. **DOS 386** (DJGPP, 32 bits protégé): le plus facile, cellules de 32
-   bits, petit-boutiste, mode VGA 13h.
+   bits, petit-boutiste, mode VGA 13h. Commencé le 2026-10-31:
+   `ports/dos`, voir [PORTS_fr.md](PORTS_fr.md).
 4. **Nintendo DS** (ARM9, 4 Mo): très proche de la GBA (devkitARM).
 5. **PlayStation 1, N64, Dreamcast, PSP** (MIPS, SH4, GCC): faisables
    mais lourds en pilotes pour peu d'intérêt.

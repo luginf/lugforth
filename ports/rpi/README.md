@@ -31,7 +31,7 @@ picolibc, used for `malloc`, `math.h` and `setjmp`.
 | `paste` (a whole file over serial) | tested | same code, not run by the test | to try | written blind |
 
 Here "tested" means that `make test` (`tools/baremetal_qemu_test.py`) checks it
-on every run, 121 checks in all:
+on every run, 174 checks in all:
 
 * Answers are read on the serial line.
 * The screen is read through QEMU's `screendump`. Lines, text and images

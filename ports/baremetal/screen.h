@@ -42,8 +42,13 @@ static void dcache_clean(const void *p, uint64_t n) {
   // x86 (ports/efi): the framebuffer is coherent, but video memory is usually
   // write-combining: a small update stays in the CPU's buffers, unseen, until
   // something flushes them (the next key press, on a real laptop).
+  // A 386 (ports/dos) has no sfence (SSE): there, only the compiler's barrier.
   (void) p; (void) n;
+#if defined(__x86_64__) || defined(__SSE__)
   __asm__ volatile("sfence" ::: "memory");
+#else
+  __asm__ volatile("" ::: "memory");
+#endif
 #endif
 }
 
@@ -253,8 +258,16 @@ static void fb_plot(cell_t x, cell_t y) {
   *p = fb_alpha == 255 ? fb_color : fb_blend(*p);
 }
 
+// Twice the width of a cell, for the products of two coordinates: 128 bits
+// with 64-bit cells, 64 with the 32-bit cells of ports/dos.
+#ifdef __SIZEOF_INT128__
+typedef __int128 line_wide;
+#else
+typedef int64_t line_wide;
+#endif
+
 static cell_t line_minor(cell_t k, cell_t big, cell_t small) {
-  return (cell_t) (((__int128) 2 * k * small + big) / ((__int128) 2 * big));
+  return (cell_t) (((line_wide) 2 * k * small + big) / ((line_wide) 2 * big));
 }
 
 // The steps k in [lo, hi] at which start + dir * f(k) is in [0, n - 1],
@@ -262,8 +275,8 @@ static cell_t line_minor(cell_t k, cell_t big, cell_t small) {
 static void line_window(cell_t start, cell_t dir, cell_t n, cell_t steps,
                         int major, cell_t big, cell_t small,
                         cell_t *lo, cell_t *hi) {
-  __int128 fmin = dir > 0 ? -(__int128) start : (__int128) start - (n - 1);
-  __int128 fmax = dir > 0 ? (__int128) n - 1 - start : (__int128) start;
+  line_wide fmin = dir > 0 ? -(line_wide) start : (line_wide) start - (n - 1);
+  line_wide fmax = dir > 0 ? (line_wide) n - 1 - start : (line_wide) start;
   if (major) {
     if (fmin > *lo) *lo = fmin <= steps ? (cell_t) fmin : steps + 1;
     if (fmax < *hi) *hi = fmax < 0 ? -1 : (cell_t) fmax;
@@ -301,7 +314,7 @@ static void fb_line(cell_t x1, cell_t y1, cell_t x2, cell_t y2) {
   cell_t m = line_minor(lo, big, small);
   cell_t xs = xmajor ? lo : m, ys = xmajor ? m : lo;
   cell_t x = x1 + sx * xs, y = y1 + sy * ys;
-  cell_t err = (cell_t) ((__int128) dx + dy + (__int128) xs * dy + (__int128) ys * dx);
+  cell_t err = (cell_t) ((line_wide) dx + dy + (line_wide) xs * dy + (line_wide) ys * dx);
   for (cell_t k = lo; ; k++) {
     fb_plot(x, y);
     if (k == hi) break;
