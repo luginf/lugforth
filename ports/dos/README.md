@@ -8,12 +8,19 @@ mode, the keyboard and the mouse, the sound of a Sound Blaster 16.
 
 ## Build
 
-The DJGPP cross compiler for Linux:
-<https://github.com/andrewwutw/build-djgpp/releases> (v3.4,
-`djgpp-linux64-gcc1220.tar.bz2`), unpacked in `/opt/djgpp-x` or anywhere
-else given as `DJGPP=`:
+It needs the DJGPP cross compiler, `i586-pc-msdosdjgpp-gcc`. Debian and
+Ubuntu have no package for it: `binutils-djgpp` is only the assembler
+and the linker, without gcc or DJGPP's libc. `install-djgpp.sh` installs
+the prebuilt one of <https://github.com/andrewwutw/build-djgpp> (v3.4,
+gcc 12.2, Linux x86-64; the archive is checked against its SHA-256)
+in `/opt/djgpp-x` if it can write there, else in `~/.local/djgpp-x`,
+the two places the Makefile looks in; `install-djgpp.sh DIR` puts it in
+DIR, then give `DJGPP=DIR/djgpp` to make. On another system, build it
+with the `build-djgpp.sh` of the same project.
 
 ```sh
+ports/dos/install-djgpp.sh           # or: make -C ports/dos djgpp
+sudo apt install dosbox dosbox-x     # to run it and for make test
 make -C ports/dos                    # out/dos/lugforth.exe (about 500 KB)
 make -C ports/dos hdpmi              # out/dos/HDPMI32.EXE, the DPMI host (see below)
 make -C ports/dos stage              # out/dos/disk: what to copy on a DOS disk

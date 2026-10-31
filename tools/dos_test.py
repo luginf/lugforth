@@ -151,6 +151,8 @@ def interactive(disk):
     shutil.copytree(disk, d)
     with open(os.path.join(d, 'DUMP.FS'), 'w') as f:
       f.write(DUMP.replace('\n', '\r\n'))
+    with open(os.path.join(d, 'AUTOEXEC.FS'), 'w') as f:   # says when the prompt is there
+      f.write('s" ready.txt" w/o create-file throw close-file throw\r\n')
     cap = os.path.join(d, 'cap')
     os.mkdir(cap)
     conf = os.path.join(d, 'dosbox.conf')
@@ -161,7 +163,11 @@ def interactive(disk):
     box = subprocess.Popen([DOSBOX, '-conf', conf, '-c', 'mount c "%s"' % d, '-c', 'c:',
                             '-c', 'hdpmi32 -r > nul', '-c', 'lugforth', '-c', 'exit'],
                            env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    time.sleep(6)
+    for _ in range(120):          # the first start of DOSBox in a new container is slow
+      if host(d, 'ready.txt'):
+        break
+      time.sleep(0.5)
+    time.sleep(1)
     win = subprocess.run(['xdotool', 'search', '--class', 'dosbox'], env=env, capture_output=True,
                          text=True).stdout.split()
     if win:

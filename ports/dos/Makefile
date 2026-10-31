@@ -13,9 +13,13 @@
 # limitations under the License.
 
 # Lugforth for DOS (386 and up, 32-bit protected mode), built with the DJGPP
-# cross compiler (https://github.com/andrewwutw/build-djgpp/releases, unpacked
-# anywhere: DJGPP=its directory). Tested with DOSBox (apt install dosbox).
+# cross compiler. Debian and Ubuntu have no package for it (binutils-djgpp
+# only): `make djgpp` (ports/dos/install-djgpp.sh) installs the prebuilt one of
+# https://github.com/andrewwutw/build-djgpp in /opt/djgpp-x or ~/.local/djgpp-x,
+# where it is looked for; elsewhere, DJGPP=its djgpp directory. Tested with
+# DOSBox and DOSBox-X (apt install dosbox dosbox-x).
 #
+#   make djgpp        installs the DJGPP cross compiler
 #   make              out/dos/lugforth.exe
 #   make hdpmi        out/dos/HDPMI32.EXE, the DPMI host of the HX DOS extender
 #                     (freeware, https://github.com/Baron-von-Riedesel/HX): DOSBox
@@ -27,7 +31,7 @@
 
 ROOT := ../..
 OUT ?= $(ROOT)/out/dos
-DJGPP ?= /opt/djgpp-x/djgpp
+DJGPP ?= $(firstword $(wildcard /opt/djgpp-x/djgpp $(HOME)/.local/djgpp-x/djgpp) /opt/djgpp-x/djgpp)
 CC := $(DJGPP)/bin/i586-pc-msdosdjgpp-gcc
 DOSBOX ?= dosbox
 
@@ -59,7 +63,11 @@ $(OUT)/gen/baremetal_assets.h: $(ASSETS) $(ROOT)/tools/baremetal_assets.py
 	python3 $(ROOT)/tools/baremetal_assets.py -o $@ $(ASSETS)
 
 $(OUT)/lugforth.exe: $(SOURCES) $(OUT)/gen/dos_boot.h $(OUT)/gen/baremetal_assets.h
+	@test -x $(CC) || { echo "No DJGPP compiler at $(CC): run make -C ports/dos djgpp (or give DJGPP=)"; exit 1; }
 	$(CC) $(CFLAGS) main.c -o $@ -lm
+
+djgpp:
+	sh install-djgpp.sh
 
 HX_ZIP := https://github.com/Baron-von-Riedesel/HX/releases/download/v2.23/HXRT223.zip
 hdpmi: $(OUT)/HDPMI32.EXE
@@ -79,4 +87,4 @@ test: stage
 	python3 $(ROOT)/tools/dos_test.py $(OUT)
 
 FORCE:
-.PHONY: all hdpmi stage run test FORCE
+.PHONY: all djgpp hdpmi stage run test FORCE

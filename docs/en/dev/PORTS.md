@@ -226,8 +226,10 @@ and the tile demo still boot after that (screenshots under mgba).
 ## DOS (ports/dos) - started 2026-10-31
 
 `lugforth.exe` built with the DJGPP cross compiler (gcc 12.2, from
-github.com/andrewwutw/build-djgpp releases, unpacked in `/opt/djgpp-x`;
-not in apt, only its binutils are): 32-bit protected mode, cells of 32
+github.com/andrewwutw/build-djgpp releases; Debian and Ubuntu have only
+`binutils-djgpp`, no gcc nor libc: `ports/dos/install-djgpp.sh`, or
+`make -C ports/dos djgpp`, downloads it, checks its SHA-256 and unpacks
+it in `/opt/djgpp-x` or `~/.local/djgpp-x`, where the Makefile looks): 32-bit protected mode, cells of 32
 bits, 4 MB heap. First step done: the prompt in text mode and the files.
 `main.c` interprets the ANSI codes into conio calls (no ANSI.SYS), maps
 the BIOS's special keys to terminal sequences, uses `uclock` for

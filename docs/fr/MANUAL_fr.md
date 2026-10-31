@@ -53,7 +53,7 @@ Lancez `lugforth` (voir [Binaires](#binaires), ou compilez-le avec
 `ninja posix`). Vous obtenez une bannière et l'invite:
 
 ```
-Lugforth v2026.10.31.6
+Lugforth v2026.10.31.7
 :; ===========>/>
 type 'info' for help
  ok
@@ -1191,6 +1191,7 @@ et la souris, le son d'une Sound Blaster 16; les jeux de
 `examples/games` tournent donc.
 
 ```
+make -C ports/dos djgpp      # installe le compilateur croisé DJGPP (pas de paquet Debian)
 make -C ports/dos            # out/dos/lugforth.exe
 make -C ports/dos hdpmi      # out/dos/HDPMI32.EXE, un hôte DPMI
 make -C ports/dos stage      # out/dos/disk: le programme, exemples, éditeurs
