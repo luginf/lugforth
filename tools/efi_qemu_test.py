@@ -154,9 +154,9 @@ def keyboard(b):
     keys += [t.qkey(k, True), t.qkey(k, False)]
   b.qmp(keys)
   b.wait_for(PROMPT, b.pos, 10)
-  i = b.out.rfind(PROMPT)
+  i, end = b.last_prompt()
   r = b.out[b.pos:i].replace('\r', '')
-  b.pos = i + len(PROMPT)
+  b.pos = end
   check('keyboard: typing at the prompt', r, '2 3 * .' in r and '6' in r.split())
   b.run('sdl2 0 value held 0 value frames')
   b.run(': watch ( ms -- ) ticks + begin events 1 +to frames key-left pressed? if 1 +to held then '
@@ -167,9 +167,9 @@ def keyboard(b):
   time.sleep(1.5)
   b.qmp([t.qkey('left', False)])
   b.wait_for(PROMPT, b.pos, 10)
-  i = b.out.rfind(PROMPT)
+  i, end = b.last_prompt()
   r = [w for w in b.out[b.pos:i].replace('\r', '').split() if w.lstrip('-').isdigit()]
-  b.pos = i + len(PROMPT)
+  b.pos = end
   held, frames = int(r[-2]), int(r[-1])
   # Held for 1.5 s out of 2.5: the firmware's repeat delay leaves a gap at first.
   check('keyboard: a held key seen held (%d of %d frames)' % (held, frames), r,
@@ -184,17 +184,17 @@ def history(b):
   check('history: first line', r, r.split()[0] == '56')
   b.qmp([t.qkey('up', True), t.qkey('up', False), t.qkey('ret', True), t.qkey('ret', False)])
   b.wait_for(PROMPT, b.pos, 10)
-  i = b.out.rfind(PROMPT)
+  i, end = b.last_prompt()
   r = b.out[b.pos:i].replace('\r', '')
-  b.pos = i + len(PROMPT)
+  b.pos = end
   check('history: Up recalls the line', r, '7 8 * .' in r and '56' in r.split())
   b.send(b'1 2 swa\t')
   time.sleep(0.5)
   b.send(b'. .\r')
   b.wait_for(PROMPT, b.pos, 10)
-  i = b.out.rfind(PROMPT)
+  i, end = b.last_prompt()
   r = b.out[b.pos:i].replace('\r', '')
-  b.pos = i + len(PROMPT)
+  b.pos = end
   check('Tab completes swa to swap', r, 'NOT FOUND' not in r and r.split()[-3:] == ['1', '2', 'ok'])
 
   for typed, want in [('include games/gfx_rog\t', 'games/gfx_roguelike.fs'), ('include lib/edi\t', 'lib/editor.fs'),

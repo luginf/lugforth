@@ -5,10 +5,12 @@ description: Boot the bare-metal EFI image (ports/efi) under QEMU + OVMF and che
 
 Facts and limits: section "UEFI PC" of `docs/en/dev/PORTS.md`. The procedure:
 
-- Full test: `make -C ports/efi test` (124 checks, `tools/efi_qemu_test.py`). Needs `gnu-efi ovmf qemu-system-x86
+- Full test: `make -C ports/efi test` (129 checks, `tools/efi_qemu_test.py`). Needs `gnu-efi ovmf qemu-system-x86
   dosfstools mtools`; without root, unpack them from `apt download` and pass
-  `EFIINC= EFILIB= OVMF=` (see PORTS.md). Three checks are known flaky or failing (second session
-  screen, two session timeouts; the dead key test): compare with a baseline run (`git stash`) before blaming a change.
+  `EFIINC= EFILIB= OVMF=` (see PORTS.md). All pass (2026-10-31); the dead key test was once
+  flaky: compare with a baseline run (`git stash`) before blaming a change. The answers are read up to
+  `PROMPT_RE` (tools/baremetal_qemu_test.py: a line start, the stack if any, `> `): a check whose command or
+  output holds `> ` used to shift every later answer by one prompt.
 - By hand: stage the stick with `make stage` (the wildcards pick up new `.fs` / `.z5` files), keep the
   directory path SHORT (e.g. `/tmp/zme`): the QEMU monitor socket path has a length limit. Type with the monitor
   (`sendkey`) or QMP, read the screen with `screendump`.

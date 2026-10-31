@@ -53,7 +53,7 @@ Lancez `lugforth` (voir [Binaires](#binaires), ou compilez-le avec
 `ninja posix`). Vous obtenez une bannière et l'invite:
 
 ```
-Lugforth v2026.10.31.1
+Lugforth v2026.10.31.2
 :; ===========>/>
 type 'info' for help
  ok
@@ -1150,7 +1150,7 @@ HD Audio (essayé seulement sous QEMU), pas de souris.
 sudo apt install gnu-efi ovmf qemu-system-x86 dosfstools mtools
 make -C ports/efi usb     # out/efi/usb.img, à copier avec dd sur une clé
 make -C ports/efi run     # la même image sous QEMU avec OVMF
-make -C ports/efi test    # 124 vérifications sous QEMU
+make -C ports/efi test    # 129 vérifications sous QEMU
 ```
 
 Plusieurs clés: `volumes` liste les volumes FAT (`*` marque celui en

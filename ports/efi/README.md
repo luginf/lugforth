@@ -19,7 +19,7 @@ make -C ports/efi          # out/efi/BOOTX64.EFI
 make -C ports/efi usb      # out/efi/usb.img: MBR + FAT32, EFI/BOOT/BOOTX64.EFI, the examples and the docs (docs/*.md: manual, words, SDL2)
 make -C ports/efi stage    # the same files as a tree in /tmp/lugforth, or in DEST=/media/me/STICK, for a stick you already have
 make -C ports/efi run      # QEMU (q35, OVMF) on that image: a window, the serial line here, sound (AUDIODEV=pa)
-make -C ports/efi test     # boots it under QEMU and checks 124 things (131 with EFIFS=dir of the EfiFs drivers)
+make -C ports/efi test     # boots it under QEMU and checks 129 things (136 with EFIFS=dir of the EfiFs drivers)
 ```
 
 ## Booting it from a USB stick

@@ -37,7 +37,12 @@ import threading
 import time
 
 QEMU = os.environ.get('QEMU', 'qemu-system-aarch64')
+# The prompt: at the start of a line, the stack shown before it when it is not
+# empty (`398401592 > ` inside a definition), then '> '. wait_for(PROMPT) looks
+# for PROMPT_RE, so a command echoed with a '> ' in it (`cnt @ 100 > .`, `dup 0>
+# if` in a source) is not taken for the prompt.
 PROMPT = '> '
+PROMPT_RE = re.compile(r'\n(?:\S+ )*?> ')
 
 
 class Board:
@@ -46,11 +51,14 @@ class Board:
     self.sock = os.path.join(tmp, 'monitor.sock')
     self.qmp_sock = os.path.join(tmp, 'qmp.sock')
     self.qmp_file = None
+    # QEMU's own messages apart from the serial line ("Resetting rate control"
+    # of the wav audio came in the middle of the answers); shown on a timeout.
+    self.err_path = os.path.join(tmp, 'qemu-stderr.txt')
     self.proc = subprocess.Popen(
         [QEMU] + args + ['-display', 'none', '-serial', 'stdio',
                          '-monitor', 'unix:%s,server,nowait' % self.sock,
                          '-qmp', 'unix:%s,server,nowait' % self.qmp_sock],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=open(self.err_path, 'wb'))
     self.monitor = None
     self.out = ''
     self.lock = threading.Lock()
@@ -68,16 +76,28 @@ class Board:
     end = time.time() + timeout
     while time.time() < end:
       with self.lock:
-        i = self.out.find(text, start)
-        if i >= 0:
-          return i
+        if text is PROMPT:   # its start; prompt_end is where the typed text goes
+          m = PROMPT_RE.search(self.out, max(start - 1, 0))
+          if m:
+            self.prompt_end = m.end()
+            return m.start()
+        else:
+          i = self.out.find(text, start)
+          if i >= 0:
+            return i
       time.sleep(0.02)
-    raise RuntimeError('timeout waiting for %r, got:\n%s' % (text, self.out[start:]))
+    try:
+      with open(self.err_path, errors='replace') as f:
+        err = f.read()[-500:]
+    except OSError:
+      err = ''
+    raise RuntimeError('timeout waiting for %r, got:\n%s%s' % (text, self.out[start:],
+                       '\nQEMU: ' + err if err else ''))
 
   def boot(self, timeout=60):
     i = self.wait_for(PROMPT, 0, timeout)
     banner = self.out[:i]
-    self.pos = i + len(PROMPT)
+    self.pos = self.prompt_end
     return banner
 
   def run(self, line, timeout=20):
@@ -86,12 +106,19 @@ class Board:
     self.proc.stdin.flush()
     i = self.wait_for(PROMPT, self.pos, timeout)
     text = self.out[self.pos:i]
-    self.pos = i + len(PROMPT)
+    self.pos = self.prompt_end
     text = text.replace('\r', '')
     echo = line.encode().decode('latin-1')   # output is read as bytes
     if text.startswith(echo):
       text = text[len(echo):]
     return text.strip()
+
+  def last_prompt(self):
+    """(start, end) of the last prompt in the output."""
+    with self.lock:
+      base = max(len(self.out) - 20000, 0)
+      ms = list(PROMPT_RE.finditer(self.out, base))
+    return (ms[-1].start(), ms[-1].end()) if ms else (-1, -1)
 
   def qmp(self, events):
     """Input events (QMP input-send-event): keys, buttons, pointer."""
@@ -147,8 +174,15 @@ class Board:
       return None
 
   def kill(self):
+    """SIGTERM first: QEMU then closes its files (the -audiodev wav gets its
+    header) and exits; SIGKILL only if it does not."""
     if self.proc.poll() is None:
-      self.proc.kill()
+      self.proc.terminate()
+      try:
+        self.proc.wait(10)
+      except subprocess.TimeoutExpired:
+        self.proc.kill()
+        self.proc.wait()
 
 
 failures = 0
@@ -199,7 +233,7 @@ def test_lines(b):
             (5, 5, 5, 5), (-10, -10, 200, 140), (170, 60, 150, 61),
             # visible at their last point only, from each side
             (100, 200, 90, 119), (300, 50, 159, 60), (-90, 30, 0, 40), (70, -80, 60, 0)]
-  b.run('sdl2 1 to zoom %d %d screen black color cls white color' % (w, h))
+  b.run('sdl2 1 to zoom %d %d screen 0 cursor black color cls white color' % (w, h))   # no mouse arrow on the pixels
   for i in range(0, len(lines), 5):
     b.run(' '.join('%d %d %d %d line' % l for l in lines[i:i + 5]))
   b.run('flip')
@@ -229,7 +263,7 @@ def test_text(b):
   w, h = 160, 60
   font = font8x8()
   items = [(2, 3, 1, 'Forth 42 !?'), (3, 20, 2, 'Été à'), (150, 50, 1, 'xyz')]
-  b.run('sdl2 1 to zoom %d %d screen black color cls white color' % (w, h))
+  b.run('sdl2 1 to zoom %d %d screen 0 cursor black color cls white color' % (w, h))   # no mouse arrow on the pixels
   for x, y, scale, t in items:
     r = b.run('s" x" %d load-font font %d %d s" %s" text' % (8 * scale, x, y, t))
     check('text %r' % t, r, 'ERROR' not in r)
@@ -286,7 +320,7 @@ def test_images(b):
   draw(0, 0, iw, ih, -10, 14, 2 * iw, 3 * ih, 0xffffff, 255)   # draw-size, clipped
   draw(16, 0, 8, 8, 100, 40, 24, 24, 0xff8040, 255)          # draw-part, tinted
   draw(8, 0, 8, 8, 10, 40, 16, 16, 0xffffff, 128)            # half transparent
-  b.run('sdl2 1 to zoom %d %d screen $101830 color cls' % (w, h))
+  b.run('sdl2 1 to zoom %d %d screen 0 cursor $101830 color cls' % (w, h))   # no mouse arrow on the pixels
   r = b.run('s" examples/games/gfx_tiles.png" load-image value img  img image-size . .')
   check('image-size', r, r.split()[:2] == [str(ih), str(iw)])
   b.run('img 2 2 draw  img -10 14 %d %d draw-size' % (2 * iw, 3 * ih))
@@ -369,7 +403,9 @@ def test_varvara(b):
   check('varvara file: read back', out, out.startswith('hello') or '\nhello\n' in out)
   check('varvara file: listed and stat', out, out.count('0005 x.txt') == 2)
   check('varvara file: sandbox', out, 'blocked attempt to access ../x.txt outside of sandbox' in out)
-  check('varvara datetime', out, '07eb000f09000005000e' in out)
+  # year 07eb, month 00, day 0f, 09:00, seconds (the ROM may read a few
+  # seconds after unix-time!), Friday 05, day of the year 000e
+  check('varvara datetime', out, re.search('07eb000f09000[0-5]05000e', out) is not None)
   check('varvara console: arguments', out, '[2a][2r][2g][2o][2n][2e][3\n][2a][2r][2g][2t][2w][2o][4\n]' in out)
   check('varvara console: serial input', out, '[1h][1i]' in out)
   varvara_quit(b)
@@ -462,9 +498,9 @@ def test_input(b, what):
     time.sleep(0.2)
     ok = b.qmp(events)
     b.wait_for(PROMPT, b.pos, 10)
-    i = b.out.rfind(PROMPT)
+    i, end = b.last_prompt()
     text = b.out[b.pos:i].replace('\r', '')
-    b.pos = i + len(PROMPT)
+    b.pos = end
     return ok, text.replace('600 watch', '').split()[:6]
 
   abs_xy = [{'type': 'abs', 'data': {'axis': 'x', 'value': 16384}},
@@ -491,9 +527,9 @@ def test_input(b, what):
     keys += [qkey(k, True), qkey(k, False)]
   b.qmp(keys)
   b.wait_for(PROMPT, b.pos, 10)
-  i = b.out.rfind(PROMPT)
+  i, end = b.last_prompt()
   r = b.out[b.pos:i].replace('\r', '')
-  b.pos = i + len(PROMPT)
+  b.pos = end
   check('%s: typing at the prompt' % what, r, '2 3 * .' in r and '6' in r.split())
 
 
@@ -503,9 +539,9 @@ def paste(b, text, wait_prompt=True):
   if not wait_prompt:
     return ''
   b.wait_for(PROMPT, b.pos, 60)
-  i = b.out.rfind(PROMPT)
+  i, end = b.last_prompt()
   r = b.out[b.pos:i].replace('\r', '')
-  b.pos = i + len(PROMPT)
+  b.pos = end
   return r
 
 
@@ -578,7 +614,11 @@ def wav_freq(x, a, b, rate):
 def check_sound(path):
   import wave
   import struct
-  w = wave.open(path)
+  try:
+    w = wave.open(path)
+  except (OSError, EOFError, wave.Error) as e:
+    check('sound: the recording can be read', str(e), False)
+    return
   rate, ch = w.getframerate(), w.getnchannels()
   d = w.readframes(w.getnframes())
   x = struct.unpack('<%dh' % (len(d) // 2), d)[::ch]

@@ -81,7 +81,7 @@ platform.fs (azerty, console-zoom, keys).
 
 `make -C ports/efi test` builds out/efi/BOOTX64.EFI (gcc + gnu-efi) and
 boots it under QEMU q35 + OVMF from a USB stick image (MBR + FAT32,
-tools/baremetal_mkdisk.py), 124 checks (tools/efi_qemu_test.py, which
+tools/baremetal_mkdisk.py), 129 checks (tools/efi_qemu_test.py, which
 reuses baremetal_qemu_test.py). Needs
 `gnu-efi ovmf qemu-system-x86 dosfstools mtools`. Stays in boot
 services: GOP screen, ConIn keyboard (no releases: a key is held 120 ms

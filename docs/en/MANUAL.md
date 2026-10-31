@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.10.31.1
+Lugforth v2026.10.31.2
 :; ===========>/>
 type 'info' for help
  ok
@@ -1103,7 +1103,7 @@ only), no mouse.
 sudo apt install gnu-efi ovmf qemu-system-x86 dosfstools mtools
 make -C ports/efi usb     # out/efi/usb.img, to dd onto a stick
 make -C ports/efi run     # the same image under QEMU with OVMF
-make -C ports/efi test    # 124 checks under QEMU
+make -C ports/efi test    # 129 checks under QEMU
 ```
 
 Several sticks: `volumes` lists the FAT volumes (`*` marks the one in
