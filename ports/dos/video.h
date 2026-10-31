@@ -15,7 +15,9 @@
 // The screen of the sdl2 words on DOS: a VESA mode of 32 bits per pixel with
 // a linear framebuffer, the smallest that holds the program's screen (zoom
 // included; centered in it, the rest black), drawn by ports/baremetal/screen.h
-// as on the boards. While it is open the keyboard is read by interrupt (IRQ
+// as on the boards. When no 32-bit mode is large enough (DOSBox's S3, 2 MB,
+// has 1024x768 in 16 bits only), a 16-bit one (5-6-5): screen.h then draws in
+// a copy in RAM, and each flip converts the rows that changed. While it is open the keyboard is read by interrupt (IRQ
 // 1, chained to the handler that was there, so DOS and DJGPP still see the
 // keys and Ctrl+Break) for the keys' downs and ups, which input.h turns into
 // the state of pressed? and into characters; the mouse through the INT 33h
@@ -32,6 +34,13 @@ static void con_sync(void) {}
 #include "ports/baremetal/input.h"
 
 static int vid_graphics;                 // a VESA mode is set
+static int vid_bpp;                      // 32, or 16 with the copy below
+static uint32_t *vid_shadow;             // 16 bits: what screen.h draws, 32 bits a pixel
+static uint32_t *vid_prev;               // 16 bits: the copy as it was at the last flip
+static uint8_t *vid_out;                 // 16 bits: the program's screen in the video memory
+static uint32_t vid_pitch16, vid_pw, vid_ph;
+static int vid_all;                      // 16 bits: the next flip writes every pixel
+static int vid_allow16;                  // dos_fb_open: no 32-bit mode holds the screen, even at zoom 1
 static unsigned long vid_phys, vid_lin;  // the framebuffer mapped: its physical address, linear address
 
 struct __attribute__((packed)) vbe_info {
@@ -57,8 +66,8 @@ static int vbe_mode_info(int mode, struct vbe_mode *mi) {
   return 0;
 }
 
-// The VESA mode for pw x ph: 32 bits, linear framebuffer, the smallest area that holds it.
-static int vbe_find(uint32_t pw, uint32_t ph, struct vbe_mode *best) {
+// The VESA mode for pw x ph: bpp bits (32, or 16 as 5-6-5), linear framebuffer, the smallest area that holds it.
+static int vbe_find(uint32_t pw, uint32_t ph, int bpp, struct vbe_mode *best) {
   struct vbe_info vi;
   __dpmi_regs r;
   memset(&vi, 0, sizeof vi);
@@ -83,7 +92,8 @@ static int vbe_find(uint32_t pw, uint32_t ph, struct vbe_mode *best) {
   for (int i = 0; i < n; i++) {
     struct vbe_mode mi;
     if (vbe_mode_info(modes[i], &mi)) continue;
-    if ((mi.attr & 0x99) != 0x99 || mi.bpp != 32 || mi.model != 6) continue;   // supported, color, graphics, linear
+    if ((mi.attr & 0x99) != 0x99 || mi.bpp != bpp || mi.model != 6) continue;   // supported, color, graphics, linear
+    if (bpp == 16 && (mi.rmask != 5 || mi.gmask != 6 || mi.bmask != 5 || mi.rpos != 11)) continue;
     if (mi.w < pw || mi.h < ph) continue;
     uint64_t a = (uint64_t) mi.w * mi.h;
     if (a < area) { area = a; found = modes[i]; *best = mi; }
@@ -97,8 +107,16 @@ static void mouse_on(int w, int h);
 
 static int fb_hw_open(uint32_t pw, uint32_t ph) {
   struct vbe_mode mi;
-  int mode = vbe_find(pw, ph, &mi);
+  int bpp = 32, mode = vbe_find(pw, ph, 32, &mi);
+  if (mode < 0 && vid_allow16) { bpp = 16; mode = vbe_find(pw, ph, 16, &mi); }
   if (mode < 0) return -1;
+  uint32_t *shadow = 0;
+  uint32_t *prev = 0;
+  if (bpp == 16) {                                                         // the copy in RAM, before the mode changes
+    shadow = calloc((size_t) pw * ph, 4);
+    prev = malloc((size_t) pw * ph * 4);
+    if (!shadow || !prev) { free(shadow); free(prev); return -1; }
+  }
   __dpmi_regs r;
   memset(&r, 0, sizeof r);
   r.x.ax = 0x4F02; r.x.bx = (unsigned short) (mode | 0x4000);              // with the linear framebuffer
@@ -113,10 +131,20 @@ static int fb_hw_open(uint32_t pw, uint32_t ph) {
   }
   if (!__djgpp_nearptr_enable()) return -1;
   uint8_t *base = (uint8_t *) (vid_lin + __djgpp_conventional_base);
-  for (uint32_t y = 0; y < mi.h; y++) memset(base + (size_t) y * pitch, 0, (size_t) mi.w * 4);
-  fb_pitch = pitch;
-  fb_mem = (volatile uint32_t *) (base + (size_t) ((mi.h - ph) / 2) * pitch + (size_t) (mi.w - pw) / 2 * 4);
-  fb_rgb = mi.rpos == 0;                                                    // byte 0 is red
+  for (uint32_t y = 0; y < mi.h; y++) memset(base + (size_t) y * pitch, 0, (size_t) mi.w * bpp / 8);
+  uint8_t *at = base + (size_t) ((mi.h - ph) / 2) * pitch + (size_t) (mi.w - pw) / 2 * (bpp / 8);
+  free(vid_shadow); free(vid_prev);
+  vid_shadow = shadow; vid_prev = prev; vid_bpp = bpp;
+  if (bpp == 16) {
+    vid_out = at; vid_pitch16 = pitch; vid_pw = pw; vid_ph = ph; vid_all = 1;
+    fb_pitch = pw * 4;
+    fb_mem = (volatile uint32_t *) shadow;
+    fb_rgb = 0;
+  } else {
+    fb_pitch = pitch;
+    fb_mem = (volatile uint32_t *) at;
+    fb_rgb = mi.rpos == 0;                                                  // byte 0 is red
+  }
   vid_graphics = 1;
   kbd_on();
   mouse_on((int) pw, (int) ph);
@@ -133,6 +161,7 @@ static void con_init(void) {
   __dpmi_int(0x10, &r);
   vid_graphics = 0;
   fb_mem = 0;
+  free(vid_shadow); free(vid_prev); vid_shadow = 0; vid_prev = 0; vid_bpp = 0;
   if (con_tty) { gppconio_init(); con_attr(); }
 }
 
@@ -244,3 +273,34 @@ static void input_flush(void) {
   in_last_key = 0;
   in_chars_tail = in_chars_head;
 }
+
+// FB-FLIP: as on the boards, then in a 16-bit mode the rows of the copy that
+// changed since the last flip go to the video memory, 5-6-5.
+static void dos_fb_flip(void) {
+  fb_flip();
+  if (vid_bpp != 16 || !vid_shadow || !vid_graphics) return;
+  for (uint32_t y = 0; y < vid_ph; y++) {
+    const uint32_t *src = vid_shadow + (size_t) y * vid_pw;
+    uint32_t *old = vid_prev + (size_t) y * vid_pw;
+    if (!vid_all && !memcmp(src, old, (size_t) vid_pw * 4)) continue;
+    memcpy(old, src, (size_t) vid_pw * 4);
+    uint16_t *dst = (uint16_t *) (vid_out + (size_t) y * vid_pitch16);
+    for (uint32_t x = 0; x < vid_pw; x++) {
+      uint32_t c = src[x];
+      dst[x] = (uint16_t) (((c >> 8) & 0xF800) | ((c >> 5) & 0x07E0) | ((c >> 3) & 0x001F));
+    }
+  }
+  vid_all = 0;
+}
+#define fb_flip dos_fb_flip
+
+// FB-OPEN: a 16-bit mode only when no 32-bit mode holds the screen even at
+// zoom 1 (2048's 484x640 on DOSBox's S3); else ports/baremetal/sdl2.fs lowers
+// the zoom until a 32-bit mode holds it: true colors, and no conversion at
+// each flip, which is slow at a large zoom.
+static cell_t dos_fb_open(cell_t w, cell_t h, cell_t zoom) {
+  struct vbe_mode mi;
+  vid_allow16 = w > 0 && h > 0 && vbe_find((uint32_t) w, (uint32_t) h, 32, &mi) < 0;
+  return fb_open(w, h, zoom);
+}
+#define fb_open dos_fb_open

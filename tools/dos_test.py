@@ -25,6 +25,8 @@ file by screen-char and read back), two beeps on the Sound Blaster (recorded
 by DOSBox, Ctrl+F6), breakout in a VESA mode (screenshots), Esc.
 
   tools/dos_test.py [out/dos]          (what `make -C ports/dos test` runs)
+  DOSBOX=dosbox-x tools/dos_test.py    (the same in DOSBox-X)
+  DOSBOX=dosbox-x DOS_LFN=1 tools/dos_test.py    (and with long names)
 """
 
 import os
@@ -36,6 +38,10 @@ import tempfile
 import time
 
 failures = 0
+DOSBOX = os.environ.get('DOSBOX', 'dosbox')   # or dosbox-x
+# DOS_LFN=1 (with dosbox-x): DOS 7.1 with long names, where DOS no longer cuts
+# the names to 8.3 and files.h finds the short names of the staged folder itself.
+LFN = '[dos]\nver=7.1\nlfn=true\n' if os.environ.get('DOS_LFN') else ''
 
 
 def check(name, got, ok):
@@ -76,6 +82,7 @@ s" big.txt" w/o create-file throw value fh  5000 s>d fh resize-file .  fh file-s
 use b.fb  2 block 1024 blank  s" 6 7 * ." 2 block swap cmove update flush
 2 load
 ms-ticks 300 ms ms-ticks swap - 250 > .
+also dos snd-ok . previous
 bye
 '''
 
@@ -134,8 +141,10 @@ def interactive(disk):
     print('  skip  the text screen, the keyboard, graphics and sound (Xvfb, xdotool, ImageMagick needed)')
     return
   d = tempfile.mkdtemp(prefix='lugdosi')
-  xvfb = subprocess.Popen(['Xvfb', ':97', '-screen', '0', '1024x768x24'],
-                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+  # A free display, chosen by Xvfb itself (a fixed one may be held by a lock left behind)
+  xvfb = subprocess.Popen(['Xvfb', '-displayfd', '1', '-screen', '0', '1024x768x24'],
+                          stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+  display = ':' + xvfb.stdout.readline().strip()
   box = None
   try:
     shutil.rmtree(d)
@@ -146,10 +155,10 @@ def interactive(disk):
     os.mkdir(cap)
     conf = os.path.join(d, 'dosbox.conf')
     with open(conf, 'w') as f:
-      f.write('[dosbox]\ncaptures=%s\n[cpu]\ncycles=max\n[sdl]\nusescancodes=false\n' % cap)
-    env = dict(os.environ, DISPLAY=':97', SDL_AUDIODRIVER='dummy')
+      f.write('[dosbox]\ncaptures=%s\n[cpu]\ncycles=max\n[sdl]\nusescancodes=false\n' % cap + LFN)
+    env = dict(os.environ, DISPLAY=display, SDL_AUDIODRIVER='dummy')
     time.sleep(1)
-    box = subprocess.Popen(['dosbox', '-conf', conf, '-c', 'mount c "%s"' % d, '-c', 'c:',
+    box = subprocess.Popen([DOSBOX, '-conf', conf, '-c', 'mount c "%s"' % d, '-c', 'c:',
                             '-c', 'hdpmi32 -r > nul', '-c', 'lugforth', '-c', 'exit'],
                            env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(6)
@@ -176,9 +185,11 @@ def interactive(disk):
       subprocess.run(['import', '-window', 'root', '-depth', '8', 'rgb:' + raw], env=env)
       return open(raw, 'rb').read() if os.path.exists(raw) else b''
 
-    def count(rgb, color):
+    def count(rgb, color):   # at the precision of a 16-bit mode (5-6-5), which the game may get
       c = bytes.fromhex(color)
-      return sum(1 for i in range(0, len(rgb) - 2, 3 * 7) if rgb[i:i + 3] == c)
+      q = (c[0] >> 3, c[1] >> 2, c[2] >> 3)
+      return sum(1 for i in range(0, len(rgb) - 2, 3 * 7)
+                 if (rgb[i] >> 3, rgb[i + 1] >> 2, rgb[i + 2] >> 3) == q)
 
     def screen(name):
       f = host(d, name)
@@ -186,20 +197,24 @@ def interactive(disk):
 
     typ('include dump.fs'); key('Return')
     typ('use e.fb  blocks-editor 1'); key('Return'); time.sleep(1)   # first: it clears the screen when it ends
-    typ(': cube dup dup * * ;'); key('ctrl+s'); key('ctrl+q')
+    # (a second before Ctrl+S in the editors: the typing reaches them first)
+    typ(': cube dup dup * * ;'); time.sleep(1); key('ctrl+s'); key('ctrl+q')
     typ('1 load 3 cube .'); key('Return')
     typ('7 8 * .'); key('Return')
     key('Up', 'Home'); typ('100 . '); key('Return')          # the line again, with 100 . in front
     typ('s" s1.txt" dump-screen'); key('Return')
     typ('ed hello.fs'); key('Return'); time.sleep(4)          # ed and writhdeck, from LIB
-    typ(': hi 42 . ;'); key('ctrl+s'); key('ctrl+q')
+    typ(': hi 42 . ;'); time.sleep(1); key('ctrl+s'); key('ctrl+q')
     typ('writhdeck notes.txt'); key('Return'); time.sleep(5)
-    typ('Bonjour tout le monde'); key('ctrl+s'); key('ctrl+q'); time.sleep(1)
+    typ('Bonjour tout le monde'); time.sleep(1); key('ctrl+s'); key('ctrl+q'); time.sleep(1)
     # 80 characters on the last row: the screen must not scroll (a terminal's pending wrap)
     typ('page also ansi 0 24 at-xy 80 0 do 35 emit loop s" s3.txt" dump-screen previous'); key('Return')
     key('ctrl+F6')                                           # DOSBox records its sound
     typ('sdl2 440 300 beep 660 300 beep 700 ms previous'); key('Return'); time.sleep(1.5)
     key('ctrl+F6')
+    typ('include games/gfx_2048.fs'); key('Return'); time.sleep(4)   # 484x640: 1024x768, 16 bits in DOSBox
+    tiles = shot()
+    hold('Escape'); time.sleep(2)
     typ('include games/gfx_breakout.fs'); key('Return'); time.sleep(4)   # GAMES/GFX_BREA.FS
     game = shot()
     hold('space'); time.sleep(0.5)
@@ -220,7 +235,13 @@ def interactive(disk):
     blk = open(b, 'rb').read()[1024:1024 + 20] if b else b''
     check('blocks-editor: the block on the disk', blk, blk == b': cube dup dup * * ;')
     wavs = [os.path.join(cap, f) for f in os.listdir(cap) if f.lower().endswith('.wav')]
-    wav_check(wavs[0] if wavs else os.path.join(cap, 'none.wav'))
+    if 'dosbox-x' in DOSBOX:   # its shortcuts differ (F12 + ...): no recording here
+      print('  skip  the beeps recorded and measured (DOSBox only)')
+    else:
+      wav_check(wavs[0] if wavs else os.path.join(cap, 'none.wav'))
+    got = {c: count(tiles, c) for c in ('faf8ef', 'bbada0', 'edc22e')}
+    check('2048 in a 16-bit VESA mode: background, board, title %r' % got, got,
+          got['faf8ef'] > 3000 and got['bbada0'] > 3000 and got['edc22e'] > 300)
     got = {c: count(game, c) for c in ('101830', 'ff0000', '00ffff', 'ffffff')}
     check('breakout in VESA: background, red and cyan bricks, paddle %r' % got, got,
           got['101830'] > 5000 and got['ff0000'] > 300 and got['00ffff'] > 300 and got['ffffff'] > 20)
@@ -236,7 +257,8 @@ def interactive(disk):
   finally:
     if box and box.poll() is None:
       box.kill()
-    xvfb.kill()
+    xvfb.terminate()   # not kill: Xvfb then removes its lock file
+    xvfb.wait()
     shutil.rmtree(d, ignore_errors=True)
 
 
@@ -259,8 +281,8 @@ def main():
     env = dict(os.environ, SDL_VIDEODRIVER='dummy', SDL_AUDIODRIVER='dummy')
     conf = os.path.join(d, 'dosbox.conf')
     with open(conf, 'w') as f:
-      f.write('[cpu]\ncycles=max\n[sdl]\nusescancodes=false\n')
-    subprocess.run(['dosbox', '-conf', conf, '-c', 'mount c "%s"' % d, '-c', 'c:', '-c', 'hdpmi32 -r > nul',
+      f.write('[cpu]\ncycles=max\n[sdl]\nusescancodes=false\n' + LFN)
+    subprocess.run([DOSBOX, '-conf', conf, '-c', 'mount c "%s"' % d, '-c', 'c:', '-c', 'hdpmi32 -r > nul',
                     '-c', 'lugforth < in.txt > out.txt', '-c', 'lugforth argtest.fs > out2.txt', '-c', 'exit'],
                    env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
     o = host(d, 'OUT.TXT')
@@ -288,6 +310,7 @@ def main():
     check('resize-file grows a file', r.get(lines[20]), r.get(lines[20]) == '0 5000 0')
     check('a block written then loaded', r.get(lines[22]), r.get(lines[22]) == '42')
     check('ms waits (ms-ticks)', r.get(lines[23]), r.get(lines[23]) == '-1')
+    check('a Sound Blaster 16 is found (snd-ok)', r.get(lines[24]), r.get(lines[24]) == '-1')
     check('bye ends the program', out[-200:], out.rstrip().endswith('> bye'))
     o2 = host(d, 'OUT2.TXT')
     out2 = open(o2, encoding='latin-1').read() if o2 else ''

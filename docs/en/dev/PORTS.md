@@ -272,7 +272,26 @@ editors/editor.fs keeps its theme colors in a byte table now: the 48-bit
 literal of before did not fit 32-bit cells (wrong colors of numbers and
 names with 32-bit cells).
 
-Test: `make -C ports/dos test` (tools/dos_test.py, 36 checks): DOSBox
+Fourth step: DOSBox-X (apt) as a second emulator: `DOSBOX=dosbox-x`
+runs the same test (all but the recording of the beeps: its shortcuts
+are F12 + ..., not Ctrl+F6), `DOS_LFN=1` with DOS 7.1 and long names.
+With long names DOS no longer cuts the names, so files.h tries a path
+that does not exist again cut to 8.3 (`path_short`, the rule of
+dos_stage.py). A 16-bit VESA mode (5-6-5) when no 32-bit mode holds the
+screen even at zoom 1 (2048's 484x640: DOSBox's S3 has 1024x768 in 16
+bits only): screen.h draws in a copy in RAM, `dos_fb_flip` converts the
+rows that changed (memcmp with the copy of the last flip);
+`dos_fb_open` refuses 16 bits while a 32-bit mode exists at zoom 1, so
+sdl2.fs lowers the zoom instead (breakout stays at zoom 2 in 32 bits:
+converting 960x720 at each flip was too slow in DOSBox, the ball did
+not move). Both are macros over the functions of screen.h (`#define
+fb_flip dos_fb_flip` after screen.h, before builtins.h). Traps met: a
+run that never ends with stdin redirected (a game) filled the disk with
+its output, run DOSBox under `ulimit -f`; Xvfb killed with SIGKILL
+leaves /tmp/.X<n>-lock and the next one on that display does not start
+(the test uses `-displayfd` and SIGTERM).
+
+Test: `make -C ports/dos test` (tools/dos_test.py, 38 checks): DOSBox
 0.74 without a window, `lugforth < in.txt > out.txt`, then DOSBox in a
 window of Xvfb typed into with xdotool, the screen read back by the word
 `screen-char`, two beeps recorded by DOSBox itself (Ctrl+F6 writes a wav

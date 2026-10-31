@@ -53,7 +53,7 @@ Lancez `lugforth` (voir [Binaires](#binaires), ou compilez-le avec
 `ninja posix`). Vous obtenez une bannière et l'invite:
 
 ```
-Lugforth v2026.10.31.5
+Lugforth v2026.10.31.6
 :; ===========>/>
 type 'info' for help
  ok
@@ -1195,7 +1195,7 @@ make -C ports/dos            # out/dos/lugforth.exe
 make -C ports/dos hdpmi      # out/dos/HDPMI32.EXE, un hôte DPMI
 make -C ports/dos stage      # out/dos/disk: le programme, exemples, éditeurs
 make -C ports/dos run        # dans DOSBox, sur out/dos/disk
-make -C ports/dos test       # 36 vérifications dans DOSBox
+make -C ports/dos test       # 38 vérifications dans DOSBox
 ```
 
 DOSBox n'a pas d'hôte DPMI: lancez `hdpmi32 -r` une fois, puis
@@ -1212,7 +1212,7 @@ petit mode VESA de 32 bits qui contient l'écran et son zoom;
 `out/dos/disk` sur le disque DOS: ses noms sont coupés en 8.3 comme DOS
 les coupe, si bien que `include games/gfx_breakout.fs` marche sans noms
 longs; `ed` et `writhdeck` viennent de son LIB. `lugforth prog.fs`
-inclut le fichier au démarrage. Essayé dans DOSBox seulement. Voir [ports/dos/README.md](../../ports/dos/README.md).
+inclut le fichier au démarrage. Essayé dans DOSBox et DOSBox-X. Voir [ports/dos/README.md](../../ports/dos/README.md).
 
 ## Compilation
 

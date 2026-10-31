@@ -302,7 +302,27 @@ table d'octets: le littéral de 48 bits d'avant ne tenait pas dans une
 cellule de 32 bits (mauvaises couleurs des nombres et des noms avec des
 cellules de 32 bits).
 
-Test: `make -C ports/dos test` (tools/dos_test.py, 36 vérifications):
+Quatrième étape: DOSBox-X (apt) comme second émulateur:
+`DOSBOX=dosbox-x` lance le même test (tout sauf l'enregistrement des
+bips: ses raccourcis sont F12 + ..., pas Ctrl+F6), `DOS_LFN=1` avec DOS
+7.1 et les noms longs. Avec les noms longs DOS ne coupe plus les noms:
+files.h réessaie un chemin qui n'existe pas coupé en 8.3 (`path_short`,
+la règle de dos_stage.py). Un mode VESA 16 bits (5-6-5) quand aucun mode
+32 bits ne contient l'écran même au zoom 1 (les 484x640 de 2048: le S3
+de DOSBox n'a le 1024x768 qu'en 16 bits): screen.h dessine dans une
+copie en RAM, `dos_fb_flip` convertit les lignes qui ont changé (memcmp
+avec la copie du flip précédent); `dos_fb_open` refuse le 16 bits tant
+qu'un mode 32 bits existe au zoom 1, si bien que sdl2.fs baisse plutôt
+le zoom (le casse-briques reste au zoom 2 en 32 bits: convertir
+960x720 à chaque flip était trop lent dans DOSBox, la balle ne bougeait
+pas). Les deux sont des macros sur les fonctions de screen.h (`#define
+fb_flip dos_fb_flip` après screen.h, avant builtins.h). Pièges
+rencontrés: un programme qui ne finit jamais avec stdin redirigé (un
+jeu) a rempli le disque de sa sortie, lancer DOSBox sous `ulimit -f`;
+un Xvfb tué par SIGKILL laisse /tmp/.X<n>-lock et le suivant ne démarre
+pas sur cet affichage (le test utilise `-displayfd` et SIGTERM).
+
+Test: `make -C ports/dos test` (tools/dos_test.py, 38 vérifications):
 DOSBox 0.74 sans fenêtre, `lugforth < in.txt > out.txt`, puis DOSBox
 dans une fenêtre de Xvfb où xdotool tape, l'écran relu par le mot
 `screen-char`, deux bips enregistrés par DOSBox lui-même (Ctrl+F6 écrit

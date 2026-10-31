@@ -18,7 +18,9 @@ make -C ports/dos                    # out/dos/lugforth.exe (about 500 KB)
 make -C ports/dos hdpmi              # out/dos/HDPMI32.EXE, the DPMI host (see below)
 make -C ports/dos stage              # out/dos/disk: what to copy on a DOS disk
 make -C ports/dos run                # DOSBox on out/dos/disk, in a window
-make -C ports/dos test               # 36 checks in DOSBox (tools/dos_test.py)
+make -C ports/dos test               # 38 checks in DOSBox (tools/dos_test.py)
+DOSBOX=dosbox-x python3 tools/dos_test.py out/dos             # the same in DOSBox-X
+DOSBOX=dosbox-x DOS_LFN=1 python3 tools/dos_test.py out/dos   # DOS 7.1 with long names
 ```
 
 `out/dos/disk` (tools/dos_stage.py) holds LUGFORTH.EXE, HDPMI32.EXE,
@@ -27,13 +29,17 @@ in LIB, the manual in DOC. Every name is cut to 8.3 the way DOS cuts it
 (`gfx_breakout.fs` is GFX_BREA.FS): DOS without long names cuts the
 names a program opens the same way, so `include games/gfx_breakout.fs`
 and the `needs` of the editors find their files under their long names.
+With long names (Windows 9x, DOSLFN, DOSBox-X as DOS 7) DOS cuts
+nothing: then `files.h` tries a path that does not exist again cut to
+8.3, so the same folder works, and real long names work too.
 
-`make test` needs `dosbox` (apt). Its last ten checks drive DOSBox in a
+`make test` needs `dosbox` (apt). Its last eleven checks drive DOSBox in a
 window of a virtual display with `xdotool` (`Xvfb`, `xdotool` and
 ImageMagick installed; without them they are skipped): the text screen
 read back by the word `screen-char`, `ed` and `writhdeck`, two beeps
-recorded by DOSBox (Ctrl+F6) and measured, breakout in VESA from
-screenshots.
+recorded by DOSBox (Ctrl+F6) and measured, 2048 and breakout in VESA
+from screenshots. DOSBox-X (apt) passes them too, but the recording of
+the beeps (its shortcuts differ).
 
 ## Run
 
@@ -75,6 +81,10 @@ FreeDOS with HDPMI have their own host.
     linear framebuffer that holds the screen times its zoom (lowered if
     none does), centered, the rest black; `close-screen` gives the text
     mode back. Drawing, text, the built-in images (the tile sheets).
+    When no 32-bit mode holds the screen even at zoom 1 (2048's 484x640
+    in DOSBox, whose S3 has 1024x768 in 16 bits only), a 16-bit mode
+    (5-6-5): the drawing goes to a copy in RAM, and each flip converts
+    the rows that changed.
   - While a screen is open the keyboard is read by interrupt (IRQ 1,
     chained to the handler that was there, so Ctrl+Break still works):
     keys down and up for `pressed?`, characters for `key` (US, or
@@ -84,8 +94,8 @@ FreeDOS with HDPMI have their own host.
     44100 Hz stereo by auto-init DMA, filled at each pause: `beep`,
     `drum-hit`, `play`, the ABC tunes, the PCM queue. Without one the
     sound words do nothing.
-  - The games of `examples/games` run (breakout tried; the mouse not
-    tried), from the folder of `make stage`: `include
+  - The games of `examples/games` run (breakout and 2048 tried; the
+    mouse not tried), from the folder of `make stage`: `include
     games/gfx_breakout.fs`, or `lugforth games/gfx_breakout.fs` from
     DOS (the game ends with `script-bye`, back to DOS).
 - `ed` and `writhdeck`, read from LIB beside `lugforth.exe` the first
@@ -98,4 +108,5 @@ FreeDOS with HDPMI have their own host.
   pixels; VGA mode 13h for the cards without VESA 2.0; the PC speaker
   when there is no Sound Blaster.
 - A disk or floppy image (`make stage` makes a folder).
-- Tried in DOSBox 0.74 only; not on a real PC, FreeDOS or Windows 9x.
+- Tried in DOSBox 0.74 and DOSBox-X 2024.03 (with and without long
+  names); not on a real PC, FreeDOS or Windows 9x.

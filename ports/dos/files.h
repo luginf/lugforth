@@ -54,10 +54,41 @@ static void fs_update_cwd(void) {
   if (!getcwd(fs_cwd_path, sizeof fs_cwd_path)) strcpy(fs_cwd_path, "?");
 }
 
+// With long names on (Windows 9x, DOSLFN, DOSBox-X as DOS 7), DOS no longer
+// cuts the names to 8.3, and the files of tools/dos_stage.py (GFX_BREA.FS for
+// gfx_breakout.fs) would not be found under the long names of the sources: a
+// path that does not exist is tried again with each part cut as DOS would.
+static void path_short(char *a) {
+  char out[260];
+  int o = 0;
+  for (const char *p = a; *p && o < 250; ) {
+    if (*p == '/' || *p == '\\' || *p == ':') { out[o++] = *p++; continue; }
+    const char *e = p;
+    while (*e && *e != '/' && *e != '\\') e++;
+    const char *dot = p;
+    while (dot < e && *dot != '.') dot++;
+    if (dot == p) { while (p < e && o < 250) out[o++] = *p++; continue; }   // . and ..
+    for (int k = 0; p + k < dot && k < 8; k++) out[o++] = p[k];
+    if (dot < e) {
+      out[o++] = '.';
+      for (int k = 1; dot + k < e && dot[k] != '.' && k <= 3; k++) out[o++] = dot[k];
+    }
+    p = e;
+  }
+  out[o] = 0;
+  strcpy(a, out);
+}
+
 static int path_c(const char *p, cell_t n, char *out, int max) {   // a C string, or -1
   if (n < 0 || n >= max) return -1;
   memcpy(out, p, n);
   out[n] = 0;
+  if (n && access(out, F_OK) != 0) {
+    char s[260];
+    strcpy(s, out);
+    path_short(s);
+    if (access(s, F_OK) == 0) strcpy(out, s);
+  }
   return 0;
 }
 
