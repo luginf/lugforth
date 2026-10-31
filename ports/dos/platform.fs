@@ -69,6 +69,42 @@ also dos
 : form ( -- rows cols )   con-rows ?dup 0= if 25 then con-cols ;
 previous
 
+( The command line: argc, argv, as on Linux )
+internals
+: argc ( -- n ) 'argc @ ;
+: argv ( n -- a n ) cells 'argv @ + @ z>s ;
+forth
+
+( Where lugforth.exe is, for its LIB folder: the directory of argv 0 )
+create home-buf 260 allot   0 value home-n
+: home-find ( -- )   \ home-n: the length of the folder in argv 0, up to its last / or \
+  0 argv 200 min { a n }
+  n begin dup 0> while  1- dup a + c@ dup [char] / = swap [char] \ = or if 1+ to home-n 0 then  repeat drop
+  a home-buf home-n cmove ;
+: home ( -- a n )   home-n 0= if home-find then  home-buf home-n ;   \ the folder of the program (empty if unknown)
+create lib-buf 300 allot
+: lib-file ( a n -- a' n' )   \ LIB/name beside the program, or in the current folder
+  { a n }  home lib-buf swap cmove  s" lib/" lib-buf home-n + swap cmove
+  a lib-buf home-n + 4 + n cmove  lib-buf home-n 4 + n + ;
+
+( The editors ed and writhdeck, from LIB: editor.fs, writhdeck.fs, eval_copy.fs )
+\ The first use includes the file, which redefines the word, then runs it with
+\ the file name typed. The names are cut to 8.3 by DOS (writhdec.fs, eval_cop.fs):
+\ tools/dos_stage.py writes them so.
+create lz-buf 300 allot
+: lz-run ( na nn wa wn -- )   \ evaluates "word name"
+  { na nn wa wn }
+  wa lz-buf wn cmove  32 lz-buf wn + c!  na lz-buf wn + 1+ nn cmove
+  lz-buf wn 1+ nn + evaluate ;
+: ed ( "file" -- )   \ edit a file
+  bl parse 200 min { na nn }
+  s" editor.fs" lib-file included
+  na nn s" ed" lz-run ;
+: writhdeck ( "file" -- )   \ edit a text for writing; no name opens the file browser
+  bl parse 200 min { na nn }
+  s" writhdeck.fs" lib-file included
+  na nn s" writhdeck" lz-run ;
+
 ( Setup entry )
 internals also dos
 : ok   ." Lugforth (" board type ." )" raw-ok ;

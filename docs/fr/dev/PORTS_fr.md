@@ -285,7 +285,24 @@ DOSBox 0.74 le casse-briques tourne au zoom 2: aucun mode 32 bits à
 framebuffer linéaire ne contenait ses 960x720 au zoom 3, et `screen`
 baisse le zoom.
 
-Test: `make -C ports/dos test` (tools/dos_test.py, 30 vérifications):
+Troisième étape: `make stage` (tools/dos_stage.py) fait out/dos/disk
+avec tous les noms coupés en 8.3 comme DOS les coupe (base 8, extension
+3): un DOS sans noms longs (DOSBox compris, vérifié) coupe de la même
+façon les noms qu'un programme ouvre, si bien que les noms longs des
+sources (`include games/gfx_breakout.fs`, `needs eval_copy.fs` dans
+editor.fs) trouvent les fichiers; deux noms qui se confondraient sont
+signalés. `ed` et `writhdeck` sont lus dans LIB à côté du programme
+(`home`: le dossier de argv 0). `lugforth prog.fs` (autoboot.fs, comme
+sous Linux). L'interpréteur ANSI de main.c a le retour à la ligne
+différé d'un terminal: un caractère dans la dernière colonne ne passe à
+la ligne suivante qu'au caractère suivant (la ligne d'état de ed sur la
+dernière ligne faisait défiler l'écran et cachait le texte).
+editors/editor.fs garde maintenant les couleurs de ses thèmes dans une
+table d'octets: le littéral de 48 bits d'avant ne tenait pas dans une
+cellule de 32 bits (mauvaises couleurs des nombres et des noms avec des
+cellules de 32 bits).
+
+Test: `make -C ports/dos test` (tools/dos_test.py, 36 vérifications):
 DOSBox 0.74 sans fenêtre, `lugforth < in.txt > out.txt`, puis DOSBox
 dans une fenêtre de Xvfb où xdotool tape, l'écran relu par le mot
 `screen-char`, deux bips enregistrés par DOSBox lui-même (Ctrl+F6 écrit
@@ -298,10 +315,8 @@ HDPMI32 (extenseur DOS HX, freeware) depuis sa version sur GitHub
 sessions dans le cloud). Les fichiers créés par DOSBox ont des noms en
 capitales côté Linux.
 
-Suite: `ed` et `writhdeck` quand leurs fichiers auront des noms 8.3
-(ou avec les noms longs de Windows 9x / DOSLFN); `lugforth prog.fs`; une
-image disque ou un dossier avec les exemples sous des noms 8.3; VGA 13h
-et le haut-parleur pour les machines plus anciennes; `graphic`. La
+Suite: une image disque ou disquette de out/dos/disk; VGA 13h et le
+haut-parleur pour les machines plus anciennes; `graphic`. La
 souris n'est pas testée (celle de DOSBox suit le pointeur X, pas
 essayé). Pas essayé sur un vrai PC, FreeDOS ni Windows 9x.
 

@@ -74,12 +74,14 @@ static uint64_t ms_ticks(void) { return us_ticks() / 1000; }
 // ---- the console: conio on the text screen, with an ANSI interpreter ----
 static int con_tty, key_tty;
 static int con_state, con_np, con_par[8], con_priv;
-static int con_fg = 7, con_bg = 0, con_bold, con_rev;
+static int con_fg = 7, con_bg = 0, con_bold, con_rev, con_cur_attr = 7;
+static int con_wrap;                               // a character was written in the last column: the line ends at the next one
 
 static void con_attr(void) {
   int fg = con_fg | (con_bold ? 8 : 0), bg = con_bg;
   if (con_rev) { int t = fg & 7; fg = bg; bg = t; }
-  textattr((bg << 4) | fg);
+  con_cur_attr = (bg << 4) | fg;
+  textattr(con_cur_attr);
 }
 
 // ANSI's color order (black red green yellow blue magenta cyan white) in the PC's.
@@ -122,6 +124,7 @@ static void con_sgr(void) {
 
 static void con_csi(int c) {
   int n = con_np ? con_par[0] : 0, n1 = n ? n : 1;
+  if (c != 'm') con_wrap = 0;
   int x = wherex(), y = wherey(), w = ScreenCols(), h = ScreenRows();
   switch (c) {
     case 'A': gotoxy(x, y - n1 < 1 ? 1 : y - n1); break;
@@ -151,9 +154,19 @@ static void con_put(int c) {
   switch (con_state) {
     case 0:
       if (c == 27) { con_state = 1; return; }
-      if (c == '\n') { putch('\r'); putch('\n'); return; }
+      if (c == '\n') { con_wrap = 0; putch('\r'); putch('\n'); return; }
       if (c == 7) return;
-      if (c == 8) { if (wherex() > 1) gotoxy(wherex() - 1, wherey()); return; }
+      if (c == '\r') { con_wrap = 0; putch('\r'); return; }
+      if (c == 8) { con_wrap = 0; if (wherex() > 1) gotoxy(wherex() - 1, wherey()); return; }
+      // As a terminal: a character in the last column stays there with the
+      // cursor on it; the next one goes to the next line (scrolling then).
+      // Else a full status line on the last row would scroll the screen.
+      if (con_wrap) { con_wrap = 0; putch('\r'); putch('\n'); }
+      if (wherex() >= ScreenCols()) {
+        ScreenPutChar(c, con_cur_attr, ScreenCols() - 1, wherey() - 1);
+        con_wrap = 1;
+        return;
+      }
       putch(c);
       return;
     case 1:

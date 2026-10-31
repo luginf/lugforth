@@ -71,6 +71,7 @@ s" hello.fs" s" moved.fs" rename-file .
 ls
 s" moved.fs" delete-file .
 s" moved.fs" r/o open-file nip .
+s" lib/writhdeck.fs" r/o open-file nip .
 s" big.txt" w/o create-file throw value fh  5000 s>d fh resize-file .  fh file-size throw d.  fh close-file .
 use b.fb  2 block 1024 blank  s" 6 7 * ." 2 block swap cmove update flush
 2 load
@@ -128,7 +129,7 @@ def wav_check(path):
         segs, abs(f1 - 440) < 5 and abs(f2 - 660) < 5 and abs((b - a) / rate - 0.6) < 0.02)
 
 
-def interactive(exe, dpmi):
+def interactive(disk):
   if not shutil.which('Xvfb') or not shutil.which('xdotool') or not shutil.which('import'):
     print('  skip  the text screen, the keyboard, graphics and sound (Xvfb, xdotool, ImageMagick needed)')
     return
@@ -137,10 +138,8 @@ def interactive(exe, dpmi):
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
   box = None
   try:
-    shutil.copy(exe, os.path.join(d, 'LUGFORTH.EXE'))
-    shutil.copy(dpmi, os.path.join(d, 'HDPMI32.EXE'))
-    root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-    shutil.copy(os.path.join(root, 'examples', 'games', 'gfx_breakout.fs'), os.path.join(d, 'BREAKOUT.FS'))
+    shutil.rmtree(d)
+    shutil.copytree(disk, d)
     with open(os.path.join(d, 'DUMP.FS'), 'w') as f:
       f.write(DUMP.replace('\n', '\r\n'))
     cap = os.path.join(d, 'cap')
@@ -192,10 +191,16 @@ def interactive(exe, dpmi):
     typ('7 8 * .'); key('Return')
     key('Up', 'Home'); typ('100 . '); key('Return')          # the line again, with 100 . in front
     typ('s" s1.txt" dump-screen'); key('Return')
+    typ('ed hello.fs'); key('Return'); time.sleep(4)          # ed and writhdeck, from LIB
+    typ(': hi 42 . ;'); key('ctrl+s'); key('ctrl+q')
+    typ('writhdeck notes.txt'); key('Return'); time.sleep(5)
+    typ('Bonjour tout le monde'); key('ctrl+s'); key('ctrl+q'); time.sleep(1)
+    # 80 characters on the last row: the screen must not scroll (a terminal's pending wrap)
+    typ('page also ansi 0 24 at-xy 80 0 do 35 emit loop s" s3.txt" dump-screen previous'); key('Return')
     key('ctrl+F6')                                           # DOSBox records its sound
     typ('sdl2 440 300 beep 660 300 beep 700 ms previous'); key('Return'); time.sleep(1.5)
     key('ctrl+F6')
-    typ('include breakout.fs'); key('Return'); time.sleep(4)
+    typ('include games/gfx_breakout.fs'); key('Return'); time.sleep(4)   # GAMES/GFX_BREA.FS
     game = shot()
     hold('space'); time.sleep(0.5)
     moving1 = shot(); time.sleep(0.3)
@@ -220,6 +225,12 @@ def interactive(exe, dpmi):
     check('breakout in VESA: background, red and cyan bricks, paddle %r' % got, got,
           got['101830'] > 5000 and got['ff0000'] > 300 and got['00ffff'] > 300 and got['ffffff'] > 20)
     check('breakout: the space held launches the ball (the picture moves)', '', moving1 != moving2 and moving1 != game)
+    f = host(d, 'hello.fs')
+    check('ed: a file written', f, f is not None and open(f).read().strip() == ': hi 42 . ;')
+    f = host(d, 'notes.txt')
+    check('writhdeck: a text written', f, f is not None and 'Bonjour tout le monde' in open(f).read())
+    rows = screen('s3.txt')
+    check('a full last row does not scroll the screen', rows[23:25], len(rows) > 24 and rows[24] == '#' * 80)
     rows = screen('s2.txt')
     check('Esc ends the game, the text prompt is back', rows, '6  ok' in rows)
   finally:
@@ -231,24 +242,26 @@ def interactive(exe, dpmi):
 
 def main():
   out_dir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), '..', 'out', 'dos')
-  exe, dpmi = os.path.join(out_dir, 'lugforth.exe'), host(out_dir, 'HDPMI32.EXE')
-  if not dpmi:
-    print('dos: no HDPMI32.EXE in %s (make -C ports/dos hdpmi)' % out_dir)
+  disk = os.path.join(out_dir, 'disk')
+  if not host(disk, 'HDPMI32.EXE') or not host(disk, 'LUGFORTH.EXE'):
+    print('dos: no LUGFORTH.EXE and HDPMI32.EXE in %s (make -C ports/dos stage)' % disk)
     sys.exit(1)
   d = tempfile.mkdtemp(prefix='lugdos')
   try:
-    shutil.copy(exe, os.path.join(d, 'LUGFORTH.EXE'))
-    shutil.copy(dpmi, os.path.join(d, 'HDPMI32.EXE'))
+    shutil.rmtree(d)
+    shutil.copytree(disk, d)
     with open(os.path.join(d, 'IN.TXT'), 'w') as f:
       f.write(SCRIPT.replace('\n', '\r\n'))
     with open(os.path.join(d, 'AUTOEXEC.FS'), 'w') as f:
       f.write('.( autoexec ran) cr\r\n')
+    with open(os.path.join(d, 'ARGTEST.FS'), 'w') as f:
+      f.write('.( the file of the command line ran) cr  bye\r\n')
     env = dict(os.environ, SDL_VIDEODRIVER='dummy', SDL_AUDIODRIVER='dummy')
     conf = os.path.join(d, 'dosbox.conf')
     with open(conf, 'w') as f:
       f.write('[cpu]\ncycles=max\n[sdl]\nusescancodes=false\n')
     subprocess.run(['dosbox', '-conf', conf, '-c', 'mount c "%s"' % d, '-c', 'c:', '-c', 'hdpmi32 -r > nul',
-                    '-c', 'lugforth < in.txt > out.txt', '-c', 'exit'],
+                    '-c', 'lugforth < in.txt > out.txt', '-c', 'lugforth argtest.fs > out2.txt', '-c', 'exit'],
                    env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
     o = host(d, 'OUT.TXT')
     out = open(o, encoding='latin-1').read() if o else ''
@@ -268,13 +281,17 @@ def main():
     check('cd and pwd', r.get(lines[13]), (r.get(lines[13]) or '').lower().endswith('/sub'))
     check('rename-file', r.get(lines[15]), r.get(lines[15]) == '0')
     ls = (r.get(lines[16]) or '').split()
-    check('ls', ls, 'moved.fs' in ls and 'sub/' in ls and 'lugforth.exe' in ls)
+    check('ls', ls, 'moved.fs' in ls and 'sub/' in ls and 'lugforth.exe' in ls and 'games/' in ls)
     check('delete-file', r.get(lines[17]), r.get(lines[17]) == '0')
     check('a missing file is an error', r.get(lines[18]), r.get(lines[18]) not in (None, '0'))
-    check('resize-file grows a file', r.get(lines[19]), r.get(lines[19]) == '0 5000 0')
-    check('a block written then loaded', r.get(lines[21]), r.get(lines[21]) == '42')
-    check('ms waits (ms-ticks)', r.get(lines[22]), r.get(lines[22]) == '-1')
+    check('a long name opens its 8.3 file (lib/writhdeck.fs: WRITHDEC.FS)', r.get(lines[19]), r.get(lines[19]) == '0')
+    check('resize-file grows a file', r.get(lines[20]), r.get(lines[20]) == '0 5000 0')
+    check('a block written then loaded', r.get(lines[22]), r.get(lines[22]) == '42')
+    check('ms waits (ms-ticks)', r.get(lines[23]), r.get(lines[23]) == '-1')
     check('bye ends the program', out[-200:], out.rstrip().endswith('> bye'))
+    o2 = host(d, 'OUT2.TXT')
+    out2 = open(o2, encoding='latin-1').read() if o2 else ''
+    check('lugforth file.fs runs the file', out2[-300:], 'the file of the command line ran' in out2)
     sub = host(d, 'sub')
     check('the directory on the disk', sub, sub is not None and host(sub, 'in.txt') is not None)
     big = host(d, 'big.txt')
@@ -286,7 +303,7 @@ def main():
       print(out)
   finally:
     shutil.rmtree(d, ignore_errors=True)
-  interactive(exe, dpmi)
+  interactive(disk)
   print('dos: %s' % ('ALL OK' if failures == 0 else '%d FAILED' % failures))
   sys.exit(1 if failures else 0)
 

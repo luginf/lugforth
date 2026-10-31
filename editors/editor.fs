@@ -331,13 +331,14 @@ defer pre-key ( code -- code' )   defer wait-key ( -- code )   defer after-load
 : theme-find ( a n -- idx )   \ -1 when there is no such theme
   n-themes 0 ?do 2dup i theme-name compare 0= if 2drop i unloop exit then loop
   2drop -1 ;
-: theme-pack ( -- n )
-  theme 0 = if $728D4BB4F400 exit then
-  theme 1 = if $C4C9E233FF2E exit then
-  theme 2 = if $1C5A1982F400 exit then
-  theme 3 = if $A6214025F500 exit then
-  0 ;
-: theme-col ( class -- n )   theme-pack swap 8 * rshift $ff and ;
+\ six bytes a theme, class 0 first (a table: 48 bits do not fit a 32-bit cell, as on DOS)
+create theme-bytes
+  $00 c, $F4 c, $B4 c, $4B c, $8D c, $72 c,      \ default
+  $2E c, $FF c, $33 c, $E2 c, $C9 c, $C4 c,      \ colorforth
+  $00 c, $F4 c, $82 c, $19 c, $5A c, $1C c,      \ light
+  $00 c, $F5 c, $25 c, $40 c, $21 c, $A6 c,      \ solarized
+  $00 c, $00 c, $00 c, $00 c, $00 c, $00 c,      \ mono
+: theme-col ( class -- n )   theme 0 max 4 min 6 * + theme-bytes + c@ ;
 : theme-dim ( -- n )
   theme 1 = if 238 exit then
   theme 2 = if 250 exit then

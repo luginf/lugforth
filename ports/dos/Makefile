@@ -20,7 +20,9 @@
 #   make hdpmi        out/dos/HDPMI32.EXE, the DPMI host of the HX DOS extender
 #                     (freeware, https://github.com/Baron-von-Riedesel/HX): DOSBox
 #                     has none; on a real DOS, CWSDPMI.EXE or HDPMI32 works
-#   make run          DOSBox on out/dos (a window)
+#   make stage        out/dos/disk: the program, the examples, ed, writhdeck, the
+#                     manual, every name cut to 8.3 (tools/dos_stage.py)
+#   make run          DOSBox on out/dos/disk (a window)
 #   make test         runs it in DOSBox without a window and checks the answers
 
 ROOT := ../..
@@ -67,11 +69,14 @@ $(OUT)/HDPMI32.EXE:
 	cd $(OUT)/hx && unzip -o -q hxrt.zip BIN/HDPMI32.EXE
 	cp $(OUT)/hx/BIN/HDPMI32.EXE $@
 
-run: $(OUT)/lugforth.exe $(OUT)/HDPMI32.EXE
-	$(DOSBOX) -c "mount c $(abspath $(OUT))" -c "c:" -c "hdpmi32 -r" -c "lugforth"
+stage: $(OUT)/lugforth.exe $(OUT)/HDPMI32.EXE
+	python3 $(ROOT)/tools/dos_stage.py $(OUT)
 
-test: $(OUT)/lugforth.exe $(OUT)/HDPMI32.EXE
+run: stage
+	$(DOSBOX) -c "mount c $(abspath $(OUT))/disk" -c "c:" -c "hdpmi32 -r" -c "lugforth"
+
+test: stage
 	python3 $(ROOT)/tools/dos_test.py $(OUT)
 
 FORCE:
-.PHONY: all hdpmi run test FORCE
+.PHONY: all hdpmi stage run test FORCE

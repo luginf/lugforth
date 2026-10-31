@@ -16,15 +16,24 @@ else given as `DJGPP=`:
 ```sh
 make -C ports/dos                    # out/dos/lugforth.exe (about 500 KB)
 make -C ports/dos hdpmi              # out/dos/HDPMI32.EXE, the DPMI host (see below)
-make -C ports/dos run                # DOSBox on out/dos, in a window
-make -C ports/dos test               # 30 checks in DOSBox (tools/dos_test.py)
+make -C ports/dos stage              # out/dos/disk: what to copy on a DOS disk
+make -C ports/dos run                # DOSBox on out/dos/disk, in a window
+make -C ports/dos test               # 36 checks in DOSBox (tools/dos_test.py)
 ```
 
-`make test` needs `dosbox` (apt). Its last seven checks drive DOSBox in
-a window of a virtual display with `xdotool` (`Xvfb`, `xdotool` and
+`out/dos/disk` (tools/dos_stage.py) holds LUGFORTH.EXE, HDPMI32.EXE,
+the examples in GAMES, GRAPHICS, MUSIC and UTILS, `ed` and `writhdeck`
+in LIB, the manual in DOC. Every name is cut to 8.3 the way DOS cuts it
+(`gfx_breakout.fs` is GFX_BREA.FS): DOS without long names cuts the
+names a program opens the same way, so `include games/gfx_breakout.fs`
+and the `needs` of the editors find their files under their long names.
+
+`make test` needs `dosbox` (apt). Its last ten checks drive DOSBox in a
+window of a virtual display with `xdotool` (`Xvfb`, `xdotool` and
 ImageMagick installed; without them they are skipped): the text screen
-read back by the word `screen-char`, two beeps recorded by DOSBox
-(Ctrl+F6) and measured, breakout in VESA from screenshots.
+read back by the word `screen-char`, `ed` and `writhdeck`, two beeps
+recorded by DOSBox (Ctrl+F6) and measured, breakout in VESA from
+screenshots.
 
 ## Run
 
@@ -76,15 +85,17 @@ FreeDOS with HDPMI have their own host.
     `drum-hit`, `play`, the ABC tunes, the PCM queue. Without one the
     sound words do nothing.
   - The games of `examples/games` run (breakout tried; the mouse not
-    tried); their names are long: copy them under 8.3 names
-    (`gfx_breakout.fs` as `breakout.fs`) where DOS has no long names.
+    tried), from the folder of `make stage`: `include
+    games/gfx_breakout.fs`, or `lugforth games/gfx_breakout.fs` from
+    DOS (the game ends with `script-bye`, back to DOS).
+- `ed` and `writhdeck`, read from LIB beside `lugforth.exe` the first
+  time, as on the boards.
+- `lugforth prog.fs` includes the file at start.
 
 ## Not yet
 
 - `graphic` (drawing under the text at the prompt): the text mode has no
   pixels; VGA mode 13h for the cards without VESA 2.0; the PC speaker
   when there is no Sound Blaster.
-- `ed` and `writhdeck`: their files have long names (`writhdeck.fs`,
-  `eval_copy.fs`) that 8.3 DOS cannot open.
-- A program given on the command line (`lugforth prog.fs`).
+- A disk or floppy image (`make stage` makes a folder).
 - Tried in DOSBox 0.74 only; not on a real PC, FreeDOS or Windows 9x.

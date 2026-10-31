@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.10.31.4
+Lugforth v2026.10.31.5
 :; ===========>/>
 type 'info' for help
  ok
@@ -1143,8 +1143,9 @@ sound of a Sound Blaster 16, so the games of `examples/games` run.
 ```
 make -C ports/dos            # out/dos/lugforth.exe
 make -C ports/dos hdpmi      # out/dos/HDPMI32.EXE, a DPMI host
-make -C ports/dos run        # in DOSBox
-make -C ports/dos test       # 30 checks in DOSBox
+make -C ports/dos stage      # out/dos/disk: the program, examples, editors
+make -C ports/dos run        # in DOSBox, on out/dos/disk
+make -C ports/dos test       # 36 checks in DOSBox
 ```
 
 DOSBox has no DPMI host: start `hdpmi32 -r` once, then `lugforth`. On
@@ -1157,9 +1158,11 @@ words use the disks of DOS (names in 8.3 unless DOS has long names).
 stops a running word. `screen` takes the smallest VESA mode of 32 bits
 that holds the screen and its zoom; `close-screen` gives the text mode
 back. The sound needs a Sound Blaster 16 (the `BLASTER` variable, which
-DOSBox sets). DOS without long names (DOSBox) cannot open
-`gfx_breakout.fs`: copy the games under 8.3 names (`breakout.fs`).
-Tried in DOSBox only. See
+DOSBox sets). Copy the folder `out/dos/disk` to the DOS disk: its names
+are cut to 8.3 as DOS cuts them, so `include games/gfx_breakout.fs`
+works without long names; `ed` and `writhdeck` come from its LIB.
+`lugforth prog.fs` includes the file at start. Tried in DOSBox only.
+See
 [ports/dos/README.md](../../ports/dos/README.md).
 
 ## Building

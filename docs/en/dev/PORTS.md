@@ -257,7 +257,22 @@ the DMA position at each pause. screen.h now builds on a 32-bit i386:
 In DOSBox 0.74 breakout runs at zoom 2: no 32-bit mode with a linear
 framebuffer held its 960x720 at zoom 3, and `screen` lowers the zoom.
 
-Test: `make -C ports/dos test` (tools/dos_test.py, 30 checks): DOSBox
+Third step: `make stage` (tools/dos_stage.py) makes out/dos/disk with
+every name cut to 8.3 as DOS cuts it (base 8, extension 3): DOS without
+long names (DOSBox included, checked) cuts the names a program opens the
+same way, so the long names in the sources (`include
+games/gfx_breakout.fs`, `needs eval_copy.fs` in editor.fs) find the
+files; two names that would collide are reported. `ed` and `writhdeck`
+are read from LIB beside the program (`home`: the folder of argv 0).
+`lugforth prog.fs` (autoboot.fs, as on Linux). The ANSI interpreter of
+main.c has a terminal's pending wrap: a character in the last column
+does not move to the next line until the next character (ed's status
+line on the last row scrolled the screen and hid the text).
+editors/editor.fs keeps its theme colors in a byte table now: the 48-bit
+literal of before did not fit 32-bit cells (wrong colors of numbers and
+names with 32-bit cells).
+
+Test: `make -C ports/dos test` (tools/dos_test.py, 36 checks): DOSBox
 0.74 without a window, `lugforth < in.txt > out.txt`, then DOSBox in a
 window of Xvfb typed into with xdotool, the screen read back by the word
 `screen-char`, two beeps recorded by DOSBox itself (Ctrl+F6 writes a wav
@@ -269,10 +284,8 @@ stops without a sound device. DOSBox has no DPMI host: `make hdpmi` downloads HD
 home of CWSDPMI, is not reachable from the cloud sessions). The files
 DOSBox creates have capital names on the Linux side.
 
-Next: `ed` and `writhdeck` once their files have 8.3 names (or with
-long names on Windows 9x / DOSLFN); `lugforth prog.fs`; a disk image or
-folder with the examples under 8.3 names; VGA 13h and the PC speaker
-for older machines; `graphic`. The mouse is not tested (DOSBox's moves
+Next: a disk or floppy image of out/dos/disk; VGA 13h and the PC
+speaker for older machines; `graphic`. The mouse is not tested (DOSBox's moves
 with the X pointer, not tried). Not tried on a real PC, FreeDOS or
 Windows 9x.
 

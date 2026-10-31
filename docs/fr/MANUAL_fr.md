@@ -53,7 +53,7 @@ Lancez `lugforth` (voir [Binaires](#binaires), ou compilez-le avec
 `ninja posix`). Vous obtenez une bannière et l'invite:
 
 ```
-Lugforth v2026.10.31.4
+Lugforth v2026.10.31.5
 :; ===========>/>
 type 'info' for help
  ok
@@ -1193,8 +1193,9 @@ et la souris, le son d'une Sound Blaster 16; les jeux de
 ```
 make -C ports/dos            # out/dos/lugforth.exe
 make -C ports/dos hdpmi      # out/dos/HDPMI32.EXE, un hôte DPMI
-make -C ports/dos run        # dans DOSBox
-make -C ports/dos test       # 30 vérifications dans DOSBox
+make -C ports/dos stage      # out/dos/disk: le programme, exemples, éditeurs
+make -C ports/dos run        # dans DOSBox, sur out/dos/disk
+make -C ports/dos test       # 36 vérifications dans DOSBox
 ```
 
 DOSBox n'a pas d'hôte DPMI: lancez `hdpmi32 -r` une fois, puis
@@ -1207,9 +1208,11 @@ au démarrage. `lugforth < in.txt > out.txt` exécute les lignes d'un
 fichier. Ctrl+Pause arrête un mot en cours. `screen` prend le plus
 petit mode VESA de 32 bits qui contient l'écran et son zoom;
 `close-screen` rend le mode texte. Le son demande une Sound Blaster 16
-(la variable `BLASTER`, que DOSBox définit). Un DOS sans noms longs
-(DOSBox) ne peut pas ouvrir `gfx_breakout.fs`: copiez les jeux sous des
-noms 8.3 (`breakout.fs`). Essayé dans DOSBox seulement. Voir [ports/dos/README.md](../../ports/dos/README.md).
+(la variable `BLASTER`, que DOSBox définit). Copiez le dossier
+`out/dos/disk` sur le disque DOS: ses noms sont coupés en 8.3 comme DOS
+les coupe, si bien que `include games/gfx_breakout.fs` marche sans noms
+longs; `ed` et `writhdeck` viennent de son LIB. `lugforth prog.fs`
+inclut le fichier au démarrage. Essayé dans DOSBox seulement. Voir [ports/dos/README.md](../../ports/dos/README.md).
 
 ## Compilation
 

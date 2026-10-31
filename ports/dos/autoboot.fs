@@ -12,11 +12,14 @@
 \ See the License for the specific language governing permissions and
 \ limitations under the License.
 
-( autoexec.fs in the current directory, if there is one, runs at start )
+\ lugforth prog.fs: the file is included at start, then the prompt, unless
+\ it ends with bye or script-bye, as the games do. Else autoexec.fs in the
+\ current directory, if there is one.
 \ After the banner, before the first prompt. An error in it prints and
 \ leaves the prompt, as an error typed there would.
 internals definitions
 : autoexec
+  argc 2 >= if 1 argv ['] included catch if 2drop ." error in " 1 argv type cr then exit then
   s" autoexec.fs" r/o open-file if drop exit then close-file drop
   s" autoexec.fs" ['] included catch if 2drop ." autoexec.fs: error" cr then ;
 ' autoexec boot-prompt !
