@@ -145,6 +145,7 @@ NOTES = {
   'telnetd': ('( -- )', 'Lazy loaded telnet server.'),
   'termios': ('( -- )', 'Vocabulary of terminal handling.'),
   'visual': ('( -- )', 'Lazy loaded visual (full screen) editor.'),
+  'blocks-editor': ('( "n" -- )', 'Full screen editor of block n (or of the block last listed) of the file chosen with use; compiled on first use.'),
   'web-interface': ('( -- )', 'Lazy loaded web UI server.'),
   'x11': ('( -- )', 'Lazy loaded X11 bindings.'),
   'sdl2': ('( -- )', 'Lazy loaded SDL2 short words for games. See `docs/en/SDL2.md`.'),

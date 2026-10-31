@@ -20,3 +20,4 @@ needs including.fs
 needs blocks.fs
 needs ansi.fs
 needs visual.fs
+needs blocks_editor.fs

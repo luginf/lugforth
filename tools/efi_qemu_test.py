@@ -351,6 +351,31 @@ def pager(b):
   b.run('pager-on')
 
 
+def blocks(b):
+  """blocks-editor (common/blocks_editor.fs) on the console: text typed on the
+  serial line, the line copied and pasted, saved on the stick's FAT, then the
+  block read back and loaded."""
+  start = len(b.out)
+  b.send(b'use bltest.fb  blocks-editor 2\r')
+  time.sleep(8)
+  check('blocks-editor: title drawn', b.out[start:][-3000:], ' Block 2 of 3' in b.out[start:])
+  b.send(b': cube dup dup * * ;')
+  time.sleep(4)
+  b.send(b'\x03')     # Ctrl+C: copy the line
+  time.sleep(1)
+  b.send(b'\x16')     # Ctrl+V: paste it above
+  time.sleep(2)
+  b.send(b'\x13')     # Ctrl+S
+  time.sleep(2)
+  b.send(b'\x11')     # Ctrl+Q
+  b.wait_for(PROMPT, b.pos, 20)
+  b.pos = len(b.out)
+  r = b.run('2 block 128 type')
+  check('blocks-editor: two lines saved', r, r.count(': cube dup dup * * ;') == 2)
+  r = b.run('2 load 3 cube .')
+  check('blocks-editor: the block loads', r, '27' in r)
+
+
 def games(b):
   """The games after r3forth, from the stick: each one drawn, a key acts on it,
   Esc gives the prompt back."""
@@ -580,6 +605,7 @@ def main():
     history(b)
     accents(b)
     pager(b)
+    blocks(b)
     terminals(b)
     b.region = (160, 120)
     t.test_lines(b)

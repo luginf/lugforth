@@ -34,7 +34,8 @@ programmes](#10-trois-petits-programmes) -
 **Référence** [Arborescence](#arborescence) - [Binaires](#binaires) -
 [Fenêtre console](#fenêtre-console) - [Version mini](#version-mini) -
 [Édition de ligne](#édition-de-ligne) - [Pagineur](#pagineur) -
-[ed](#ed) - [writhdeck](#writhdeck) - [Exemples](#exemples) -
+[ed](#ed) - [writhdeck](#writhdeck) - [Blocs](#blocs) -
+[Exemples](#exemples) -
 [Varvara](#varvara-exécuter-des-roms-uxn) - [Matériel
 nu](#matériel-nu) - [Compilation](#compilation)
 
@@ -52,7 +53,7 @@ Lancez `lugforth` (voir [Binaires](#binaires), ou compilez-le avec
 `ninja posix`). Vous obtenez une bannière et l'invite:
 
 ```
-Lugforth v2026.10.30.9
+Lugforth v2026.10.31.1
 :; ===========>/>
 type 'info' for help
  ok
@@ -529,6 +530,10 @@ bibliothèque une seule fois. Pour lancer directement un programme:
 `lugforth squares.fs`. Ajoutez `bye` en dernière ligne pour quitter
 ensuite.
 
+L'ancienne façon de Forth, les sources gardées dans des blocs
+numérotés de 1024 caractères et éditées avec `blocks-editor`, marche
+aussi: voir [Blocs](#blocs).
+
 Si un fichier produit `Error including: file` et rien d'autre, une
 erreur a été levée pendant le chargement: procédez par dichotomie en
 mettant des lignes `.` ou `.s` dans le fichier pour trouver où il
@@ -962,6 +967,83 @@ status_left   = filename dirty
 status_center = words
 status_right  = goal help_bar
 ```
+
+## Blocs
+
+Avant les fichiers, Forth gardait ses sources dans des **blocs**: 1024
+caractères, montrés en 16 lignes de 64. Lugforth les a sur toutes les
+versions qui ont des fichiers (PC, Windows, Raspberry Pi, PC UEFI,
+ESP32; code `common/blocks.fs`, venu d'uEforth). Un fichier de blocs
+est un fichier ordinaire de blocs de 1024 octets numérotés à partir de
+0. Dans Lugforth le 64e caractère de chaque ligne est un saut de ligne:
+le fichier se lit aussi comme un texte, 63 caractères par ligne.
+
+| Mot | Action |
+|---|---|
+| `use nom` | choisit le fichier de blocs (créé s'il manque); sans lui, le premier mot de bloc ouvre `blocks.fb` dans le répertoire courant |
+| `block ( n -- a )` | adresse des 1024 caractères du bloc n, lus dans le fichier |
+| `buffer ( n -- a )` | pareil sans lire, pour le remplir en entier |
+| `update` | le bloc en mémoire a changé: il est écrit avant d'en lire un autre |
+| `save-buffers`, `flush` | l'écrit tout de suite; `flush` l'oublie aussi |
+| `empty-buffers` | l'oublie sans l'écrire |
+| `load ( n -- )`, `thru ( a b -- )` | interprète le bloc n, ou les blocs a à b, comme s'ils étaient tapés |
+| `copy ( de vers -- )` | copie un bloc sur un autre |
+| `list ( n -- )` | montre un bloc; `scr` garde son numéro |
+
+Un seul bloc est en mémoire: une adresse donnée par `block` vaut
+jusqu'à la lecture d'un autre bloc. Un bloc ne peut donc pas en
+charger un autre par `load` (le texte en cours de lecture est
+remplacé): lancez `thru` à l'invite ou depuis un fichier. Lire un bloc
+au-delà de la fin allonge le fichier.
+
+L'éditeur de lignes d'uEforth travaille sur le dernier bloc listé,
+après `editor` (`forth` en sort): `l` le liste à nouveau, `n` / `p`
+passent au suivant / précédent, `3 r texte` remplace la ligne 3,
+`3 a texte` insère une ligne à cet endroit, `3 d` la supprime, `3 e`
+la vide, `wipe` vide le bloc.
+
+```
+> use squares.fb  1 list
+> editor
+> 0 r : square ( n -- n*n )  dup * ;
+> 1 r : squares ( n -- )  1+ 1 ?do i square . loop ;
+> flush forth
+> 1 load  5 squares
+1 4 9 16 25  ok
+```
+
+### blocks-editor
+
+`blocks-editor` édite le dernier bloc listé, `blocks-editor 5` le bloc
+5 du fichier choisi avec `use`, en plein écran: une ligne de titre
+(numéro du bloc, blocs du fichier, insertion ou remplacement,
+`modified`), les 16 lignes numérotées, une ligne de message et un
+rappel des touches. Code: `common/blocks_editor.fs`, compilé au premier
+usage; test: `python3 tools/blocks_editor_pty_test.py
+out/posix/lugforth`.
+
+| Touches | Action |
+|---|---|
+| flèches, Début, Fin (Ctrl+A, Ctrl+E), Tab | déplacement; Fin va après le dernier caractère de la ligne, Tab quatre places à droite |
+| Entrée | début de la ligne suivante |
+| Retour arrière, Suppr (Ctrl+D) | efface avant ou sous le curseur, la fin de la ligne revient à gauche |
+| Inser, Ctrl+T | insertion ou remplacement (par défaut); insérer pousse la ligne à droite, son dernier caractère est perdu |
+| Page préc., Page suiv. | bloc précédent, suivant |
+| Ctrl+G | aller à un bloc: tapez son numéro, Entrée (Échap annule) |
+| Ctrl+X, Ctrl+C, Ctrl+V | couper, copier la ligne; la coller au-dessus du curseur |
+| Ctrl+N | insérer une ligne vide (la dernière ligne du bloc est perdue) |
+| Ctrl+U | annuler les changements depuis la dernière écriture du bloc |
+| Ctrl+S | enregistrer |
+| Ctrl+L | enregistrer et charger le bloc (`load`), montrer ce qu'il affiche jusqu'à une touche |
+| Ctrl+Q | enregistrer et quitter |
+
+Les changements sont écrits par Ctrl+S, Ctrl+L, Ctrl+Q, ou quand un
+autre bloc est affiché. Les mots définis par Ctrl+L restent après la
+sortie. Les caractères sous l'espace s'affichent en espaces, ceux
+au-delà de `~` en points; seul l'ASCII simple peut être tapé. Testé
+dans un terminal (test pty) et sur le PC UEFI sous QEMU
+(`make -C ports/efi test`); pas essayé dans la fenêtre `--gui`, sur le
+Raspberry Pi, Windows ni l'ESP32.
 
 ## Exemples
 
