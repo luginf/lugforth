@@ -197,7 +197,7 @@ def history(b):
   b.pos = i + len(PROMPT)
   check('Tab completes swa to swap', r, 'NOT FOUND' not in r and r.split()[-3:] == ['1', '2', 'ok'])
 
-  for typed, want in [('include games/sdl2_rog\t', 'games/gfx_roguelike.fs'), ('include lib/edi\t', 'lib/editor.fs'),
+  for typed, want in [('include games/gfx_rog\t', 'games/gfx_roguelike.fs'), ('include lib/edi\t', 'lib/editor.fs'),
                       ('s" lib/ev\t', 'lib/eval_copy.fs')]:
     b.send(typed.encode())
     time.sleep(0.7)
