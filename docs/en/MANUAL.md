@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.10.31.6
+Lugforth v2026.10.31.7
 :; ===========>/>
 type 'info' for help
  ok
@@ -1141,6 +1141,7 @@ memory and a DPMI host. The prompt in text mode, the files, and the
 sound of a Sound Blaster 16, so the games of `examples/games` run.
 
 ```
+make -C ports/dos djgpp      # installs the DJGPP cross compiler (no Debian package)
 make -C ports/dos            # out/dos/lugforth.exe
 make -C ports/dos hdpmi      # out/dos/HDPMI32.EXE, a DPMI host
 make -C ports/dos stage      # out/dos/disk: the program, examples, editors

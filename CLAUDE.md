@@ -35,7 +35,7 @@ leave changes in the working tree, and do not remind them that they can read the
     ninja web                               # out/web: pages and lugforth.js; serve from there (python3 -m http.server)
     ninja forth2012                         # the Forth 2012 test suite (Hayes, Gerry Jackson), cloned into out/forth2012-suite or $F2012_DIR; all word sets must pass
     make -C ports/tic80 test                # out/tic80/lugforth-tic80.wasm, the module for TIC-80, tested under node
-    make -C ports/dos test                  # out/dos/lugforth.exe (DJGPP in /opt/djgpp-x), 38 checks in DOSBox; DOSBOX=dosbox-x [DOS_LFN=1] for DOSBox-X
+    make -C ports/dos test                  # out/dos/lugforth.exe, 38 checks in DOSBox; DOSBOX=dosbox-x [DOS_LFN=1] for DOSBox-X; no Debian DJGPP: make -C ports/dos djgpp
 
 Xvfb and `xdotool` are installed: run `Xvfb :99 &`, then the SDL examples with `DISPLAY=:99` and screenshot with `import -window root`
 (hold a key with `xdotool keydown`, sleep 0.25, `keyup`: a quick `xdotool key` is missed by the game loop). Headless alone: dummy driver,
@@ -50,7 +50,7 @@ Do not `pkill -f` a pattern that appears in your own command line (it kills your
 
 At each modification of the code, tools or ports, raise the version, even by a fraction (a change that only adds to the docs does not need it): in the root `BUILD`,
 `SetVersions(version='YYYY.MM.DD.N', date='YYYY-MM-DD')` (the date of the change, N = 1, 2... for the changes of that day; `info` shows it
-under the revision), and the banner of `docs/en/MANUAL.md` (`Lugforth vYYYY.MM.DD.N`). Now 2026.10.31.6 (2026-10-31). The release tag is
+under the revision), and the banner of `docs/en/MANUAL.md` (`Lugforth vYYYY.MM.DD.N`). Now 2026.10.31.7 (2026-10-31). The release tag is
 `v` + this version (`v2026.10.23.1`): the release workflow refuses a tag that differs from `BUILD`. Dotted digits on purpose (the release
 workflow, the packages and the Android `versionCode` read it). Do it in the same change set. (Before 2026.10.23.1 it was 7.0.11.N, and the
 tags v0.5.x.)

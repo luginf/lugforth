@@ -250,8 +250,11 @@ copie; le roguelike et la démo des tuiles démarrent toujours après cela
 ## DOS (ports/dos) - commencé le 2026-10-31
 
 `lugforth.exe` construit avec le compilateur croisé DJGPP (gcc 12.2,
-des versions de github.com/andrewwutw/build-djgpp, décompressé dans
-`/opt/djgpp-x`; pas dans apt, seules ses binutils y sont): mode protégé
+des versions de github.com/andrewwutw/build-djgpp; Debian et Ubuntu
+n'ont que `binutils-djgpp`, ni gcc ni libc: `ports/dos/install-djgpp.sh`,
+ou `make -C ports/dos djgpp`, le télécharge, vérifie son SHA-256 et le
+décompresse dans `/opt/djgpp-x` ou `~/.local/djgpp-x`, où le Makefile
+le cherche): mode protégé
 32 bits, cellules de 32 bits, tas de 4 Mo. Première étape faite:
 l'invite en mode texte et les fichiers. `main.c` interprète les codes
 ANSI en appels conio (sans ANSI.SYS), traduit les touches spéciales du
