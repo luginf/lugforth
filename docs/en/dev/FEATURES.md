@@ -504,6 +504,46 @@ In a library shared by games, do not use short names that a game can
 define (`cell`, `bx`): the tests of the games loaded one that changed
 `cell` in the middle of `spr-build`.
 
+## Corridor, a wireframe rail shooter (examples/games/gfx_corridor.fs) - done 2026-11-02
+
+A shooter in the spirit of Star Fox on a vector screen, from a mockup of
+the user (cyan lines, red sun, towers on both sides, floor grid, a small
+white ship). POSIX and web (`terminal.html?run=gfx_corridor.fs`); not
+tried on DOS. All lines, no hidden-line removal.
+
+- The 3D is one perspective division: a point (x y z) with z the
+  distance from the camera goes to column `cx + (x - camx) * f / z` and
+  row `hy - (y - camy) * f / z` (f = 120). `cr-wline` first clips the
+  segment against the near plane (z = 20, an integer interpolation, so
+  it works with 32 bit cells), then draws it with `line`. The camera
+  follows 3/4 of the ship's x and half of its y, so the ship sits low
+  and the world slides.
+- The world comes toward the camera: every thing has a `z` that goes
+  down by the speed each step (the same fixed 16 ms loop as the digger).
+  Things: towers (two rows, spawned at the far end as the last one
+  scrolls), pillars (tall or low) and floating bars to dodge, fighters
+  (an octahedron that spins and sways, 12 edges) that shoot a bolt aimed
+  at the ship, our lasers (two, from the wings), explosions (eight rays
+  that grow). Slots are arrays of flags (`bd.on`, `ob.on`, `en.on`...)
+  and `cr-free` finds one.
+- Hits: a laser kills a fighter (100) or breaks a pillar or bar (50);
+  touching an obstacle, a fighter or a bolt costs one shield out of six
+  and gives 50 steps of invulnerability (the ship blinks); no shield,
+  game over. Speed and the rate of things grow with the level (one
+  level every 12000 units of travel).
+- The red bar at the bottom is the shield gauge. The ship leans (its
+  wings are skewed by `cr-bank`, one notch a step) when it turns.
+- Keys: arrows or wasd, space or `f` fires (held: a burst), `p` pause,
+  Esc quit, `r`, space or enter after the end.
+- Words are prefixed `cr-` (a shared name like `cell` or `just` clashed
+  once with another game in the tests). The sun is a disc of 1 pixel
+  rows with two black stripes.
+- Tests: the "Corridor" part of `examples/games/games_tests.fs`
+  (projection, clipping calls, towers, laser and fighter, pillar and bar
+  hits, invulnerability, game over, a flight of 3000 steps that leaves
+  the stack clean, aimed bolts). Looked at in a real X window (Xvfb) with
+  keys held.
+
 ## Forth is Fun (turtle)
 
 Forth is Fun (https://gitlab.com/garvalf/forth-is-fun, Eric Forgeot,

@@ -37,7 +37,7 @@ targets are in the [manual](docs/en/MANUAL.md#building).
 * **Editors**: `ed`, a text editor in Forth with syntax highlighting, and `writhdeck`, a writing editor
   (focus mode, Hemingway, daily goal, outline or TOC).
 * **SDL2 words**: graphics, images, sound, ABC tunes, MIDI and an FM synthesizer.
-* **Examples**: breakout, roguelike, tetris, snake, pac-man, digger, minesweeper, mastermind, 2048, 3D wireframes, a Z-machine interpreter
+* **Examples**: breakout, roguelike, tetris, snake, pac-man, digger, a 3D wireframe rail shooter, minesweeper, mastermind, 2048, 3D wireframes, a Z-machine interpreter
   for interactive fiction (Infocom and Inform stories), an inference
   engine, a Uxn/Varvara virtual machine that runs `.rom` files.
 * **Bare metal**: the same prompt, screen, keyboard and files on a Raspberry Pi 3/4 and on a PC booted

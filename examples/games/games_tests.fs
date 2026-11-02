@@ -1,4 +1,4 @@
-\ Tests of the logic of gfx_tetris.fs, gfx_snake.fs, gfx_invaders.fs, gfx_minesweeper.fs, gfx_mastermind.fs, gfx_pacman.fs and gfx_digger.fs,
+\ Tests of the logic of gfx_tetris.fs, gfx_snake.fs, gfx_invaders.fs, gfx_minesweeper.fs, gfx_mastermind.fs, gfx_pacman.fs, gfx_digger.fs and gfx_corridor.fs,
 \ loaded without their game loop:  lugforth examples/games/games_tests.fs
 \ (the output ends with PASS). Needs libSDL2, but opens no window.
 
@@ -338,6 +338,43 @@ spr-t1 spr-rects cell+ @ spr-rw 1 t=   spr-t1 spr-rects 2 cells + @ spr-rc 98 t=
 spr-t1 spr-source evaluate
 spr-count 1- sed-nth-t   dup spr-n 3 t=   spr-grid c@ 97 t=
 bag spr-n 0> -1 t=   emerald spr-name s" emerald" compare 0 t=
+( ---- Corridor ---- )
+: corridor-no-run ;
+include gfx_corridor.fs
+: cr-count ( xt n -- k )   0 swap 0 do  i 2 pick execute @ 0<> 1 and +  loop nip ;
+: cr-clean ( -- )   cr-new-game  cr-clear  6 to cr-shield  1000 to cr-spawn-o  1000 to cr-spawn-e ;
+cr-new-game   cr-state 0 t=   cr-shield 6 t=   cr-camera
+0 cr-sz cr-px cr-cx t=   cr-camy cr-sz cr-py cr-hy t=
+' bd.on cr-nb cr-count 6 >  -1 t=   cr-edge @ cr-far >=  -1 t=
+\ a line wholly behind the camera is dropped, one that crosses the near plane is cut
+0 0 5 10 10 8 cr-wline
+-50 0 10 50 0 400 cr-wline
+\ shots: a laser kills a fighter in its way
+cr-clean   1 0 en.on !  0 0 en.x !  0 0 en.y !  500 0 en.z !
+1 0 la.on !  0 0 la.x !  0 0 la.y !  480 0 la.z !
+cr-lasers   0 en.on @ 0 t=   0 la.on @ 0 t=   cr-score 100 t=
+\ a laser far to the side does not
+cr-clean   1 0 en.on !  0 0 en.x !  0 0 en.y !  500 0 en.z !
+1 0 la.on !  200 0 la.x !  0 0 la.y !  480 0 la.z !
+cr-lasers   0 en.on @ 1 t=   0 la.on @ 1 t=
+\ a pillar in the ship's way hurts it once, then it is invulnerable for a while
+cr-clean   1 0 ob.on !  0 0 ob.x !  60 0 ob.w !  cr-floor 0 ob.y0 !  200 0 ob.y1 !  cr-sz 20 - 0 ob.z !  100 0 ob.d !
+cr-ship-hits   cr-shield 5 t=   0 ob.on @ 0 t=   cr-inv 0> -1 t=
+cr-damage   cr-shield 5 t=
+\ a bar can be passed under
+cr-clean   1 0 ob.on !  0 0 ob.x !  cr-half 0 ob.w !  40 0 ob.y0 !  90 0 ob.y1 !  cr-sz 20 - 0 ob.z !  60 0 ob.d !
+-60 to cr-sy   cr-ship-hits   cr-shield 6 t=   0 ob.on @ 1 t=
+\ the last shield ends the game
+cr-clean   1 to cr-shield   cr-damage   cr-state 2 t=
+\ a long flight with a quiet ship (it is hit, and may die): nothing breaks, the stack stays clean
+cr-new-game   depth
+3000 0 do  cr-step  loop
+depth swap - 1 t=
+cr-state 0 = cr-state 2 = or -1 t=   cr-score 0> -1 t=
+\ the shots of the fighters aim at the ship
+cr-clean   1 0 en.on !  100 0 en.x !  0 0 en.y !  900 0 en.z !   0 cr-enemy-shoots
+0 bo.on @ 1 t=   0 bo.vx @ 0< -1 t=
+
 depth 0 t=
 
 : report ( -- )   tfail @ 0= if ." PASS " tn @ . cr else ." FAILED " tfail @ . cr then ;

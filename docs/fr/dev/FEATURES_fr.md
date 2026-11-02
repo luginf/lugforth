@@ -448,6 +448,50 @@ prendre de noms courts qu'un jeu peut définir (`cell`, `bx`): les
 tests des jeux en chargeaient un qui changeait `cell` au milieu de
 `spr-build`.
 
+## Corridor, un jeu de tir sur rails en fil de fer (examples/games/gfx_corridor.fs) - fait le 2026-11-02
+
+Un jeu de tir dans l'esprit de Star Fox sur un écran vectoriel, d'après
+une maquette de l'utilisateur (lignes cyan, soleil rouge, tours des deux
+côtés, grille au sol, un petit vaisseau blanc). POSIX et web
+(`terminal.html?run=gfx_corridor.fs`); pas essayé sous DOS. Que des
+lignes, pas d'élimination des parties cachées.
+
+- La 3D tient en une division de perspective: un point (x y z), z étant
+  la distance à la caméra, va à la colonne `cx + (x - camx) * f / z` et
+  à la ligne `hy - (y - camy) * f / z` (f = 120). `cr-wline` coupe
+  d'abord le segment au plan proche (z = 20, interpolation entière:
+  cela marche avec des cellules de 32 bits), puis le trace avec `line`.
+  La caméra suit les 3/4 du x du vaisseau et la moitié de son y: le
+  vaisseau reste bas et le monde glisse.
+- Le monde vient vers la caméra: chaque chose a un `z` qui diminue de la
+  vitesse à chaque pas (la même boucle à pas fixe de 16 ms que le
+  digger). Les choses: tours (deux rangées, créées au loin quand la
+  dernière défile), piliers (hauts ou bas) et barres flottantes à
+  éviter, chasseurs (un octaèdre qui tourne et se balance, 12 arêtes)
+  qui tirent un projectile visé sur le vaisseau, nos lasers (deux, aux
+  ailes), explosions (huit rayons qui grandissent). Les emplacements
+  sont des tableaux de drapeaux (`bd.on`, `ob.on`, `en.on`...) et
+  `cr-free` en trouve un.
+- Coups: un laser tue un chasseur (100) ou brise un pilier ou une
+  barre (50); toucher un obstacle, un chasseur ou un projectile coûte un
+  bouclier sur six et donne 50 pas d'invulnérabilité (le vaisseau
+  clignote); plus de bouclier, fin de partie. La vitesse et le rythme
+  des choses montent avec le niveau (un niveau tous les 12000 unités de
+  trajet).
+- La barre rouge du bas est la jauge de bouclier. Le vaisseau s'incline
+  (ses ailes sont décalées par `cr-bank`, un cran par pas) quand il
+  tourne.
+- Touches: flèches ou wasd, espace ou `f` tire (maintenu: une rafale),
+  `p` pause, Échap quitte, `r`, espace ou entrée après la fin.
+- Les mots sont préfixés `cr-` (un nom partagé comme `cell` ou `just` a
+  une fois heurté un autre jeu dans les tests). Le soleil est un disque
+  de lignes d'un pixel avec deux bandes noires.
+- Tests: la partie "Corridor" de `examples/games/games_tests.fs`
+  (projection, appels de coupe, tours, laser et chasseur, chocs avec
+  pilier et barre, invulnérabilité, fin de partie, un vol de 3000 pas
+  qui laisse la pile propre, projectiles visés). Regardé dans une vraie
+  fenêtre X (Xvfb) avec les touches maintenues.
+
 ## Forth is Fun (tortue)
 
 Forth is Fun (https://gitlab.com/garvalf/forth-is-fun, Eric Forgeot,

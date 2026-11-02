@@ -38,7 +38,7 @@ autres cibles sont dans le [manuel](docs/fr/MANUAL_fr.md#compilation).
 * **Éditeurs**: `ed`, un éditeur de texte en Forth avec coloration syntaxique, et `writhdeck`, un éditeur
   d'écriture (mode focus, Hemingway, objectif du jour, plan).
 * **Mots SDL2**: graphismes, images, son, airs ABC, MIDI et un synthétiseur FM.
-* **Exemples**: casse-briques, roguelike, tetris, snake, pac-man, digger, démineur, mastermind, 2048, fils de fer en 3D, un
+* **Exemples**: casse-briques, roguelike, tetris, snake, pac-man, digger, un jeu de tir 3D filaire, démineur, mastermind, 2048, fils de fer en 3D, un
   interpréteur de Z-machine pour la fiction interactive (histoires Infocom et Inform), un moteur d'inférence,
   une machine virtuelle Uxn/Varvara qui exécute des fichiers `.rom`.
 * **Matériel nu**: la même invite, le même écran, clavier et fichiers sur un Raspberry Pi 3/4 et sur un PC

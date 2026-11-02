@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.11.2.20
+Lugforth v2026.11.2.24
 :; ===========>/>
 type 'info' for help
  ok
@@ -1012,6 +1012,7 @@ the Raspberry Pi, Windows or the ESP32.
 | `gfx_roguelike.fs` | roguelike |
 | `gfx_pacman.fs` | pac-man: four ghosts with their own targets, scatter and chase, power pellets, tunnel, 3 lives; arrows or wasd, `p` pauses; also on the web and in DOS |
 | `gfx_digger.fs` | digger: tunnel through the earth for emeralds and gold, bags that fall, nobbins and hobbins, fire ball, cherry; arrows or wasd, space or `f` fires, `p` pauses; also on the web |
+| `gfx_corridor.fs` | wireframe rail shooter in 3D: a canyon of towers toward a red sun, pillars and bars to dodge, fighters to shoot; arrows or wasd, space or `f` fires, `p` pauses; also on the web |
 | `gfx_tetris.fs`, `gfx_snake.fs`, `gfx_minesweeper.fs` | rewritten after the games of r3forth |
 | `gfx_mastermind.fs` | mastermind: four colors out of six in ten tries, keyboard or mouse |
 | `gfx_3d.fs` | turning wireframes |
