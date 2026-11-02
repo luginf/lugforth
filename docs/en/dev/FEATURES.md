@@ -484,7 +484,11 @@ pixel; `spr-source` writes the text again. The sprites are listed in
 of the editor). Mouse: left paints, right erases, middle picks the
 color, a click on a color or on a name chooses it. Keys: `s` saves (the
 comment lines at the top are kept), `u` undo (one step), `c` clear,
-`h` `v` flip, arrows shift (wrapping), `d` duplicate the sprite, `n` a
+`h` `v` flip, `r` `e` turn a quarter (clockwise, the other way; a
+sprite that is not square is turned in the middle of its own size and
+what does not fit is cut), arrows shift (wrapping), `y` copies the
+sprite and `p` pastes it over another existing one chosen next (from the
+top left corner, what is missing is transparent), `d` duplicate the sprite, `n` a
 new color, `1 2` `3 4` `5 6` red, green, blue down and up, Tab next
 sprite, Esc quit without saving. The window shows the sprite on the
 earth color, at real size and enlarged, with the number of boxes. Tried

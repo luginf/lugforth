@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.11.2.24
+Lugforth v2026.11.2.25
 :; ===========>/>
 type 'info' for help
  ok

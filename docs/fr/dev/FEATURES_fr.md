@@ -424,8 +424,12 @@ listés dans `spr-all` / `spr-count`. Testé dans la partie "Digger" de
 de l'éditeur). Souris: le bouton gauche peint, le droit efface, le
 milieu prend la couleur; un clic sur une couleur ou sur un nom la
 choisit. Touches: `s` sauvegarde (les lignes de commentaire du début
-sont gardées), `u` annule (un pas), `c` efface, `h` `v` retournent, les
-flèches décalent (en rebouclant), `d` duplique le sprite, `n` une
+sont gardées), `u` annule (un pas), `c` efface, `h` `v` retournent, `r` `e` tournent d'un quart (dans le sens des
+aiguilles, ou à l'inverse; un sprite qui n'est pas carré tourne au
+milieu de sa propre taille et ce qui dépasse est coupé), les flèches
+décalent (en rebouclant), `y` copie le sprite et `p` le colle sur un
+autre sprite existant choisi ensuite (depuis le coin haut gauche, ce
+qui manque est transparent), `d` duplique le sprite, `n` une
 nouvelle couleur, `1 2` `3 4` `5 6` rouge, vert, bleu en moins et en
 plus, Tab sprite suivant, Échap quitte sans sauvegarder. La fenêtre
 montre le sprite sur la couleur de la terre, à taille réelle et

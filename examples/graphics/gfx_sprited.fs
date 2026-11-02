@@ -15,7 +15,9 @@
 \
 \ Mouse: left button paints, right button erases, middle button picks
 \ the color under it; click a color or a sprite name to choose it.
-\ Keys: s save, u undo, c clear, h v flip, arrows shift (wrapping),
+\ Keys: s save, u undo, c clear, h v flip, r e turn a quarter (clockwise,
+\ the other way), arrows shift (wrapping), y copies the sprite and p pastes
+\ it over the sprite you chose next,
 \ d duplicate the sprite, n new color (a copy of the current one),
 \ 1 2 / 3 4 / 5 6 less and more red / green / blue, Tab next sprite,
 \ Esc quit (without saving).
@@ -130,6 +132,34 @@ create sed-was 256 allot   sed-was 256 erase
   loop drop ;
 
 0 value ch-s   0 value ch-d   0 value ch-c
+: sed-old@ ( x y -- ch )   ( in the grid saved by sed-snap )   fw * + sed-undo + c@ ;
+0 value ro-x   0 value ro-y   0 value ro-ox   0 value ro-oy   0 value ro-dir
+: sed-rot ( dir -- )   ( a quarter turn: 1 clockwise, -1 the other way; a sprite that is not square is turned in the middle of its own size, what does not fit is cut )
+  to ro-dir  sed-snap  sed-spr spr-w to fw  sed-spr spr-h to fh
+  fw fh - 2/ to ro-ox   fh fw - 2/ to ro-oy
+  fh 0 do fw 0 do
+    i ro-ox - to ro-x   j ro-oy - to ro-y
+    ro-x -1 >  ro-x fh <  and  ro-y -1 >  and  ro-y fw <  and if
+      ro-dir 0> if ro-y fh 1- ro-x - else fw 1- ro-y - ro-x then sed-old@
+    else 46 then
+    i j sed-spr spr-pix!
+  loop loop
+  sed-spr spr-build  -1 to sed-dirty
+  fw fh = if s" TURNED" else s" TURNED, CUT TO ITS SIZE" then sed-say ;
+
+-1 value sed-clip      \ the sprite copied with y
+: sed-yank ( -- )   sed-cur to sed-clip  s" COPIED: CHOOSE ANOTHER SPRITE, THEN P" sed-say ;
+: sed-paste ( -- )   ( the copied sprite over this one, from the top left corner )
+  sed-clip 0< if s" NOTHING COPIED YET: Y" sed-say exit then
+  sed-clip sed-cur = if s" CHOOSE ANOTHER SPRITE" sed-say exit then
+  sed-snap
+  sed-spr spr-h 0 do sed-spr spr-w 0 do
+    i sed-clip sed-nth spr-w <  j sed-clip sed-nth spr-h <  and
+    if i j sed-clip sed-nth spr-pix@ else 46 then
+    i j sed-spr spr-pix!
+  loop loop
+  sed-spr spr-build  -1 to sed-dirty  s" PASTED" sed-say ;
+
 : sed-chan ( shift delta -- )   ( change a channel of the current color )
   sed-ch 46 = if 2drop exit then
   to ch-d to ch-s   sed-ch spr-color@ to ch-c
@@ -206,8 +236,9 @@ create sed-was 256 allot   sed-was 256 erase
   spr-reset  sed-spr spr-name spr+  32 spr-c+
   sed-spr spr-w spr-num  [char] X spr-c+  sed-spr spr-h spr-num  32 spr-c+
   sed-spr spr-n spr-num  s"  BOXES " spr+
-  white color  spr-buf spr-len 8 8 2 sed-text
-  sed-dirty if orange color  s" MODIFIED" 380 8 2 sed-text then
+  white color  spr-buf spr-len 8 2 2 sed-text
+  sed-dirty if orange color  s" MODIFIED" 380 2 2 sed-text then
+  gray color  sed-file sed-file-n 8 15 1 sed-text      \ the file being edited
   spr-reset  sed-ch 46 = if s" TRANSPARENT" spr+ else sed-ch spr-color@ spr-hex then
   gray color  spr-buf spr-len 284 4 1 sed-text ;
 
@@ -215,7 +246,7 @@ create sed-was 256 allot   sed-was 256 erase
   sed-msg-t 0> if
     -1 +to sed-msg-t  yellow color  sed-msg-a sed-msg-n 8 288 2 sed-text
   else
-    gray color  s" S SAVE  U UNDO  C CLEAR  H V FLIP  ARROWS SHIFT  D DUP  N COLOR  1 TO 6 RGB  TAB NEXT" 8 290 1 sed-text
+    gray color  s" S SAVE  U UNDO  C CLEAR  H V FLIP  R E TURN  ARROWS SHIFT  Y P COPY TO  D DUP  N COLOR  1 TO 6 RGB  TAB NEXT" 8 290 1 sed-text
   then ;
 
 : sed-draw ( -- )
@@ -243,6 +274,10 @@ create sed-was 256 allot   sed-was 256 erase
   key-right sed-just if 3 sed-xform then
   key-up sed-just if 4 sed-xform then
   key-down sed-just if 5 sed-xform then
+  [char] r sed-just if 1 sed-rot then
+  [char] e sed-just if -1 sed-rot then
+  [char] y sed-just if sed-yank then
+  [char] p sed-just if sed-paste then
   [char] d sed-just if sed-dup then
   [char] n sed-just if sed-new-color then
   [char] 1 sed-just if 16 -16 sed-chan then
@@ -272,7 +307,7 @@ create sed-was 256 allot   sed-was 256 erase
   sed-head-n 0= if s" \ Sprites, drawn with examples/graphics/gfx_sprited.fs" 2dup sed-head swap cmove
     to sed-head-n drop  10 sed-head sed-head-n + c!  1 +to sed-head-n then
   0 to sed-cur  46 to sed-ch  0 to sed-dirty
-  2 to zoom  sed-w sed-h screen  s" Sprite editor" title
+  2 to zoom  sed-w sed-h screen  spr-reset  s" Sprite editor - " spr+  sed-file sed-file-n spr+  spr-buf spr-len title
   begin sed-frame quit? until close-screen ;
 
 : sed-exists? ( a n -- f )   r/o open-file if drop 0 else close-file drop -1 then ;

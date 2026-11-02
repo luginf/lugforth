@@ -54,7 +54,7 @@ Lancez `lugforth` (voir [Binaires](#binaires), ou compilez-le avec
 `ninja posix`). Vous obtenez une bannière et l'invite:
 
 ```
-Lugforth v2026.11.2.24
+Lugforth v2026.11.2.25
 :; ===========>/>
 type 'info' for help
  ok
