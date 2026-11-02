@@ -114,6 +114,11 @@ platform. Part of [README.md](../../../README.md).
   the sdl2 one: on the bare-metal boots `draw` (images, `img x y --`)
   gave "stack underflow" in gfx_mouse_test.fs while POSIX was fine. Use
   `paint`, `render`... for your own.
+- A game word named like an `sdl2` word is shadowed on DOS and on the
+  web, though POSIX runs it: `frame` (draws a rectangle) made the
+  pac-man loop hang in DOSBox (black screen) and `font` is a risk too.
+  Prefix the names of a game (`pm-`) or pick unusual ones, and try the
+  game in DOSBox (`make -C ports/dos stage`), not on POSIX only.
 - Test tricks: `SDL_RenderReadPixels` to check pixels, `SDL_PushEvent`
   to fake input, Xvfb + `xdotool` for a real pointer, headless Chrome
   over CDP for the web page (needs http, not `file://`:

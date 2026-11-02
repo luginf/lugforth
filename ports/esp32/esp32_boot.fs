@@ -24,5 +24,8 @@ needs web_interface.fs
 needs registers.fs
 needs ../posix/telnetd.fs
 needs optionals.fs
+needs ../../common/abc.fs
+needs abc.fs
+needs editors.fs
 needs autoboot.fs
 needs ../../common/fini.fs

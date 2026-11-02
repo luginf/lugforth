@@ -22,8 +22,11 @@
 \ mode) L: M: Q: and the line %%MIDI program n; notes A to G and a to g with
 \ ^ _ = , and ' marks, lengths like 2 /2 3/2, rests z and x, chords [CEG],
 \ ties, broken rhythm > <, tuplets (3, bar lines. Words, decorations, grace
-\ notes, repeats, voices and other fields are skipped. One voice, as in a
-\ melody line. NOTE: the source below is a string, so it must not contain a
+\ notes, repeats and other fields are skipped. One voice, as in a melody line,
+\ unless voices? is set to -1: then V:1 V:2 ... (or [V:2] inside a line) start
+\ their own time line, each note then carries its voice (nv@, up to 8) and the
+\ events are no longer in order of time: a player has to follow each voice
+\ (n-voices says how many). Without it V: is skipped as before. NOTE: the source below is a string, so it must not contain a
 \ vertical bar (that is the ABC bar line: the reader tests for character 124).
 
 internals definitions
@@ -39,9 +42,11 @@ vocabulary abc-int   also abc-int definitions
 create nt max-notes cells allot
 create nd max-notes cells allot
 create nk max-notes cells allot
+create nv max-notes cells allot
 : nt@ ( i -- v ) cells nt + @ ;   : nt! ( v i -- ) cells nt + ! ;
 : nd@ ( i -- v ) cells nd + @ ;   : nd! ( v i -- ) cells nd + ! ;
 : nk@ ( i -- v ) cells nk + @ ;   : nk! ( v i -- ) cells nk + ! ;
+: nv@ ( i -- v ) cells nv + @ ;   : nv! ( v i -- ) cells nv + ! ;
 
 0 value n-notes   0 value cur      ( events so far, and the time now )
 0 value p   0 value e              ( the text being read )
@@ -55,6 +60,9 @@ create chord-keys 16 cells allot   0 value chord-n
 0 value grp   0 value grp-d        ( first event of the last note, and its length )
 0 value bol                        ( at the start of a line )
 0 value len-n   1 value len-d      ( a length just read: len-n/len-d of a plain note )
+0 value voices?                    ( -1: V: lines make voices )
+1 value cur-voice   1 value n-voices
+create vcur 9 cells allot          ( the time of each voice while another one is read )
 
 ( ---- Reading text ---- )
 : more? ( -- f ) p e < ;
@@ -127,7 +135,7 @@ create semis 0 c, 2 c, 4 c, 5 c, 7 c, 9 c, 11 c,
 ( ---- Notes, rests and chords ---- )
 : event! ( key ticks -- )   ( adds an event at the current time )
   n-notes max-notes < 0= if 2drop exit then
-  n-notes nd!   n-notes nk!   cur n-notes nt!   1 +to n-notes ;
+  n-notes nd!   n-notes nk!   cur n-notes nt!   cur-voice n-notes nv!   1 +to n-notes ;
 
 : note! ( key ticks -- )   ( a note, joined to the one before when tied )
   { k d }
@@ -248,12 +256,21 @@ create flats-order 6 , 2 , 5 , 1 , 4 , 0 , 3 ,
   then
   t-a 20 max 400 min to tune-bpm ;
 
+: read-voice ( -- )   ( V:2 name="Alto": the voice has its own time )
+  voices? 0= if exit then
+  read-int dup 1 < if drop 1 then 8 min { v }
+  v cur-voice = if exit then
+  cur cur-voice cells vcur + !
+  v cells vcur + @ to cur   v to cur-voice   v n-voices max to n-voices
+  0 to tie   1 to bn   1 to bd   0 to grp   0 to grp-d   bar-reset ;
+
 : field ( end -- )   ( a field like K:G, up to the end character )
   { end }   peek { f }   advance advance skip-blanks
   f 75 = if read-key then
   f 76 = if read-unit then
   f 77 = if read-meter then
   f 81 = if read-tempo then
+  f 86 = if read-voice then
   end skip-through ;
 
 0 value dir-a
@@ -305,10 +322,14 @@ also sdl2 definitions
   0 to n-notes   0 to cur   240 to unit   0 to l-set   0 set-key   bar-reset
   0 to tie   1 to bn   1 to bd   1 to tup-num   1 to tup-den   0 to tup-left
   0 to grp   0 to grp-d   1 to bol   120 to tune-bpm   0 to tune-program
+  vcur 9 cells erase   1 to cur-voice   1 to n-voices
   begin more? while token repeat ;
 
 : tune-notes ( -- n ) n-notes ;
-: tune-ms ( -- ms ) cur 125 * tune-bpm / ;
+: tune-end ( -- t )   ( the end of the longest voice )
+  cur  n-voices 1+ 1 ?do i cells vcur + @ max loop
+  n-notes 0 ?do i nt@ i nd@ + max loop ;
+: tune-ms ( -- ms ) tune-end 125 * tune-bpm / ;
 
 previous previous
 

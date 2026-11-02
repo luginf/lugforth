@@ -223,6 +223,90 @@ point cloud of `gfx_magnoquill.fs`, its maths in C in fixed point
 section and aligns the ROM images that `crt0.s` copies; the roguelike
 and the tile demo still boot after that (screenshots under mgba).
 
+## ESP32: ABC tunes on a buzzer
+
+`ports/esp32/abc.fs` (loaded after common/abc.fs): `esp32-abc` evaluates
+the reader on demand (its words go into a hidden vocabulary `sdl2` in
+internals, which common/abc.fs expects; only `buzzer`, `tone`,
+`abc-play`, `abc-arp` and `tune-play` are put in forth). `N buzzer` sets
+a passive piezo or a speaker on GPIO N (Arduino core 3: pin and Hz; core
+2: channel 0 and milli-Hz, chosen by `DEFINED? ledcAttach`). A key on
+the serial line stops a tune.
+
+Voices: common/abc.fs reads `V:n` (and `[V:n]`) when `voices?` is -1
+(the ESP32 loader and POSIX sdl2_abc.fs set it; the web build skips
+them): each voice has its own time, events carry `nv@`, `n-voices`
+counts them, and the events are then not in time order. `gather` lists
+the notes sounding at a tick (voices and chord members, voice 1 with
+`melody-weight`) and when the list changes.
+
+`abc-play` mixes up to 4 of them (voice n has slot n-1, so its wave goes
+on from note to note; the volume of a voice is fixed for the tune,
+`vol-unit` times its weight, and shared by the notes of its chord; voice
+1 is a half-period square wave, the others a quarter-period pulse):
+`mix-sample` adds 4 phase accumulators (24 bits, square waves) and
+writes 128 + the sum as the duty of an 8 bit LEDC at 78 kHz
+(`ledcChangeFrequency`, `ledcSetup` on core 2). The loop has no clock:
+`mix-rate!` counts the samples made in 50 ms and the increments are made
+from that. It runs blocks of 128 samples, reads `ms-ticks` between them,
+and calls `pause` every 16 blocks (the watchdog of the idle task is a
+risk on a C3, not tried). `abc-arp` is the first version: one LEDC tone,
+the next sounding note every `slice-ms`. Tested in out/esp32-sim with
+the `ledc` words stubbed (the simulator has no LEDC opcodes): 439 Hz for
+440, four levels for two voices; not on a board. Traps: the namespace
+tests of common/forth_namespace_tests.fs list the words of the esp32
+boot, so a new word there means a new `out:` line; `abc-parser` is in
+internals and its text does `also sdl2`, which has to be reachable when
+it is evaluated; a `)` inside a ( comment ) of the text ends it and the
+rest is run as code.
+
+### ESP32: files, the editor, sending files
+
+`/spiffs` is mounted by `platform.fs` (`SPIFFS.begin`, format if it
+fails); `autoboot.fs` includes `/spiffs/autoexec.fs` (a key within 100
+ms skips it) and `remember` keeps `/spiffs/myforth`. The `SPIFFS.`
+words live in the vocabulary `SPIFFS` (`also SPIFFS` first). `ls` and
+`cat` come from common/filetools.fs. An upload from the IDE keeps the
+partition, a change of partition scheme or "Erase All Flash" does not.
+
+`tools/esp32_put.py PORT file...` sends files: DTR high and RTS low
+when opening (a native USB port sends nothing without DTR, RTS high
+resets a board with auto-reset: both gave a dead or vanishing port), a
+wake-up of empty lines until " ok", then Forth lines: `hx` (parses a
+hexadecimal token, writes its bytes with `write-file`), 90 bytes a
+line, each line waited for until " ok" and the prompt "> " (a fixed
+wait after each line made it 4 times slower). The prompt takes 200
+characters a line (`input-limit`, common/io.fs), which also cuts a
+long `s" ..." abc-play` typed by hand; `r~ ... ~` does not continue on
+the next line at the prompt, only inside a file. Tested against a
+pseudo-terminal that answers like the board and in lugforth POSIX; the
+transfers of the user's board work (a 30 KB file in a few seconds).
+
+`ports/esp32/editors.fs` (in the boot): `ed` includes
+`/spiffs/miniedit.fs`, which redefines `ed`, then evaluates `ed name`
+(`lz-run`); `terminal-size`, `form`. The ed of the other ports
+(editors/editor.fs, writhdeck.fs) was tried first: it compiles in the
+simulator (it needs a `rpi` vocabulary with `mkdir`) but takes about 80
+KB compiled and 140 KB while loading (the file read in memory, its r|
+string copied, `eval-copy`'s copy, the code), and an ESP32-C3 had 71 KB
+of `unused` left: "Error including" on the board. So
+`ports/esp32/miniedit.fs`, a small ed of its own (about 6 KB compiled,
+no ANSI vocabulary: it writes the escape codes itself, redraws only
+when no key waits, reads the sequences ESC [ A B C D H F and ESC [ n ~).
+Its editing is tested in out/esp32-sim by replacing `key` and `key?`
+(only inside the word that runs it: the prompt reads with `key`
+too); files words are not in the simulator, and were tried in lugforth
+POSIX. Running on the board: the user's. Traps: `?do` needs (limit
+start): `2dup < if swap ?do` after `a b`; `{ }` locals not in loops;
+sending the 200-character limit to the simulator through a pipe cuts the
+lines like the board does.
+
+POSIX tunes (`ports/posix/sdl2_abc.fs`) now set `voices?` too: the
+MIDI file is made from the events sorted by time (an end before a start
+at the same time) instead of groups of notes that start together, and
+`tune-ms` is the end of the longest voice (`tune-end` in common/abc.fs).
+`test-voices` is in sdl2_abc_tests.fs. The web build still skips `V:`.
+
 ## DOS (ports/dos) - started 2026-10-31
 
 `lugforth.exe` built with the DJGPP cross compiler (gcc 12.2, from
@@ -293,7 +377,16 @@ its output, run DOSBox under `ulimit -f`; Xvfb killed with SIGKILL
 leaves /tmp/.X<n>-lock and the next one on that display does not start
 (the test uses `-displayfd` and SIGTERM).
 
-Test: `make -C ports/dos test` (tools/dos_test.py, 38 checks): DOSBox
+Turnkey: `lugforth --turnkey prog.fs [prog.exe [data...]]` (autoboot.fs
+for the list and the writing, files.h `bundle_*` for the reading): the
+.exe is lugforth.exe + the files + an index + a 16-byte trailer ("LFTK",
+index offset, count, main file); at start main.c looks for it in argv[0]
+(DJGPP gives the full path); `ok` (platform.fs) then skips the banner
+and autoexec includes the main file and says bye. The files are found by
+the name `open-file` gets (lower case, `/`, no `./`), the list is
+built by a text scan of the sources, not by running them.
+
+Test: `make -C ports/dos test` (tools/dos_test.py, 40 checks): DOSBox
 0.74 without a window, `lugforth < in.txt > out.txt`, then DOSBox in a
 window of Xvfb typed into with xdotool, the screen read back by the word
 `screen-char`, two beeps recorded by DOSBox itself (Ctrl+F6 writes a wav

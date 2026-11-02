@@ -35,6 +35,7 @@ also internals
   abc-parser evaluate
   r|
 sdl2 definitions also abc-int also posix
+-1 to voices?   ( V:1 V:2 ... are voices that sound together )
 
 ( ---- The tune as a standard MIDI file: one track, one channel ---- )
 create smf 32768 allot   0 value smf-n   0 value smf-t   0 value smf-len
@@ -47,17 +48,33 @@ create smf 32768 allot   0 value smf-n   0 value smf-t   0 value smf-len
   swap $7f and or sb, ;
 : vlq, ( n -- ) 0 (vlq) ;
 
-: emit-group ( first -- next )   ( the notes that start together: all on, then all off )
-  { first }
-  first nt@ { s }   first nd@ { d }
-  first { last }
-  begin last n-notes < if last nt@ s = else 0 then while 1 +to last repeat
-  s smf-t - { delta }
-  last first ?do  delta vlq,  $90 sb,  i nk@ sb,  90 sb,  0 to delta  loop
-  d to delta
-  last first ?do  delta vlq,  $80 sb,  i nk@ sb,  0 sb,  0 to delta  loop
-  s d + to smf-t
-  last ;
+( An event: 2i is the start of note i, 2i+1 its end )
+: ev-time ( e -- t )   dup 2/ nt@ over 1 and if over 2/ nd@ + then nip ;
+0 value ea   0 value eb
+: ev-before? ( a b -- f )   ( earlier first; at the same time an end comes before a start )
+  to eb to ea
+  ea ev-time  eb ev-time  2dup <> if < exit then  2drop
+  ea 1 and 0<>  eb 1 and 0= and ;
+
+create ev-order 2048 cells allot   0 value n-ev   0 value sx   0 value sj
+: sort-events ( -- )   ( insertion sort of the events by time )
+  n-notes 2* to n-ev
+  n-ev 0 ?do i i cells ev-order + ! loop
+  n-ev 1 ?do
+    i cells ev-order + @ to sx   i to sj
+    begin sj 0> if sx  sj 1- cells ev-order + @  ev-before? else 0 then while
+      sj 1- cells ev-order + @  sj cells ev-order + !   -1 +to sj
+    repeat
+    sx sj cells ev-order + !
+  loop ;
+
+0 value ce
+: emit-events ( -- )
+  n-ev 0 ?do
+    i cells ev-order + @ to ce
+    ce ev-time smf-t - vlq,   ce ev-time to smf-t
+    ce 1 and if $80 sb, ce 2/ nk@ sb, 0 sb, else $90 sb, ce 2/ nk@ sb, 90 sb, then
+  loop ;
 
 : build-smf ( -- )
   0 to smf-n   0 to smf-t
@@ -66,8 +83,7 @@ create smf 32768 allot   0 value smf-n   0 value smf-t   0 value smf-len
   0 vlq,  $ff sb, $51 sb, 3 sb,
   60000000 tune-bpm /  dup 16 rshift $ff and sb,  dup 8 rshift $ff and sb,  $ff and sb,
   0 vlq,  $c0 sb,  tune-program $7f and sb,
-  0 { gi }
-  begin gi n-notes < while gi emit-group to gi repeat
+  sort-events emit-events
   0 vlq,  $ff sb, $2f sb, 0 sb,
   smf-n smf-len - 4 -  smf-len smf + { at }  { n }
   n 24 rshift $ff and at c!   n 16 rshift $ff and at 1+ c!

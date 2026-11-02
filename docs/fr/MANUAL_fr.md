@@ -37,7 +37,8 @@ programmes](#10-trois-petits-programmes) -
 [ed](#ed) - [writhdeck](#writhdeck) - [Blocs](#blocs) -
 [Exemples](#exemples) -
 [Varvara](#varvara-exécuter-des-roms-uxn) - [Matériel
-nu](#matériel-nu) - [DOS](#dos) - [Compilation](#compilation)
+nu](#matériel-nu) - [DOS](#dos) - [ESP32](#esp32) -
+[Compilation](#compilation)
 
 # Apprendre
 
@@ -53,7 +54,7 @@ Lancez `lugforth` (voir [Binaires](#binaires), ou compilez-le avec
 `ninja posix`). Vous obtenez une bannière et l'invite:
 
 ```
-Lugforth v2026.10.31.7
+Lugforth v2026.11.2.4
 :; ===========>/>
 type 'info' for help
  ok
@@ -1054,6 +1055,7 @@ Raspberry Pi, Windows ni l'ESP32.
 |---|---|
 | `gfx_breakout.fs` | casse-briques |
 | `gfx_roguelike.fs` | roguelike |
+| `gfx_pacman.fs` | pac-man : quatre fantômes avec leur propre cible, dispersion et poursuite, super pastilles, tunnel, 3 vies ; flèches ou wasd, `p` pause ; aussi sur le web et sous DOS |
 | `gfx_tetris.fs`, `gfx_snake.fs`, `gfx_minesweeper.fs` | réécrits d'après les jeux de r3forth |
 | `gfx_mastermind.fs` | mastermind: quatre couleurs sur six en dix essais, clavier ou souris |
 | `gfx_3d.fs` | fils de fer qui tournent |
@@ -1214,6 +1216,149 @@ petit mode VESA de 32 bits qui contient l'écran et son zoom;
 les coupe, si bien que `include games/gfx_breakout.fs` marche sans noms
 longs; `ed` et `writhdeck` viennent de son LIB. `lugforth prog.fs`
 inclut le fichier au démarrage. Essayé dans DOSBox et DOSBox-X. Voir [ports/dos/README.md](../../ports/dos/README.md).
+
+## ESP32
+
+Le build ESP32 est ESP32forth avec les ajouts de Lugforth (morceaux
+ABC, un petit éditeur). `ninja esp32` fabrique
+`out/esp32/ESP32forth/ESP32forth.ino` : ouvrez-le dans l'IDE Arduino,
+choisissez la carte et, dans Outils, un schéma de partition avec SPIFFS
+(« Default 4MB with spiffs »), compilez et téléversez. L'invite est sur
+la liaison série à 115200 bauds : le moniteur série de l'IDE suffit,
+mais `ed` demande minicom, picocom ou screen. Notes sur les fichiers,
+l'éditeur et la musique, avec les commandes à essayer ; écrites pour
+un ESP32-C3 et essayées dessus, sauf mention contraire.
+
+### Des fichiers qui survivent à un reset
+
+La flash contient un système de fichiers (SPIFFS), monté sur `/spiffs`
+à chaque démarrage et formaté par le premier. Téléverser un nouveau
+programme depuis l'IDE le conserve (sauf si « Erase All Flash Before
+Sketch Upload » est coché, ou si le schéma de partition change).
+
+```
+> s" /spiffs/t.txt" w/o create-file throw  dup s" bonjour" rot write-file throw  close-file drop
+> ls /spiffs
+t.txt
+> cat /spiffs/t.txt
+bonjour
+> s" /spiffs/t.txt" delete-file drop
+> also SPIFFS SPIFFS.totalBytes . SPIFFS.usedBytes . previous
+```
+
+`/spiffs/autoexec.fs` est inclus à chaque démarrage (une touche dans
+les 100 ms le saute). On inclut un fichier avec son chemin complet :
+`include /spiffs/melody.fs`. L'invite lit 200 caractères par ligne au
+plus, et `r~ ... ~` ne continue pas sur la ligne suivante quand on tape
+(il le fait dans un fichier) : les textes longs vont dans un fichier.
+
+### Envoyer des fichiers depuis le PC
+
+`tools/esp32_put.py` envoie des fichiers par la liaison série, moniteur
+série fermé (`pip install pyserial` une fois) :
+
+```
+$ tools/esp32_put.py /dev/ttyACM0 melody.fs canon.abc     # COM3 sous Windows
+melody.fs [##############################] 100%
+melody.fs: 412 bytes sent, the board reads 412
+canon.abc: 230 bytes sent, the board reads 230
+```
+
+Chaque fichier arrive dans `/spiffs` sous son nom, un ancien du même
+nom étant remplacé ; tous les octets passent (hexadécimal, 90 octets
+par ligne, chaque ligne attendue), la barre de progression va au
+terminal, et le dernier nombre est la taille relue par la carte.
+`tools/esp32_put.py --print fichier` écrit les mêmes lignes Forth sur la
+sortie standard, à coller dans un moniteur série. L'outil de l'IDE pour
+les images SPIFFS marche aussi mais réécrit toute la partition.
+
+### L'éditeur ed
+
+L'ed des autres ports demande environ 140 Ko de tas pendant son
+chargement et un C3 en a environ 70 Ko : l'ESP32 en a un petit,
+`ports/esp32/miniedit.fs` (environ 6 Ko compilés), envoyé une fois :
+
+```
+$ tools/esp32_put.py /dev/ttyACM0 ports/esp32/miniedit.fs
+> ed /spiffs/melody.fs
+> 40 120 terminal-size        \ lignes, colonnes : 24 x 80 par défaut
+```
+
+Le premier `ed` inclut le fichier, qui redéfinit `ed`. Touches :
+flèches, Début, Fin, PageHaut, PageBas, Suppr, Retour arrière, Entrée,
+Tab (deux espaces) ; Ctrl+S (ou Ctrl+O) enregistre ; Ctrl+Q (ou Ctrl+X)
+quitte, deux fois si le texte n'est pas enregistré ; Ctrl+A et Ctrl+E
+vont au début et à la fin de la ligne, Ctrl+K efface jusqu'à sa fin. Le
+fichier est en mémoire, plus 8 Ko, et enregistré en le réécrivant. À
+lancer depuis minicom, pas depuis le moniteur série de l'IDE (pas de
+codes d'échappement).
+
+### Des morceaux ABC sur un buzzer
+
+Un piézo passif se branche entre un GPIO et la masse (un buzzer actif
+ne fait que biper). Sur le C3 prenez 0, 1, 3, 4, 5, 6, 7 ou 10 ; évitez
+2, 8, 9 (broches de démarrage), 18, 19 (USB) et 11 à 17 (flash).
+
+```
+> esp32-abc               \ une fois par démarrage : charge le lecteur ABC (12 Ko)
+> 4 buzzer                \ le piézo est sur le GPIO 4
+> r~ X:1 K:C CDEF GABc ~ abc-play
+```
+
+`abc-play` mélange jusqu'à quatre notes à la fois (les voix `V:1`,
+`V:2`... et les accords) par logiciel et envoie la somme sur la broche
+en PWM ; une touche tapée sur la liaison série l'arrête. Le tempo et la
+tonalité viennent des lignes `Q:` et `K:`. Un morceau plus long va dans
+un fichier sur le PC, `canon.fs` :
+
+```
+esp32-abc
+4 buzzer
+: canon r~ X:1
+L:1/4
+Q:1/4=100
+K:D
+V:1
+f2 e2|d2 c2|B2 A2|B2 c2|f2 e2|d2 c2|B2 A2|B2 c2|
+V:2
+z4 z4 f2 e2|d2 c2|B2 A2|B2 c2|f2 e2|d2 c2|
+V:3
+z4 z4 z4 z4 f2 e2|d2 c2|B2 A2|B2 c2|
+V:4
+D,2 A,2|B,2 F,2|G,2 D,2|G,2 A,2|D,2 A,2|B,2 F,2|G,2 D,2|G,2 A,2|
+~ ;
+canon abc-play
+```
+
+```
+$ tools/esp32_put.py /dev/ttyACM0 canon.fs
+> include /spiffs/canon.fs
+```
+
+Pour jouer un morceau stocké en texte ABC (`canon.abc`), lisez d'abord
+le fichier en mémoire (ce mot a été essayé sur un Forth de PC, pas sur
+une carte) :
+
+```
+variable sf
+: slurp ( a n -- a' u )          \ tout le fichier en mémoire
+  r/o open-file throw sf !
+  sf @ file-size throw drop dup allocate throw
+  swap 2dup sf @ read-file throw drop
+  sf @ close-file drop ;
+```
+```
+> s" /spiffs/canon.abc" slurp abc-play
+```
+
+Pour jouer un morceau à chaque démarrage, écrivez les trois lignes
+`esp32-abc`, `4 buzzer` et `include /spiffs/canon.fs` dans
+`autoexec.fs` et envoyez-le. `abc-arp` joue le même morceau à tour de
+rôle, une note à la fois, si le mélange sonne mal. Le même fichier joué
+sur un PC (`sdl2-abc`, `abc-play`) fait maintenant aussi sonner les
+voix ensemble. Détails :
+[dev/PORTS_fr.md](dev/PORTS_fr.md) et
+[ports/esp32/README.txt](../../ports/esp32/README.txt).
 
 ## Compilation
 

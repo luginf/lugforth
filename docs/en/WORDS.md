@@ -32,7 +32,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 
 ## The `forth` vocabulary
 
-612 words. 62 are described by the reference pages, 162 by the notes, 207 are standard words the project leaves to the standard, 169 have only a stack comment or binding, 12 have no description yet.
+613 words. 62 are described by the reference pages, 163 by the notes, 207 are standard words the project leaves to the standard, 169 have only a stack comment or binding, 12 have no description yet.
 
 
 ### Arguments
@@ -55,7 +55,6 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `block` | `( n -- a )` | ANS. Get a 1024 byte block | P - |
 | `block-fid` | `( -- n )` | Value. The file handle of the file that holds the blocks, -1 if none. | P - |
 | `block-id` | `( -- n )` | Value. The number of the block now in the block buffer, -1 if none. | P - |
-| `blocks-editor` | `( "n" -- )` | Full screen editor of block n (or of the block last listed) of the file chosen with use; compiled on first use. | P - |
 | `buffer` | `( n -- a )` | ANS. Get a 1024 byte block without regard to old contents | P - |
 | `copy` | `( from to -- )` | Copies a block to another block. | P - |
 | `default-use` | `( -- )` | Deferred word run to open the default block file, `blocks.fb`. | P - |
@@ -89,7 +88,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `hld` | `( -- a )` | Variable. The position in the pictured numeric output buffer. | P W |
 | `info` | `( -- )` | Prints the version, the revision and the date of the build, the free dictionary, the stacks and a few hints. | P W |
 | `K` | `( -- n )` | The index of the third enclosing `do` loop, after `i` and `j`. | P W |
-| `line-end` | `( a -- a' )` |  | P W |
+| `line-end` | `( -- n )` | after the last character that is not blank | P W |
 | `n.` | `( n -- )` | Prints a number without a trailing space. | P W |
 | `next` | `( -- )` | Ends a `for` loop. | P W |
 | `octal` | `( -- )` | Sets the number base to 8. | P W |
@@ -145,6 +144,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | Word | Stack | What it does | P W |
 |------|-------|--------------|-----|
 | `BIN` | `( fh -- fh )` | ANS. | P - |
+| `blocks-editor` | `( "n" -- )` | Full screen editor of block n (or of the block last listed) of the file chosen with use; compiled on first use. | P - |
 | `CLOSE-DIR` | `( dh -- ior )` | Closes a directory opened with `open-dir`. | P - |
 | `CLOSE-FILE` | `( fh -- ior )` | ANS. | P - |
 | `CREATE-FILE` | `( a n fam -- fh ior )` | ANS. | P - |
@@ -451,7 +451,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `begin` |  | ANS. | P W |
 | `bl` |  | ANS. Primitive defined in C. | P W |
 | `blank` |  | ANS. Primitive defined in C. | P W |
-| `blk` |  | ANS. | P W |
+| `blk` | `( -- a )` | ANS. | P W |
 | `buffer:` | `( u "name" -- )` | ANS. | P W |
 | `bye` |  | ANS. | P W |
 | `C!` |  | ANS. Primitive defined in C. | P W |
@@ -834,6 +834,10 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `ARGS_MARK` |  | Constant, 128. | P |
 | `arrow` |  |  | P |
 | `autoexec` |  |  | P |
+| `be-eval` | `( a n -- )` | a copy is evaluated: the source then stays whole | P |
+| `be-go` |  |  | P |
+| `be-loaded` |  |  | P |
+| `be-src` |  |  | P |
 | `block-data` |  |  | P |
 | `block-dirty` |  |  | P |
 | `boot-prompt` |  |  | P |

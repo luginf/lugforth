@@ -166,6 +166,21 @@ K:C
   s" lugforth_abc_test_here.mid" file-exists? assert
   s" lugforth_abc_test_here.mid" delete-file drop ;
 
+: tune-two r~ X:1
+L:1/4
+K:C
+V:1
+C D E F|
+V:2
+G G|
+~ ;
+: test-voices
+  tune-two abc
+  tune-notes 6 =assert   tune-ms 2000 =assert   ( 4 quarters at 120: the voices overlap )
+  tune-midi { a n }
+  a 32 + c@ 0 =assert   a 33 + c@ $90 =assert   a 34 + c@ 60 =assert   ( C starts )
+  a 36 + c@ 0 =assert   a 37 + c@ $90 =assert   a 38 + c@ 67 =assert ;   ( G starts with it )
+
 : test-plays
   64 48 screen
   tune-plain abc  tune-play

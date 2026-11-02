@@ -31,7 +31,7 @@ window](#console-window) - [Mini build](#mini-build) - [Line
 editing](#line-editing) - [Pager](#pager) - [ed](#ed) -
 [writhdeck](#writhdeck) - [Blocks](#blocks) - [Examples](#examples) -
 [Varvara](#varvara-running-uxn-roms) - [Bare metal](#bare-metal) -
-[DOS](#dos) - [Building](#building)
+[DOS](#dos) - [ESP32](#esp32) - [Building](#building)
 
 # Learn
 
@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.10.31.7
+Lugforth v2026.11.2.4
 :; ===========>/>
 type 'info' for help
  ok
@@ -1010,6 +1010,7 @@ the Raspberry Pi, Windows or the ESP32.
 |---|---|
 | `gfx_breakout.fs` | breakout |
 | `gfx_roguelike.fs` | roguelike |
+| `gfx_pacman.fs` | pac-man: four ghosts with their own targets, scatter and chase, power pellets, tunnel, 3 lives; arrows or wasd, `p` pauses; also on the web and in DOS |
 | `gfx_tetris.fs`, `gfx_snake.fs`, `gfx_minesweeper.fs` | rewritten after the games of r3forth |
 | `gfx_mastermind.fs` | mastermind: four colors out of six in ten tries, keyboard or mouse |
 | `gfx_3d.fs` | turning wireframes |
@@ -1166,6 +1167,144 @@ works without long names; `ed` and `writhdeck` come from its LIB.
 DOSBox-X.
 See
 [ports/dos/README.md](../../ports/dos/README.md).
+
+## ESP32
+
+The ESP32 build is ESP32forth with the Lugforth additions (ABC tunes,
+a small editor). `ninja esp32` makes `out/esp32/ESP32forth/ESP32forth.ino`:
+open it in the Arduino IDE, pick the board and, in Tools, a partition
+scheme with SPIFFS ("Default 4MB with spiffs"), compile and upload. The
+prompt is on the serial line at 115200 baud: the serial monitor of the
+IDE will do, but minicom, picocom or screen are needed for `ed`.
+Notes on the files, the editor and the music, with the commands to
+try; written for an ESP32-C3 and tried there, except where said.
+
+### Files that survive a reset
+
+The flash holds a file system (SPIFFS), mounted on `/spiffs` at each
+boot and formatted by the first boot. Uploading a new program from the
+IDE keeps it (unless "Erase All Flash Before Sketch Upload" is on, or
+the partition scheme changes).
+
+```
+> s" /spiffs/t.txt" w/o create-file throw  dup s" hello" rot write-file throw  close-file drop
+> ls /spiffs
+t.txt
+> cat /spiffs/t.txt
+hello
+> s" /spiffs/t.txt" delete-file drop
+> also SPIFFS SPIFFS.totalBytes . SPIFFS.usedBytes . previous
+```
+
+`/spiffs/autoexec.fs` is included at each boot (hit a key within 100
+ms to skip it). A file is included with its whole path:
+`include /spiffs/melody.fs`. The prompt reads at most 200 characters a
+line, and `r~ ... ~` does not continue on the next line when typed (it
+does in a file): long texts go in a file.
+
+### Sending files from the PC
+
+`tools/esp32_put.py` sends files through the serial line, with the
+serial monitor closed (`pip install pyserial` once):
+
+```
+$ tools/esp32_put.py /dev/ttyACM0 melody.fs canon.abc     # COM3 on Windows
+melody.fs [##############################] 100%
+melody.fs: 412 bytes sent, the board reads 412
+canon.abc: 230 bytes sent, the board reads 230
+```
+
+Each file lands in `/spiffs` under its own name, an old one being
+replaced; any bytes can be sent (hexadecimal, 90 bytes a line, each
+line waited for), the progress bar goes to the terminal, and the last
+number is the size the board reads back. `tools/esp32_put.py --print
+file` writes the same Forth lines on the standard output, to paste into
+a serial monitor. The Arduino filesystem uploader also works but writes
+the whole partition.
+
+### The editor ed
+
+The ed of the other ports needs about 140 KB of heap while it loads and
+a C3 has about 70 KB: the ESP32 has a small one,
+`ports/esp32/miniedit.fs` (about 6 KB compiled), sent once:
+
+```
+$ tools/esp32_put.py /dev/ttyACM0 ports/esp32/miniedit.fs
+> ed /spiffs/melody.fs
+> 40 120 terminal-size        \ rows, columns: 24 x 80 if not said
+```
+
+The first `ed` includes the file, which redefines `ed`. Keys: arrows,
+Home, End, PageUp, PageDown, Delete, Backspace, Enter, Tab (two
+spaces); Ctrl+S (or Ctrl+O) saves; Ctrl+Q (or Ctrl+X) quits, twice if
+the text was not saved; Ctrl+A and Ctrl+E go to the start and the end
+of the line, Ctrl+K deletes to its end. The file is in memory, plus 8
+KB, and saved by writing it again. Run it from minicom, not from the
+serial monitor of the IDE (no escape codes there).
+
+### ABC tunes on a buzzer
+
+A passive piezo goes between a GPIO and GND (an active buzzer only
+beeps). On the C3 take 0, 1, 3, 4, 5, 6, 7 or 10; avoid 2, 8, 9 (boot
+pins), 18, 19 (USB) and 11 to 17 (flash).
+
+```
+> esp32-abc               \ once per boot: loads the ABC reader (12 KB)
+> 4 buzzer                \ the piezo is on GPIO 4
+> r~ X:1 K:C CDEF GABc ~ abc-play
+```
+
+`abc-play` mixes up to four notes at once (the voices `V:1`, `V:2`...
+and the chords) in software and sends the sum to the pin as a PWM; a
+key typed on the serial line stops it. Tempo and key come from the `Q:`
+and `K:` lines. A longer tune goes in a file on the PC, `canon.fs`:
+
+```
+esp32-abc
+4 buzzer
+: canon r~ X:1
+L:1/4
+Q:1/4=100
+K:D
+V:1
+f2 e2|d2 c2|B2 A2|B2 c2|f2 e2|d2 c2|B2 A2|B2 c2|
+V:2
+z4 z4 f2 e2|d2 c2|B2 A2|B2 c2|f2 e2|d2 c2|
+V:3
+z4 z4 z4 z4 f2 e2|d2 c2|B2 A2|B2 c2|
+V:4
+D,2 A,2|B,2 F,2|G,2 D,2|G,2 A,2|D,2 A,2|B,2 F,2|G,2 D,2|G,2 A,2|
+~ ;
+canon abc-play
+```
+
+```
+$ tools/esp32_put.py /dev/ttyACM0 canon.fs
+> include /spiffs/canon.fs
+```
+
+To play a tune stored as plain ABC text (`canon.abc`), read the file
+into memory first (this word was tried on a PC Forth, not on a board):
+
+```
+variable sf
+: slurp ( a n -- a' u )          \ the whole file in memory
+  r/o open-file throw sf !
+  sf @ file-size throw drop dup allocate throw
+  swap 2dup sf @ read-file throw drop
+  sf @ close-file drop ;
+```
+```
+> s" /spiffs/canon.abc" slurp abc-play
+```
+
+To play a tune at each boot, write the three lines `esp32-abc`, `4
+buzzer` and `include /spiffs/canon.fs` in `autoexec.fs` and send it.
+`abc-arp` plays the same tune by turns, one note at a time, if the mix
+sounds bad. The same file played on a PC (`sdl2-abc`, `abc-play`) now
+sounds the voices together too. Details:
+[dev/PORTS.md](dev/PORTS.md) and
+[ports/esp32/README.txt](../../ports/esp32/README.txt).
 
 ## Building
 

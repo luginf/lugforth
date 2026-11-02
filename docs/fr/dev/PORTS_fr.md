@@ -247,6 +247,97 @@ maintenant une section IWRAM et aligne les images ROM que `crt0.s`
 copie; le roguelike et la démo des tuiles démarrent toujours après cela
 (captures sous mgba).
 
+## ESP32 : tunes ABC sur un buzzer
+
+`ports/esp32/abc.fs` (chargé après common/abc.fs) : `esp32-abc` évalue
+le lecteur à la demande (ses mots vont dans un vocabulaire caché `sdl2`
+de internals, que common/abc.fs attend ; seuls `buzzer`, `tone`,
+`abc-play`, `abc-arp` et `tune-play` sont mis dans forth). `N buzzer`
+règle un piézo passif ou un haut-parleur sur le GPIO N (core Arduino 3 :
+broche et Hz ; core 2 : canal 0 et milli-Hz, choisis par `DEFINED?
+ledcAttach`). Une touche sur la liaison série arrête un morceau.
+
+Voix : common/abc.fs lit `V:n` (et `[V:n]`) quand `voices?` vaut -1 (le
+chargeur ESP32 et sdl2_abc.fs POSIX le mettent ; le build web les saute)
+: chaque voix a son temps, les événements portent `nv@`, `n-voices` les
+compte, et ils ne sont alors plus dans l'ordre du temps. `gather` liste
+les notes qui sonnent à un tick (voix et notes d'accord, la voix 1 avec
+`melody-weight`) et quand la liste change.
+
+`abc-play` en mélange 4 au plus (la voix n a la case n-1, donc son onde
+continue d'une note à l'autre ; le volume d'une voix est fixe pour le
+morceau, `vol-unit` fois son poids, partagé entre les notes de son
+accord ; la voix 1 est un carré de demi-période, les autres une
+impulsion d'un quart) : `mix-sample` additionne 4 accumulateurs de phase
+(24 bits, ondes carrées) et écrit 128 + la somme comme rapport cyclique
+d'un LEDC 8 bits à 78 kHz (`ledcChangeFrequency`, `ledcSetup` en core
+2). La boucle n'a pas d'horloge : `mix-rate!` compte les échantillons
+faits en 50 ms et les incréments en sont tirés. Elle tourne par blocs de
+128 échantillons, lit `ms-ticks` entre eux et appelle `pause` tous les
+16 blocs (le chien de garde de la tâche inactive est un risque sur un
+C3, non essayé). `abc-arp` est la première version : une tonalité LEDC,
+la note suivante qui sonne toutes les `slice-ms`. Testé dans
+out/esp32-sim avec les mots `ledc` remplacés par des bouchons (le
+simulateur n'a pas d'opcodes LEDC) : 439 Hz pour 440, quatre niveaux
+pour deux voix ; pas sur une carte. Pièges : les tests de noms de
+common/forth_namespace_tests.fs listent les mots du boot esp32, donc un
+mot de plus veut une ligne `out:` ; `abc-parser` est dans internals et
+son texte fait `also sdl2`, qui doit être atteignable quand on l'évalue
+; une `)` dans un commentaire ( ... ) du texte le ferme et la suite est
+exécutée comme du code.
+
+### ESP32 : fichiers, éditeur, envoi de fichiers
+
+`/spiffs` est monté par `platform.fs` (`SPIFFS.begin`, formatage si ça
+échoue) ; `autoboot.fs` inclut `/spiffs/autoexec.fs` (une touche dans
+les 100 ms le saute) et `remember` garde `/spiffs/myforth`. Les mots
+`SPIFFS.` sont dans le vocabulaire `SPIFFS` (`also SPIFFS` d'abord).
+`ls` et `cat` viennent de common/filetools.fs. Un téléversement depuis
+l'IDE garde la partition, un changement de schéma de partition ou
+« Erase All Flash » non.
+
+`tools/esp32_put.py PORT fichier...` envoie des fichiers : DTR haut et
+RTS bas à l'ouverture (un port USB natif n'envoie rien sans DTR, RTS
+haut remet à zéro une carte à auto-reset : les deux ont donné un port
+muet ou qui disparaît), un réveil par des lignes vides jusqu'à « ok »,
+puis des lignes Forth : `hx` (lit un mot hexadécimal, écrit ses octets
+avec `write-file`), 90 octets par ligne, chaque ligne attendue jusqu'à
+« ok » et l'invite « > » (une attente fixe après chaque ligne rendait
+l'envoi 4 fois plus lent). L'invite prend 200 caractères par ligne
+(`input-limit`, common/io.fs), ce qui coupe aussi un long
+`s" ..." abc-play` tapé à la main ; `r~ ... ~` ne continue pas sur la
+ligne suivante à l'invite, seulement dans un fichier. Essayé contre un
+pseudo-terminal qui répond comme la carte et dans lugforth POSIX ; les
+envois sur la carte de l'utilisateur marchent (un fichier de 30 Ko en
+quelques secondes).
+
+`ports/esp32/editors.fs` (dans le boot) : `ed` inclut
+`/spiffs/miniedit.fs`, qui redéfinit `ed`, puis évalue `ed nom`
+(`lz-run`) ; `terminal-size`, `form`. L'ed des autres ports
+(editors/editor.fs, writhdeck.fs) a été essayé d'abord : il se compile
+dans le simulateur (il lui faut un vocabulaire `rpi` avec `mkdir`) mais
+prend environ 80 Ko compilé et 140 Ko pendant son chargement (le
+fichier lu en mémoire, sa chaîne r| copiée, la copie d'`eval-copy`, le
+code), et un ESP32-C3 n'avait que 71 Ko d'`unused` : « Error including »
+sur la carte. D'où `ports/esp32/miniedit.fs`, un petit ed à lui (environ
+6 Ko compilés, sans vocabulaire ANSI : il écrit lui-même les codes
+d'échappement, ne redessine que si aucune touche n'attend, lit les
+séquences ESC [ A B C D H F et ESC [ n ~). Son édition est testée dans
+out/esp32-sim en remplaçant `key` et `key?` (seulement dans le mot qui
+le lance : l'invite lit aussi avec `key`) ; les mots fichiers ne sont
+pas dans le simulateur et ont été essayés dans lugforth POSIX. Le
+fonctionnement sur la carte est celui de l'utilisateur. Pièges : `?do`
+veut (limite début) : `2dup < if swap ?do` après `a b` ; pas de locals
+`{ }` dans les boucles ; envoyer au simulateur par un tube coupe les
+lignes à 200 caractères comme la carte.
+
+Les morceaux POSIX (`ports/posix/sdl2_abc.fs`) mettent maintenant aussi
+`voices?` : le fichier MIDI est fait des événements triés par temps
+(une fin avant un début au même instant) au lieu de groupes de notes
+qui commencent ensemble, et `tune-ms` est la fin de la voix la plus
+longue (`tune-end` dans common/abc.fs). `test-voices` est dans
+sdl2_abc_tests.fs. Le build web saute toujours `V:`.
+
 ## DOS (ports/dos) - commencé le 2026-10-31
 
 `lugforth.exe` construit avec le compilateur croisé DJGPP (gcc 12.2,
@@ -325,7 +416,17 @@ jeu) a rempli le disque de sa sortie, lancer DOSBox sous `ulimit -f`;
 un Xvfb tué par SIGKILL laisse /tmp/.X<n>-lock et le suivant ne démarre
 pas sur cet affichage (le test utilise `-displayfd` et SIGTERM).
 
-Test: `make -C ports/dos test` (tools/dos_test.py, 38 vérifications):
+Turnkey : `lugforth --turnkey prog.fs [prog.exe [données...]]` (autoboot.fs
+pour la liste et l'écriture, `bundle_*` de files.h pour la lecture) : le
+.exe est lugforth.exe + les fichiers + un index + un trailer de 16 octets
+("LFTK", offset de l'index, nombre, fichier principal) ; au démarrage
+main.c le cherche dans argv[0] (DJGPP donne le chemin complet) ; `ok`
+(platform.fs) saute alors la bannière et autoexec inclut le fichier
+principal puis dit bye. Les fichiers sont trouvés par le nom que reçoit
+`open-file` (minuscules, `/`, sans `./`) ; la liste vient d'un balayage
+du texte des sources, pas de leur exécution.
+
+Test: `make -C ports/dos test` (tools/dos_test.py, 40 vérifications):
 DOSBox 0.74 sans fenêtre, `lugforth < in.txt > out.txt`, puis DOSBox
 dans une fenêtre de Xvfb où xdotool tape, l'écran relu par le mot
 `screen-char`, deux bips enregistrés par DOSBox lui-même (Ctrl+F6 écrit

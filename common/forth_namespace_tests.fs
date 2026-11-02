@@ -845,6 +845,7 @@ e: test-posix-forth-namespace
 e: test-esp32-forth-voclist
   internals ' ansi voclist-from
   out: ansi 
+  out: sdl2 
   out: registers 
   out: ansi 
   out: editor 
@@ -925,6 +926,15 @@ e: check-esp32-bindings
 e: test-esp32-forth-namespace
   ' forth list-from
   out: FORTH 
+  out: ed 
+  out: load-lib 
+  out: lz-run 
+  out: lz-buf 
+  out: form 
+  out: terminal-size 
+  out: term-cols 
+  out: term-rows 
+  out: esp32-abc 
   out: telnetd 
   out: registers 
   out: webui 
