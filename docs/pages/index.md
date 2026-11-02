@@ -29,7 +29,9 @@ More games, run in the same page:
 <a href="demo/terminal.html?run=gfx_magnoquill.fs">Magnoquill</a>,
 <a href="demo/terminal.html?run=3d.fs,gfx_3d.fs">a 3D cube</a>,
 <a href="demo/terminal.html?run=gfx_turtle.fs">Logo turtle</a> (type commands under the
-drawing) and the
+drawing),
+<a href="demo/terminal.html?run=abc_random.fs,abc_random_web.fs">random music</a>
+(any key: another tune) and the
 <a href="demo/terminal.html?run=gfx_demo.fs">SDL2 tour</a>.
 Any game file also runs with
 <code>terminal.html?run=gfx_roguelike.fs</code> (several files:

@@ -13,10 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Sends a Forth source file to a Lugforth board over a serial port.
+"""Evaluates a Forth source file on a board over a serial port: the text is typed
+at the prompt, line by line, and nothing is kept (to store a file in the flash of a
+board, use tools/pico_put.py or tools/esp32_put.py). Short names for the two boards:
 
-  tools/pico_send.py cyoa.fs                     (uses /dev/ttyACM0)
-  tools/pico_send.py -p /dev/ttyACM1 cyoa.fs
+  tools/pico_evaluate.py cyoa.fs                 (uses /dev/ttyACM0)
+  tools/pico_evaluate.py -p /dev/ttyACM1 cyoa.fs
+  tools/esp32_evaluate.py file.fs                (line by line only: no paste on the ESP32)
+  tools/board_evaluate.py file.fs                (this script: the Pico by default, --esp32)
 
 A plain `cat file > /dev/ttyACM0` hangs: the board echoes everything back and
 nobody reads it. This script reads the answers while it writes, sends one line
@@ -25,6 +29,12 @@ first error. When the last line starts something that waits for keys (a game
 that never shows the prompt again), the script becomes a small terminal so you
 can play: keys go to the board, Ctrl-A then Ctrl-X quits (as in picocom;
 Ctrl-A Ctrl-A sends a real Ctrl-A, Ctrl-] also quits). Needs pyserial (pip install pyserial).
+
+A file with a string over several lines (r~ ... ~ or r| ... |, a tune in ABC
+notation for example) or a line of more than 199 characters cannot be typed
+line by line: it is sent as a whole with the word `paste` of the board, kept
+there (32 KB at most) and evaluated at once. This is automatic; --paste
+forces it, --lines forbids it.
 """
 
 import argparse
@@ -59,6 +69,43 @@ def wait_prompt(port, timeout, show):
       if PROMPT in got:
         return got
   return got
+
+
+def multiline_string(lines):
+  """True when a r~ or r| string is not closed on the line that opens it."""
+  for line in lines:
+    for opener in ('r~', 'r|'):
+      i = line.find(opener)
+      if i >= 0 and line.find(opener[1], i + 2) < 0:
+        return True
+  return False
+
+
+def send_paste(port, text, show, label):
+  """`paste`, the text, Ctrl-D: the board keeps it and evaluates it at once."""
+  data = text.replace('\r\n', '\n').encode('utf-8')
+  if len(data) > 32768:
+    sys.exit('%s: %d bytes, the board keeps 32768 at most with paste' % (label, len(data)))
+  port.write(b'paste\r')
+  time.sleep(0.3)
+  port.read(256)
+  sent = 0
+  while sent < len(data):
+    chunk = data[sent:sent + 64]
+    port.write(chunk)
+    sent += len(chunk)
+    time.sleep(0.01)                     # the board reads the keys one by one
+    port.read(256)
+    if not show:
+      progress(sent, len(data))
+  port.write(b'\x04')
+  got = wait_prompt(port, 15.0, show)
+  if PROMPT not in got:
+    sys.exit('\n%s: no prompt after the text (an error that stops the board?)' % label)
+  for err in ERRORS:
+    if err in got:
+      sys.exit('\n%s: %s: %s' % (label, err.decode(), got.decode('utf-8', 'replace').strip()))
+  print('\nsent %d bytes with paste' % len(data))
 
 
 def progress(sent, total):
@@ -114,7 +161,7 @@ def terminal(port):
     print()
 
 
-def main():
+def main(board='pico'):
   ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
   ap.add_argument('file', help='Forth source file to send')
   ap.add_argument('-p', '--port', default='/dev/ttyACM0')
@@ -123,15 +170,28 @@ def main():
                   help='seconds to wait for the prompt after a line')
   ap.add_argument('-v', '--verbose', action='store_true',
                   help="show the board's answers instead of the progress bar")
+  ap.add_argument('--paste', action='store_true', help='send the file as a whole with paste')
+  ap.add_argument('--lines', action='store_true', help='send line by line even for a multi-line string')
+  ap.add_argument('--esp32', action='store_true', help='an ESP32 board: no paste, line by line')
+  ap.add_argument('--pico', action='store_true', help='a Raspberry Pi Pico (the default)')
   args = ap.parse_args()
+  if args.esp32 or (board == 'esp32' and not args.pico):
+    args.lines = True
 
-  lines = open(args.file, encoding='utf-8', errors='replace').read().splitlines()
-  for n, line in enumerate(lines, 1):
-    if len(line.encode('utf-8')) > MAX_LINE:
-      sys.exit('%s:%d: line longer than %d characters, the board would '
-               'truncate it' % (args.file, n, MAX_LINE))
+  text = open(args.file, encoding='utf-8', errors='replace').read()
+  lines = text.splitlines()
+  too_long = any(len(l.encode('utf-8')) > MAX_LINE for l in lines)
+  paste = args.paste or ((too_long or multiline_string(lines)) and not args.lines)
+  if not paste:
+    for n, line in enumerate(lines, 1):
+      if len(line.encode('utf-8')) > MAX_LINE:
+        sys.exit('%s:%d: line longer than %d characters, the board would '
+                 'truncate it' % (args.file, n, MAX_LINE))
 
-  port = serial.Serial(args.port, args.baud, timeout=0.05)
+  port = serial.Serial()
+  port.port = args.port; port.baudrate = args.baud; port.timeout = 0.05
+  port.dtr = True; port.rts = False       # RTS high resets an ESP32 with auto-reset
+  port.open()
   show = args.verbose
   total = sum(len(l.encode('utf-8')) + 1 for l in lines)
   sent = 0
@@ -140,6 +200,9 @@ def main():
     sys.exit('No prompt from the board. It may still be running a program '
              'that waits for keys: press reset (or unplug and replug it), '
              'then try again. Use -v to see what it sends.')
+  if paste:
+    send_paste(port, text, show, args.file)
+    return
   for n, line in enumerate(lines, 1):
     if not line.strip():
       sent += len(line.encode('utf-8')) + 1

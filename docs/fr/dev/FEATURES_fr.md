@@ -33,6 +33,10 @@ sur les deux plateformes, volontairement gardé hors de l'interpréteur
 est un séquenceur piano-roll (4 pistes, motifs de 16 pas chaînables,
 lecture MIDI+soundfont, export `.mid` et ABC); POSIX seulement, pas
 porté sur le web.
+`examples/music/abc_random.fs` fait des airs aléatoires en ABC (12 mesures, voix 1
+en arpège, voix 2 en accords ou contrepoint) et les joue en boucle sur le PC, le
+Pico et l'ESP32 (voir docs/fr/dev/PORTS_fr.md); ses tests sont dans
+`make -C examples test-ports`.
 
 ### Fichiers
 

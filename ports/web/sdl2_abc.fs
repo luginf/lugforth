@@ -27,6 +27,7 @@ also internals
   abc-parser evaluate
   r|
 sdl2 definitions also web also abc-int
+-1 to voices?   ( V:1 V:2 ... are voices that sound together )
 
 JSWORD: js-tune-setup { }
   var S = context.sdl;

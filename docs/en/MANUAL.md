@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.11.2.4
+Lugforth v2026.11.2.14
 :; ===========>/>
 type 'info' for help
  ok
@@ -1204,7 +1204,8 @@ does in a file): long texts go in a file.
 
 ### Sending files from the PC
 
-`tools/esp32_put.py` sends files through the serial line, with the
+`tools/esp32_put.py` (a short name for `tools/board_put.py`, which the
+Pico uses too, see below) sends files through the serial line, with the
 serial monitor closed (`pip install pyserial` once):
 
 ```
@@ -1305,6 +1306,135 @@ sounds bad. The same file played on a PC (`sdl2-abc`, `abc-play`) now
 sounds the voices together too. Details:
 [dev/PORTS.md](dev/PORTS.md) and
 [ports/esp32/README.txt](../../ports/esp32/README.txt).
+
+## Raspberry Pi Pico
+
+The Pico build is a firmware of its own (`ninja pico` makes
+`out/pico/lugforth-pico/lugforth-pico.uf2`): hold BOOTSEL while plugging
+the board, copy the UF2 file to the drive that appears. The prompt is on
+the USB serial port (`/dev/ttyACM0`; minicom, picocom or screen). The
+dictionary lives in RAM, 180 KB of heap. Written for a Raspberry Pi
+Pico (RP2040) on a Cytron Maker Pi Pico V1, where the buzzer and the
+audio jack are on GP18; the sound was heard there, the files below have
+been tried in the simulator only (`out/pico-sim/lugforth_pico_sim`).
+
+### Files that survive a reset
+
+The last 1 MB of the flash holds a small file system. The usual words
+work (`open-file`, `create-file`, `read-file`, `write-file`,
+`close-file`, `delete-file`, `rename-file`, `include`), and so do the
+commands `ls`, `cat` and `rm`:
+
+```
+> s" t.txt" w/o create-file throw  dup s" hello" rot write-file throw  close-file drop
+> ls
+t.txt
+> cat t.txt
+hello
+> include melody.fs
+> rm t.txt
+> pico ffs_free_sectors . forth     \ free sectors of 4 KB: 253 when empty
+```
+
+What to know before using it:
+
+- Names have 23 characters at most and there are no folders (a leading
+  `/` is ignored). 119 files at most, about 1 MB in all. One file is
+  open for writing at a time, 4 files open at most.
+- A file is written into free sectors and the directory is written by
+  `close-file`: a power cut during a write leaves the old file as it
+  was, and a file never closed is never kept.
+- Writing is slow. Erasing and programming a 4 KB sector takes about 50
+  ms with the interrupts off, so the USB console stops for a moment at
+  each 4 KB written. Reading is straight from the memory of the chip.
+- The flash wears out, about 100 000 erases of a sector. Saving a small
+  file erases 2 sectors (its data and the directory, which alternates
+  between two sectors): do not save at each key.
+- Loading a new firmware with a UF2 file writes only the sectors of the
+  program, so the files should stay (not tried on a board). Erasing the
+  whole flash (`flash_nuke.uf2`, `picotool erase`) removes them. There
+  is no `autoexec.fs`: a broken one could be removed only that way.
+- Blocks (`use`, `block`) do not work: `resize-file` only accepts a size
+  that is not larger.
+
+### Sending files from the PC
+
+```
+$ tools/pico_put.py /dev/ttyACM0 melody.fs canon.abc
+```
+
+`tools/pico_put.py` and `tools/esp32_put.py` are two short names that
+call the same script, `tools/board_put.py` (it also takes `--pico` or
+`--esp32`). Serial monitor closed, `pip install pyserial` once; on the
+Pico the names have no `/spiffs/`. Each file is sent as hexadecimal, 90
+bytes a line, an old one of the same name being replaced. To run a
+program without keeping it, `tools/pico_evaluate.py file.fs` evaluates
+it at once (a text over several lines, such as an `r~ ... ~` tune, goes
+through the word `paste`). The names tell the two jobs apart: `put`
+copies a file into the flash of the board, `evaluate`
+(`tools/pico_evaluate.py`, `tools/esp32_evaluate.py`, both calling
+`tools/board_evaluate.py`) types a program at the prompt and keeps
+nothing, so a later `include` of it fails. The ESP32 one has no `paste`
+to use and sends line by line; it was not tried on a board.
+
+### ABC tunes on GP18
+
+```
+> pico-abc                  \ once per boot: loads the ABC reader (12 KB)
+> 18 buzzer                 \ the output is on GP18
+> r~ X:1 K:C CDEF GABc ~ abc-play
+> 440 tone  0 tone          \ a plain tone, then silence
+```
+
+`abc-play` mixes up to four notes at once (the voices `V:1`, `V:2`...
+and the chords) in software and writes the sum as the level of an 8 bit
+PWM; a key typed on the serial line stops it. `abc-arp` plays the notes
+by turns. A tune goes in a file sent with `pico_put.py`, then
+`include canon.fs` (see the ESP32 section for the shape of `canon.fs`;
+the first lines are `pico-abc` and `18 buzzer`). On a bare Pico put a
+passive piezo, or a small speaker through a resistor, between a GPIO
+and GND. Details: [dev/PORTS.md](dev/PORTS.md) and
+[ports/pico/README.txt](../../ports/pico/README.txt).
+
+### Random music, with a button
+
+`examples/music/abc_random.fs` makes a new tune each time: 12 bars in a
+random key, the melody (voice 1) an arpeggio of the chord of each bar,
+the accompaniment (voice 2) block chords, a bass line or a counterpoint
+against the melody. It plays the tune again and again until you ask for
+another one. On a Pico with a button between GP20 and ground (the
+internal pull-up is used):
+
+```
+$ tools/pico_put.py /dev/ttyACM0 examples/music/abc_random.fs
+> pico-abc
+> 18 buzzer
+> include abc_random.fs
+> 20 music-button
+> random-music
+tune 296102114
+```
+
+The button starts another tune; a key typed on the serial line ends
+`random-music`. The number is the seed of the tune: `296102114
+music-seed` plays that tune again (and others after a press of the
+button), and `296102114 rand-seed ! new-tune type` writes it as ABC
+text, to keep in a file or to play with `abc-play`. Do not set the seed
+and then call `random-music`: it mixes the clock into the seed to give a
+new tune each time. On an ESP32 it is the same with `esp32-abc`, `4
+buzzer` and `5 music-button` (a button on GPIO 5). On a PC (`sdl2-abc`
+first, then `include examples/music/abc_random.fs`) there is no button:
+any key gives another tune and Ctrl-C ends it. The music uses only notes
+of the key, in 4/4 and 3 phrases of 4 bars, the last one ending on V
+then I. Any other button or sensor can stop a tune: `' my-test
+abc-halt-with` gives `abc-play` a word that returns true to stop (the
+default is a key on the serial line). To keep a tune in a file:
+`296102114 rand-seed ! save-tune t1.abc` (then `cat t1.abc` shows it on
+a Pico, and it can be copied from the terminal). In the browser,
+`terminal.html?run=abc_random.fs,abc_random_web.fs` (the demo of the
+site) plays it with WebAudio; any key gives another tune, and
+`save-tune` is not there (no files).
+
 
 ## Building
 

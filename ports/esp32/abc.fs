@@ -93,6 +93,12 @@ create hzs 8 cells allot   create vws 8 cells allot   0 value hz-n
   0 to hz-n  tune-end to next-t
   n-voices 1+ 1 ?do i voice-add loop ;
 
+\ ---- What stops a tune: a key on the serial line, or the word given to abc-halt-with ----
+0 value halt-xt
+: halt? ( -- f )
+  halt-xt ?dup if execute exit then
+  key? dup if key drop then ;
+
 \ ---- abc-arp: the notes in turn, one every slice-ms (an arpeggio) ----
 10 value slice-ms
 0 value n-slice
@@ -107,7 +113,7 @@ create hzs 8 cells allot   create vws 8 cells allot   0 value hz-n
     ms-ticks t0 - ms>ticks to tt
     tt tune-end <
   while
-    key? if key drop 0 pin-tone exit then
+    halt? if 0 pin-tone exit then
     n-slice slice-hz pin-tone
     1 +to n-slice
     t0 n-slice slice-ms * + ms-ticks - 0 max ms
@@ -184,7 +190,7 @@ create slot-used 9 cells allot   create cnt 9 cells allot
     tt next-t < 0= if gather slots-set then
     128 mix-block
     1 +to blk-n
-    blk-n 15 and 0= if  key? if key drop mix-end exit then  pause then
+    blk-n 15 and 0= if  halt? if mix-end exit then  pause then
   repeat mix-end ;
 
 \ The words to use, in forth; all the others stay in the hidden vocabulary sdl2
@@ -195,6 +201,7 @@ forth-wordlist current !
 : tune-play ( -- ) mix-play ;
 : abc-play ( a n -- ) abc mix-play ;
 : abc-arp ( a n -- ) abc arp-play ;
+: abc-halt-with ( xt -- ) to halt-xt ;   \ xt ( -- f ) true stops the tune; 0 for the key
 
 previous previous previous previous
 ~ evaluate

@@ -54,7 +54,7 @@ Lancez `lugforth` (voir [Binaires](#binaires), ou compilez-le avec
 `ninja posix`). Vous obtenez une bannière et l'invite:
 
 ```
-Lugforth v2026.11.2.4
+Lugforth v2026.11.2.14
 :; ===========>/>
 type 'info' for help
  ok
@@ -1254,8 +1254,9 @@ plus, et `r~ ... ~` ne continue pas sur la ligne suivante quand on tape
 
 ### Envoyer des fichiers depuis le PC
 
-`tools/esp32_put.py` envoie des fichiers par la liaison série, moniteur
-série fermé (`pip install pyserial` une fois) :
+`tools/esp32_put.py` (nom court de `tools/board_put.py`, que le Pico
+utilise aussi, voir plus bas) envoie des fichiers par la liaison série,
+moniteur série fermé (`pip install pyserial` une fois) :
 
 ```
 $ tools/esp32_put.py /dev/ttyACM0 melody.fs canon.abc     # COM3 sous Windows
@@ -1359,6 +1360,144 @@ sur un PC (`sdl2-abc`, `abc-play`) fait maintenant aussi sonner les
 voix ensemble. Détails :
 [dev/PORTS_fr.md](dev/PORTS_fr.md) et
 [ports/esp32/README.txt](../../ports/esp32/README.txt).
+
+## Raspberry Pi Pico
+
+La version Pico est un micrologiciel à part (`ninja pico` fait
+`out/pico/lugforth-pico/lugforth-pico.uf2`) : maintenir BOOTSEL en
+branchant la carte, puis copier le fichier UF2 sur le disque qui
+apparaît. L'invite est sur le port série USB (`/dev/ttyACM0` ; minicom,
+picocom ou screen). Le dictionnaire est en RAM, 180 Ko de tas. Écrit
+pour un Raspberry Pi Pico (RP2040) sur une Cytron Maker Pi Pico V1, où
+le buzzer et la prise audio sont sur GP18 ; le son a été entendu là, les
+fichiers ci-dessous n'ont été essayés que dans le simulateur
+(`out/pico-sim/lugforth_pico_sim`).
+
+### Des fichiers qui survivent au redémarrage
+
+Le dernier Mo de la flash contient un petit système de fichiers. Les
+mots habituels fonctionnent (`open-file`, `create-file`, `read-file`,
+`write-file`, `close-file`, `delete-file`, `rename-file`, `include`),
+ainsi que les commandes `ls`, `cat` et `rm` :
+
+```
+> s" t.txt" w/o create-file throw  dup s" hello" rot write-file throw  close-file drop
+> ls
+t.txt
+> cat t.txt
+hello
+> include melody.fs
+> rm t.txt
+> pico ffs_free_sectors . forth     \ secteurs libres de 4 Ko : 253 si vide
+```
+
+À savoir avant de s'en servir :
+
+- Les noms ont 23 caractères au plus, sans dossiers (un `/` initial est
+  ignoré). 119 fichiers au plus, environ 1 Mo en tout. Un seul fichier
+  est ouvert en écriture à la fois, 4 fichiers ouverts au plus.
+- Un fichier est écrit dans des secteurs libres et le répertoire est
+  écrit par `close-file` : une coupure de courant pendant l'écriture
+  laisse l'ancien fichier tel qu'il était, et un fichier jamais fermé
+  n'est jamais conservé.
+- L'écriture est lente. Effacer et programmer un secteur de 4 Ko prend
+  environ 50 ms, interruptions coupées : la console USB s'arrête un
+  instant à chaque 4 Ko écrits. La lecture se fait directement dans la
+  mémoire de la puce.
+- La flash s'use, environ 100 000 effacements par secteur. Sauver un
+  petit fichier efface 2 secteurs (ses données et le répertoire, qui
+  alterne entre deux secteurs) : ne pas sauver à chaque touche.
+- Charger un nouveau micrologiciel avec un fichier UF2 n'écrit que les
+  secteurs du programme, donc les fichiers devraient rester (pas essayé
+  sur une carte). Effacer toute la flash (`flash_nuke.uf2`,
+  `picotool erase`) les supprime. Il n'y a pas d'`autoexec.fs` : un
+  fichier cassé ne pourrait être retiré que de cette façon.
+- Les blocs (`use`, `block`) ne marchent pas : `resize-file` n'accepte
+  qu'une taille qui n'est pas plus grande.
+
+### Envoyer des fichiers depuis le PC
+
+```
+$ tools/pico_put.py /dev/ttyACM0 melody.fs canon.abc
+```
+
+`tools/pico_put.py` et `tools/esp32_put.py` sont deux noms courts qui
+appellent le même script, `tools/board_put.py` (il accepte aussi
+`--pico` ou `--esp32`). Moniteur série fermé, `pip install pyserial` une
+fois ; sur le Pico les noms n'ont pas de `/spiffs/`. Chaque fichier est
+envoyé en hexadécimal, 90 octets par ligne, un ancien du même nom étant
+remplacé. Pour lancer un programme sans le garder,
+`tools/pico_evaluate.py fichier.fs` l'évalue tout de suite (un texte sur
+plusieurs lignes, comme un morceau `r~ ... ~`, passe par le mot
+`paste`). Les noms distinguent les deux métiers : `put` copie un fichier
+dans la flash de la carte, `evaluate` (`tools/pico_evaluate.py`,
+`tools/esp32_evaluate.py`, qui appellent `tools/board_evaluate.py`) tape
+un programme à l'invite sans rien garder, donc un `include` ultérieur
+échoue. Celui de l'ESP32 n'a pas de `paste` et envoie ligne par ligne ;
+il n'a pas été essayé sur une carte.
+
+### Morceaux ABC sur GP18
+
+```
+> pico-abc                  \ une fois par démarrage : charge le lecteur ABC (12 Ko)
+> 18 buzzer                 \ la sortie est sur GP18
+> r~ X:1 K:C CDEF GABc ~ abc-play
+> 440 tone  0 tone          \ une note simple, puis le silence
+```
+
+`abc-play` mélange jusqu'à quatre notes à la fois (les voix `V:1`,
+`V:2`... et les accords) par logiciel et écrit la somme comme niveau
+d'un PWM de 8 bits ; une touche tapée sur la ligne série l'arrête.
+`abc-arp` joue les notes à tour de rôle. Un morceau va dans un fichier
+envoyé avec `pico_put.py`, puis `include canon.fs` (voir la
+section ESP32 pour la forme de `canon.fs` ; les deux premières lignes
+sont `pico-abc` et `18 buzzer`). Sur un Pico nu, mettre un piézo passif,
+ou un petit haut-parleur avec une résistance, entre un GPIO et GND.
+Détails : [dev/PORTS_fr.md](dev/PORTS_fr.md) et
+[ports/pico/README.txt](../../ports/pico/README.txt).
+
+### Musique aléatoire, avec un bouton
+
+`examples/music/abc_random.fs` fait un nouveau morceau à chaque fois :
+12 mesures dans une tonalité tirée au sort, la mélodie (voix 1) étant un
+arpège de l'accord de chaque mesure, l'accompagnement (voix 2) des
+accords plaqués, une ligne de basse ou un contrepoint contre la mélodie.
+Le morceau se répète jusqu'à ce qu'on en demande un autre. Sur un Pico
+avec un bouton entre GP20 et la masse (la résistance de rappel interne
+est utilisée) :
+
+```
+$ tools/pico_put.py /dev/ttyACM0 examples/music/abc_random.fs
+> pico-abc
+> 18 buzzer
+> include abc_random.fs
+> 20 music-button
+> random-music
+tune 296102114
+```
+
+Le bouton lance un autre morceau ; une touche tapée sur la liaison série
+termine `random-music`. Le nombre est la graine du morceau : `296102114
+music-seed` rejoue ce morceau (puis d'autres après un appui sur le
+bouton), et `296102114 rand-seed ! new-tune type` l'écrit en texte ABC,
+à garder dans un fichier ou à jouer avec `abc-play`. Ne pas fixer la
+graine puis appeler `random-music` : il mélange l'horloge à la graine
+pour donner un nouveau morceau à chaque fois. Sur un ESP32 c'est pareil
+avec `esp32-abc`, `4 buzzer` et `5 music-button` (un bouton sur le GPIO
+5). Sur un PC (`sdl2-abc` d'abord, puis `include
+examples/music/abc_random.fs`) il n'y a pas de bouton : une touche
+quelconque donne un autre morceau et Ctrl-C termine. La musique
+n'utilise que des notes de la tonalité, en 4/4 et 3 phrases de 4
+mesures, la dernière finissant sur V puis I. Un autre bouton ou capteur
+peut arrêter un morceau : `' mon-test abc-halt-with` donne à `abc-play`
+un mot qui rend vrai pour s'arrêter (par défaut, une touche sur la
+liaison série). Pour garder un morceau dans un fichier : `296102114
+rand-seed ! save-tune t1.abc` (puis `cat t1.abc` l'affiche sur un Pico,
+et on peut le copier depuis le terminal). Dans le navigateur,
+`terminal.html?run=abc_random.fs,abc_random_web.fs` (la démo du site) le
+joue avec WebAudio ; une touche quelconque donne un autre morceau, et
+`save-tune` n'existe pas (pas de fichiers).
+
 
 ## Compilation
 

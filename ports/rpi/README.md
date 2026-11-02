@@ -313,7 +313,7 @@ comments may span lines: `examples/games/gfx_roguelike.fs` keeps its tunes in
 On a real Pi that reset restarts the board instead.
 
 To send a file, run `make -C ports/rpi run-pty`. QEMU prints the pty it uses;
-pass it to `tools/pico_send.py -p /dev/pts/N file.fs`. The same script works
+pass it to `tools/board_evaluate.py -p /dev/pts/N file.fs`. The same script works
 on a real Pi through a USB serial adapter (`-p /dev/ttyUSB0`).
 
 ## On a real Raspberry Pi 3 or 4

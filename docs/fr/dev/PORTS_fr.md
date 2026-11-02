@@ -296,17 +296,19 @@ les 100 ms le saute) et `remember` garde `/spiffs/myforth`. Les mots
 l'IDE garde la partition, un changement de schéma de partition ou
 « Erase All Flash » non.
 
-`tools/esp32_put.py PORT fichier...` envoie des fichiers : DTR haut et
+`tools/board_put.py PORT fichier...` (appelé par les noms courts
+`tools/esp32_put.py`, noms sous `/spiffs/`, et `tools/pico_put.py`, noms
+sans lui ; ou `--esp32` / `--pico`) envoie des fichiers : DTR haut et
 RTS bas à l'ouverture (un port USB natif n'envoie rien sans DTR, RTS
 haut remet à zéro une carte à auto-reset : les deux ont donné un port
 muet ou qui disparaît), un réveil par des lignes vides jusqu'à « ok »,
 puis des lignes Forth : `hx` (lit un mot hexadécimal, écrit ses octets
-avec `write-file`), 90 octets par ligne, chaque ligne attendue jusqu'à
-« ok » et l'invite « > » (une attente fixe après chaque ligne rendait
+avec `write-file`), 90 octets par ligne, chaque ligne attendue jusqu'à «
+ok » et l'invite « > » (une attente fixe après chaque ligne rendait
 l'envoi 4 fois plus lent). L'invite prend 200 caractères par ligne
-(`input-limit`, common/io.fs), ce qui coupe aussi un long
-`s" ..." abc-play` tapé à la main ; `r~ ... ~` ne continue pas sur la
-ligne suivante à l'invite, seulement dans un fichier. Essayé contre un
+(`input-limit`, common/io.fs), ce qui coupe aussi un long `s" ..."
+abc-play` tapé à la main ; `r~ ... ~` ne continue pas sur la ligne
+suivante à l'invite, seulement dans un fichier. Essayé contre un
 pseudo-terminal qui répond comme la carte et dans lugforth POSIX ; les
 envois sur la carte de l'utilisateur marchent (un fichier de 30 Ko en
 quelques secondes).
@@ -336,7 +338,124 @@ Les morceaux POSIX (`ports/posix/sdl2_abc.fs`) mettent maintenant aussi
 (une fin avant un début au même instant) au lieu de groupes de notes
 qui commencent ensemble, et `tune-ms` est la fin de la voix la plus
 longue (`tune-end` dans common/abc.fs). `test-voices` est dans
-sdl2_abc_tests.fs. Le build web saute toujours `V:`.
+sdl2_abc_tests.fs. Le build web met maintenant aussi `voices?` (WebAudio joue chaque note
+avec son propre oscillateur, donc les voix sonnent ensemble).
+
+## Pico : morceaux ABC sur une broche
+
+`ports/pico/builtins.h` a maintenant les mots PWM du pico-sdk dans le
+vocabulaire `pico` (`pwm_gpio_to_slice_num`, `pwm_set_wrap`,
+`pwm_set_clkdiv_int_frac`, `pwm_set_gpio_level`, `pwm_set_enabled` ;
+`hardware_pwm` dans CMakeLists.txt), et `ports/pico/abc.fs` est
+`ports/esp32/abc.fs` avec cette couche matérielle : `pico-abc` charge le
+lecteur à la demande, `18 buzzer` règle la broche, puis `abc-play`,
+`abc-arp`, `tone`. Le mélange est la même boucle (4 ondes carrées,
+phases de 24 bits, cadence calibrée avec `ms-ticks`) écrite comme niveau
+d'un PWM 8 bits (wrap 255, diviseur 1, environ 488 kHz) ; une note seule
+utilise un compteur à 1 MHz (diviseur 125) et un wrap de 1e6/hz - 1. La
+carte des premiers essais est un Raspberry Pi Pico de 2020 (RP2040) sur
+une Cytron Maker Pi Pico V1, buzzer et prise jack étant sur GP18.
+Compilé ici (le pico-sdk est le sous-module de ports/pico-ice ; `ninja
+pico`) et la partie Forth a tourné dans out/pico-sim avec les mots
+`pwm_` simulés, et le son a été entendu sur la carte. Piège : une `)`
+dans un ( commentaire ) du texte évalué par `pico-abc` le termine, comme
+pour l'ESP32.
+
+`paste` (ports/pico/platform.fs, comme dans ports/rpi) : le texte jusqu'à
+Ctrl-D est gardé et évalué d'un coup, donc une chaîne sur plusieurs
+lignes ou une ligne de plus de 200 caractères passe ; tools/pico_evaluate.py
+l'utilise tout seul pour un tel fichier (un envoi ligne à ligne donnait
+NOT FOUND à la deuxième ligne d'un morceau en r~). Essayé contre une
+fausse carte et dans out/pico-sim, pas sur une carte.
+
+### Pico : fichiers dans la flash (ports/pico/flashfs.h)
+
+Les mots de fichiers de la version Pico (`REQUIRED_FILES_SUPPORT` dans
+`ports/pico/builtins.h`) sont un petit système de fichiers dans le
+dernier Mio de la flash (décalage tiré de `PICO_FLASH_SIZE_BYTES` ; une
+garde le refuse si `__flash_binary_end` dépasse). 256 secteurs de 4 Ko :
+les secteurs 0 et 1 contiennent deux copies du répertoire (magique
+`LFFS`, numéro de séquence, CRC32), les autres les données, chaînées
+comme une FAT par une table `next[256]` (0 libre, 255 fin de chaîne).
+119 entrées de 32 octets (nom de 23 caractères, premier secteur,
+taille). Les fichiers 0, 1 et 2 restent la console (`write` et `read` de
+newlib : le `type` de Forth est un `write-file` sur le fid 2) ; ceux de
+la flash sont numérotés de 10 à 13.
+
+L'écriture passe par un tampon de 4 Ko en RAM vers des secteurs que le
+répertoire en cours marque libres ; `close-file` écrit le répertoire
+dans la copie inutilisée avec un numéro de séquence plus grand :
+remplacer un fichier est atomique, et une coupure de courant laisse
+l'ancien état (le montage prend la copie la plus récente dont le CRC est
+bon). La lecture utilise directement la mémoire XIP. Chaque secteur est
+effacé puis programmé par `flash_range_erase` / `flash_range_program`,
+interruptions coupées (environ 45 ms et 7 ms), ce qui arrête un instant
+l'USB. `ls`, `cat`, `rm` viennent de `common/filetools.fs` par
+`OPEN-DIR` et `READDIR` (`ports/pico/bindings.fs` donne `read-dir`) ;
+`resize-file` n'accepte qu'une taille non plus grande et `flush-file` ne
+fait rien (les données sont écrites à la fermeture), donc les blocs ne
+marchent pas. Le tas de la puce est de 180 Ko (le démarrage avec
+`phase_filetools.fs` prend environ 17 Ko de plus qu'avant).
+
+Dans `out/pico-sim` la flash est un tableau de 1 Mio avec la sémantique
+d'une flash NOR (une écriture ne peut que mettre des bits à 0, un
+effacement les met à 1), gardé entre deux lancements dans le fichier
+nommé par `LUGFORTH_PICO_FLASH`. Essayé là : créer, remplacer, lire,
+`ls`, `cat`, `rename-file`, `delete-file`, `include`, le nombre de
+secteurs libres, 48000 octets dans un fichier, un nom de 24 caractères
+(erreur 22), un fichier absent (erreur 2), un fichier laissé ouvert à la
+sortie (l'ancien reste), les fichiers après un redémarrage, et 10000
+octets au hasard envoyés par `tools/pico_put.py` (comparés à
+l'image de la flash). Pas essayé sur une carte : les vrais appels
+d'effacement et de programmation, les arrêts de l'USB, et si un
+reflashage par UF2 garde les fichiers (il devrait : il n'efface que les
+secteurs qu'il écrit, alors que `flash_nuke` et `picotool erase`
+effacent tout). Un piège rencontré : la première version envoyait le
+`write-file` de la console vers la flash, et le simulateur plantait au
+démarrage, avant la bannière.
+### Morceaux aléatoires (examples/music/abc_random.fs)
+
+Un petit générateur de texte ABC pour le PC, le Pico et l'ESP32. Il
+n'utilise que `random` et `rand-seed` de common/ansi_compat.fs, dont les
+bits de poids faible donnent la même suite en cellules de 32 et 64 bits
+: la graine 1234 donne le même morceau sur le PC et dans out/pico-sim.
+Un morceau fait 12 mesures à 4/4 avec les notes d'une des dix tonalités
+(pas d'altérations à écrire : les notes sont des degrés de la gamme de
+do et la ligne K: met les dièses et bémols), trois phrases de quatre
+mesures tirées de cinq progressions d'accords (majeur ou mineur
+naturel), la dernière phrase finissant sur V puis I. La voix 1 est un
+arpège de l'accord en croches et noires, montant et descendant sur la
+fondamentale, la tierce, la quinte et l'octave ; la voix 2 est, mesure
+par mesure et selon un mode choisi pour le morceau, un accord entier ou
+deux demis, une basse fondamentale-quinte, ou quatre noires de l'accord
+allant à l'inverse de la mélodie. Le texte va dans deux tampons (1600 et
+1000 octets), le second étant ajouté au premier.
+
+Le lecteur est celui de la carte. ports/pico/abc.fs et
+ports/esp32/abc.fs appellent `halt?` tous les 16 blocs du mélange (et
+dans l'arpège) : le mot donné à `abc-halt-with` ou, par défaut, une
+touche sur la liaison série. `random-music` donne son propre mot, qui
+regarde le bouton (`music-button` : un GPIO avec rappel au plus, appuyé
+à 0) et les touches. Écrit pour le Pico et essayé dans out/pico-sim, où
+les mots gpio et pwm sont des bouchons : le mot du bouton rend vrai et
+pose la demande, une touche termine la boucle. Sur le PC et dans le
+navigateur le lecteur boucle lui-même le morceau (`abc-loop`) et on
+interroge les touches, une touche quelconque demandant un autre morceau
+; le fichier charge `sdl2-abc` tout seul s'il n'y a pas de lecteur. La
+page web est `terminal.html?run=abc_random.fs,abc_random_web.fs`
+(`abc_random_web.fs` appelle seulement `random-music`) ; essayé dans
+Chromium sans écran par le protocole DevTools (le morceau est annoncé,
+une touche en donne un autre), le son lui-même pas entendu. `save-tune`
+n'est défini que là où `w/o` existe, donc pas dans le navigateur.
+examples/music/abc_random_tests.fs lit 200 morceaux avec le lecteur de
+common/abc.fs (deux voix, 12 mesures chacune) et vérifie qu'une graine
+donne le même texte (`make -C examples test-ports`). Pas essayé avec un
+vrai bouton, ni sur une carte ESP32. Pièges : `defined?` ne s'emploie
+pas dans une définition (les parties conditionnelles sont compilées au
+niveau supérieur) ; `?do` avec un compte négatif part dans le décor
+(`t+note` teste d'abord l'octave) ; l'invite du Pico coupe une ligne à
+200 caractères, ce qui a aussi coupé un long bouchon de test.
+
 
 ## DOS (ports/dos) - commencé le 2026-10-31
 

@@ -25,9 +25,9 @@
 # include "pico/time.h"
 # include "hardware/adc.h"
 # include "hardware/gpio.h"
+# include "hardware/pwm.h"
 #endif
 
-// TODO: Implement RESIZE-FILE.
 // TODO: Implement FLUSH-FILE.
 
 #define PLATFORM_OPCODE_LIST \
@@ -36,6 +36,7 @@
   REQUIRED_FILES_SUPPORT \
   OPTIONAL_TIME_SUPPORT \
   OPTIONAL_GPIO_SUPPORT \
+  OPTIONAL_PWM_SUPPORT \
   OPTIONAL_ADC_SUPPORT \
   CALLING_OPCODE_LIST \
   FLOATING_POINT_LIST
@@ -59,37 +60,43 @@
   YV(internals, getchar_timeout_us, DROP; PUSH fgetc(stdin))
 #endif
 
+// File 0, 1 and 2 are the console (stdio, USB on the chip); the others are in the flash (ports/pico/flashfs.h): a directory of at most
+// 119 names of 23 characters, no folders; a file open for writing at a time.
+#include "ports/pico/flashfs.h"
+
 #define REQUIRED_FILES_SUPPORT \
-  X("R/O", R_O, PUSH O_RDONLY) \
-  X("W/O", W_O, PUSH O_WRONLY) \
-  X("R/W", R_W, PUSH O_RDWR) \
+  X("R/O", R_O, PUSH 0) \
+  X("W/O", W_O, PUSH 1) \
+  X("R/W", R_W, PUSH 2) \
   Y(BIN, ) \
-  X("CLOSE-FILE", CLOSE_FILE, tos = close(tos); tos = tos ? errno : 0) \
+  X("CLOSE-FILE", CLOSE_FILE, tos = ffs_close(tos)) \
   X("OPEN-FILE", OPEN_FILE, cell_t mode = n0; DROP; cell_t len = n0; DROP; \
-    memcpy(filename, a0, len); filename[len] = 0; \
-    n0 = open(filename, mode, 0777); PUSH n0 < 0 ? errno : 0) \
-  X("CREATE-FILE", CREATE_FILE, cell_t mode = n0; DROP; cell_t len = n0; DROP; \
-    memcpy(filename, a0, len); filename[len] = 0; \
-    n0 = open(filename, mode | O_CREAT | O_TRUNC); PUSH n0 < 0 ? errno : 0) \
+    n0 = ffs_open((const char *) a0, len, mode); PUSH n0 < 0 ? -n0 : 0) \
+  X("CREATE-FILE", CREATE_FILE, DROP; cell_t len = n0; DROP; \
+    n0 = ffs_create((const char *) a0, len); PUSH n0 < 0 ? -n0 : 0) \
   X("DELETE-FILE", DELETE_FILE, cell_t len = n0; DROP; \
-    memcpy(filename, a0, len); filename[len] = 0; \
-    n0 = unlink(filename); n0 = n0 ? errno : 0) \
+    n0 = ffs_delete((const char *) a0, len)) \
   X("RENAME-FILE", RENAME_FILE, \
-    cell_t len = n0; DROP; memcpy(filename, a0, len); filename[len] = 0; DROP; \
-    cell_t len2 = n0; DROP; memcpy(filename2, a0, len2); filename2[len2] = 0; \
-    n0 = rename(filename2, filename); n0 = n0 ? errno : 0) \
+    cell_t len = n0; DROP; const char *to = (const char *) a0; DROP; \
+    cell_t len2 = n0; DROP; n0 = ffs_rename((const char *) a0, len2, to, len)) \
   X("WRITE-FILE", WRITE_FILE, cell_t fd = n0; DROP; cell_t len = n0; DROP; \
-    n0 = write(fd, a0, len); n0 = n0 != len ? errno : 0) \
+    cell_t rv = fd < 3 ? (cell_t) write(fd, a0, len) : ffs_write(fd, a0, len); n0 = rv == len ? 0 : (rv < 0 ? -rv : EIO)) \
   X("READ-FILE", READ_FILE, cell_t fd = n0; DROP; cell_t len = n0; DROP; \
-    n0 = read(fd, a0, len); PUSH n0 < 0 ? errno : 0) \
+    cell_t rv = fd < 3 ? (cell_t) read(fd, a0, len) : ffs_read(fd, a0, len); n0 = rv < 0 ? 0 : rv; PUSH rv < 0 ? -rv : 0) \
   X("FILE-POSITION", FILE_POSITION, \
-    n0 = (cell_t) lseek(n0, 0, SEEK_CUR); PUSH n0 < 0 ? errno : 0) \
+    cell_t rv = ffs_tell(n0); n0 = rv < 0 ? 0 : rv; PUSH rv < 0 ? -rv : 0) \
   X("REPOSITION-FILE", REPOSITION_FILE, cell_t fd = n0; DROP; \
-    n0 = (cell_t) lseek(fd, tos, SEEK_SET); n0 = n0 < 0 ? errno : 0) \
-  X("FILE-SIZE", FILE_SIZE, struct stat st; w = fstat(n0, &st); \
-    n0 = (cell_t) st.st_size; PUSH w < 0 ? errno : 0) \
-  X("NON-BLOCK", NON_BLOCK, n0 = fcntl(n0, F_SETFL, O_NONBLOCK); \
-    n0 = n0 < 0 ? errno : 0)
+    cell_t rv = ffs_seek(fd, (uint32_t) n0); n0 = rv < 0 ? -rv : 0) \
+  X("FILE-SIZE", FILE_SIZE, \
+    cell_t rv = ffs_size(n0); n0 = rv < 0 ? 0 : rv; PUSH rv < 0 ? -rv : 0) \
+  X("FLUSH-FILE", FLUSH_FILE, n0 = 0) \
+  X("RESIZE-FILE", RESIZE_FILE, cell_t fd = n0; DROP; cell_t cur = ffs_size(fd); \
+    n0 = (cur >= 0 && n0 <= cur) ? 0 : 27) \
+  X("NON-BLOCK", NON_BLOCK, n0 = 0) \
+  X("OPEN-DIR", OPEN_DIR, n1 = ffs_opendir((const char *) a1, n0); n0 = n1 ? 0 : ENOENT) \
+  X("CLOSE-DIR", CLOSE_DIR, n0 = 0) \
+  YV(internals, READDIR, SET (cell_t) ffs_readdir()) \
+  YV(pico, ffs_free_sectors, PUSH ffs_free_sectors())
 
 #ifdef LUGFORTH_SIM
 # define OPTIONAL_TIME_SUPPORT
@@ -146,6 +153,17 @@
 #endif
 
 #ifdef LUGFORTH_SIM
+# define OPTIONAL_PWM_SUPPORT
+#else
+# define OPTIONAL_PWM_SUPPORT \
+   YV(pico, pwm_gpio_to_slice_num, n0 = pwm_gpio_to_slice_num(n0)) \
+   YV(pico, pwm_set_wrap, pwm_set_wrap(n1, n0); DROPn(2)) \
+   YV(pico, pwm_set_clkdiv_int_frac, pwm_set_clkdiv_int_frac(n2, n1, n0); DROPn(3)) \
+   YV(pico, pwm_set_gpio_level, pwm_set_gpio_level(n1, n0); DROPn(2)) \
+   YV(pico, pwm_set_enabled, pwm_set_enabled(n1, n0 != 0); DROPn(2))
+#endif
+
+#ifdef LUGFORTH_SIM
 # define OPTIONAL_ADC_SUPPORT
 #else
 # define OPTIONAL_ADC_SUPPORT \
@@ -170,5 +188,3 @@
 #define VOCABULARY_LIST V(forth) V(internals) V(pico)
 
 #define PATH_MAX 256
-static char filename[PATH_MAX];
-static char filename2[PATH_MAX];

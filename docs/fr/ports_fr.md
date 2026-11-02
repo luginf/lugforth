@@ -9,7 +9,7 @@
 | Web | `ports/web` | navigateur, mots SDL2 sur un canevas |
 | Android | `ports/android` | un APK: version web ou version native SDL2; ligne de commande |
 | ESP32 | `ports/esp32` | sketch Arduino |
-| Raspberry Pi Pico | `ports/pico` | série USB, `tools/pico_send.py` charge un programme |
+| Raspberry Pi Pico | `ports/pico` | série USB, `tools/pico_evaluate.py` charge un programme |
 | pico-ice | `ports/pico-ice` | RP2040 avec un FPGA |
 | Game Boy Advance | `ports/gba` | prototype, avec un roguelike |
 | Raspberry Pi 3/4, QEMU | `ports/rpi` | AArch64 en matériel nu, console UART, mots `sdl2` (écran, texte, images, clavier/souris, son); testé sous QEMU `virt` et `raspi3b` |

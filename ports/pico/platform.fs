@@ -51,5 +51,19 @@ vocabulary pico   pico definitions
 transfer pico-builtins
 forth definitions
 
+( paste: a whole file over the serial line, evaluated at once )
+\ Send `paste`, then the text, then Ctrl-D (4): the text is kept and
+\ evaluated as a whole, so strings and comments may span lines (r~ ... ~
+\ tunes, for example), which line by line sending breaks, and a line may
+\ be longer than the 200 characters of the prompt. tools/pico_evaluate.py
+\ does it by itself for such a file. 32 KB at most.
+32768 value paste-max
+: paste ( -- )
+  paste-max allocate throw 0 { buf n }
+  begin key dup 4 <> while
+    n paste-max < if buf n + c! n 1+ to n else drop then
+  repeat drop
+  buf n ['] evaluate catch  buf free drop  throw ;
+
 ( Setup entry )
 internals : ok   ." Lugforth" raw-ok ; forth

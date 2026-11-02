@@ -61,6 +61,7 @@ WEB_ITEMS = [
 for _name, _dir in [
     ('gfx_2048', 'games'), ('2048', 'games'), ('gfx_snake', 'games'),
     ('gfx_pacman', 'games'),
+    ('abc_random', 'music'), ('abc_random_web', 'music'),
     ('gfx_tetris', 'games'), ('gfx_minesweeper', 'games'),
     ('gfx_mastermind', 'games'), ('gfx_invaders', 'games'),
     ('gfx_magnoquill', 'graphics'), ('gfx_demo', 'graphics'),

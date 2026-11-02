@@ -35,7 +35,7 @@ help:
 	@echo "make view-lines-c       bench_lines.c in a real SDL2 window (C)"
 	@echo "make view-lines-uxn     bench_lines.tal in uxnemu (real window)"
 	@echo "make view              all three of the above, one after another"
-	@echo "make test-ports         tests of the logic of 2048, 3d, inference and the r3 games"
+	@echo "make test-ports         tests of the logic of 2048, 3d, inference, the r3 games and the random ABC tunes"
 	@echo "make smoke              headless load-test of every SDL2 example (catches load/syntax errors)"
 	@echo "make clean              remove built binaries and .rom files"
 
@@ -111,6 +111,8 @@ test-ports:
 	  out=$$(cd .. && SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy $(LUGFORTH:../%=%) examples/$$t 2>&1 | tail -1); echo "$$out"; \
 	  case "$$out" in PASS*) ;; *) exit 1;; esac; \
 	done
+	@printf "%-20s " music/abc_random_tests.fs; \
+	out=$$(cd .. && $(LUGFORTH:../%=%) examples/music/abc_random_tests.fs 2>&1 | grep 'ALL TESTS PASSED'); echo "$${out:-FAILED}"; test -n "$$out"
 
 smoke:
 	@for f in $(SDL2_EXAMPLES); do \

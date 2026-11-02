@@ -28,7 +28,7 @@
 #include "common/calls.h"
 
 #ifndef LUGFORTH_SIM
-# define HEAP_SIZE (150 * 1024)
+# define HEAP_SIZE (180 * 1024)
 #else
 # define HEAP_SIZE (300 * 1024)
 #endif

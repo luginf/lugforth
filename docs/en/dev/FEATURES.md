@@ -27,6 +27,9 @@ hooks `render-hook`, `active-hook`, `latency` and `scan?`.
 `examples/music/gfx_pianoroll.fs` is a piano-roll sequencer (4 tracks,
 chainable 16-step patterns, MIDI+soundfont playback, `.mid` and ABC
 export); POSIX only, not ported to the web build.
+`examples/music/abc_random.fs` makes random tunes in ABC (12 bars, voice 1 an arpeggio,
+voice 2 chords or counterpoint) and loops them on the PC, the Pico and the ESP32
+(see docs/en/dev/PORTS.md); its tests are in `make -C examples test-ports`.
 
 ### Files
 

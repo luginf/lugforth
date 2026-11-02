@@ -19,7 +19,7 @@
 #                     out/rpi/pi4/kernel8.img
 #   make run          QEMU virt, console in this terminal (Ctrl-A X quits)
 #   make run-pi3      QEMU raspi3b, same kernel8.img as a real Pi 3
-#   make run-pty      QEMU virt on a pty, for tools/pico_send.py -p /dev/pts/N
+#   make run-pty      QEMU virt on a pty, for tools/board_evaluate.py -p /dev/pts/N
 #   make screen       QEMU raspi3b with its screen in a window, keys from here
 #   make gui          the same window as the Forth console itself: text on the
 #                     screen, keys from the window (BOARD=virt: with -device ramfb)

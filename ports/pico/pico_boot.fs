@@ -15,10 +15,11 @@
 
 needs ../../common/phase1.fs
 needs allocation.fs
+needs bindings.fs
 needs ../../common/phase2.fs
-needs ../../common/tasks.fs
-needs ../../common/streams.fs
-needs ../../common/ansi.fs
+needs ../../common/phase_filetools.fs
 needs platform.fs
+needs ../../common/abc.fs
+needs abc.fs
 needs autoboot.fs
 needs ../../common/fini.fs
