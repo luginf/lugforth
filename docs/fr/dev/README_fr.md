@@ -14,6 +14,7 @@ version) sont dans [CLAUDE.md](../../../CLAUDE.md) à la racine du dépôt.
 | [FEATURES.md](FEATURES_fr.md) | ce qui existe et comment ça a été testé: mots SDL2, éditeurs (`ed`, `writhdeck`), jeux et portages d'exemples, `graphic`, `play` |
 | [PORTS.md](PORTS_fr.md) | Android, Raspberry Pi, PC UEFI, terminaux, version et console web, GBA, le disque en matériel nu |
 | [PITFALLS.md](PITFALLS_fr.md) | pièges rencontrés: Forth, chargeurs, SDL2, web, chaînes de démarrage de nouvelles plateformes, astuces de test |
+| [ABC.md](ABC_fr.md) | musique ABC: lecteurs de chaque plateforme, graine et construction des morceaux de `abc_random.fs` (en français seulement) |
 | [STATUS.md](STATUS_fr.md) | état de Lugforth: points forts et points faibles (32/64 bits, vitesse, vérifications) |
 | [inspirations/](inspirations/) | notes sur d'autres projets, avec points forts, points faibles et ce qu'on peut en retirer: [Dusk OS](inspirations/duskos_fr.md), [EditForthLin](inspirations/editforthlin_fr.md), [gforth](inspirations/gforth_fr.md), [pforth](inspirations/pforth_fr.md) |
 | [IDEAS.md](IDEAS_fr.md) | questions ouvertes, idées restantes, autres Forth |

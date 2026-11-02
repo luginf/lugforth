@@ -69,13 +69,18 @@ create key-hz 262 , 277 , 294 , 311 , 330 , 349 , 370 , 392 , 415 , 440 , 466 , 
 2 value melody-weight
 create vp 9 cells allot            \ by voice: the event it plays now
 create hzs 8 cells allot   create vws 8 cells allot   0 value hz-n
+create hst 8 cells allot   create hen 8 cells allot   0 value cur-st   0 value cur-en   \ start and end of each note, in ticks
 0 value tt   0 value t0   0 value tune-end   0 value next-t
 : vp@ ( v -- i ) cells vp + @ ;   : vp! ( i v -- ) cells vp + ! ;
 : ev-end ( i -- ticks ) dup nt@ swap nd@ + ;
 : find-ev { i v -- i' }   \ the first event from i that is in voice v
   begin i n-notes < if i nv@ v <> else 0 then while i 1+ to i repeat i ;
 : ev-over? ( i -- f ) dup n-notes < if ev-end tt <= else drop 0 then ;
-: hz+ ( hz v -- ) hz-n 8 < if hz-n cells vws + !  hz-n cells hzs + !  1 +to hz-n else 2drop then ;
+: hz+ ( hz v -- )
+  hz-n 8 < if
+    hz-n cells vws + !  hz-n cells hzs + !
+    cur-st hz-n cells hst + !  cur-en hz-n cells hen + !  1 +to hz-n
+  else 2drop then ;
 : due ( t -- ) next-t min to next-t ;
 0 value va-v   0 value va-i
 : voice-add ( v -- )   \ the notes of voice v now: its chord, or nothing in a rest
@@ -86,6 +91,7 @@ create hzs 8 cells allot   create vws 8 cells allot   0 value hz-n
   va-i nt@ tt > if va-i nt@ due exit then               \ not started: a rest
   va-i ev-end tt - 10 * va-i nd@ < if va-i ev-end due exit then   \ the last tenth is silence: repeated notes stay apart
   va-i ev-end va-i nd@ 10 / - due
+  va-i nt@ to cur-st   va-i ev-end to cur-en
   begin va-i n-notes < if va-i nt@ va-v vp@ nt@ = va-i nv@ va-v = and else 0 then while
     va-i nk@ key>hz  va-v hz+  1 +to va-i
   repeat ;
@@ -133,6 +139,7 @@ create hzs 8 cells allot   create vws 8 cells allot   0 value hz-n
 : pwm-tone ( -- ) pwm-slice 125 0 pwm_set_clkdiv_int_frac ;
 create ph 4 cells allot   create inc 4 cells allot   create amp 4 cells allot   create thr 4 cells allot
 0 value rate   0 value cal-n   0 value cal-t   0 value cal-d
+-1 value c-mix                   \ the mixer in C (mixer.h), 31250 samples a second; 0: the Forth loop above
 : slot-step ( sum i -- sum' )
   cells >r
   r@ ph + @  r@ inc + @ +  $ffffff and  dup r@ ph + !
@@ -142,6 +149,7 @@ create ph 4 cells allot   create inc 4 cells allot   create amp 4 cells allot   
 : mix-block ( n -- ) 0 ?do mix-sample loop ;
 : mix-rate! ( -- )   \ samples a second, the slots silent
   amp 4 cells erase   inc 4 cells erase   ph 4 cells erase   thr 4 cells erase
+  c-mix if 31250 to rate  buzzer-pin mix_start exit then
   0 to cal-n   ms-ticks to cal-t
   begin 64 mix-block 64 +to cal-n  ms-ticks cal-t - dup to cal-d 50 < 0= until
   cal-n 1000 * cal-d / to rate ;
@@ -153,6 +161,7 @@ create ph 4 cells allot   create inc 4 cells allot   create amp 4 cells allot   
 \ voice and take the free slots above the voices. Voice 1, the melody, is a
 \ square wave (half of the period high), the others a pulse of a quarter.
 create slot-used 9 cells allot   create cnt 9 cells allot
+create amp0 4 cells allot   create sst 4 cells allot   create sen 4 cells allot   \ volume, start, end of each slot
 0 value vol-unit   0 value sl   0 value sv
 : vweight ( v -- w ) 1 = if melody-weight else 1 then ;
 : tune-vol-unit ( -- )
@@ -163,7 +172,7 @@ create slot-used 9 cells allot   create cnt 9 cells allot
 : slot-for ( v -- s )
   dup 5 < over 1- cells slot-used + @ 0= and if 1- else drop free-slot then ;
 : slots-set ( -- )   \ the 4 slots from the notes of gather
-  cnt 9 cells erase   slot-used 9 cells erase   inc 4 cells erase   amp 4 cells erase
+  cnt 9 cells erase   slot-used 9 cells erase   inc 4 cells erase   amp 4 cells erase   amp0 4 cells erase
   hz-n 0 ?do i cells vws + @ cells cnt + 1 swap +! loop
   hz-n 0 ?do
     i cells vws + @ to sv
@@ -171,12 +180,25 @@ create slot-used 9 cells allot   create cnt 9 cells allot
     sl 0< 0= if
       1 sl cells slot-used + !
       i cells hzs + @ 16777216 rate */  sl cells inc + !
-      sv vweight vol-unit *  sv cells cnt + @ /  sl cells amp + !
+      sv vweight vol-unit *  sv cells cnt + @ /  sl cells amp0 + !
+      i cells hst + @ sl cells sst + !   i cells hen + @ sl cells sen + !
       sv 1 = if $800000 else $400000 then  sl cells thr + !
     then
   loop ;
+\ A note fades while it sounds, as a plucked string does: its volume goes down by
+\ env-depth/256 (about a third) from its start to its end, which keeps the
+\ notes apart and softens the square waves. 0 gives the flat volume of before.
+90 value env-depth
+: env-amp ( i -- amp )   \ the volume of slot i at the time tt
+  >r
+  r@ cells sen + @  r@ cells sst + @ -  dup 1 < if drop 1 then
+  tt r@ cells sst + @ -  0 max over min  env-depth *  swap /
+  256 swap -  r@ cells amp0 + @ *  256 /  r> drop ;
+: env-apply ( -- ) 4 0 do i env-amp  i cells amp + ! loop ;
+: push-slots ( -- )
+  4 0 do i  i cells inc + @  i cells amp + @  i cells thr + @  mix_slot loop ;
 0 value blk-n
-: mix-end ( -- ) 0 duty! pwm-tone 0 pin-tone ;
+: mix-end ( -- ) mix_stop 0 duty! pwm-tone 0 pin-tone ;
 : mix-play ( -- )
   begin key? while key drop repeat
   tune-init  tune-vol-unit  pwm-mix  mix-rate!
@@ -186,9 +208,17 @@ create slot-used 9 cells allot   create cnt 9 cells allot
     tt tune-end <
   while
     tt next-t < 0= if gather slots-set then
-    128 mix-block
-    1 +to blk-n
-    blk-n 15 and 0= if  halt? if mix-end exit then  pause then
+    env-apply
+    c-mix if
+      push-slots                       \ the interrupt of the timer makes the samples meanwhile
+      1 +to blk-n
+      blk-n 7 and 0= if  halt? if mix-end exit then then
+      4 ms
+    else
+      128 mix-block
+      1 +to blk-n
+      blk-n 15 and 0= if  halt? if mix-end exit then  pause then
+    then
   repeat mix-end ;
 
 \ The words to use, in forth; all the others stay in the hidden vocabulary sdl2
@@ -199,6 +229,7 @@ forth-wordlist current !
 : tune-play ( -- ) mix-play ;
 : abc-play ( a n -- ) abc mix-play ;
 : abc-arp ( a n -- ) abc arp-play ;
+: abc-decay ( n -- ) to env-depth ;           \ 0 to 256: how much a note fades (90 by default, 0 none)
 : abc-halt-with ( xt -- ) to halt-xt ;   \ xt ( -- f ) true stops the tune; 0 for the key
 
 previous previous previous previous

@@ -26,6 +26,8 @@
 # include "hardware/adc.h"
 # include "hardware/gpio.h"
 # include "hardware/pwm.h"
+# include "hardware/timer.h"
+# include "hardware/irq.h"
 #endif
 
 // TODO: Implement FLUSH-FILE.
@@ -37,6 +39,7 @@
   OPTIONAL_TIME_SUPPORT \
   OPTIONAL_GPIO_SUPPORT \
   OPTIONAL_PWM_SUPPORT \
+  MIXER_SUPPORT \
   OPTIONAL_ADC_SUPPORT \
   CALLING_OPCODE_LIST \
   FLOATING_POINT_LIST
@@ -63,6 +66,7 @@
 // File 0, 1 and 2 are the console (stdio, USB on the chip); the others are in the flash (ports/pico/flashfs.h): a directory of at most
 // 119 names of 23 characters, no folders; a file open for writing at a time.
 #include "ports/pico/flashfs.h"
+#include "ports/pico/mixer.h"
 
 #define REQUIRED_FILES_SUPPORT \
   X("R/O", R_O, PUSH 0) \
@@ -162,6 +166,21 @@
    YV(pico, pwm_set_gpio_level, pwm_set_gpio_level(n1, n0); DROPn(2)) \
    YV(pico, pwm_set_enabled, pwm_set_enabled(n1, n0 != 0); DROPn(2))
 #endif
+
+// The mixer of the ABC player (ports/pico/mixer.h), in the vocabulary pico.
+#ifdef LUGFORTH_SIM
+# define MIXER_SIM_SUPPORT \
+   YV(pico, mix_log, PUSH (cell_t) mix_log) \
+   YV(pico, mix_logn, PUSH mix_logn)
+#else
+# define MIXER_SIM_SUPPORT
+#endif
+#define MIXER_SUPPORT \
+   YV(pico, mix_start, mix_start(n0); DROP) \
+   YV(pico, mix_slot, mix_slot(n3, (uint32_t) n2, (int32_t) n1, (uint32_t) n0); DROPn(4)) \
+   YV(pico, mix_block, mix_block(n0); DROP) \
+   YV(pico, mix_stop, mix_stop()) \
+   MIXER_SIM_SUPPORT
 
 #ifdef LUGFORTH_SIM
 # define OPTIONAL_ADC_SUPPORT

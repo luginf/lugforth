@@ -36,7 +36,12 @@ store a file in the flash use tools/pico_put.py, see below):
   answers instead) and stops at the first error. Lines must stay under 200
   characters. If the last line starts a program that waits for keys (a game),
   the script turns into a small terminal so you can use it (Ctrl-A then Ctrl-X quits).
-  Random music with a button: examples/music/abc_random.fs makes a new tune of
+  Sound quality: the mix is made in C by a timer interrupt (ports/pico/mixer.h) at
+31250 samples a second, without gaps while Forth works, with exact pitches, and every note fades while it sounds. `90 abc-decay`
+sets how much it fades (0 to 256, 90 by default, 0 gives the flat volume of the
+first version). Heard on a Maker Pi Pico V1: clearly better than the first Forth loop.
+
+Random music with a button: examples/music/abc_random.fs makes a new tune of
 12 bars (arpeggio melody, chords or counterpoint) and plays it again and
 again; a button on GP20 (to ground) starts another one:
 

@@ -54,7 +54,7 @@ Lancez `lugforth` (voir [Binaires](#binaires), ou compilez-le avec
 `ninja posix`). Vous obtenez une bannière et l'invite:
 
 ```
-Lugforth v2026.11.2.14
+Lugforth v2026.11.2.16
 :; ===========>/>
 type 'info' for help
  ok
@@ -1208,14 +1208,15 @@ marchent sur l'écran texte sans ANSI.SYS; `cd`, `pwd`, `md`, `rd`, `ls`
 et les mots de fichiers utilisent les disques de DOS (noms en 8.3 sauf
 si DOS a les noms longs). `autoexec.fs` du répertoire courant s'exécute
 au démarrage. `lugforth < in.txt > out.txt` exécute les lignes d'un
-fichier. Ctrl+Pause arrête un mot en cours. `screen` prend le plus
-petit mode VESA de 32 bits qui contient l'écran et son zoom;
-`close-screen` rend le mode texte. Le son demande une Sound Blaster 16
-(la variable `BLASTER`, que DOSBox définit). Copiez le dossier
-`out/dos/disk` sur le disque DOS: ses noms sont coupés en 8.3 comme DOS
-les coupe, si bien que `include games/gfx_breakout.fs` marche sans noms
-longs; `ed` et `writhdeck` viennent de son LIB. `lugforth prog.fs`
-inclut le fichier au démarrage. Essayé dans DOSBox et DOSBox-X. Voir [ports/dos/README.md](../../ports/dos/README.md).
+fichier. Ctrl+Pause arrête un mot en cours. `screen` prend le plus petit
+mode VESA de 32 bits qui contient l'écran et son zoom; `close-screen`
+rend le mode texte. Le son demande une Sound Blaster 16 (la variable
+`BLASTER`, que DOSBox définit). Copiez le dossier `out/dos/disk` sur le
+disque DOS: ses noms sont coupés en 8.3 comme DOS les coupe, si bien que
+`include games/gfx_breakout.fs` marche sans noms longs; `ed` et
+`writhdeck` viennent de son LIB. `lugforth prog.fs` inclut le fichier au
+démarrage. Essayé dans DOSBox et DOSBox-X. Voir
+[ports/dos/README.md](../../ports/dos/README.md).
 
 ## ESP32
 
@@ -1449,12 +1450,16 @@ il n'a pas été essayé sur une carte.
 `V:2`... et les accords) par logiciel et écrit la somme comme niveau
 d'un PWM de 8 bits ; une touche tapée sur la ligne série l'arrête.
 `abc-arp` joue les notes à tour de rôle. Un morceau va dans un fichier
-envoyé avec `pico_put.py`, puis `include canon.fs` (voir la
-section ESP32 pour la forme de `canon.fs` ; les deux premières lignes
-sont `pico-abc` et `18 buzzer`). Sur un Pico nu, mettre un piézo passif,
-ou un petit haut-parleur avec une résistance, entre un GPIO et GND.
-Détails : [dev/PORTS_fr.md](dev/PORTS_fr.md) et
-[ports/pico/README.txt](../../ports/pico/README.txt).
+envoyé avec `pico_put.py`, puis `include canon.fs` (voir la section
+ESP32 pour la forme de `canon.fs` ; les deux premières lignes sont
+`pico-abc` et `18 buzzer`). Sur un Pico nu, mettre un piézo passif, ou
+un petit haut-parleur avec une résistance, entre un GPIO et GND. Détails
+: [dev/PORTS_fr.md](dev/PORTS_fr.md) et
+[ports/pico/README.txt](../../ports/pico/README.txt). Sur le Pico le
+mélange est fait en C par une interruption du minuteur à 31250
+échantillons par seconde et chaque note s'éteint doucement pendant
+qu'elle sonne : `90 abc-decay` règle de combien (0 à 256), `0 abc-decay`
+donne un volume plat.
 
 ### Musique aléatoire, avec un bouton
 

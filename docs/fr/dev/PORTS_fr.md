@@ -368,6 +368,25 @@ l'utilise tout seul pour un tel fichier (un envoi ligne à ligne donnait
 NOT FOUND à la deuxième ligne d'un morceau en r~). Essayé contre une
 fausse carte et dans out/pico-sim, pas sur une carte.
 
+### Pico : le mélangeur en C (ports/pico/mixer.h)
+
+Le mélange du lecteur ABC est maintenant fait en C par une interruption
+d'une alarme du minuteur, toutes les 32 microsecondes (31250
+échantillons par seconde), quoi que fasse le Forth : `mix_start`,
+`mix_slot` et `mix_stop` dans le vocabulaire `pico`. Une première
+version faisait des blocs de 512 échantillons dans une boucle en C, et
+la milliseconde que le Forth prenait entre deux blocs s'entendait comme
+un trémolo (60 coupures par seconde) ; l'interruption n'a pas de trou.
+L'interruption s'arrête seule 128 ms après le dernier `mix_slot` (une
+erreur au milieu d'un morceau). Les hauteurs sont exactes (pas de
+calibrage) et la fréquence d'échantillonnage est haute, donc les notes
+aiguës se replient bien moins. Chaque note s'éteint aussi doucement
+pendant qu'elle sonne (`abc-decay`, 90/256 par défaut, 0 pour un volume
+plat), et `0 to c-mix` (vocabulaire caché) ramène la boucle Forth.
+Essayé dans out/pico-sim seulement (niveaux d'un bloc comparés à une
+copie Python de la boucle ; valeurs de l'enveloppe) ; la version à interruption a été écoutée sur une Maker Pi Pico V1 : le trémolo de la version par blocs a disparu. Détails dans
+docs/fr/dev/ABC_fr.md.
+
 ### Pico : fichiers dans la flash (ports/pico/flashfs.h)
 
 Les mots de fichiers de la version Pico (`REQUIRED_FILES_SUPPORT` dans

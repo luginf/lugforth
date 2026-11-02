@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.11.2.14
+Lugforth v2026.11.2.16
 :; ===========>/>
 type 'info' for help
  ok
@@ -1170,14 +1170,15 @@ See
 
 ## ESP32
 
-The ESP32 build is ESP32forth with the Lugforth additions (ABC tunes,
-a small editor). `ninja esp32` makes `out/esp32/ESP32forth/ESP32forth.ino`:
-open it in the Arduino IDE, pick the board and, in Tools, a partition
-scheme with SPIFFS ("Default 4MB with spiffs"), compile and upload. The
-prompt is on the serial line at 115200 baud: the serial monitor of the
-IDE will do, but minicom, picocom or screen are needed for `ed`.
-Notes on the files, the editor and the music, with the commands to
-try; written for an ESP32-C3 and tried there, except where said.
+The ESP32 build is ESP32forth with the Lugforth additions (ABC tunes, a
+small editor). `ninja esp32` makes
+`out/esp32/ESP32forth/ESP32forth.ino`: open it in the Arduino IDE, pick
+the board and, in Tools, a partition scheme with SPIFFS ("Default 4MB
+with spiffs"), compile and upload. The prompt is on the serial line at
+115200 baud: the serial monitor of the IDE will do, but minicom, picocom
+or screen are needed for `ed`. Notes on the files, the editor and the
+music, with the commands to try; written for an ESP32-C3 and tried
+there, except where said.
 
 ### Files that survive a reset
 
@@ -1389,12 +1390,15 @@ to use and sends line by line; it was not tried on a board.
 `abc-play` mixes up to four notes at once (the voices `V:1`, `V:2`...
 and the chords) in software and writes the sum as the level of an 8 bit
 PWM; a key typed on the serial line stops it. `abc-arp` plays the notes
-by turns. A tune goes in a file sent with `pico_put.py`, then
-`include canon.fs` (see the ESP32 section for the shape of `canon.fs`;
-the first lines are `pico-abc` and `18 buzzer`). On a bare Pico put a
-passive piezo, or a small speaker through a resistor, between a GPIO
-and GND. Details: [dev/PORTS.md](dev/PORTS.md) and
-[ports/pico/README.txt](../../ports/pico/README.txt).
+by turns. A tune goes in a file sent with `pico_put.py`, then `include
+canon.fs` (see the ESP32 section for the shape of `canon.fs`; the first
+lines are `pico-abc` and `18 buzzer`). On a bare Pico put a passive
+piezo, or a small speaker through a resistor, between a GPIO and GND.
+Details: [dev/PORTS.md](dev/PORTS.md) and
+[ports/pico/README.txt](../../ports/pico/README.txt). On the Pico the
+mix is made in C by a timer interrupt at 31250 samples a second and each
+note fades while it sounds: `90 abc-decay` sets how much (0 to 256), `0
+abc-decay` gives a flat volume.
 
 ### Random music, with a button
 

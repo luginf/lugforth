@@ -336,6 +336,22 @@ for such a file (a line by line send gave NOT FOUND on the second line
 of an r~ tune). Tested against a fake board and in out/pico-sim, not on
 a board.
 
+### Pico: the mixer in C (ports/pico/mixer.h)
+
+The mix of the ABC player is now made in C by an interrupt of a timer
+alarm, every 32 microseconds (31250 samples a second), whatever the
+Forth does: `mix_start`, `mix_slot` and `mix_stop` in the vocabulary
+`pico`. A first version made blocks of 512 samples from a C loop, and
+the 1 ms the Forth took between two blocks was heard as a tremolo (60
+cuts a second); the interrupt has no gap. The interrupt stops by itself
+128 ms after the last `mix_slot` (an error in the middle of a tune). The
+pitches are exact (no calibration) and the sample rate is high, so high
+notes alias much less. Each note also fades while it sounds
+(`abc-decay`, 90/256 by default, 0 for a flat volume), and `0 to c-mix`
+(hidden vocabulary) brings back the Forth loop. Tried in out/pico-sim
+only (levels of a block compared with a Python copy of the loop; the
+envelope values); the interrupt version was heard on a Maker Pi Pico V1: the tremolo of the block version is gone. Details in docs/fr/dev/ABC_fr.md.
+
 ### Pico: files in the flash (ports/pico/flashfs.h)
 
 The file words of the Pico build (`REQUIRED_FILES_SUPPORT` in
