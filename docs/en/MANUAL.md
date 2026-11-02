@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.11.2.16
+Lugforth v2026.11.2.20
 :; ===========>/>
 type 'info' for help
  ok
@@ -1011,9 +1011,11 @@ the Raspberry Pi, Windows or the ESP32.
 | `gfx_breakout.fs` | breakout |
 | `gfx_roguelike.fs` | roguelike |
 | `gfx_pacman.fs` | pac-man: four ghosts with their own targets, scatter and chase, power pellets, tunnel, 3 lives; arrows or wasd, `p` pauses; also on the web and in DOS |
+| `gfx_digger.fs` | digger: tunnel through the earth for emeralds and gold, bags that fall, nobbins and hobbins, fire ball, cherry; arrows or wasd, space or `f` fires, `p` pauses; also on the web |
 | `gfx_tetris.fs`, `gfx_snake.fs`, `gfx_minesweeper.fs` | rewritten after the games of r3forth |
 | `gfx_mastermind.fs` | mastermind: four colors out of six in ten tries, keyboard or mouse |
 | `gfx_3d.fs` | turning wireframes |
+| `gfx_sprited.fs` | sprite editor (with `gfx_spr.fs`, the sprite words; POSIX): draws the sprites of `gfx_digger_sprites.fs` and saves them |
 | `gfx_2048.fs` | sliding tiles; `--no-anim` turns the animation off |
 | `2048.fs` | 2048 in the terminal |
 | `zmachine.fs` | Z-machine interpreter in one file: plays Infocom and Inform stories (`.z3 .z4 .z5 .z8`), `zplay story.z5` (try `lugforth examples/games/zmachine.fs examples/games/zmachine/cave.z5`, or `cave_fr.z5` in French); also under gforth (`ports/gforth/zmachine-gforth.fs`) |

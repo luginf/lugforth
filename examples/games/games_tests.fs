@@ -1,4 +1,4 @@
-\ Tests of the logic of gfx_tetris.fs, gfx_snake.fs, gfx_invaders.fs, gfx_minesweeper.fs and gfx_mastermind.fs,
+\ Tests of the logic of gfx_tetris.fs, gfx_snake.fs, gfx_invaders.fs, gfx_minesweeper.fs, gfx_mastermind.fs, gfx_pacman.fs and gfx_digger.fs,
 \ loaded without their game loop:  lugforth examples/games/games_tests.fs
 \ (the output ends with PASS). Needs libSDL2, but opens no window.
 
@@ -220,6 +220,124 @@ next-level   pm-level 2 t=   pm-state 0 t=   pm-dots 159 t=
 \ the ghosts leave the house one after the other
 new-game   1 to pm-state
 251 0 do play-step loop   2 e-st @ 0 <> -1 t=
+depth 0 t=
+
+( ---- Digger ---- )
+: digger-no-run ;
+include gfx_digger.fs
+1 rand-seed !
+: count-items ( v -- n )   0 swap  dg-rows 0 do dg-cols 0 do  i j item-at c@ over = if swap 1+ swap then  loop loop drop ;
+: count-bags ( -- n )   0  dg-maxbag 0 do i bag.st @ 0<> 1 and + loop ;
+: clean-level ( -- )   ( a game with no bags and no items, to build the cases by hand )
+  new-game  dg-maxbag 0 do 0 i bag.st ! loop  dg-item dg-cols dg-rows * erase  99 to dg-left ;
+: steps ( n -- )   0 do dg-step loop ;
+\ a new level: the corridor on top, the start tunnel, emeralds and four bags
+new-game
+dg-state 0 t=   dg-lives 3 t=   dg-level 1 t=   dg-left 0> -1 t=
+1 count-items dg-left t=   count-bags 4 t=
+0 0 cell-clear? -1 t=   14 0 cell-clear? -1 t=   0 1 cell-clear? 0 t=
+6 9 cell-clear? -1 t=   8 9 cell-clear? -1 t=   5 9 cell-clear? 0 t=
+6 9 0 link? -1 t=   5 9 0 link? 0 t=   7 9 3 link? 0 t=   3 0 0 link? -1 t=
+dg-gx 140 t=   dg-gy 162 t=
+\ taking the earth away, and not far from the field
+2 5 dirt? -1 t=   20 50 10 9 clear-rect   2 5 dirt? 0 t=   -50 -50 10 10 clear-rect   500 500 10 10 clear-rect   -1 -1 dirt? -1 t=
+\ the digger tunnels up, eats the emerald in the way and digs the cell
+clean-level   1 7 8 item-at c!   1 to dg-left
+9 0 do 3 walk-to loop
+dg-gy 144 t=   7 8 cell-clear? -1 t=   dg-left 0 t=   dg-score 25 t=   7 8 item-at c@ 0 t=
+\ at the edge of the field it stops
+clean-level   0 to dg-gx  0 to dg-gy  2 to dg-gd   2 walk-to   dg-gx 0 t=
+\ eight emeralds in a row: 250 more
+clean-level   0 to dg-left
+8 0 do  1 i 1 + 0 item-at c!  1 +to dg-left  loop
+0 to dg-gx  0 to dg-gy  0 to dg-gd
+90 0 do 0 walk-to loop
+dg-score 450 t=   dg-left 0 t=
+\ a bag over a free cell wobbles, then falls one cell and stays
+clean-level   0 to dg-gx  0 to dg-gy
+1 7 bag.st !  7 dg-cw * 7 bag.x !  6 dg-ch * 7 bag.y !   0 7 bag.t !  0 7 bag.n !   \ slot 7 (clean-level emptied them)
+7 dg-cw * 7 dg-ch * dg-cw dg-ch clear-rect
+1 steps   7 bag.st @ 2 t=
+40 steps  7 bag.st @ 3 t=
+20 steps  7 bag.st @ 1 t=   7 bag.y @ 7 dg-ch * t=
+\ two cells: it breaks into gold; a monster under it dies
+7 8 cell-clear? 0 t=
+7 dg-cw * 8 dg-ch * dg-cw dg-ch clear-rect
+1 1 mon.t !  7 dg-cw * 1 mon.x !  8 dg-ch * 1 mon.y !   0 1 mon.a !  500 1 mon.m !
+60 0 do bags-update collisions loop
+7 bag.st @ 0 t=   7 9 item-at c@ 2 t=   1 mon.t @ 0 t=   dg-score 250 t=
+\ a bag that falls on the digger kills it
+clean-level
+1 7 bag.st !  3 7 bag.st !  dg-gx 7 bag.x !  dg-gy 7 bag.y !
+collisions   dg-state 3 t=   dg-lives 2 t=
+\ pushing a bag along a tunnel
+clean-level
+8 dg-cw * 9 dg-ch * dg-cw dg-ch clear-rect   9 dg-cw * 9 dg-ch * dg-cw dg-ch clear-rect
+1 7 bag.st !  8 dg-cw * 7 bag.x !  9 dg-ch * 7 bag.y !
+0 to dg-gd   10 0 do 0 walk-to loop
+dg-gx 160 t=   7 bag.x @ 180 t=   dg-push -1 t=
+\ a bag cannot be pushed up, nor into earth
+clean-level   1 7 bag.st !  7 dg-cw * 7 bag.x !  8 dg-ch * 7 bag.y !   0 to dg-gd
+7 dg-cw * 8 dg-ch * dg-cw dg-ch clear-rect
+dg-gx 140 t=   3 to dg-gd   can-enter? 0 t=
+\ the distance to the digger along the tunnels; the nobbin and the hobbin choose
+clean-level   140 18 20 144 clear-rect
+bfs   7 9 dist-at c@ 0 t=   6 9 dist-at c@ 1 t=   7 0 dist-at c@ 9 t=   5 9 dist-at c@ 255 t=   14 0 dist-at c@ 16 t=
+7 0 2 nob-dir 1 t=   7 5 3 nob-dir 3 t=
+0 0 0 hob-dir 1 t=   14 9 0 hob-dir 2 t=
+\ a bag in the way
+1 7 bag.st !  7 dg-cw * 7 bag.x !  4 dg-ch * 7 bag.y !
+bfs   7 3 dist-at c@ 255 t=   7 5 dist-at c@ 4 t=   7 0 dist-at c@ 255 t=
+\ the fire ball hits the first monster on its way
+clean-level   5 dg-cw * to dg-gx  0 to dg-gy  0 to dg-gd
+1 3 mon.t !  8 dg-cw * 3 mon.x !  0 3 mon.y !
+fire!   dg-fon 1 t=   dg-fire-t 300 t=
+20 0 do fire-step loop
+3 mon.t @ 0 t=   dg-score 250 t=   dg-fon 0 t=
+fire!   dg-fon 0 t=
+\ ... and stops at the earth
+clean-level   5 dg-cw * to dg-gx  4 dg-ch * to dg-gy  0 to dg-gd   dg-gx dg-gy 20 18 clear-rect
+fire!   10 0 do fire-step loop   dg-fon 0 t=
+\ monsters meet the digger: death, or a meal when the cherry was eaten
+clean-level   1 1 mon.t !  dg-gx 1 mon.x !  dg-gy 1 mon.y !
+monsters-vs-digger   dg-state 3 t=   dg-lives 2 t=
+clean-level   100 to dg-bonus   1 1 mon.t !  dg-gx 1 mon.x !  dg-gy 1 mon.y !
+monsters-vs-digger   dg-state 0 t=   1 mon.t @ 0 t=   dg-score 200 t=
+1 2 mon.t !  dg-gx 2 mon.x !  dg-gy 2 mon.y !
+monsters-vs-digger   dg-score 600 t=
+\ a monster comes out after two seconds; no more than the level allows
+clean-level   0 to dg-spawned
+119 0 do spawn loop   mon-count 0 t=
+spawn   mon-count 1 t=   dg-spawned 1 t=
+\ the cherry, the free life at 20000
+clean-level   19990 to dg-score   20 score+   dg-lives 4 t=   dg-next-life 40000 t=
+\ the end of a life, of the game, then a new one
+clean-level   1 to dg-lives   kill-digger   dg-lives 0 t=
+100 steps   dg-state 2 t=   dg-best dg-score t=
+new-game   dg-state 0 t=   dg-lives 3 t=   dg-score 0 t=
+\ the level is done when the emeralds are all eaten, and the next one begins
+clean-level   0 to dg-left
+1 steps   dg-state 4 t=
+120 steps   dg-state 0 t=   dg-level 2 t=   dg-left 0> -1 t=   4 dg-level 2/ + 8 min count-bags t=
+\ a bag right above the digger: the fire goes down; the bag is kept 40 steps after he left
+clean-level   1 0 bag.st !  7 dg-cw * 0 bag.x !  5 dg-ch * 0 bag.y !
+7 dg-cw * to dg-gx   6 dg-ch * to dg-gy   3 to dg-gd   under-bag? -1 t=
+0 to dg-fire-t   0 to dg-fon   fire!   dg-fd 1 t=
+2 to dg-gd   under-bag? 0 t=
+0 bag.st @ 1 t=
+: sed-nth-t ( i -- spr )   cells spr-all + @ ;
+\ the sprites (gfx_spr.fs): cut into rectangles, and written as source again
+3 3 sprite: spr-t1
+  s" aa." spr-row
+  s" a.." spr-row
+  s" ..b" spr-row
+;sprite
+spr-t1 spr-n 3 t=   0 0 spr-t1 spr-pix@ 97 t=   2 2 spr-t1 spr-pix@ 98 t=
+spr-t1 spr-rects @ spr-rw 2 t=   spr-t1 spr-rects @ spr-rh 1 t=
+spr-t1 spr-rects cell+ @ spr-rw 1 t=   spr-t1 spr-rects 2 cells + @ spr-rc 98 t=
+spr-t1 spr-source evaluate
+spr-count 1- sed-nth-t   dup spr-n 3 t=   spr-grid c@ 97 t=
+bag spr-n 0> -1 t=   emerald spr-name s" emerald" compare 0 t=
 depth 0 t=
 
 : report ( -- )   tfail @ 0= if ." PASS " tn @ . cr else ." FAILED " tfail @ . cr then ;

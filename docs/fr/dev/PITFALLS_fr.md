@@ -434,3 +434,17 @@ court est ajouté dans l'un des trois `sdl2.fs`.
   opcode à ports/posix/main.c, ajoutez-le aussi à main_android.cpp, et
   essayez l'APK sur un téléphone (`adb logcat` ne montre rien du côté
   Forth).
+
+- Une bibliothèque partagée par plusieurs jeux
+  (`examples/graphics/gfx_spr.fs`) ne doit pas prendre de noms courts
+  qu'un jeu peut définir: `cell` (un mot de `gfx_tetris.fs`) changeait
+  au milieu du fichier de tests et les rectangles d'un sprite tombaient
+  sur sa grille; ses valeurs auxiliaires sont préfixées `sp-`. Écrire
+  `1 cells` et non `cell`.
+- Sur le web, `color`, `box` et les autres mots de dessin ne sont les
+  vrais qu'après `sdl2`. Un fichier chargé en premier par
+  `?run=a.fs,b.fs` qui les utilise sans `sdl2` recevait les versions du
+  graphisme de la console, qui appellent `evaluate` à chaque fois: la
+  page mourait après une cinquantaine d'appels avec
+  `TypeError: objects[op] is not a function` et le Forth n'affichait
+  rien. Mettre `sdl2` en tête d'une telle bibliothèque.

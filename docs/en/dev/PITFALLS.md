@@ -390,3 +390,15 @@ is added in one of the three `sdl2.fs`.
   console stayed black, with no message. After adding an opcode to
   ports/posix/main.c, add it to main_android.cpp too, and try the APK on
   a phone (`adb logcat` shows nothing from the Forth side).
+
+- A library shared by several games (`examples/graphics/gfx_spr.fs`) must
+  not take short names a game may define: `cell` (a word of
+  `gfx_tetris.fs`) changed in the middle of the test file and the
+  rectangles of a sprite landed on its grid; its helper values are
+  prefixed `sp-`. Say `1 cells` and the like, not `cell`.
+- On the web, `color`, `box` and the other drawing words are the real
+  ones only after `sdl2`. A file loaded first by `?run=a.fs,b.fs` that
+  uses them without `sdl2` got the console graphics versions, which call
+  `evaluate` each time: the page died after about fifty calls with
+  `TypeError: objects[op] is not a function` and the Forth side printed
+  nothing. Put `sdl2` at the top of such a library.

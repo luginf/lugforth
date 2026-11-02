@@ -16,26 +16,26 @@ et (même source, mêmes mots) la version web. Docs complètes:
 `examples/games/gfx_breakout.fs` et `examples/music/gfx_drums.fs` (une
 boîte à rythmes de 16 pas); ces deux derniers tournent aussi sans
 changement dans le navigateur par `ports/web/gfx_breakout.html` et
-`ports/web/gfx_drums.html`. `examples/games/gfx_roguelike.fs` utilise
-la planche de tuiles `examples/games/gfx_tiles.png` (dessinée par
+`ports/web/gfx_drums.html`. `examples/games/gfx_roguelike.fs` utilise la
+planche de tuiles `examples/games/gfx_tiles.png` (dessinée par
 `examples/games/make_gfx_tiles.fs`, un programme lugforth qui écrit le
 PNG à la main avec CRC-32, Adler-32 et un bloc zlib non compressé:
 aucune ressource extérieure; `examples/games/make_gfx_tiles.py` est le
 même programme en Python, gardé pour comparer les deux, mêmes pixels)
 par `sdl2-image` (`draw-part`, `image-tint`); `ports/web/sdl2.fs` a les
-mêmes mots d'image sur canevas et `ports/web/gfx_roguelike.html`
-exécute le même fichier. `load-image` réessaie un nom manquant sans ses
-dossiers sur les deux plateformes. `examples/music/fm/` est un
-synthétiseur FM à deux opérateurs avec clavier à l'écran et entrée MIDI,
-sur les deux plateformes, volontairement gardé hors de l'interpréteur
-(voir son README); l'interpréteur n'a que les crochets `render-hook`,
+mêmes mots d'image sur canevas et `ports/web/gfx_roguelike.html` exécute
+le même fichier. `load-image` réessaie un nom manquant sans ses dossiers
+sur les deux plateformes. `examples/music/fm/` est un synthétiseur FM à
+deux opérateurs avec clavier à l'écran et entrée MIDI, sur les deux
+plateformes, volontairement gardé hors de l'interpréteur (voir son
+README); l'interpréteur n'a que les crochets `render-hook`,
 `active-hook`, `latency` et `scan?`. `examples/music/gfx_pianoroll.fs`
 est un séquenceur piano-roll (4 pistes, motifs de 16 pas chaînables,
 lecture MIDI+soundfont, export `.mid` et ABC); POSIX seulement, pas
-porté sur le web.
-`examples/music/abc_random.fs` fait des airs aléatoires en ABC (12 mesures, voix 1
-en arpège, voix 2 en accords ou contrepoint) et les joue en boucle sur le PC, le
-Pico et l'ESP32 (voir docs/fr/dev/PORTS_fr.md); ses tests sont dans
+porté sur le web. `examples/music/abc_random.fs` fait des airs
+aléatoires en ABC (12 mesures, voix 1 en arpège, voix 2 en accords ou
+contrepoint) et les joue en boucle sur le PC, le Pico et l'ESP32 (voir
+docs/fr/dev/PORTS_fr.md); ses tests sont dans
 `make -C examples test-ports`.
 
 ### Fichiers
@@ -200,14 +200,14 @@ Reste à faire, d'après l'original (par ordre de priorité):
 
 ## Blocs et `blocks-editor` (common/blocks.fs, blocks_editor.fs) - 2026-10-31
 
-`common/blocks.fs` (uEforth) a les mots de blocs standard et un
-éditeur de lignes (vocabulaire `editor`: `l n p r a d e wipe`). Un seul
-tampon: un bloc qui en charge un autre casse (la suite du premier est
-lue dans le second), vérifié. `block` n'agrandit le fichier qu'à n*1024
-octets, l'écriture de `save-buffers` le porte à (n+1)*1024:
-`blocks-editor` affiche `max(blocs du fichier, n+1)`. Avant `use`, tout
-mot de bloc crée `blocks.fb` dans le répertoire courant (un `1 list`
-dans le dépôt en laisse un).
+`common/blocks.fs` (uEforth) a les mots de blocs standard et un éditeur
+de lignes (vocabulaire `editor`: `l n p r a d e wipe`). Un seul tampon:
+un bloc qui en charge un autre casse (la suite du premier est lue dans
+le second), vérifié. `block` n'agrandit le fichier qu'à n*1024 octets,
+l'écriture de `save-buffers` le porte à (n+1)*1024: `blocks-editor`
+affiche `max(blocs du fichier, n+1)`. Avant `use`, tout mot de bloc crée
+`blocks.fb` dans le répertoire courant (un `1 list` dans le dépôt en
+laisse un).
 
 `blocks-editor [n]` (`common/blocks_editor.fs`, chargé par
 phase_filetools.fs après visual.fs, donc dans toute amorce avec
@@ -215,17 +215,17 @@ fichiers) est une chaîne compilée au premier usage, comme `visual`: pas
 de barre verticale dedans (`124 emit` dessine les barres). 63 places
 éditables par ligne (la 64e est le saut de ligne de blocks.fs, déplacé
 avec la ligne par couper/coller). Touches et usage: MANUAL_fr.md,
-section Blocs. Mode brut comme `editor-raw` de ed (IXON et ISIG
-coupés, pour que Ctrl+S, Ctrl+Q, Ctrl+C lui arrivent). Pièges
-rencontrés: `vocabulary x x definitions` sans `also` remplace le haut
-de l'ordre de recherche (ici termios: `[defined] new-termios` devenait
-faux et Ctrl+S gelait le pty); les mots de l'éditeur sont liés à la
-compilation, donc Ctrl+L charge avec l'ordre de l'appelant. Testé:
+section Blocs. Mode brut comme `editor-raw` de ed (IXON et ISIG coupés,
+pour que Ctrl+S, Ctrl+Q, Ctrl+C lui arrivent). Pièges rencontrés:
+`vocabulary x x definitions` sans `also` remplace le haut de l'ordre de
+recherche (ici termios: `[defined] new-termios` devenait faux et Ctrl+S
+gelait le pty); les mots de l'éditeur sont liés à la compilation, donc
+Ctrl+L charge avec l'ordre de l'appelant. Testé:
 `tools/blocks_editor_pty_test.py` (17 vérifications, posix) et
 `blocks()` dans tools/efi_qemu_test.py (3 vérifications: frappe sur la
 ligne série, Ctrl+C/Ctrl+V, écrit sur la FAT, chargé). Pas essayé: la
-fenêtre `--gui`, le Pi, Windows, l'ESP32 (la chaîne ajoute environ
-7 Ko à l'amorce).
+fenêtre `--gui`, le Pi, Windows, l'ESP32 (la chaîne ajoute environ 7 Ko
+à l'amorce).
 
 ## Portages d'eForth Windows (Marc Petremann, GPL) - fait le 2026-10-13
 
@@ -351,6 +351,103 @@ nécessaires), sokoban (niveaux de licence peu claire), raycaster, démos
 de terminal (feu, matrix, tore), util/penner.r3 (assouplissements),
 lib/sdl2poly.r3 (remplissage de polygones).
 
+## Digger (examples/games/gfx_digger.fs) - fait le 2026-11-02
+
+Un jeu façon Digger (le jeu PC de 1983), écrit d'après les règles telles
+qu'elles sont largement décrites; les niveaux sont tirés au hasard et
+les images sont des rectangles. POSIX et web
+(`terminal.html?run=gfx_spr.fs,gfx_digger_sprites.fs,gfx_digger.fs`);
+pas essayé sous DOS (le script de préparation le garderait sous le nom
+`GFX_DIGG.FS`, et le nom du fichier de sprites est trop long pour le
+8.3).
+
+- Le terrain fait 15 x 10 cellules de 20 x 18 pixels. La terre est
+  gardée en sous-cellules d'une demi-cellule (30 x 20), si bien qu'un
+  tunnel avance d'une demi-cellule et que les monstres peuvent le
+  suivre: un lien entre deux cellules est ouvert quand les quatre
+  sous-cellules des deux sont libres (`link?`). Les positions sont en
+  pixels, 2 par pas (3 pour un sac qui tombe), un pas toutes les 16 ms
+  avec la boucle à pas fixe de `gfx_pacman.fs`; un personnage ne choisit
+  sa route que lorsqu'il est aligné sur une cellule.
+- Les nobbins suivent une carte de distances en largeur jusqu'au digger
+  (`bfs`), les hobbins vont droit sur le digger en creusant. Un sac
+  au-dessus d'une cellule qui se libère vacille, tombe, se brise en or
+  après plus d'une cellule, et peut être poussé le long d'un tunnel (pas
+  vers le haut ni le bas). Un digger arrivé juste sous un sac et qui
+  continue de pousser vers le haut le retient : il tremble mais ne
+  tombe pas tant que le digger part ou lâche la touche, puis tremble
+  encore 10 pas (`held?`, `bag-wobble`) pour lui laisser le temps de
+  partir. Tirer en poussant
+  vers le haut contre un sac envoie le tir vers le bas.
+- Les mots sont préfixés `dg-` ou ont des noms peu courants (`bag.st`,
+  `mon.t`...): un nom comme celui d'un mot `sdl2` est masqué sur le web
+  et sous DOS (voir PITFALLS). `walk-to ( d -- )` et `fire!` portent la
+  logique pour que les tests les pilotent sans touches.
+- Tests: la section « Digger » de `examples/games/games_tests.fs`
+  (niveaux, tunnels, repas, série de huit, sacs, écrasement, poussée,
+  carte des distances, choix des monstres, boule de feu, repas du bonus,
+  apparition, vies, niveau fini). Regardé dans une vraie fenêtre X
+  (Xvfb + `xdotool` + `import`) et dans Chromium sans écran par CDP
+  (l'écran se dessine, les monstres sortent, le digger creuse et meurt).
+- Les images ne sont plus du code: elles sont dans
+  `gfx_digger_sprites.fs`, faites avec `gfx_spr.fs` et dessinées avec
+  `gfx_sprited.fs` (section suivante). Le corps du digger est le
+  caractère `R`: le jeu change sa couleur (`spr-pal`) pour le
+  clignotement et la mort.
+- Laissé de côté par rapport à l'original: la musique du mode bonus, le
+  second joueur, les niveaux dessinés à la main (les 8 cartes), le
+  détail des vies gagnées avec les cerises; les sons sont des bips.
+
+## Sprites et éditeur de sprites - fait le 2026-11-02
+
+`examples/graphics/gfx_spr.fs` (POSIX et web): un sprite est une grille
+de caractères (jusqu'à 63 x 63), un par pixel; `.` est transparent, tout
+autre caractère est une couleur d'une palette commune
+(`$rrggbb caractère spr-pal`, lue à chaque dessin: une couleur peut
+changer). Un fichier de sprites est du Forth ordinaire:
+
+    $b89a58 98 spr-pal              \ la couleur de 'b'
+    16 16 sprite: coin
+      s" ....bbbb........" spr-row   ...
+    ;sprite
+    coin 10 20 spr-draw             \ aussi spr-drawn ( spr x y échelle -- )
+
+`;sprite` découpe la grille en une courte liste de rectangles
+(gloutonne, une couleur chacun, `spr-build`): un sprite coûte quelques
+`box`, pas un par pixel; `spr-source` réécrit le texte. Les sprites sont
+listés dans `spr-all` / `spr-count`. Testé dans la partie "Digger" de
+`examples/games/games_tests.fs` (découpage, aller-retour du source).
+
+`examples/graphics/gfx_sprited.fs` (POSIX, SDL2) est l'éditeur:
+`lugforth examples/graphics/gfx_sprited.fs` ouvre
+`examples/games/gfx_digger_sprites.fs` (un autre fichier: voir l'en-tête
+de l'éditeur). Souris: le bouton gauche peint, le droit efface, le
+milieu prend la couleur; un clic sur une couleur ou sur un nom la
+choisit. Touches: `s` sauvegarde (les lignes de commentaire du début
+sont gardées), `u` annule (un pas), `c` efface, `h` `v` retournent, les
+flèches décalent (en rebouclant), `d` duplique le sprite, `n` une
+nouvelle couleur, `1 2` `3 4` `5 6` rouge, vert, bleu en moins et en
+plus, Tab sprite suivant, Échap quitte sans sauvegarder. La fenêtre
+montre le sprite sur la couleur de la terre, à taille réelle et
+agrandi, avec le nombre de boîtes. Essayé dans une vraie fenêtre X
+(Xvfb): les sprites se chargent, un pixel est peint, le fichier est
+écrit et se recharge à l'identique. Pour importer une image, rien
+encore: un PNG pourrait être lu avec `load-image` et un moyen de lire
+les pixels (pas regardé). Pas fait: créer un sprite d'une taille
+donnée depuis l'éditeur (dupliquer un sprite, ou commencer le fichier à
+la main), une version web de l'éditeur (il faut écrire des fichiers).
+
+Pièges rencontrés en route (aussi dans PITFALLS): sur le web `color` et
+`box` ne sont les vrais qu'après `sdl2`; une bibliothèque chargée en
+premier (`run=` liste les fichiers dans l'ordre) recevait les versions
+du graphisme de la console, qui font `evaluate` à chaque appel et
+mouraient après une cinquantaine d'appels avec
+`objects[op] is not a function`. Mettre `sdl2` en tête d'une
+bibliothèque. Dans une bibliothèque partagée par des jeux, ne pas
+prendre de noms courts qu'un jeu peut définir (`cell`, `bx`): les
+tests des jeux en chargeaient un qui changeait `cell` au milieu de
+`spr-build`.
+
 ## Forth is Fun (tortue)
 
 Forth is Fun (https://gitlab.com/garvalf/forth-is-fun, Eric Forgeot,
@@ -361,18 +458,18 @@ dans une liste et redessinés à chaque image), tests dans
 shell (`logo`): les lignes tapées dans une invite dessinée sous l'image
 (une police 8x8 faite de `box`, donc sans fichier de police; `typed` et
 `unpress` de sdl2.fs lisent les touches; `type` est redirigé vers le
-journal avec `['] type >body !`) s'exécutent tout de suite et sont gardées
-comme un programme si elles marchent; `go` / `play` le redessinent
-(compilé comme un mot `logo-prog`; `safe-eval`
-restaure le source après une exception, `evaluate` non). Le shell marche
-sur POSIX (Xvfb, saisie par xdotool) et sur le web (Chrome headless,
-touches par CDP), non automatisé. Pièges rencontrés: un `)` dans un
-commentaire `( ... )` le ferme (le reste s'exécutait: STACK UNDERFLOW au
+journal avec `['] type >body !`) s'exécutent tout de suite et sont
+gardées comme un programme si elles marchent; `go` / `play` le
+redessinent (compilé comme un mot `logo-prog`; `safe-eval` restaure le
+source après une exception, `evaluate` non). Le shell marche sur POSIX
+(Xvfb, saisie par xdotool) et sur le web (Chrome headless, touches par
+CDP), non automatisé. Pièges rencontrés: un `)` dans un commentaire
+`( ... )` le ferme (le reste s'exécutait: STACK UNDERFLOW au
 chargement); deux `{ }` dans une définition cassent; le web n'a pas
 `fold-case`. Reste à emprunter: bresenham, le CYOA (livre dont vous êtes
-le héros, aussi en français), les motifs glitch. Piège rencontré: `fdup
-f>s s>f f< if` laissait une mauvaise valeur ici; arrondissez avec `fdup
-f0< if 0.5e f- else 0.5e f+ then f>s`.
+le héros, aussi en français), les motifs glitch. Piège rencontré:
+`fdup f>s s>f f< if` laissait une mauvaise valeur ici; arrondissez avec
+`fdup f0< if 0.5e f- else 0.5e f+ then f>s`.
 
 ## Dessiner à l'invite (`graphic`) - fait le 2026-10-20
 

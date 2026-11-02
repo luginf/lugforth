@@ -27,9 +27,10 @@ hooks `render-hook`, `active-hook`, `latency` and `scan?`.
 `examples/music/gfx_pianoroll.fs` is a piano-roll sequencer (4 tracks,
 chainable 16-step patterns, MIDI+soundfont playback, `.mid` and ABC
 export); POSIX only, not ported to the web build.
-`examples/music/abc_random.fs` makes random tunes in ABC (12 bars, voice 1 an arpeggio,
-voice 2 chords or counterpoint) and loops them on the PC, the Pico and the ESP32
-(see docs/en/dev/PORTS.md); its tests are in `make -C examples test-ports`.
+`examples/music/abc_random.fs` makes random tunes in ABC (12 bars, voice
+1 an arpeggio, voice 2 chords or counterpoint) and loops them on the PC,
+the Pico and the ESP32 (see docs/en/dev/PORTS.md); its tests are in
+`make -C examples test-ports`.
 
 ### Files
 
@@ -184,9 +185,9 @@ Still to do, from the original (priority order):
 
 `common/blocks.fs` (uEforth) has the standard block words and a line
 editor (`editor` vocabulary: `l n p r a d e wipe`). One buffer only: a
-block that loads another breaks (the rest of the first is read from
-the second), checked. `block` grows the file to n*1024 bytes only, the
-write of `save-buffers` makes it (n+1)*1024: `blocks-editor` shows
+block that loads another breaks (the rest of the first is read from the
+second), checked. `block` grows the file to n*1024 bytes only, the write
+of `save-buffers` makes it (n+1)*1024: `blocks-editor` shows
 `max(file blocks, n+1)`. Before `use`, any block word creates
 `blocks.fb` in the current directory (a `1 list` in the repo leaves
 one).
@@ -197,15 +198,15 @@ string compiled on first use, like `visual`: no vertical bar inside
 (`124 emit` draws the bars). 63 editable places per line (the 64th is
 the newline of blocks.fs, moved with the line by cut/paste). Keys and
 use: MANUAL.md, section Blocks. Raw mode as ed's `editor-raw` (IXON and
-ISIG off, so Ctrl+S, Ctrl+Q, Ctrl+C reach it). Traps met: `vocabulary
-x x definitions` without `also` replaces the top of the search order
-(here termios: `[defined] new-termios` became false and Ctrl+S froze
-the pty); the editor's words are early bound, so Ctrl+L loads with the
-caller's order. Tested: `tools/blocks_editor_pty_test.py` (17 checks,
-posix) and `blocks()` in tools/efi_qemu_test.py (3 checks: typed on
-the serial line, Ctrl+C/Ctrl+V, saved on the FAT, loaded). Not tried:
-the `--gui` window, the Pi, Windows, ESP32 (the string adds about 7 KB
-to the boot).
+ISIG off, so Ctrl+S, Ctrl+Q, Ctrl+C reach it). Traps met:
+`vocabulary x x definitions` without `also` replaces the top of the
+search order (here termios: `[defined] new-termios` became false and
+Ctrl+S froze the pty); the editor's words are early bound, so Ctrl+L
+loads with the caller's order. Tested: `tools/blocks_editor_pty_test.py`
+(17 checks, posix) and `blocks()` in tools/efi_qemu_test.py (3 checks:
+typed on the serial line, Ctrl+C/Ctrl+V, saved on the FAT, loaded). Not
+tried: the `--gui` window, the Pi, Windows, ESP32 (the string adds about
+7 KB to the boot).
 
 ## Ports from eForth Windows (Marc Petremann, GPL) - done 2026-10-13
 
@@ -416,25 +417,113 @@ r3 candidates: bdash (Boulder Dash, own sprites needed), sokoban (levels
 of unclear license), raycaster, term demos (fire, matrix, torus),
 util/penner.r3 easing, lib/sdl2poly.r3 polygon fill.
 
+## Digger (examples/games/gfx_digger.fs) - done 2026-11-02
+
+A Digger-like (the 1983 PC game), written from the rules as they are
+widely described; the levels are drawn by chance, the pictures are
+boxes. POSIX and web (`terminal.html?run=gfx_spr.fs,gfx_digger_sprites.fs,gfx_digger.fs`);
+not tried on DOS (the stage script would keep it as `GFX_DIGG.FS`, and
+the sprite file name is too long for 8.3).
+
+- The field is 15 x 10 cells of 20 x 18 pixels. The earth is kept in
+  sub-cells of half a cell (30 x 20), so a tunnel grows by half a cell
+  and the monsters can follow it: a link between two cells is open when
+  the four sub-cells of both are clear (`link?`). Positions are in
+  pixels, 2 a step (3 for a falling bag), a step every 16 ms with the
+  fixed-step loop of `gfx_pacman.fs`; a character decides where to go
+  only when it is aligned on a cell.
+- Nobbins follow a breadth-first distance map to the digger (`bfs`),
+  hobbins go straight at the digger and dig. A bag over a cell that
+  becomes free wobbles, falls, breaks into gold after more than one
+  cell, and can be pushed along a tunnel (not up or down). A digger
+  dug in right under a bag who keeps pushing up props it: it shakes
+  but does not fall until the digger leaves or lets go, and then it shakes
+  10 steps more (`held?`, `bag-wobble`) so that he can get away. Firing with up held against
+  a bag sends the shot down.
+- The words are prefixed `dg-` or have unusual names (`bag.st`,
+  `mon.t`...): a name like an `sdl2` word is shadowed on the web and DOS
+  (see PITFALLS). `walk-to ( d -- )` and `fire!` hold the logic so that
+  the tests can drive them without keys.
+- Tests: the "Digger" section of `examples/games/games_tests.fs`
+  (levels, tunnels, eating, streak of eight, bags, crush, push, distance
+  map, monster choices, fire ball, bonus meal, spawn, lives, level
+  done). Looked at in a real X window (Xvfb + `xdotool` + `import`) and
+  in headless Chromium over CDP (the screen draws, the monsters come
+  out, the digger digs and dies).
+- The pictures are not code: they are in `gfx_digger_sprites.fs`, made
+  with `gfx_spr.fs` and drawn by `gfx_sprited.fs` (next section). The
+  body of the digger is the character `R`: the game changes its color
+  (`spr-pal`) for the flash and the death.
+- Left out compared to the original: the bonus-mode music, the second
+  player, hand drawn levels (the 8 maps), the "digger gets a free life
+  by cherries" detail; the sounds are beeps.
+
+## Sprites and the sprite editor - done 2026-11-02
+
+`examples/graphics/gfx_spr.fs` (POSIX and web): a sprite is a grid of
+characters (up to 63 x 63), one per pixel; `.` is transparent, any
+other character is a color of a shared palette (`$rrggbb char spr-pal`,
+read at each draw, so a color can change). A file of sprites is plain
+Forth:
+
+    $b89a58 98 spr-pal              \ the color of 'b'
+    16 16 sprite: coin
+      s" ....bbbb........" spr-row   ...
+    ;sprite
+    coin 10 20 spr-draw             \ also spr-drawn ( spr x y scale -- )
+
+`;sprite` cuts the grid into a short list of rectangles (greedy, one
+color each, `spr-build`), so a sprite costs a few `box`, not one per
+pixel; `spr-source` writes the text again. The sprites are listed in
+`spr-all` / `spr-count`. Tested in the "Digger" part of
+`examples/games/games_tests.fs` (cutting, source round trip).
+
+`examples/graphics/gfx_sprited.fs` (POSIX, SDL2) is the editor:
+`lugforth examples/graphics/gfx_sprited.fs` opens
+`examples/games/gfx_digger_sprites.fs` (another file: see the header
+of the editor). Mouse: left paints, right erases, middle picks the
+color, a click on a color or on a name chooses it. Keys: `s` saves (the
+comment lines at the top are kept), `u` undo (one step), `c` clear,
+`h` `v` flip, arrows shift (wrapping), `d` duplicate the sprite, `n` a
+new color, `1 2` `3 4` `5 6` red, green, blue down and up, Tab next
+sprite, Esc quit without saving. The window shows the sprite on the
+earth color, at real size and enlarged, with the number of boxes. Tried
+in a real X window (Xvfb): the sprites load, a pixel is painted, the
+file is written and loads again the same. To import a picture, none
+yet: a PNG could be read with `load-image` plus a way to read pixels
+(not looked at). Not done: new sprite of a given size from the editor
+(duplicate one, or begin the file by hand), a web version of the
+editor (it needs file writing).
+
+Traps found on the way (also in PITFALLS): on the web `color` and `box`
+are the real ones only after `sdl2`; a library loaded first (`run=`
+lists the files in order) got the console graphics versions, which
+`evaluate` at each call and died after about fifty calls with
+`objects[op] is not a function`. Put `sdl2` at the top of a library.
+In a library shared by games, do not use short names that a game can
+define (`cell`, `bx`): the tests of the games loaded one that changed
+`cell` in the middle of `spr-build`.
+
 ## Forth is Fun (turtle)
 
 Forth is Fun (https://gitlab.com/garvalf/forth-is-fun, Eric Forgeot,
 MIT/Apache): `examples/graphics/gfx_turtle.fs` is written after its
 forthtoise.fs (same word names, English and French; strokes kept in a
-list and redrawn each frame), tests in `turtle_tests.fs` (`make -C
-examples test-ports`). Running it starts a shell (`logo`): lines typed
-in a prompt drawn under the picture (an 8x8 font made of `box`es, so no
-font file; `typed` and `unpress` from sdl2.fs read the keys; `type` is
-redirected to the log with `['] type >body !`) run at once and are kept as
-a program if they work; `go` / `play` draw it again (compiled as a word `logo-prog`; `safe-eval`
-restores the source after a throw, `evaluate` does not). The shell works
-on POSIX (Xvfb, xdotool typing) and on the web (headless Chrome, key
-events over CDP), not automated. Traps met: a `)` inside a `( ... )`
-comment ends it (the rest ran as code: STACK UNDERFLOW at load); two `{
-}` in one definition break; the web build has no `fold-case`. Still to
-borrow: bresenham, the CYOA (choose your own adventure, also in French),
-glitch patterns. Trap met: `fdup f>s s>f f< if` left a wrong value here;
-round with `fdup f0< if 0.5e f- else 0.5e f+ then f>s`.
+list and redrawn each frame), tests in `turtle_tests.fs`
+(`make -C examples test-ports`). Running it starts a shell (`logo`):
+lines typed in a prompt drawn under the picture (an 8x8 font made of
+`box`es, so no font file; `typed` and `unpress` from sdl2.fs read the
+keys; `type` is redirected to the log with `['] type >body !`) run at
+once and are kept as a program if they work; `go` / `play` draw it again
+(compiled as a word `logo-prog`; `safe-eval` restores the source after a
+throw, `evaluate` does not). The shell works on POSIX (Xvfb, xdotool
+typing) and on the web (headless Chrome, key events over CDP), not
+automated. Traps met: a `)` inside a `( ... )` comment ends it (the rest
+ran as code: STACK UNDERFLOW at load); two `{ }` in one definition
+break; the web build has no `fold-case`. Still to borrow: bresenham, the
+CYOA (choose your own adventure, also in French), glitch patterns. Trap
+met: `fdup f>s s>f f< if` left a wrong value here; round with
+`fdup f0< if 0.5e f- else 0.5e f+ then f>s`.
 
 ## Drawing at the prompt (`graphic`) - done 2026-10-20
 

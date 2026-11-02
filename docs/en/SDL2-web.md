@@ -2,12 +2,12 @@
 
 The web build has the same `sdl2` short words as the Linux build
 ([SDL2.md](SDL2.md)), drawn on an HTML canvas. A game written with them
-runs unchanged in both: `examples/games/gfx_breakout.fs` is loaded as
-is by `ports/web/gfx_breakout.html`, `examples/music/gfx_drums.fs` by
+runs unchanged in both: `examples/games/gfx_breakout.fs` is loaded as is
+by `ports/web/gfx_breakout.html`, `examples/music/gfx_drums.fs` by
 `ports/web/gfx_drums.html`, `examples/music/fm/gfx_fm.fs` (an FM
 synthesizer with MIDI input, see `examples/music/fm/README.md`) by
-`examples/music/fm/gfx_fm.html`, `examples/games/gfx_roguelike.fs`
-(with its tile sheet `examples/games/gfx_tiles.png`) by
+`examples/music/fm/gfx_fm.html`, `examples/games/gfx_roguelike.fs` (with
+its tile sheet `examples/games/gfx_tiles.png`) by
 `ports/web/gfx_roguelike.html` and `examples/games/pinball/` by
 `ports/web/gfx_pinball.html`, and `examples/games/gfx_raycaster.fs` (a
 3D maze, steered with the mouse) by `ports/web/gfx_raycaster.html`. The
@@ -170,12 +170,15 @@ it, and Esc stops it. Firefox and Safari are not tested.
 `terminal.html?run=<file>.fs` runs any game file served next to the page
 (several files, loaded in this order: `?run=2048.fs,gfx_2048.fs`).
 Tested in headless Chromium on 2026-10-30 (the screen opens and is
-drawn): `gfx_2048` (with `2048.fs`), `gfx_snake`, `gfx_pacman`, `gfx_tetris`,
-`gfx_minesweeper`, `gfx_mastermind`, `gfx_invaders`, `gfx_magnoquill`,
-`gfx_demo`, `gfx_3d` (with `3d.fs`), `gfx_turtle` (commands typed in a
-prompt under the drawing). They are copied to `out/web` by
-`ports/web/BUILD` and linked from the home page. Do not run on the web:
-`gfx_mouse_test` (needs `sdl2-ttf`), `gfx_pianoroll` (a soundfont; not
-tried). A file that does `include` needs the guard `[undefined] word
-[if] include file.fs [then]` and its included file listed first in
-`run=`.
+drawn): `gfx_2048` (with `2048.fs`), `gfx_snake`, `gfx_pacman`,
+`gfx_digger`, `gfx_tetris`, `gfx_minesweeper`, `gfx_mastermind`,
+`gfx_invaders`, `gfx_magnoquill`, `gfx_demo`, `gfx_3d` (with `3d.fs`),
+`gfx_turtle` (commands typed in a prompt under the drawing). They are
+copied to `out/web` by `ports/web/BUILD` and linked from the home page.
+Do not run on the web: `gfx_mouse_test` (needs `sdl2-ttf`),
+`gfx_pianoroll` (a soundfont; not tried). A file that does `include`
+needs the guard `[undefined] word [if] include file.fs [then]` and its
+included file listed first in `run=`: `gfx_digger` needs
+`?run=gfx_spr.fs,gfx_digger_sprites.fs,gfx_digger.fs`. A library loaded
+that way must begin with `sdl2`, or its `color` and `box` are the console
+graphics ones.

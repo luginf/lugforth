@@ -186,11 +186,15 @@ Safari ne sont pas testés.
 de la page (plusieurs fichiers, chargés dans cet ordre:
 `?run=2048.fs,gfx_2048.fs`). Testé avec Chromium sans écran le
 2026-10-30 (l'écran s'ouvre et se dessine): `gfx_2048` (avec `2048.fs`),
-`gfx_snake`, `gfx_tetris`, `gfx_minesweeper`, `gfx_mastermind`,
-`gfx_invaders`, `gfx_magnoquill`, `gfx_demo`, `gfx_3d` (avec `3d.fs`),
-`gfx_turtle` (les commandes se tapent dans une invite sous le dessin).
-`ports/web/BUILD` les copie dans `out/web` et la page d'accueil les
-relie. Ne tournent pas sur le web: `gfx_mouse_test` (demande
-`sdl2-ttf`), `gfx_pianoroll` (une soundfont; pas essayé). Un fichier qui
-fait `include` demande la garde `[undefined] mot [if] include fichier.fs
-[then]` et son fichier inclus placé en premier dans `run=`.
+`gfx_snake`, `gfx_digger`, `gfx_tetris`, `gfx_minesweeper`,
+`gfx_mastermind`, `gfx_invaders`, `gfx_magnoquill`, `gfx_demo`, `gfx_3d`
+(avec `3d.fs`), `gfx_turtle` (les commandes se tapent dans une invite
+sous le dessin). `ports/web/BUILD` les copie dans `out/web` et la page
+d'accueil les relie. Ne tournent pas sur le web: `gfx_mouse_test`
+(demande `sdl2-ttf`), `gfx_pianoroll` (une soundfont; pas essayé). Un
+fichier qui fait `include` demande la garde
+`[undefined] mot [if] include fichier.fs [then]` et son fichier inclus
+placé en premier dans `run=`: `gfx_digger` demande
+`?run=gfx_spr.fs,gfx_digger_sprites.fs,gfx_digger.fs`. Une bibliothèque
+chargée ainsi doit commencer par `sdl2`, sinon son `color` et son `box`
+sont ceux du graphisme de la console.
