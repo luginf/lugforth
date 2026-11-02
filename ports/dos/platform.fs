@@ -107,5 +107,7 @@ create lz-buf 300 allot
 
 ( Setup entry )
 internals also dos
-: ok   ." Lugforth (" board type ." )" raw-ok ;
+: bundle-name ( -- a n )   bundle-main ;   \ the main file of a turnkey program (autoboot.fs), 0 0 for lugforth
+: ok   bundle-name nip if boot-prompt @ execute bye then   \ turnkey: no banner
+   ." Lugforth (" board type ." )" raw-ok ;
 previous forth

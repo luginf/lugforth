@@ -284,12 +284,29 @@ def main():
       f.write('.( autoexec ran) cr\r\n')
     with open(os.path.join(d, 'ARGTEST.FS'), 'w') as f:
       f.write('.( the file of the command line ran) cr  bye\r\n')
+    with open(os.path.join(d, 'TKMAIN.FS'), 'w') as f:    # lugforth --turnkey: an include, a needs, a data file, an argc
+      f.write('include tkinc.fs\r\n'
+              ': tk-show s" tkdata.txt" r/o open-file throw >r pad 20 r@ read-file throw pad swap type r> close-file throw cr ;\r\n'
+              'tk-show\r\n'
+              'argc . cr\r\n')
+    with open(os.path.join(d, 'TKINC.FS'), 'w') as f:
+      f.write('needs tkinc2.fs\r\n.( tkinc ran) cr\r\n')
+    with open(os.path.join(d, 'TKINC2.FS'), 'w') as f:
+      f.write('.( tkinc2 ran) cr\r\n')
+    with open(os.path.join(d, 'TKDATA.TXT'), 'w') as f:
+      f.write('DATA123')
     env = dict(os.environ, SDL_VIDEODRIVER='dummy', SDL_AUDIODRIVER='dummy')
     conf = os.path.join(d, 'dosbox.conf')
     with open(conf, 'w') as f:
       f.write('[cpu]\ncycles=max\n[sdl]\nusescancodes=false\n' + LFN)
     subprocess.run([DOSBOX, '-conf', conf, '-c', 'mount c "%s"' % d, '-c', 'c:', '-c', 'hdpmi32 -r > nul',
-                    '-c', 'lugforth < in.txt > out.txt', '-c', 'lugforth argtest.fs > out2.txt', '-c', 'exit'],
+                    '-c', 'lugforth < in.txt > out.txt', '-c', 'lugforth argtest.fs > out2.txt',
+                    '-c', 'lugforth --turnkey tkmain.fs tkapp.exe tkdata.txt > out3.txt', '-c', 'exit'],
+                   env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
+    for n in ('tkmain.fs', 'tkinc.fs', 'tkinc2.fs', 'tkdata.txt'):   # the turnkey program has to run without them
+      os.remove(host(d, n))
+    subprocess.run([DOSBOX, '-conf', conf, '-c', 'mount c "%s"' % d, '-c', 'c:', '-c', 'hdpmi32 -r > nul',
+                    '-c', 'tkapp x y > out4.txt', '-c', 'exit'],
                    env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
     o = host(d, 'OUT.TXT')
     out = open(o, encoding='latin-1').read() if o else ''
@@ -321,6 +338,12 @@ def main():
     o2 = host(d, 'OUT2.TXT')
     out2 = open(o2, encoding='latin-1').read() if o2 else ''
     check('lugforth file.fs runs the file', out2[-300:], 'the file of the command line ran' in out2)
+    o3, o4 = host(d, 'OUT3.TXT'), host(d, 'OUT4.TXT')
+    out3 = open(o3, encoding='latin-1').read() if o3 else ''
+    out4 = open(o4, encoding='latin-1').read().replace('\r', '') if o4 else ''
+    check('--turnkey writes the program (4 files)', out3[-200:], '4 files' in out3)
+    check('the turnkey program runs without its sources, no banner',
+          out4, out4.split() == ['tkinc2', 'ran', 'tkinc', 'ran', 'DATA123', '3'])
     sub = host(d, 'sub')
     check('the directory on the disk', sub, sub is not None and host(sub, 'in.txt') is not None)
     big = host(d, 'big.txt')

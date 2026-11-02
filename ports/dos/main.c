@@ -301,6 +301,9 @@ static void forth_faults_setup(void) {
 }
 
 #include "ports/dos/files.h"
+// BUNDLE-MAIN ( -- a n ): the name of the main file of a turnkey program, 0 0 for lugforth itself
+static const char *bundle_main_name(void) { return bundle_main < 0 ? 0 : bundle_ent[bundle_main].name; }
+static cell_t bundle_main_len(void) { return bundle_main < 0 ? 0 : (cell_t) strlen(bundle_ent[bundle_main].name); }
 #include "ports/dos/builtins.h"
 
 #include "common/bits.h"
@@ -316,6 +319,7 @@ int main(int argc, char *argv[]) {
   if (con_tty) { gppconio_init(); con_attr(); }
   else setmode(1, O_BINARY);                       // the CR LF of cr as they are, not CR CR LF
   fs_init();
+  bundle_init(argv[0]);
   atexit(dos_cleanup);
   void *heap = malloc(HEAP_SIZE);
   if (!heap) { fputs("lugforth: not enough memory (4 MB needed)\n", stderr); return 1; }

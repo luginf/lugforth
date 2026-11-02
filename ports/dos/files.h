@@ -92,10 +92,73 @@ static int path_c(const char *p, cell_t n, char *out, int max) {   // a C string
   return 0;
 }
 
-#define FAT_FILES 16
-static struct { int fd; int dir, done; struct ffblk ff; } files[FAT_FILES];
+// ---- the bundle of a turnkey program (see autoboot.fs, `lugforth --turnkey`) ----
+// lugforth.exe followed by files, an index and a trailer:
+//   index: per file  u16 name length, the name, u32 offset, u32 length
+//   trailer (16 bytes): "LFTK", u32 index offset, u32 file count, u32 main file number
+// The files are read from the program's own .exe (bundle_fd) as read-only files,
+// before the disk is looked at; their names are those of open-file (lower case, /).
+static int bundle_fd = -1, bundle_n, bundle_main = -1;
+static struct bundle_ent { char *name; uint32_t off, len; } *bundle_ent;
 
-static int fh_check(cell_t fh) { return fh >= 1 && fh <= FAT_FILES && (files[fh - 1].fd >= 0 || files[fh - 1].dir) ? 0 : -1; }
+static uint32_t le32(const uint8_t *p) { return p[0] | p[1] << 8 | p[2] << 16 | (uint32_t) p[3] << 24; }
+
+static void bundle_name(const char *p, cell_t n, char *out) {   // lower case, / for \, no leading ./
+  int o = 0;
+  if (n > 255) n = 255;
+  for (cell_t i = 0; i < n; i++) {
+    char c = p[i];
+    if (c == '\\') c = '/';
+    if (c >= 'A' && c <= 'Z') c += 32;
+    out[o++] = c;
+  }
+  out[o] = 0;
+  while (out[0] == '.' && out[1] == '/') memmove(out, out + 2, strlen(out + 1));
+}
+
+static void bundle_init(const char *exe) {   // exe: argv[0]; nothing happens if it carries no bundle
+  uint8_t t[16];
+  int fd = open(exe, O_RDONLY | O_BINARY);
+  if (fd < 0) return;
+  long size = filelength(fd);
+  if (size < 16 || lseek(fd, size - 16, SEEK_SET) < 0 || read(fd, t, 16) != 16 || memcmp(t, "LFTK", 4)) { close(fd); return; }
+  uint32_t ioff = le32(t + 4), count = le32(t + 8), mainf = le32(t + 12);
+  long ilen = size - 16 - (long) ioff;
+  uint8_t *ix = ilen > 0 && count < 4096 ? malloc(ilen) : 0;
+  if (!ix || lseek(fd, ioff, SEEK_SET) < 0 || read(fd, ix, ilen) != ilen) { free(ix); close(fd); return; }
+  bundle_ent = calloc(count, sizeof *bundle_ent);
+  long p = 0;
+  for (uint32_t k = 0; k < count; k++) {
+    if (p + 2 > ilen) break;
+    int nl = ix[p] | ix[p + 1] << 8;
+    p += 2;
+    if (p + nl + 8 > ilen) break;
+    bundle_ent[k].name = malloc(nl + 1);
+    memcpy(bundle_ent[k].name, ix + p, nl);
+    bundle_ent[k].name[nl] = 0;
+    p += nl;
+    bundle_ent[k].off = le32(ix + p); bundle_ent[k].len = le32(ix + p + 4);
+    p += 8;
+    bundle_n = k + 1;
+  }
+  free(ix);
+  bundle_fd = fd;
+  bundle_main = mainf < (uint32_t) bundle_n ? (int) mainf : -1;
+}
+
+static int bundle_find(const char *p, cell_t n) {
+  if (bundle_fd < 0) return -1;
+  char a[256];
+  bundle_name(p, n, a);
+  for (int k = 0; k < bundle_n; k++) if (!strcmp(a, bundle_ent[k].name)) return k;
+  return -1;
+}
+
+#define FAT_FILES 16
+// fd -1: free; fd -2: a file of the bundle (bent, bpos)
+static struct { int fd; int dir, done; struct ffblk ff; int bent; uint32_t bpos; } files[FAT_FILES];
+
+static int fh_check(cell_t fh) { return fh >= 1 && fh <= FAT_FILES && (files[fh - 1].fd != -1 || files[fh - 1].dir) ? 0 : -1; }
 
 static void fs_init(void) {
   for (int k = 0; k < FAT_FILES; k++) { files[k].fd = -1; files[k].dir = 0; }
@@ -103,7 +166,7 @@ static void fs_init(void) {
 }
 
 static int slot_new(void) {
-  for (int k = 0; k < FAT_FILES; k++) if (files[k].fd < 0 && !files[k].dir) return k;
+  for (int k = 0; k < FAT_FILES; k++) if (files[k].fd == -1 && !files[k].dir) return k;
   return -1;
 }
 
@@ -117,6 +180,8 @@ static cell_t fat_open(const char *p, cell_t n, cell_t mode, int create, cell_t 
   if (path_c(p, n, a, sizeof a)) { *ior = FAT_ENAMETOOLONG; return 0; }
   int k = slot_new();
   if (k < 0) { *ior = FAT_EMFILE; return 0; }
+  int b = mode == 0 && !create ? bundle_find(p, n) : -1;
+  if (b >= 0) { files[k].fd = -2; files[k].dir = 0; files[k].bent = b; files[k].bpos = 0; *ior = 0; return k + 1; }
   if (is_dir(a)) { *ior = FAT_EISDIR; return 0; }
   int flags = O_BINARY | (mode == 0 ? O_RDONLY : mode == 1 ? O_WRONLY : O_RDWR);
   if (create) flags |= O_CREAT | O_TRUNC;
@@ -130,18 +195,28 @@ static cell_t fat_open(const char *p, cell_t n, cell_t mode, int create, cell_t 
 static cell_t fat_close(cell_t fh) {
   if (fh_check(fh)) return FAT_EBADF;
   if (files[fh - 1].dir) { files[fh - 1].dir = 0; return 0; }
+  if (files[fh - 1].fd == -2) { files[fh - 1].fd = -1; return 0; }
   int r = close(files[fh - 1].fd);
   files[fh - 1].fd = -1;
   return r ? dos_err() : 0;
 }
 
 static int fat_flush(void) {
-  for (int k = 0; k < FAT_FILES; k++) if (files[k].fd >= 0) fsync(files[k].fd);
+  for (int k = 0; k < FAT_FILES; k++) if (files[k].fd >= 0 && files[k].fd != bundle_fd) fsync(files[k].fd);
   return 0;
 }
 
 static cell_t fat_read(cell_t fh, uint8_t *buf, cell_t n, cell_t *ior) {
   if (fh_check(fh) || files[fh - 1].dir) { *ior = FAT_EBADF; return 0; }
+  if (files[fh - 1].fd == -2) {
+    struct bundle_ent *e = &bundle_ent[files[fh - 1].bent];
+    uint32_t left = e->len - files[fh - 1].bpos;
+    if (n > (cell_t) left) n = left;
+    if (n > 0 && (lseek(bundle_fd, e->off + files[fh - 1].bpos, SEEK_SET) < 0 || read(bundle_fd, buf, n) != n)) { *ior = FAT_EIO; return 0; }
+    files[fh - 1].bpos += n;
+    *ior = 0;
+    return n;
+  }
   int r = read(files[fh - 1].fd, buf, n);
   if (r < 0) { *ior = dos_err(); return 0; }
   *ior = 0;
@@ -150,6 +225,7 @@ static cell_t fat_read(cell_t fh, uint8_t *buf, cell_t n, cell_t *ior) {
 
 static cell_t fat_write(cell_t fh, const uint8_t *buf, cell_t n) {
   if (fh_check(fh) || files[fh - 1].dir) return FAT_EBADF;
+  if (files[fh - 1].fd == -2) return FAT_EACCES;
   int r = write(files[fh - 1].fd, buf, n);
   if (r < 0) return dos_err();
   return r == n ? 0 : FAT_ENOSPC;
@@ -157,6 +233,7 @@ static cell_t fat_write(cell_t fh, const uint8_t *buf, cell_t n) {
 
 static cell_t fat_size(cell_t fh, cell_t *ior) {
   if (fh_check(fh) || files[fh - 1].dir) { *ior = FAT_EBADF; return 0; }
+  if (files[fh - 1].fd == -2) { *ior = 0; return bundle_ent[files[fh - 1].bent].len; }
   long r = filelength(files[fh - 1].fd);
   if (r < 0) { *ior = dos_err(); return 0; }
   *ior = 0;
@@ -165,6 +242,7 @@ static cell_t fat_size(cell_t fh, cell_t *ior) {
 
 static cell_t fat_tell(cell_t fh, cell_t *ior) {
   if (fh_check(fh) || files[fh - 1].dir) { *ior = FAT_EBADF; return 0; }
+  if (files[fh - 1].fd == -2) { *ior = 0; return files[fh - 1].bpos; }
   long r = lseek(files[fh - 1].fd, 0, SEEK_CUR);
   if (r < 0) { *ior = dos_err(); return 0; }
   *ior = 0;
@@ -174,12 +252,14 @@ static cell_t fat_tell(cell_t fh, cell_t *ior) {
 static cell_t fat_seek(cell_t fh, cell_t pos) {
   if (fh_check(fh) || files[fh - 1].dir) return FAT_EBADF;
   if (pos < 0) return FAT_EINVAL;
+  if (files[fh - 1].fd == -2) { files[fh - 1].bpos = pos; return 0; }   // past the end reads nothing
   return lseek(files[fh - 1].fd, pos, SEEK_SET) < 0 ? dos_err() : 0;
 }
 
 static cell_t fat_resize(cell_t fh, cell_t size) {
   if (fh_check(fh) || files[fh - 1].dir) return FAT_EBADF;
   if (size < 0) return FAT_EINVAL;
+  if (files[fh - 1].fd == -2) return FAT_EACCES;
   return ftruncate(files[fh - 1].fd, size) ? dos_err() : 0;   // DOS can grow a file this way too
 }
 

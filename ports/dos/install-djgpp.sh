@@ -25,12 +25,43 @@
 #
 # The Makefile looks in both default places; for another DIR:
 #   make -C ports/dos DJGPP=DIR/djgpp
+# It also fetches csdpmi7b.zip (CWSDPMI, the DPMI host for a real DOS) into
+# out/dos/ and unpacks it there (OUT=DIR to change), whether or not the compiler was already there.
 # To run the result: apt install dosbox (or dosbox-x), then make -C ports/dos run.
 
 set -e
 
 URL=https://github.com/andrewwutw/build-djgpp/releases/download/v3.4/djgpp-linux64-gcc1220.tar.bz2
 SHA256=8464f17017d6ab1b2bb2df4ed82357b5bf692e6e2b7fee37e315638f3d505f00
+
+CSDPMI_URL=https://www.delorie.com/pub/djgpp/current/v2misc/csdpmi7b.zip
+CSDPMI_SHA256=deacda0488e1cdd7c4a9f32fab45662b34c0ed6b2d7d4d13bc07041b62004a8c
+out=${OUT:-$(cd "$(dirname "$0")" && pwd)/../../out/dos}
+
+unzip_csdpmi() {
+  command -v unzip >/dev/null || { echo "unzip is needed (apt install unzip)" >&2; exit 1; }
+  unzip -joq "$out/csdpmi7b.zip" 'bin/*' -d "$out"
+  echo "CWSDPMI.EXE and its tools unpacked in $out"
+}
+
+fetch_csdpmi() {
+  if [ -f "$out/csdpmi7b.zip" ] &&
+     echo "$CSDPMI_SHA256  $out/csdpmi7b.zip" | sha256sum -c --quiet - 2>/dev/null; then
+    echo "csdpmi7b.zip is already in $out"
+    unzip_csdpmi
+    return 0
+  fi
+  command -v curl >/dev/null || { echo "curl is needed (apt install curl)" >&2; exit 1; }
+  mkdir -p "$out"
+  echo "Downloading $CSDPMI_URL"
+  curl -fL --progress-bar -o "$out/csdpmi7b.zip.part" "$CSDPMI_URL"
+  echo "$CSDPMI_SHA256  $out/csdpmi7b.zip.part" | sha256sum -c --quiet - || {
+    rm -f "$out/csdpmi7b.zip.part"
+    echo "csdpmi7b.zip is not the one expected (checksum): not kept" >&2; exit 1; }
+  mv "$out/csdpmi7b.zip.part" "$out/csdpmi7b.zip"
+  echo "csdpmi7b.zip in $out"
+  unzip_csdpmi
+}
 
 if [ -n "$1" ]; then
   dir=$1
@@ -43,6 +74,7 @@ fi
 if [ -x "$dir/djgpp/bin/i586-pc-msdosdjgpp-gcc" ]; then
   echo "DJGPP is already in $dir/djgpp"
   "$dir/djgpp/bin/i586-pc-msdosdjgpp-gcc" --version | head -1
+  fetch_csdpmi
   exit 0
 fi
 
@@ -67,6 +99,7 @@ mkdir -p "$dir"
 tar -xjf "$tmp/djgpp.tar.bz2" -C "$dir"
 "$dir/djgpp/bin/i586-pc-msdosdjgpp-gcc" --version | head -1
 echo "DJGPP installed in $dir/djgpp"
+fetch_csdpmi
 case "$dir" in
   /opt/djgpp-x|"$HOME/.local/djgpp-x") echo "Next: make -C ports/dos" ;;
   *) echo "Next: make -C ports/dos DJGPP=$dir/djgpp" ;;

@@ -64,6 +64,24 @@ On a real DOS, `CWSDPMI.EXE` (from DJGPP's `csdpmi7b.zip`) beside
 `lugforth.exe` works too, without starting it first. Windows 9x and
 FreeDOS with HDPMI have their own host.
 
+## A program of its own (`--turnkey`)
+
+```
+C:\> lugforth --turnkey prog.fs [prog.exe [data files...]]
+```
+
+writes `prog.exe`: a copy of `lugforth.exe` followed by `prog.fs`, every
+file it includes (`include`, `needs`, `require`, `s" f.fs" included`; the
+comments `\` and `( )` are skipped) and the data files named on the
+command line. `prog.exe` runs without lugforth or the sources: no banner,
+the files it opens are read from the .exe first, then from the disk, and
+it ends back at DOS when `prog.fs` has been loaded (a program that
+should stay interactive does not fit). It still needs a DPMI host
+(`CWSDPMI.EXE` beside it, or HDPMI). From a prompt: `turnkey-file data.bin`
+for a data file, then `turnkey prog.fs prog.exe`. Limits: 128 files; a
+file opened by a computed name has to be named on the command line; the
+bundled files are read-only; the sources are recompiled at each start.
+
 ## What works
 
 - The prompt in text mode: the console is the screen through DJGPP's
@@ -102,7 +120,7 @@ FreeDOS with HDPMI have their own host.
     `drum-hit`, `play`, the ABC tunes, the PCM queue. Without one the
     sound words do nothing.
   - The games of `examples/games` run (breakout and 2048 tried; the
-    mouse not tried), from the folder of `make stage`: `include
+    mouse works in DOSBox with it), from the folder of `make stage`: `include
     games/gfx_breakout.fs`, or `lugforth games/gfx_breakout.fs` from
     DOS (the game ends with `script-bye`, back to DOS).
 - `ed` and `writhdeck`, read from LIB beside `lugforth.exe` the first

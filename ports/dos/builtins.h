@@ -35,6 +35,7 @@
   XV(dos, "CON-ROWS", CON_ROWS_OP, PUSH con_tty ? ScreenRows() : 0) \
   XV(dos, "CON-COLS", CON_COLS_OP, PUSH con_tty ? ScreenCols() : 80) \
   XV(dos, "SCREEN-CHAR", SCREEN_CHAR, n1 = screen_char(n1, n0); DROP) \
+  XV(dos, "BUNDLE-MAIN", BUNDLE_MAIN, PUSH bundle_main_name(); PUSH bundle_main_len()) \
   XV(dos, "INB", INB_OP, n0 = inportb((unsigned short) n0)) \
   XV(dos, "OUTB", OUTB_OP, outportb((unsigned short) n0, (unsigned char) n1); DROPn(2))
 
