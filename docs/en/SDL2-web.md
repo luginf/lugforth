@@ -170,7 +170,7 @@ it, and Esc stops it. Firefox and Safari are not tested.
 `terminal.html?run=<file>.fs` runs any game file served next to the page
 (several files, loaded in this order: `?run=2048.fs,gfx_2048.fs`).
 Tested in headless Chromium on 2026-10-30 (the screen opens and is
-drawn): `gfx_2048` (with `2048.fs`), `gfx_snake`, `gfx_tetris`,
+drawn): `gfx_2048` (with `2048.fs`), `gfx_snake`, `gfx_pacman`, `gfx_tetris`,
 `gfx_minesweeper`, `gfx_mastermind`, `gfx_invaders`, `gfx_magnoquill`,
 `gfx_demo`, `gfx_3d` (with `3d.fs`), `gfx_turtle` (commands typed in a
 prompt under the drawing). They are copied to `out/web` by

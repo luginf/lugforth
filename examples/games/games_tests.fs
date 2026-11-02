@@ -170,6 +170,58 @@ new-game  1 1 2 2 secret!
 ten-wrong  state 2 t=  played 11 t=  won 1 t=
 depth 0 t=
 
+: pacman-no-run ;
+include gfx_pacman.fs
+\ the maze
+new-game
+pm-dots 159 t=   count-dots 159 t=   pm-lives 3 t=   pm-state 0 t=
+0 tile-x 9 t=   0 tile-y 15 t=
+0 0 pm-solid? -1 t=   9 8 pm-solid? -1 t=   9 9 pm-solid? 0 t=   1 1 pm-solid? 0 t=
+-1 9 pm-solid? 0 t=   19 9 pm-solid? 0 t=   -1 8 pm-solid? -1 t=
+\ Pac-Man eats the dot under him and goes on, then stops at a wall
+1 to pm-state   0 to pm-paused
+7 15 0 place-tile  2 0 e-dir !  2 to pm-want  0 0 e-acc !
+: pix ( n -- ) 0 do pac-pixel loop ;
+10 pix   0 tile-x 6 t=   pm-score 10 t=   pm-dots 158 t=
+\ a wall straight ahead: no move
+1 1 0 place-tile  2 0 e-dir !  2 to pm-want
+5 pix   0 e-x @ 15 t=
+\ the tunnel wraps round
+0 e-x @ drop  5 0 e-x !  95 0 e-y !  2 0 e-dir !  2 to pm-want
+10 pix   0 e-x @ 185 t=
+\ a big pellet scares the ghosts and is worth 50
+new-game   1 to pm-state
+1 15 0 place-tile  2 0 e-dir !  2 to pm-want  2 2 e-st !
+eat-here   pm-score 50 t=   2 e-fr @ 1 t=   2 e-rev @ 1 t=   pm-fright 270 t=
+\ eating the ghosts: 200 then 400
+0 to pm-score   0 to pm-chain
+2 eat-ghost   pm-score 200 t=   2 e-st @ 3 t=   2 e-fr @ 0 t=
+3 eat-ghost   pm-score 600 t=
+\ a ghost choosing at a crossing: red, in the corridor, Pac-Man on its left
+new-game   1 to pm-state   1 to pm-mode
+3 3 1 place-tile   1 1 e-dir !   2 1 e-st !
+1 3 0 place-tile
+1 choose-dir   1 e-dir @ 2 t=
+\ it does not turn back, even if Pac-Man is behind it
+7 3 1 place-tile   2 1 e-dir !   17 3 0 place-tile   1 1 e-fr !  0 1 e-fr !
+1 choose-dir   1 e-dir @ 2 t=
+\ contact: a ghost out kills, lives go down
+new-game   1 to pm-state
+9 15 0 place-tile   9 15 1 place-tile   2 1 e-st !
+collide   pm-state 2 t=   pm-lives 2 t=
+\ contact with a frightened ghost eats it
+new-game   1 to pm-state
+9 15 0 place-tile   9 15 1 place-tile   2 1 e-st !   1 1 e-fr !
+collide   pm-state 1 t=   1 e-st @ 3 t=   pm-score 200 t=
+\ the last dot ends the level
+new-game   1 to pm-state   0 to pm-dots
+play-step   pm-state 4 t=
+next-level   pm-level 2 t=   pm-state 0 t=   pm-dots 159 t=
+\ the ghosts leave the house one after the other
+new-game   1 to pm-state
+251 0 do play-step loop   2 e-st @ 0 <> -1 t=
+depth 0 t=
+
 : report ( -- )   tfail @ 0= if ." PASS " tn @ . cr else ." FAILED " tfail @ . cr then ;
 report
 bye

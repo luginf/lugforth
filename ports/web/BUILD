@@ -60,6 +60,7 @@ WEB_ITEMS = [
 # terminal.html?run=<file>.fs (the pages of the site link them like that).
 for _name, _dir in [
     ('gfx_2048', 'games'), ('2048', 'games'), ('gfx_snake', 'games'),
+    ('gfx_pacman', 'games'),
     ('gfx_tetris', 'games'), ('gfx_minesweeper', 'games'),
     ('gfx_mastermind', 'games'), ('gfx_invaders', 'games'),
     ('gfx_magnoquill', 'graphics'), ('gfx_demo', 'graphics'),
