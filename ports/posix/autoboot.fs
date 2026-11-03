@@ -18,7 +18,11 @@ internals definitions
 ( lugforth --gui [file.fs]: the console window with a menu; a terminal if it cannot open )
 DEFINED? gui-load [IF]
 : gui-open ( -- )   gui-load s" sdl2 desktop console" eval-copy ;
-: gui-restore ( -- )   only forth also internals 1 'argc ! previous definitions ;
+: gui-restore ( -- )
+   only forth also internals 1 'argc ! previous
+   \ as in a terminal where `sdl2` loaded the words: what a program defines goes in sdl2, over the
+   \ words of sdl2.fs and of the console that it reuses by name (px, cols, margin, grid...)
+   s" also sdl2 definitions" evaluate ;
 : gui-start ( -- )
    ['] gui-open catch if
       only forth definitions

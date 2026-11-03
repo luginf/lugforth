@@ -122,6 +122,7 @@ create ev 64 allot
 0 value height
 1 value zoom
 0 value quitting
+0 value last-flip   ( the ticks at the last flip; screen sets it again, SDL_Quit and SDL_Init start the ticks from 0 )
 0 value audio-dev
 0 value close-hook   ( optional xt run by close-screen, used by the mixer )
 
@@ -158,6 +159,7 @@ create ev 64 allot
   renderer width height SDL_RenderSetLogicalSize drop
   renderer SDL_BLENDMODE_BLEND SDL_SetRenderDrawBlendMode drop
   kmsdrm? to soft-cursor
+  SDL_GetTicks $ffffffff and to last-flip
   SDL_StartTextInput drop
   0 to quitting
 ;
@@ -263,7 +265,6 @@ create px 4 allot
   while  10 min SDL_Delay drop  repeat
   drop
 ;
-0 value last-flip
 0 value dt   ( milliseconds taken by the last frame )
 
 0 value mouse-x   0 value mouse-y

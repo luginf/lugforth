@@ -396,11 +396,13 @@ defer glyph-tint ( r g b -- )       ' bm-tint is glyph-tint
 0 value con-renderer
 0 value user-size   0 value ow   0 value oh   0 value hsize   0 value cols
 0 value last-built
+0 value auto-size   ( the automatic size, fixed when the window opens: resizing or full screen adds columns, not a bigger font )
 create osize 8 allot
 : con-layout ( -- )
   renderer osize osize 4 + SDL_GetRendererOutputSize drop
   osize sl@ to ow   osize 4 + sl@ to oh
-  user-size dup 0= if drop ow oh min hdiv / then hmin max hmax min to hsize
+  user-size dup 0= if drop auto-size dup 0= if drop ow oh min hdiv / dup to auto-size then then
+  hmin max hmax min to hsize
   hsize font-cell to con-ch to con-cw
   menu-on bar-open and if con-ch 3 * 2/ else 0 then to top-px
   hsize last-built <> if atlas-build hsize to last-built then
@@ -414,7 +416,7 @@ create osize 8 allot
 : font-step ( d -- )   ( one step bigger or smaller, as a pinch or the wheel does )
   hrel if dup hsize hrel * 100 / 1 max * else hstep * then
   hsize + hmin max hmax min to user-size relayout save-ini ;
-: font-auto ( -- )   0 to user-size relayout save-ini ;
+: font-auto ( -- )   0 to user-size 0 to auto-size relayout save-ini ;
 
 ( ---- Selection, with the mouse ---- )
 0 value sel-a   0 value sel-b   0 value dragging
@@ -1162,6 +1164,7 @@ also termios
 : set-form-hook ( -- )   ['] con-form to form-hook ;
 previous
 : con-open ( -- )
+  1 to zoom   0 to auto-size   ( a program that ran before may have left zoom at 3 )
   menu-on if 1024 640 else 960 540 then screen
   renderer 0= if -1 throw then
   menu-on if s" Lugforth" title then
@@ -1202,7 +1205,9 @@ previous
   ['] con-type is type   ['] con-key is key   ['] con-key? is key? ;
 
 ( A program opening its own screen does not want the keyboard )
-: screen ( w h -- ) gfx-off SDL_StopTextInput drop screen ;
+: keys-clear ( -- )   \ a game that quits on a key leaves it down: its key up went to the console window
+  keys 256 erase   scans 512 erase   0 to tq-r   0 to tq-w   0 to last-key ;
+: screen ( w h -- ) gfx-off SDL_StopTextInput drop keys-clear screen ;
 
 ( ---- The desktop: menu bar, and a TrueType font when there is one ---- )
 ( The font code is loaded when asked: it needs SDL_ttf, which a machine may lack. )

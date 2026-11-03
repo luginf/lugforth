@@ -338,6 +338,28 @@ not just GBA:
   `SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy out/posix/lugforth ports/posix/sdl2_console_tests.fs`
   after editing it, and look at a screenshot (Xvfb needs
   `xdotool windowfocus` before it types).
+- In the `--gui` window `sdl2` is already loaded, so a program that says
+  `sdl2` only selects the vocabulary: its words are defined in `forth`,
+  under `sdl2`, and a name it shares with `sdl2.fs` or the console
+  (`px`, `cols`, `margin`, `grid`...) finds the library word first (tetris
+  was "game over" at once, digger did not start). From a terminal the
+  first `sdl2` loads the words and ends with `sdl2 definitions`, so the
+  program's words win. `gui-restore` (autoboot.fs) now ends with
+  `also sdl2 definitions` to get the same. Also: a game that sets
+  `3 to zoom` left it for the console, reopened after the game at
+  3072x1920 (`con-open` resets `zoom`), and the automatic font size
+  (`auto-size`) is now fixed when the window opens, no longer recomputed
+  from the window size at each resize or full screen.
+- A game that quits on the key down (Esc) closes its window before the
+  key up: the up event goes to the console window, and `keys` kept Esc
+  pressed, so the next game started and quit at once. The console
+  `screen` now clears `keys`, `scans` and the typed queue (`keys-clear`).
+- `SDL_Quit` then `SDL_Init` (every `close-screen` and `screen`) restart
+  `ticks` from 0, but `last-flip` kept the old value: the first `dt` of
+  the next game was negative, and `dt 16 < if 16 dt - delay` slept as long
+  as the previous game had run (30 s after a long game, 2048 looked
+  frozen). `screen` now sets `last-flip` itself. Any frame timing kept in
+  a variable across two `screen` calls has the same trap.
 - The console cursor, a key wait that polls (`key?`) and any state kept
   only in `con-key` freeze when a program polls: keep such state in a
   word that both `con-key` and `con-key?` call (`blink-tick`).
