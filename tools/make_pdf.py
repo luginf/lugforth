@@ -13,7 +13,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(ROOT, 'docs')
 EN = os.path.join(DOCS, 'en')
 ORDER = ['MANUAL.md', 'SDL2.md', 'SDL2-words.md', 'SDL2-web.md', 'WORDS.md']
-DEV = ['README.md', 'ARCHITECTURE.md', 'FEATURES.md', 'PORTS.md', 'PITFALLS.md', 'IDEAS.md']
+DEV = ['README.md', 'ARCHITECTURE.md', 'FEATURES.md', 'PORTS.md', 'ABC.md', 'PITFALLS.md', 'IDEAS.md']   # ABC.md: French only
 
 
 def files():

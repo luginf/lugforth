@@ -501,9 +501,12 @@ jobs:
           sudo apt-get install -y pandoc texlive-xetex texlive-latex-recommended texlive-latex-extra lmodern fonts-dejavu
           VERSION=$(git describe --tags --always)
           python3 tools/make_pdf.py out-manual.pdf
+          python3 tools/make_pdf.py --fr out-manuel.pdf
           mkdir -p dist
           cp out-manual.pdf "dist/lugforth-$VERSION-manual.pdf"
           cp out-manual.pdf dist/lugforth-manual.pdf   # a fixed name: releases/latest/download/lugforth-manual.pdf
+          cp out-manuel.pdf "dist/lugforth-$VERSION-manuel.pdf"
+          cp out-manuel.pdf dist/lugforth-manuel.pdf   # the French manual: releases/latest/download/lugforth-manuel.pdf
       - uses: actions/upload-artifact@v4
         with:
           name: manual

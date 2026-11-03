@@ -43,10 +43,11 @@ PAGES = {
   'words.html': ('Words', ['docs/en/WORDS.md']),
   'sdl2.html': ('SDL2 graphics and sound', ['docs/en/SDL2.md', 'docs/en/SDL2-words.md', 'docs/en/SDL2-web.md']),
   'ports.html': ('Ports', ['docs/pages/ports.md', 'ports/android/README.md', 'ports/gba/README.md']),
+  'demos.html': ('Try it: more demos', ['docs/pages/demos.md']),
   'examples.html': ('Examples', ['examples/README.md']),
   'credits.html': ('Credits', ['NOTICE']),
 }
-SITE_PAGES = set(['index.html', 'words.html', 'new-words.html', 'sdl2.html', 'ports.html',
+SITE_PAGES = set(['index.html', 'demos.html', 'words.html', 'new-words.html', 'sdl2.html', 'ports.html',
                   'examples.html', 'credits.html'])
 # Markdown sources that have a page: links to them stay on the site
 LINKS = {'docs/en/WORDS.md': 'words.html', 'WORDS.md': 'words.html',

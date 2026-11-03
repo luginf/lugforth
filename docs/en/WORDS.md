@@ -877,6 +877,7 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `clobber-line` | `( a -- a' )` |  | P |
 | `close-throw` | `( n ior -- )` | Throws the first error of the two (n from the work, ior from closing the file), else does nothing. | P |
 | `cn` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
+| `code-mark` | `( -- n )` |  | P |
 | `common-default-use` |  |  | P |
 | `cremit` | `( ch -- )` |  | P |
 | `crtype` | `( a n -- )` |  | P |
@@ -976,6 +977,8 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `hl` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `host-mac?` | `( -- f )` | Internal: true when the C program was built for macOS (read by `on-mac?`). | P |
 | `icr` |  |  | P |
+| `image-head` |  |  | P |
+| `image-ok?` | `( a n -- f )` | the image was saved where the code is now | P |
 | `immediate?` | `( xt -- f )` |  | P |
 | `IMMEDIATE_MARK` |  | Constant, 1. | P |
 | `include+` |  |  | P |
@@ -1101,6 +1104,7 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `opcode-as` | `( "op" "name" -- )` | A port with tier 2 opcodes has DO ?DO LOOP +LOOP in C: opcode-as (DO) DO gives the Forth DO the code field of the opcode, as BEGIN and IF are made above, so it stays the one word that see and utils.fs mark. Without them, on the web, the Forth versions run. | P |
 | `opcode-of` | `( xt -- xt' \| 0 )` | The builtin of C whose code field a word of the dictionary has, made by opcode-as as DO from (DO), or by create as BEGIN from NOP: 0 if none. | P |
 | `pa` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
+| `park-code` | `( -- a )` |  | P |
 | `park-forth` | `( -- a )` |  | P |
 | `park-heap` | `( -- a )` |  | P |
 | `parse-quote` | `( -- a n )` |  | P |
