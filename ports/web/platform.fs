@@ -383,7 +383,8 @@ if (!globalObj.write) {
     }
     var newline = count > 1 || context.dirty[context.lines.length - 1];
     context.dirty = {};
-    if (newline) {
+    // a page with its own controls (lugNoKeyboard) is not scrolled down to the prompt at each output
+    if (newline && !window.lugNoKeyboard) {
       window.scrollTo(0, document.body.scrollHeight);
     }
     if (count > 0 && context.mobile) { context.KeepInView(); }
@@ -393,6 +394,7 @@ if (!globalObj.write) {
   // keyboard shrinks the page (Firefox) or covers its bottom (Chrome, Brave), and the
   // visual viewport tells what is really seen.
   context.KeepInView = function() {
+    if (window.lugNoKeyboard) { return; }
     var cur = context.lines[context.cy];
     if (!cur) { return; }
     var vv = window.visualViewport;
@@ -472,6 +474,7 @@ if (!globalObj.write) {
     // The keyboard of the phone comes up and goes down: keep the prompt in view
     if (window.visualViewport) {
       var kb = function() {
+        if (window.lugNoKeyboard) { return; }
         window.scrollTo(0, document.body.scrollHeight);
         context.KeepInView();
       };

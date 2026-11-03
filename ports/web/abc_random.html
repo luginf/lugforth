@@ -223,7 +223,6 @@ window.abcShow = function(text) {   // called by Forth: the ABC text of the tune
   document.getElementById('info').textContent = 'Tune ' + (m ? m[1] : '') +
     ' (type this seed in the box to hear it again). Playing in a loop.';
   drawScore(tune);
-  window.scrollTo(0, 0);   // the Forth console scrolls the page down when it prints
 };
 // The first tune, once the interpreter has loaded the two files (it types at its prompt).
 (function() {
