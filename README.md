@@ -3,7 +3,7 @@
 *English - [Français](README.fr.md)*
 
 A small, case-insensitive, 64-bit Forth built on a minimal C kernel. It runs on Linux, in the browser,
-on Android, on microcontrollers (ESP32, Pico, GBA), on bare metal (Raspberry Pi, x86-64 PC via UEFI) and on
+on Android (an app, or built in Termux), on microcontrollers (ESP32, Pico, GBA), on bare metal (Raspberry Pi, x86-64 PC via UEFI) and on
 DOS (386 and up, the prompt in text mode for now).
 
 Site: [luginf.github.io/lugforth](https://luginf.github.io/lugforth/) -

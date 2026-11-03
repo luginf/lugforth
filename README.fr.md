@@ -3,7 +3,7 @@
 *Français - [English](README.md)*
 
 Un petit Forth 64 bits, insensible à la casse, construit sur un noyau C minimal. Il tourne sous Linux, dans le
-navigateur, sur Android, sur des microcontrôleurs (ESP32, Pico, GBA), sur du matériel nu (Raspberry Pi, PC
+navigateur, sur Android (une application, ou compilé dans Termux), sur des microcontrôleurs (ESP32, Pico, GBA), sur du matériel nu (Raspberry Pi, PC
 x86-64 via UEFI) et sous DOS (386 et plus, l'invite en mode texte pour l'instant).
 
 Site: [luginf.github.io/lugforth](https://luginf.github.io/lugforth/) -

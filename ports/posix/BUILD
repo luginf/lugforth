@@ -62,13 +62,19 @@ Alias('posix', ' '.join([
               '$dst/posix/lugforth',
               'echo internals see-all bye | $dst/posix/lugforth '
               '>$dst/tests/posix_see_all_test.out 2>&1'),
+  # A position independent binary (Termux: Android wants one) is loaded elsewhere at each
+  # run: restore must then refuse the image of another run instead of jumping into it.
   TestCommand(' '.join(['$dst/tests/posix_save_restore_test.out',
                         '$dst/tests/posix_save_restore.bin']),
               '$dst/posix/lugforth',
               'echo ": foosquare dup * ; save $dst/tests/posix_save_restore.bin bye" | '
-              '$dst/posix/lugforth > $dst/tests/posix_save_restore_test.out && '
-              'echo "restore $dst/tests/posix_save_restore.bin 4 foosquare 16 <> posix sysexit" | '
-              '$dst/posix/lugforth >> $dst/tests/posix_save_restore_test.out'),
+              '$dst/posix/lugforth > $dst/tests/posix_save_restore_test.out && ' +
+              ('echo "restore $dst/tests/posix_save_restore.bin bye" | '
+               '$dst/posix/lugforth >> $dst/tests/posix_save_restore_test.out 2>&1 && '
+               'grep -q "saved by another run" $dst/tests/posix_save_restore_test.out'
+               if TERMUX else
+               'echo "restore $dst/tests/posix_save_restore.bin 4 foosquare 16 <> posix sysexit" | '
+               '$dst/posix/lugforth >> $dst/tests/posix_save_restore_test.out')),
 ]))
 
 # The Forth 2012 test suite (Hayes, Gerry Jackson): not part of `posix` as it is not in this repository.

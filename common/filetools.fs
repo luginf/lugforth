@@ -80,19 +80,35 @@ internals definitions
 : park-heap ( -- a ) saving-base ;
 : park-forth ( -- a ) saving-base cell+ ;
 : 'cold ( -- a ) saving-base 2 cells + ;
+: park-code ( -- a ) saving-base 3 cells + ;
+( An image holds the addresses of the code: a binary loaded elsewhere at
+  each run, position independent with ASLR as Android wants it, cannot
+  take back an image of another run. The code address of dup tells. )
+: code-mark ( -- n ) ['] dup @ ;
+create image-head 4 cells allot
 : setup-saving-base
   here to saving-base  16 cells allot  0 'cold ! ;
 
 ' forth >body constant forth-wordlist
 
 : save-name
+  code-mark park-code !
   'heap @ park-heap !
   forth-wordlist @ park-forth !
   w/o create-file throw >r
   saving-base here over - r@ write-file throw
   r> close-file throw ;
 
+: image-ok? ( a n -- f )   ( the image was saved where the code is now )
+  r/o open-file throw >r
+  image-head 4 cells r@ read-file throw drop
+  r> close-file throw
+  image-head 3 cells + @ code-mark = ;
 : restore-name ( "name" -- )
+  2dup image-ok? 0= if
+    ." This image was saved by another run: the code is not at the same address." cr
+    -1 throw
+  then
   r/o open-file throw >r
   saving-base r@ file-size throw d>s r@ read-file throw drop
   r> close-file throw

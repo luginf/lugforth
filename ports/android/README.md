@@ -29,4 +29,5 @@ version has no sprites or sound files (the roguelike and piano roll run only in 
     adb push out/android/lugforth-aarch64 /data/local/tmp/lugforth
     adb shell -t /data/local/tmp/lugforth
 
-Or copy the binary into Termux. No SDL2 words in this mode.
+No SDL2 words in this mode. In Termux, rather build it there:
+`sh ports/termux/install.sh` (see ports/termux/README.md).
