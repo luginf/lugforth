@@ -54,7 +54,7 @@ Lancez `lugforth` (voir [Binaires](#binaires), ou compilez-le avec
 `ninja posix`). Vous obtenez une bannière et l'invite:
 
 ```
-Lugforth v2026.11.2.25
+Lugforth v2026.11.3.1
 :; ===========>/>
 type 'info' for help
  ok
@@ -651,7 +651,7 @@ ou avec `rot`: `: volume ( w h d -- v ) -rot * * ;` (3)
 ```
 common/      noyau partagé (sources Forth et en-têtes C)
 ports/       un dossier par plateforme: posix, web, windows, esp32, pico,
-             pico-ice, gba, android, rpi (matériel nu: QEMU, Raspberry Pi 3/4), efi (PC x86-64 nu)
+             pico-ice, gba, android, termux, rpi (matériel nu: QEMU, Raspberry Pi 3/4), efi (PC x86-64 nu)
 examples/    programmes d'exemple et bancs d'essai
 tools/       scripts de compilation et de conversion
 docs/        MANUAL.md, WORDS.md, fr/ (traduction française), dev/ (notes pour les développeurs), pages/ (site web), site/ (pages uEforth), images/
@@ -668,6 +668,7 @@ Pousser une étiquette comme `v7.0.8.1` (ou lancer
 |---|---|
 | Linux | Archive tar et AppImage, compilés sur Debian 10 (glibc 2.27 ou plus récente). L'AppImage contient les bibliothèques SDL2, les exemples et une police. Depuis une console elle donne l'interface terminal; un clic sur le bureau ouvre la fenêtre de `lugforth --gui` (un terminal si elle ne peut pas s'ouvrir). Les exemples sont copiés au premier lancement dans `~/.local/share/lugforth/examples` (`LUGFORTH_HOME` change le dossier), jamais écrasés. |
 | Android | `lugforth-VERSION-android.apk` (arm64), compilé à la main avec `ports/android/build_apk.sh` et joint à la publication. Signé avec une clé de débogage gardée dans `out/android/debug.keystore`: conservez ce fichier pour pouvoir mettre à jour une copie installée. |
+| Termux (Android) | Pas de binaire: `sh ports/termux/install.sh` compile le Lugforth du terminal dans Termux depuis un clone git et le met dans `$PREFIX/bin` (voir `ports/termux/README.md`). `restore` refuse une image sauvée par une autre exécution: Android charge le binaire à une autre adresse chaque fois. |
 | Windows x64 | `lugforth-<version>-windows-x64.zip`: `lugforth.exe`, `SDL2.dll` et `SDL2_ttf.dll` (licences zlib et FreeType), les liaisons Forth dans `lib/` et `examples/`. `sdl2` et `sdl2-ttf` les chargent, et `lugforth.exe --gui`, le `lugforth-gui.bat` du zip (un double clic) ou `gui` à l'invite ouvrent la même fenêtre console que sous Linux, avec son menu, ses couleurs, ses polices (Consolas) et le menu Examples; ses réglages sont dans `%APPDATA%\lugforth`. Testé en CI avec le pilote vidéo factice, pas encore par le mainteneur sur un vrai écran. Lancez lugforth depuis son dossier. `ls`, `dir`, `cd`, `pwd`, l'éditeur de ligne et `/` ou `\` dans les chemins fonctionnent. `ed`, `writhdeck` et le son (`play`) ne sont que sous POSIX. |
 | macOS | `lugforth-<version>-macos-universal.zip` (Apple silicon et Intel, macOS 11 ou plus récent). Non signé: clic droit, Ouvrir, ou `xattr -d com.apple.quarantine lugforth`. Testé en CI sur Apple silicon: l'invite, les tests, la complétion par Tab et les mots SDL2 (38 tests, sans écran) après `brew install sdl2 sdl2_ttf` (les bibliothèques sont cherchées dans le système et dans `/opt/homebrew/lib`, `/usr/local/lib`); la fenêtre console, les éditeurs et les sockets n'ont pas été essayés. |
 

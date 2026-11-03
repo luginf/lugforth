@@ -51,7 +51,14 @@ CFLAGS_MINIMIZE = [
   '-fmerge-all-constants',
 ]
 
-if sys.platform == 'linux':
+# Termux (Android): a Linux with Bionic for libc, clang and no gcc, and an Android
+# that refuses an executable that is not position independent (no -no-pie).
+# Its Python says 'android' from 3.13 on, 'linux' before.
+TERMUX = (sys.platform == 'android' or 'TERMUX_VERSION' in os.environ or
+          'com.termux' in os.environ.get('PREFIX', ''))
+LINUX = sys.platform in ('linux', 'android')
+
+if LINUX:
   CFLAGS_MINIMIZE.append('-Wl,--build-id=none')
 
 CFLAGS = CFLAGS_COMMON + CFLAGS_MINIMIZE + [
@@ -67,18 +74,20 @@ if sys.platform == 'darwin':
     '-Wl,-dead_strip',
     '-D_GNU_SOURCE',
   ]
-elif sys.platform == 'linux':
+elif LINUX:
   CFLAGS += [
     '-s',
     '-Wl,--gc-sections',
     '-no-pie',
     '-Wl,--build-id=none',
   ]
+if TERMUX:
+  CFLAGS = [f for f in CFLAGS if f != '-no-pie'] + ['-fPIE', '-pie']
 
 STRIP_ARGS = ['-S']
 if sys.platform == 'darwin':
   STRIP_ARGS += ['-x']
-elif sys.platform == 'linux':
+elif LINUX:
   STRIP_ARGS += [
     '--strip-unneeded',
     '--remove-section=.note.gnu.gold-version',
@@ -89,6 +98,15 @@ elif sys.platform == 'linux':
   ]
 
 LIBS = ['-ldl']
+
+# The C++ compiler and strip of the posix builds: clang and llvm-strip where gcc
+# and binutils are missing (Termux).
+CXX = 'g++' if shutil.which('g++') and not TERMUX else 'clang++'
+STRIP = 'strip' if shutil.which('strip') else 'llvm-strip'
+if CXX == 'clang++':
+  # main.c is C++ (clang compiles a .c as C++ only with -x); the opcode tables have flat
+  # initializers and interp.h keeps the registers in 'register' variables: warnings of clang only.
+  CFLAGS = ['-x', 'c++'] + CFLAGS + ['-Wno-missing-braces', '-Wno-deprecated-register']
 
 WIN_CFLAGS = CFLAGS_COMMON
 WIN_LIBS = ['user32.lib']
@@ -255,7 +273,8 @@ builddir = $dst
 CFLAGS = {' '.join(CFLAGS)}
 STRIP_ARGS = {' '.join(STRIP_ARGS)}
 LIBS = {' '.join(LIBS)}
-CXX = g++
+CXX = {CXX}
+STRIP = {STRIP}
 
 WIN_CL32 = {WIN_CL32}
 WIN_CL64 = {WIN_CL64}
@@ -300,19 +319,19 @@ rule compile
   description = CXX $in
   depfile = $out.d
   deps = gcc
-  command = $CXX $CFLAGS $in -o $out $LIBS -MD -MF $depfile && strip $STRIP_ARGS $out
+  command = $CXX $CFLAGS $in -o $out $LIBS -MD -MF $depfile && $STRIP $STRIP_ARGS $out
 
 rule compile_sim
   description = CXX_SIM $in
   depfile = $out.d
   deps = gcc
-  command = $CXX -DLUGFORTH_SIM=1 $CFLAGS $in -o $out $LIBS -MD -MF $depfile && strip $STRIP_ARGS $out
+  command = $CXX -DLUGFORTH_SIM=1 $CFLAGS $in -o $out $LIBS -MD -MF $depfile && $STRIP $STRIP_ARGS $out
 
 rule compile_mini
   description = CXX_MINI $in
   depfile = $out.d
   deps = gcc
-  command = $CXX -DLUGFORTH_MINI=1 $CFLAGS $in -o $out $LIBS -MD -MF $depfile && strip $STRIP_ARGS $out
+  command = $CXX -DLUGFORTH_MINI=1 $CFLAGS $in -o $out $LIBS -MD -MF $depfile && $STRIP $STRIP_ARGS $out
 
 rule compile_win32
   description = WIN_CL32 $in

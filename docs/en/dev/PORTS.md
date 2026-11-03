@@ -14,6 +14,23 @@ Ctrl button on a real soft keyboard (letters may arrive as key events
 rather than text input), and that nothing shows that Ctrl is armed (an
 indicator would help).
 
+## Termux (ports/termux) - 2026-11-03
+
+The terminal Lugforth built inside Termux with `ports/termux/install.sh`
+(`configure.py` then `ninja`, see ports/termux/README.md).
+`configure.py` sets `TERMUX` (`TERMUX_VERSION`, `PREFIX` in
+`com.termux`, or `sys.platform == 'android'`, Python 3.13 and later)
+and then uses `clang++ -x c++` with `-Wno-missing-braces
+-Wno-deprecated-register` (gcc gives neither), drops `-no-pie` for
+`-fPIE -pie` (Android runs only PIE), and `llvm-strip` when `strip` is
+missing. Under ASLR a `save` image no longer matches the code:
+`filetools.fs` writes the code address of `dup` in the fourth cell of
+the image and `restore` refuses an image whose mark differs (the
+`posix_save_restore` test checks that refusal when `TERMUX` is set).
+Checked on Debian with `TERMUX_VERSION` set (clang, PIE): `ninja
+posix`, the editors, `blocks-editor` and pager pty tests. Not run on
+a phone. SDL2 under Termux:X11 not done (unversioned library names).
+
 ## Bare-metal AArch64 (ports/rpi) and shared code (ports/baremetal)
 
 `ports/baremetal` holds what the Pi and the PC (ports/efi) share:

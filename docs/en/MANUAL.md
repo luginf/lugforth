@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.11.2.25
+Lugforth v2026.11.3.1
 :; ===========>/>
 type 'info' for help
  ok
@@ -620,7 +620,7 @@ or with `rot`: `: volume ( w h d -- v ) -rot * * ;` (3)
 ```
 common/      shared core (Forth sources and C headers)
 ports/       one directory per platform: posix, web, windows, esp32, pico,
-             pico-ice, gba, android, rpi (bare metal: QEMU, Raspberry Pi 3/4), efi (bare x86-64 PC)
+             pico-ice, gba, android, termux, rpi (bare metal: QEMU, Raspberry Pi 3/4), efi (bare x86-64 PC)
 examples/    example programs and benchmarks
 tools/       build and conversion scripts
 docs/        MANUAL.md, WORDS.md, dev/ (notes for developers), pages/ (website), site/ (uEforth pages), images/
@@ -637,6 +637,7 @@ Pushing a tag such as `v7.0.8.1` (or running
 |---|---|
 | Linux | Tarball and AppImage, built on Debian 10 (glibc 2.27 or newer). The AppImage carries the SDL2 libraries, the examples and a font. From a console it gives the terminal interface; a click on the desktop opens the window of `lugforth --gui` (a terminal if it cannot open). Examples are copied on first run to `~/.local/share/lugforth/examples` (`LUGFORTH_HOME` changes the directory), never overwritten. |
 | Android | `lugforth-VERSION-android.apk` (arm64), built by hand with `ports/android/build_apk.sh` and attached to the release. Signed with a debug key kept in `out/android/debug.keystore`: keep that file to be able to update an installed copy. |
+| Termux (Android) | No binary: `sh ports/termux/install.sh` builds the terminal Lugforth inside Termux from a git clone and puts it in `$PREFIX/bin` (see `ports/termux/README.md`). `restore` refuses an image saved by another run: Android loads the binary at another address each time. |
 | Windows x64 | `lugforth-<version>-windows-x64.zip`: `lugforth.exe`, `SDL2.dll` and `SDL2_ttf.dll` (zlib and FreeType licenses), the Forth bindings in `lib/` and `examples/`. `sdl2` and `sdl2-ttf` load them, and `lugforth.exe --gui`, the `lugforth-gui.bat` of the zip (a double click) or `gui` at the prompt open the same console window as on Linux, with its menu, colors, fonts (Consolas) and the Examples menu; its settings are in `%APPDATA%\lugforth`. Tested in CI with the dummy video driver, not yet by the maintainer on a real screen. Run lugforth from its folder. `ls`, `dir`, `cd`, `pwd`, the line editor and `/` or `\` in paths work. `ed`, `writhdeck` and the sound (`play`) are POSIX only. |
 | macOS | `lugforth-<version>-macos-universal.zip` (Apple silicon and Intel, macOS 11 or later). Not signed: right click, Open, or `xattr -d com.apple.quarantine lugforth`. Tested in CI on Apple silicon: the prompt, the tests, Tab completion and the SDL2 words (38 tests, headless) after `brew install sdl2 sdl2_ttf` (the libraries are looked up in the system and in `/opt/homebrew/lib`, `/usr/local/lib`); the console window, the editors and sockets have not been tried. |
 

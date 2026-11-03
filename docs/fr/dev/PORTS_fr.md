@@ -18,6 +18,24 @@ peuvent arriver comme des événements de touche plutôt que comme saisie
 de texte), et que rien n'indique que Ctrl est armé (un indicateur
 aiderait).
 
+## Termux (ports/termux) - 2026-11-03
+
+Le Lugforth du terminal compilé dans Termux avec
+`ports/termux/install.sh` (`configure.py` puis `ninja`, voir
+ports/termux/README.md). `configure.py` met `TERMUX` (`TERMUX_VERSION`,
+un `PREFIX` dans `com.termux`, ou `sys.platform == 'android'`, à partir
+de Python 3.13) et prend alors `clang++ -x c++` avec
+`-Wno-missing-braces -Wno-deprecated-register` (gcc ne donne ni l'un ni
+l'autre), remplace `-no-pie` par `-fPIE -pie` (Android ne lance que du
+PIE), et `llvm-strip` quand `strip` manque. Avec l'ASLR une image de
+`save` ne correspond plus au code: `filetools.fs` écrit l'adresse du
+code de `dup` dans la quatrième cellule de l'image et `restore` refuse
+une image dont la marque diffère (le test `posix_save_restore` vérifie
+ce refus quand `TERMUX` est mis). Vérifié sur Debian avec
+`TERMUX_VERSION` (clang, PIE): `ninja posix`, les tests pty des
+éditeurs, de `blocks-editor` et du pager. Pas lancé sur un téléphone.
+SDL2 sous Termux:X11 pas fait (noms de bibliothèques sans version).
+
 ## AArch64 en matériel nu (ports/rpi) et code partagé (ports/baremetal)
 
 `ports/baremetal` contient ce que le Pi et le PC (ports/efi) partagent:
