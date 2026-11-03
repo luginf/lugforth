@@ -479,8 +479,18 @@ pose la demande, une touche termine la boucle. Sur le PC et dans le
 navigateur le lecteur boucle lui-même le morceau (`abc-loop`) et on
 interroge les touches, une touche quelconque demandant un autre morceau
 ; le fichier charge `sdl2-abc` tout seul s'il n'y a pas de lecteur. La
-page web est `terminal.html?run=abc_random.fs,abc_random_web.fs`
-(`abc_random_web.fs` appelle seulement `random-music`) ; essayé dans
+page web est `abc_random.html` (ports/web) : ses boutons tapent `N
+web-tune` à l'invite (`abc_random_page.fs` : fait le morceau de la
+graine N, envoie son texte ABC à la page, le boucle avec `abc-loop`), et
+la page dessine elle-même la partition en SVG (deux portées, sans
+ligatures) et montre le texte et une case pour la graine. Les boutons
+appellent `ensureAudio` dans le clic ou le toucher : sur Firefox pour
+Android le son ne démarrait pas depuis la console `?run=`, où rien n'est
+touché avant le début du morceau ; la page se charge avec
+`lugNoKeyboard` pour que le clavier intégré du téléphone ne la couvre
+pas. La version console reste
+`terminal.html?run=abc_random.fs,abc_random_web.fs` (`abc_random_web.fs`
+appelle seulement `random-music`) ; essayé dans
 Chromium sans écran par le protocole DevTools (le morceau est annoncé,
 une touche en donne un autre), le son lui-même pas entendu. `save-tune`
 n'est défini que là où `w/o` existe, donc pas dans le navigateur.

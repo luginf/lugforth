@@ -436,7 +436,15 @@ pwm words are stubs: the button word returns true and sets the request,
 a key ends the loop. On the PC and in the browser the player loops the
 tune itself (`abc-loop`) and the keys are polled, any key asking for
 another tune; the file loads `sdl2-abc` by itself when there is no
-player. The browser page is
+player. The browser page is `abc_random.html` (ports/web): its buttons type
+`N web-tune` at the prompt (`abc_random_page.fs`: makes the tune of the
+seed N, sends its ABC text to the page, loops it with `abc-loop`), and
+the page draws the score in SVG itself (two staves, no beams) and shows
+the text and a seed box. The buttons call `ensureAudio` inside the click
+or touch: on Firefox for Android the sound did not start from the
+`?run=` console, where nothing is touched before the tune starts, the
+page loads with `lugNoKeyboard` so that the built-in phone keyboard does
+not cover it. The console version stays
 `terminal.html?run=abc_random.fs,abc_random_web.fs` (`abc_random_web.fs`
 only calls `random-music`); tried in headless Chromium over the DevTools
 protocol (the tune is announced, a key gives another one), the sound

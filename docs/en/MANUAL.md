@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.11.3.2
+Lugforth v2026.11.3.4
 :; ===========>/>
 type 'info' for help
  ok
@@ -1439,9 +1439,12 @@ abc-halt-with` gives `abc-play` a word that returns true to stop (the
 default is a key on the serial line). To keep a tune in a file:
 `296102114 rand-seed ! save-tune t1.abc` (then `cat t1.abc` shows it on
 a Pico, and it can be copied from the terminal). In the browser,
-`terminal.html?run=abc_random.fs,abc_random_web.fs` (the demo of the
-site) plays it with WebAudio; any key gives another tune, and
-`save-tune` is not there (no files).
+`demo/abc_random.html` (the demo of the site) plays it with WebAudio and
+draws the score, with the ABC text and a box for the seed; its buttons
+(New tune, Play this seed, Stop) are also what lets a phone's browser
+start the sound. `terminal.html?run=abc_random.fs,abc_random_web.fs`
+gives the plain console version (any key: another tune). `save-tune` is
+not there (no files): copy the ABC text from the page.
 
 
 ## Building

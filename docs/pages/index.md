@@ -5,7 +5,7 @@ spirit of (u)eForth.
 
 <div class="cards">
 <div class="card"><h3>Download</h3>
-<a href="https://github.com/luginf/lugforth/releases/latest/download/lugforth-manual.pdf">The manual (PDF)</a>.
+<a href="https://github.com/luginf/lugforth/releases/latest">The manual (PDF)</a>.
 Builds on the <a
 href="https://github.com/luginf/lugforth/releases/latest">latest
 release</a>: Linux (tarball, AppImage), Windows (zip, built with MSVC or

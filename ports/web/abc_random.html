@@ -1,0 +1,240 @@
+<!--
+Copyright 2026 Luginfo10
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lugforth random music</title>
+<!--
+  The random tune generator examples/music/abc_random.fs with its score.
+  The buttons type "N web-tune" at the Forth prompt (abc_random_page.fs): the
+  tune of the seed N is made, its ABC text comes back to abcShow() below, which
+  draws the score in SVG, and it plays in a loop with WebAudio. The sound can
+  only start after a touch or a click (a phone's browser insists on it): the
+  buttons ask for it themselves.
+  Serve it over http from out/web: ninja web && cd out/web && python3 -m http.server
+-->
+<style>
+  body { font-family: sans-serif; margin: 0.5em 1em; }
+  #bar { display: flex; flex-wrap: wrap; gap: 0.5em; align-items: center; margin-bottom: 0.5em; }
+  #bar button, #bar input { font-size: 1.1em; padding: 0.4em 0.8em; }
+  #seed { width: 9em; }
+  #info { margin: 0.3em 0; color: #444; }
+  #score { overflow-x: auto; border: 1px solid #ccc; background: #fff; }
+  #score svg { display: block; min-width: 600px; width: 100%; height: auto; }
+  #abc { width: 100%; height: 14em; font-family: monospace; box-sizing: border-box; }
+  details { margin-top: 0.8em; }
+</style>
+<h2>Random music</h2>
+<div id="bar">
+  <button id="new">New tune</button>
+  <label>Seed <input id="seed" type="number" min="0" max="2147483647" inputmode="numeric"></label>
+  <button id="go">Play this seed</button>
+  <button id="stop">Stop</button>
+</div>
+<div id="info">Loading...</div>
+<div id="score"></div>
+<details open><summary>ABC text</summary>
+  <textarea id="abc" readonly></textarea>
+</details>
+<details><summary>Forth console</summary><div id="lugforth"></div></details>
+
+<script type="text/forth" src="abc_random.fs"></script>
+<script type="text/forth" src="abc_random_page.fs"></script>
+<script>window.lugNoKeyboard = true;   // this page has its own buttons: no built-in keyboard on a phone</script>
+<script src="lugforth.js"></script>
+<script>
+// JavaScript to Forth: pushing the characters of a line, then Enter, runs it as if typed.
+function forth(text) {
+  var s = unescape(encodeURIComponent(text + '\r'));
+  for (var i = 0; i < s.length; i++) lugforth.inbuffer.push(s.charCodeAt(i));
+}
+function audio() {   // inside a touch or a click: the browser lets the sound start
+  var S = window.lugforth && lugforth.sdl;
+  if (S && S.ensureAudio) { S.ensureAudio(); }
+}
+var seedBox = document.getElementById('seed');
+// The Forth page takes every key for its prompt: the seed box keeps its own.
+['keydown', 'keypress', 'keyup', 'input'].forEach(function(t) {
+  seedBox.addEventListener(t, function(e) { e.stopPropagation(); });
+});
+function play(seed) { audio(); forth(seed + ' web-tune'); }
+function newTune() { play(Math.floor(Math.random() * 2147483647)); }
+document.getElementById('new').onclick = newTune;
+document.getElementById('go').onclick = function() {
+  var n = parseInt(seedBox.value, 10);
+  if (isNaN(n) || n < 0) { n = 0; }
+  play(n & 0x7fffffff);
+};
+seedBox.addEventListener('keydown', function(e) { if (e.key === 'Enter') { document.getElementById('go').onclick(); } });
+document.getElementById('stop').onclick = function() { forth('web-stop'); };
+// Any touch or click lets the sound start (the tune waits for it, then plays).
+['touchend', 'click', 'pointerup'].forEach(function(t) { document.addEventListener(t, audio, true); });
+
+// ---- The score: two staves (treble for voice 1, bass for voice 2) of 4 bars per line ----
+var SVGNS = 'http://www.w3.org/2000/svg';
+var LETTER = {C: 0, D: 1, E: 2, F: 3, G: 4, A: 5, B: 6};
+var KEYS = {C: [0, 0], G: [1, 1], D: [1, 2], F: [-1, 1], Bb: [-1, 2], A: [1, 3],
+            Am: [0, 0], Em: [1, 1], Dm: [-1, 1], Gm: [-1, 2]};   // [sign, count]
+var SHARPS = [10, 7, 11, 8, 5, 9, 6], FLATS = [6, 9, 5, 8, 4, 7, 3];   // treble steps
+function el(parent, name, attrs, text) {
+  var e = document.createElementNS(SVGNS, name);
+  for (var k in attrs) { e.setAttribute(k, attrs[k]); }
+  if (text !== undefined) { e.textContent = text; }
+  parent.appendChild(e);
+  return e;
+}
+function parseVoice(lines) {   // -> bars: [[{steps: [], len: n, rest: bool}]]
+  var bars = [], cur = [], t = lines.join('\n');
+  var re = /\[([^\]]*)\](\d*)|([A-Ga-g])([',]*)(\d*)|z(\d*)|\|\]?/g, m;
+  while ((m = re.exec(t)) !== null) {
+    if (m[0].charAt(0) === '|') { if (cur.length) { bars.push(cur); cur = []; } continue; }
+    if (m[0].charAt(0) === 'z') { cur.push({steps: [], len: parseInt(m[6] || '1', 10), rest: true}); continue; }
+    var ns = m[1] !== undefined ? m[1] : m[3] + m[4];
+    var len = parseInt((m[1] !== undefined ? m[2] : m[5]) || '1', 10);
+    var steps = [], r = /([A-Ga-g])([',]*)/g, q;
+    while ((q = r.exec(ns)) !== null) {
+      var l = q[1], up = l === l.toLowerCase();
+      var s = LETTER[l.toUpperCase()] + (up ? 7 : 0);
+      for (var i = 0; i < q[2].length; ++i) { s += q[2].charAt(i) === "'" ? 7 : -7; }
+      steps.push(s);
+    }
+    cur.push({steps: steps, len: len, rest: false});
+  }
+  if (cur.length) { bars.push(cur); }
+  return bars;
+}
+function parseAbc(text) {
+  var head = {}, voices = {}, v = null;
+  text.split('\n').forEach(function(line) {
+    var m = /^([A-Z]):(.*)$/.exec(line);
+    if (m && m[1] === 'V') { v = m[2].trim(); voices[v] = []; }
+    else if (m && v === null) { head[m[1]] = m[2].trim(); }
+    else if (v !== null && line.length) { voices[v].push(line); }
+  });
+  return {head: head, v1: parseVoice(voices['1'] || []), v2: parseVoice(voices['2'] || [])};
+}
+function drawStaff(g, x0, x1, y0, bass, key) {   // y0: the top line; the gap between lines is 8
+  for (var i = 0; i < 5; ++i) { el(g, 'line', {x1: x0, x2: x1, y1: y0 + i * 8, y2: y0 + i * 8, stroke: '#000'}); }
+  el(g, 'text', {x: x0 + 4, y: y0 + (bass ? 22 : 28), 'font-size': 34, 'font-family': 'serif',
+    'font-style': 'italic', 'font-weight': 'bold'}, bass ? 'F' : 'G');
+  var k = KEYS[key] || [0, 0], list = k[0] > 0 ? SHARPS : FLATS;
+  for (var i = 0; i < k[1]; ++i) {
+    var st = list[i] - (bass ? 14 : 0), y = stepY(st, y0, bass);
+    el(g, 'text', {x: x0 + 34 + i * 9, y: y + 4, 'font-size': 18, 'font-family': 'serif'}, k[0] > 0 ? '#' : 'b');
+  }
+}
+function stepY(s, y0, bass) {   // the top line is F5 (step 10) in treble, A3 (step -3) in bass
+  return y0 + ((bass ? -3 : 10) - s) * 4;
+}
+function drawNote(g, x, y0, bass, ev) {
+  var len = ev.len, ys = [];
+  if (ev.rest) {
+    var yc = y0 + 16;
+    if (len >= 8) { el(g, 'rect', {x: x - 5, y: y0 + 8, width: 10, height: 4}); }
+    else if (len >= 4) { el(g, 'rect', {x: x - 5, y: y0 + 12, width: 10, height: 4}); }
+    else if (len >= 2) { el(g, 'path', {d: 'M' + (x - 3) + ' ' + (yc - 10) + ' l6 6 l-6 6 l6 6 l-3 3', fill: 'none', stroke: '#000', 'stroke-width': 2}); }
+    else { el(g, 'path', {d: 'M' + (x - 3) + ' ' + (yc - 4) + ' l6 -2 l-4 14', fill: 'none', stroke: '#000', 'stroke-width': 2}); }
+    return;
+  }
+  var steps = ev.steps.slice().sort(function(a, b) { return a - b; });
+  steps.forEach(function(s) { ys.push(stepY(s, y0, bass)); });
+  var open = len >= 4, mid = bass ? -6 : 6;
+  steps.forEach(function(s, i) {   // ledger lines, then the head
+    var y = ys[i];
+    if (y < y0 - 1) { for (var yy = y0 - 8; yy >= y - 1; yy -= 8) { el(g, 'line', {x1: x - 8, x2: x + 8, y1: yy, y2: yy, stroke: '#000'}); } }
+    if (y > y0 + 33) { for (var yy = y0 + 40; yy <= y + 1; yy += 8) { el(g, 'line', {x1: x - 8, x2: x + 8, y1: yy, y2: yy, stroke: '#000'}); } }
+    el(g, 'ellipse', {cx: x, cy: y, rx: 5, ry: 3.6, transform: 'rotate(-20 ' + x + ' ' + y + ')',
+      fill: open ? '#fff' : '#000', stroke: '#000', 'stroke-width': 1.3});
+  });
+  if (len === 3 || len === 6 || len === 12) { el(g, 'circle', {cx: x + 9, cy: ys[ys.length - 1] - 2, r: 1.8}); }
+  if (len < 8) {
+    var avg = steps.reduce(function(a, b) { return a + b; }, 0) / steps.length;
+    var ytop = ys[ys.length - 1], ybot = ys[0];   // ys goes down the page as steps go up: ys[0] is the highest
+    ytop = Math.min.apply(null, ys); ybot = Math.max.apply(null, ys);
+    if (avg < mid) {   // stem up from the lowest note
+      el(g, 'line', {x1: x + 5, x2: x + 5, y1: ybot, y2: ytop - 26, stroke: '#000', 'stroke-width': 1.3});
+      if (len === 1) { el(g, 'path', {d: 'M' + (x + 5) + ' ' + (ytop - 26) + ' q8 8 5 18', fill: 'none', stroke: '#000', 'stroke-width': 1.6}); }
+    } else {
+      el(g, 'line', {x1: x - 5, x2: x - 5, y1: ytop, y2: ybot + 26, stroke: '#000', 'stroke-width': 1.3});
+      if (len === 1) { el(g, 'path', {d: 'M' + (x - 5) + ' ' + (ybot + 26) + ' q8 -8 5 -18', fill: 'none', stroke: '#000', 'stroke-width': 1.6}); }
+    }
+  }
+}
+function drawScore(tune) {
+  var W = 900, per = 4, nb = Math.max(tune.v1.length, tune.v2.length);
+  var rows = Math.ceil(nb / per), rowH = 150, top = 52;
+  var svg = document.createElementNS(SVGNS, 'svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + (top + rows * rowH));
+  el(svg, 'text', {x: 8, y: 24, 'font-size': 20, 'font-family': 'sans-serif', 'font-weight': 'bold'}, tune.head.T || '');
+  el(svg, 'text', {x: W - 8, y: 24, 'font-size': 14, 'font-family': 'sans-serif', 'text-anchor': 'end'},
+     'Key ' + (tune.head.K || '') + '   ' + (tune.head.Q ? 'tempo ' + tune.head.Q.replace('1/4=', '') : ''));
+  var left = 62, bw = (W - 8 - left) / per;
+  for (var r = 0; r < rows; ++r) {
+    var y1 = top + r * rowH, y2 = y1 + 76;
+    drawStaff(svg, 8, W - 8, y1, false, tune.head.K);
+    drawStaff(svg, 8, W - 8, y2, true, tune.head.K);
+    el(svg, 'line', {x1: 8, x2: 8, y1: y1, y2: y2 + 32, stroke: '#000', 'stroke-width': 2});
+    if (r === 0) {
+      el(svg, 'text', {x: left - 14, y: y1 + 15, 'font-size': 18, 'font-weight': 'bold', 'font-family': 'serif'}, '4');
+      el(svg, 'text', {x: left - 14, y: y1 + 31, 'font-size': 18, 'font-weight': 'bold', 'font-family': 'serif'}, '4');
+      el(svg, 'text', {x: left - 14, y: y2 + 15, 'font-size': 18, 'font-weight': 'bold', 'font-family': 'serif'}, '4');
+      el(svg, 'text', {x: left - 14, y: y2 + 31, 'font-size': 18, 'font-weight': 'bold', 'font-family': 'serif'}, '4');
+    }
+    for (var b = 0; b < per; ++b) {
+      var i = r * per + b;
+      if (i >= nb) { break; }
+      var bx = left + b * bw + (r === 0 && b === 0 ? 10 : 0);
+      var span = left + (b + 1) * bw - bx;
+      [[tune.v1[i], y1, false], [tune.v2[i], y2, true]].forEach(function(p) {
+        var t = 0;
+        (p[0] || []).forEach(function(ev) {
+          drawNote(svg, bx + 14 + (t / 8) * (span - 24), p[1], p[2], ev);
+          t += ev.len;
+        });
+      });
+      var bxe = left + (b + 1) * bw;
+      var last = (i === nb - 1);
+      el(svg, 'line', {x1: bxe, x2: bxe, y1: y1, y2: y2 + 32, stroke: '#000', 'stroke-width': last ? 3 : 1});
+      if (last) { el(svg, 'line', {x1: bxe - 5, x2: bxe - 5, y1: y1, y2: y2 + 32, stroke: '#000'}); }
+    }
+  }
+  var box = document.getElementById('score');
+  box.innerHTML = '';
+  box.appendChild(svg);
+}
+window.abcShow = function(text) {   // called by Forth: the ABC text of the tune just made
+  document.getElementById('abc').value = text;
+  var tune = parseAbc(text), m = /Random (\d+)/.exec(tune.head.T || '');
+  if (m) { seedBox.value = m[1]; }
+  document.getElementById('info').textContent = 'Tune ' + (m ? m[1] : '') +
+    ' (type this seed in the box to hear it again). Playing in a loop.';
+  drawScore(tune);
+  window.scrollTo(0, 0);   // the Forth console scrolls the page down when it prints
+};
+// The first tune, once the interpreter has loaded the two files (it types at its prompt).
+(function() {
+  var q = /[?&]seed=(\d+)/.exec(location.search);
+  var seed = q ? parseInt(q[1], 10) & 0x7fffffff : Math.floor(Math.random() * 2147483647);
+  document.getElementById('info').textContent = 'Loading...';
+  var tries = setInterval(function() {   // wait for the interpreter to have loaded the two files
+    if (window.lugforth && lugforth.inbuffer) {
+      clearInterval(tries);
+      forth(seed + ' web-tune');
+    }
+  }, 100);
+})();
+</script>

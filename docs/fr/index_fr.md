@@ -7,7 +7,7 @@ Un petit interpréteur Forth: un noyau C plus du code de démarrage en
 Forth, dans l'esprit d'(u)eForth.
 
 **Télécharger.** [Le manuel
-(PDF)](https://github.com/luginf/lugforth/releases/latest/download/lugforth-manual.pdf).
+(PDF)](https://github.com/luginf/lugforth/releases/latest).
 Les versions de la [dernière
 publication](https://github.com/luginf/lugforth/releases/latest): Linux
 (archive, AppImage), Windows (zip, compilé avec MSVC ou MinGW, avec les

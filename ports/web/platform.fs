@@ -593,7 +593,7 @@ if (!globalObj.write) {
   // backspace. A hold repeats the arrows and backspace. The button "native" hides it and brings the
   // phone's own keyboard back; the small button at the bottom right shows it again. The choices are
   // kept in localStorage.
-  if (context.mobile && !/; wv\)/.test(navigator.userAgent)) {
+  if (context.mobile && !/; wv\)/.test(navigator.userAgent) && !window.lugNoKeyboard) {   // a page can set lugNoKeyboard
     var kbLayout = 'azerty', kbOn = true, kbPage = 0, kbShift = false;
     try {
       kbLayout = localStorage.getItem('lugkb-layout') === 'qwerty' ? 'qwerty' : 'azerty';

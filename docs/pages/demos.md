@@ -30,8 +30,8 @@ Everything runs in your browser, no install. See also the
 
 * [Drums](demo/gfx_drums.html)
 * [FM synthesizer](demo/gfx_fm.html)
-* [Random music](demo/terminal.html?run=abc_random.fs,abc_random_web.fs)
-  (any key: another tune)
+* [Random music](demo/abc_random.html): a new tune each time, with its
+  score, its ABC text and a box for the seed
 
 ## Drawing from HTML
 

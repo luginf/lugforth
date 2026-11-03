@@ -54,7 +54,7 @@ Lancez `lugforth` (voir [Binaires](#binaires), ou compilez-le avec
 `ninja posix`). Vous obtenez une bannière et l'invite:
 
 ```
-Lugforth v2026.11.3.2
+Lugforth v2026.11.3.4
 :; ===========>/>
 type 'info' for help
  ok
@@ -1503,9 +1503,13 @@ un mot qui rend vrai pour s'arrêter (par défaut, une touche sur la
 liaison série). Pour garder un morceau dans un fichier : `296102114
 rand-seed ! save-tune t1.abc` (puis `cat t1.abc` l'affiche sur un Pico,
 et on peut le copier depuis le terminal). Dans le navigateur,
-`terminal.html?run=abc_random.fs,abc_random_web.fs` (la démo du site) le
-joue avec WebAudio ; une touche quelconque donne un autre morceau, et
-`save-tune` n'existe pas (pas de fichiers).
+`demo/abc_random.html` (la démo du site) le joue avec WebAudio et dessine
+la partition, avec le texte ABC et une case pour la graine ; ses
+boutons (New tune, Play this seed, Stop) sont aussi ce qui permet au
+navigateur d'un téléphone de démarrer le son.
+`terminal.html?run=abc_random.fs,abc_random_web.fs` donne la version
+console (une touche : un autre morceau). `save-tune` n'existe pas (pas
+de fichiers) : on copie le texte ABC depuis la page.
 
 
 ## Compilation

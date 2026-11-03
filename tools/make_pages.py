@@ -144,7 +144,7 @@ def main():
                  'pinball_common.fs', 'pinball_raid.fs', 'pinball_night.fs',
                  'pinball_menu.fs',
                  # games without a page of their own: terminal.html?run=<file>.fs
-                 'gfx_2048.fs', '2048.fs', 'gfx_snake.fs', 'gfx_pacman.fs', 'gfx_digger.fs', 'gfx_corridor.fs', 'gfx_digger_sprites.fs', 'gfx_spr.fs', 'abc_random.fs', 'abc_random_web.fs', 'gfx_tetris.fs',
+                 'gfx_2048.fs', '2048.fs', 'gfx_snake.fs', 'gfx_pacman.fs', 'gfx_digger.fs', 'gfx_corridor.fs', 'gfx_digger_sprites.fs', 'gfx_spr.fs', 'abc_random.fs', 'abc_random_web.fs', 'abc_random.html', 'abc_random_page.fs', 'gfx_tetris.fs',
                  'gfx_minesweeper.fs', 'gfx_mastermind.fs', 'gfx_invaders.fs',
                  'gfx_magnoquill.fs', 'gfx_demo.fs', 'gfx_3d.fs', '3d.fs',
                  'gfx_turtle.fs'):

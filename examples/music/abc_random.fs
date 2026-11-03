@@ -156,7 +156,7 @@ create rt-tn 4 cells allot
 
 \ ---- The tune: 12 bars, three phrases of four ----
 12 constant n-bars
-: bar-end ( bar -- ) 1+ 4 mod 0= if 10 t+c else 32 t+c 124 t+c 32 t+c then ;
+: bar-end ( bar -- ) 1+ 4 mod 0= if 32 t+c 124 t+c 10 t+c else 32 t+c 124 t+c 32 t+c then ;
 0 value rt-bi
 : rt-bar ( bar -- )
   to rt-bi
