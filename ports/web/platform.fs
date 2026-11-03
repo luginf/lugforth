@@ -456,7 +456,10 @@ if (!globalObj.write) {
     ta.addEventListener('compositionend', Reset);
     document.body.appendChild(ta);
     Reset();
-    context.focusInput = function() {
+    context.focusInput = function(e) {
+      // A page with its own controls (window.lugNoKeyboard) wants the keyboard only when the
+      // Forth console itself is tapped, not for a tap on a button or on the score.
+      if (window.lugNoKeyboard && !(e && e.target && context.screen.contains(e.target))) { return; }
       // Not while a game screen (sdl2.fs) is open: its taps are not typing,
       // and the focus would bring the keyboard over the game.
       if (context.sdl && context.sdl.open && !context.sdl.layer) { return; }
@@ -465,7 +468,7 @@ if (!globalObj.write) {
     };
     document.addEventListener('click', context.focusInput);
     document.addEventListener('touchend', context.focusInput);
-    ta.focus({preventScroll: true});
+    if (!window.lugNoKeyboard) { ta.focus({preventScroll: true}); }
     // The keyboard of the phone comes up and goes down: keep the prompt in view
     if (window.visualViewport) {
       var kb = function() {
