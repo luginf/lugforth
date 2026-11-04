@@ -421,9 +421,9 @@ util/penner.r3 easing, lib/sdl2poly.r3 polygon fill.
 
 A Digger-like (the 1983 PC game), written from the rules as they are
 widely described; the levels are drawn by chance, the pictures are
-boxes. POSIX and web (`terminal.html?run=gfx_spr.fs,gfx_digger_sprites.fs,gfx_digger.fs`);
-not tried on DOS (the stage script would keep it as `GFX_DIGG.FS`, and
-the sprite file name is too long for 8.3).
+boxes. POSIX and web
+(`terminal.html?run=gfx_spr.fs,gfx_digger_sprites.fs,gfx_digger.fs`);
+it also runs on the DOS port (reported by the maintainer, 2026-11-04).
 
 - The field is 15 x 10 cells of 20 x 18 pixels. The earth is kept in
   sub-cells of half a cell (30 x 20), so a tunnel grows by half a cell
@@ -435,11 +435,11 @@ the sprite file name is too long for 8.3).
 - Nobbins follow a breadth-first distance map to the digger (`bfs`),
   hobbins go straight at the digger and dig. A bag over a cell that
   becomes free wobbles, falls, breaks into gold after more than one
-  cell, and can be pushed along a tunnel (not up or down). A digger
-  dug in right under a bag who keeps pushing up props it: it shakes
-  but does not fall until the digger leaves or lets go, and then it shakes
-  10 steps more (`held?`, `bag-wobble`) so that he can get away. Firing with up held against
-  a bag sends the shot down.
+  cell, and can be pushed along a tunnel (not up or down). A digger dug
+  in right under a bag who keeps pushing up props it: it shakes but does
+  not fall until the digger leaves or lets go, and then it shakes 10
+  steps more (`held?`, `bag-wobble`) so that he can get away. Firing
+  with up held against a bag sends the shot down.
 - The words are prefixed `dg-` or have unusual names (`bag.st`,
   `mon.t`...): a name like an `sdl2` word is shadowed on the web and DOS
   (see PITFALLS). `walk-to ( d -- )` and `fire!` hold the logic so that
@@ -461,10 +461,9 @@ the sprite file name is too long for 8.3).
 ## Sprites and the sprite editor - done 2026-11-02
 
 `examples/graphics/gfx_spr.fs` (POSIX and web): a sprite is a grid of
-characters (up to 63 x 63), one per pixel; `.` is transparent, any
-other character is a color of a shared palette (`$rrggbb char spr-pal`,
-read at each draw, so a color can change). A file of sprites is plain
-Forth:
+characters (up to 63 x 63), one per pixel; `.` is transparent, any other
+character is a color of a shared palette (`$rrggbb char spr-pal`, read
+at each draw, so a color can change). A file of sprites is plain Forth:
 
     $b89a58 98 spr-pal              \ the color of 'b'
     16 16 sprite: coin
@@ -480,40 +479,46 @@ pixel; `spr-source` writes the text again. The sprites are listed in
 
 `examples/graphics/gfx_sprited.fs` (POSIX, SDL2) is the editor:
 `lugforth examples/graphics/gfx_sprited.fs` opens
-`examples/games/gfx_digger_sprites.fs` (another file: see the header
-of the editor). Mouse: left paints, right erases, middle picks the
-color, a click on a color or on a name chooses it. Keys: `s` saves (the
-comment lines at the top are kept), `u` undo (one step), `c` clear,
-`h` `v` flip, `r` `e` turn a quarter (clockwise, the other way; a
-sprite that is not square is turned in the middle of its own size and
-what does not fit is cut), arrows shift (wrapping), `y` copies the
-sprite and `p` pastes it over another existing one chosen next (from the
-top left corner, what is missing is transparent), `d` duplicate the sprite, `n` a
-new color, `1 2` `3 4` `5 6` red, green, blue down and up, Tab next
-sprite, Esc quit without saving. The window shows the sprite on the
-earth color, at real size and enlarged, with the number of boxes. Tried
-in a real X window (Xvfb): the sprites load, a pixel is painted, the
-file is written and loads again the same. To import a picture, none
-yet: a PNG could be read with `load-image` plus a way to read pixels
-(not looked at). Not done: new sprite of a given size from the editor
-(duplicate one, or begin the file by hand), a web version of the
-editor (it needs file writing).
+`examples/games/gfx_digger_sprites.fs` (another file: see the header of
+the editor). Mouse: left paints, right erases, middle picks the color, a
+click on a color or on a name chooses it. Keys: `s` saves (the comment
+lines at the top are kept), `u` undo (one step), `c` clear, `h` `v`
+flip, `r` `e` turn a quarter (clockwise, the other way; a sprite that is
+not square is turned in the middle of its own size and what does not fit
+is cut), arrows shift (wrapping), `y` copies the sprite and `p` pastes
+it over another existing one chosen next (from the top left corner, what
+is missing is transparent), `d` duplicate the sprite, `n` a new color,
+`1 2` `3 4` `5 6` red, green, blue down and up, Tab next sprite, Esc
+quit without saving. `o` (or the OPEN button at the top right) opens
+another file: a list of the folders and of the files that hold only
+sprites (each line of a candidate is read first, because including any
+other file would run it), arrows and Enter or a click, Esc cancels, `..`
+goes up; with changes not saved, `o` asks twice. If the file cannot be
+loaded the old one comes back. The window shows the sprite on the earth
+color, at real size and enlarged, with the number of boxes. Tried in a
+real X window (Xvfb): the sprites load, a pixel is painted, the file is
+written and loads again the same. To import a picture, none yet: a PNG
+could be read with `load-image` plus a way to read pixels (not looked
+at). Not done: new sprite of a given size from the editor (duplicate
+one, or begin the file by hand), a web version of the editor (it needs
+file writing).
 
 Traps found on the way (also in PITFALLS): on the web `color` and `box`
 are the real ones only after `sdl2`; a library loaded first (`run=`
 lists the files in order) got the console graphics versions, which
 `evaluate` at each call and died after about fifty calls with
-`objects[op] is not a function`. Put `sdl2` at the top of a library.
-In a library shared by games, do not use short names that a game can
-define (`cell`, `bx`): the tests of the games loaded one that changed
-`cell` in the middle of `spr-build`.
+`objects[op] is not a function`. Put `sdl2` at the top of a library. In
+a library shared by games, do not use short names that a game can define
+(`cell`, `bx`): the tests of the games loaded one that changed `cell` in
+the middle of `spr-build`.
 
 ## Corridor, a wireframe rail shooter (examples/games/gfx_corridor.fs) - done 2026-11-02
 
 A shooter in the spirit of Star Fox on a vector screen, from a mockup of
 the user (cyan lines, red sun, towers on both sides, floor grid, a small
-white ship). POSIX and web (`terminal.html?run=gfx_corridor.fs`); not
-tried on DOS. All lines, no hidden-line removal.
+white ship). POSIX and web (`terminal.html?run=gfx_corridor.fs`); it
+also runs on the DOS port (reported by the maintainer, 2026-11-04). All
+lines, no hidden-line removal.
 
 - The 3D is one perspective division: a point (x y z) with z the
   distance from the camera goes to column `cx + (x - camx) * f / z` and
@@ -533,8 +538,8 @@ tried on DOS. All lines, no hidden-line removal.
 - Hits: a laser kills a fighter (100) or breaks a pillar or bar (50);
   touching an obstacle, a fighter or a bolt costs one shield out of six
   and gives 50 steps of invulnerability (the ship blinks); no shield,
-  game over. Speed and the rate of things grow with the level (one
-  level every 12000 units of travel).
+  game over. Speed and the rate of things grow with the level (one level
+  every 12000 units of travel).
 - The red bar at the bottom is the shield gauge. The ship leans (its
   wings are skewed by `cr-bank`, one notch a step) when it turns.
 - Keys: arrows or wasd, space or `f` fires (held: a burst), `p` pause,
@@ -545,8 +550,63 @@ tried on DOS. All lines, no hidden-line removal.
 - Tests: the "Corridor" part of `examples/games/games_tests.fs`
   (projection, clipping calls, towers, laser and fighter, pillar and bar
   hits, invulnerability, game over, a flight of 3000 steps that leaves
-  the stack clean, aimed bolts). Looked at in a real X window (Xvfb) with
-  keys held.
+  the stack clean, aimed bolts). Looked at in a real X window (Xvfb)
+  with keys held.
+
+## Lode Runner (examples/games/gfx_loderunner.fs) - done 2026-11-04
+
+A Lode Runner-like (the 1983 platform game), written from the rules as
+they are widely described; the five levels are our own, none comes from
+the original. POSIX and web
+(`terminal.html?run=gfx_spr.fs,gfx_loderunner_sprites.fs,gfx_loderunner.fs`).
+The pictures are 17 sprites of 10x10 pixels
+(`gfx_loderunner_sprites.fs`, editable with `gfx_sprited.fs`) drawn with
+`gfx_spr.fs`; the suit color is the palette letter `B`, which the game
+sets before each body (white runner, red guards).
+
+- The field is 28x16 tiles of 10 pixels on a 320x200 screen (zoom 3),
+  kept as a byte per tile in `lr-map`: space, `#` brick (can be dug),
+  `@` solid, `H` ladder, `-` rope, `$` gold, `S` a ladder that only
+  shows when all the gold is taken, `&` the runner and `0` a guard
+  (those two are removed from the map when a level is loaded). Row 0
+  is the way out: climb the ladder to it. A level is 16 strings of 28
+  characters (`lr-row`).
+- Bodies (`le.*` arrays, 0 is the runner, 1 to 6 the guards) have a
+  pixel position, not a tile. One step is 16 ms: the runner goes one
+  pixel, a guard three steps out of four, a fall is two pixels. `lr-go`
+  is the only rule of movement, for everybody: the cell under the center
+  of the body decides (`lr-support?`: a ladder or rope here, a wall or
+  ladder below, or a guard stuck in a hole below); at the start of a
+  climb the body is first moved to the middle of the tile; sideways
+  moves only happen at a whole tile row. `lr-moves` gives the same rules
+  as a mask (1 left, 2 right, 4 up, 8 down) for a whole cell, for the
+  guards and the tests.
+- A guard decides only when it is exactly on a tile: `lr-bfs` is a
+  breadth first search over `lr-moves` from its cell to the cell of the
+  runner and gives the first step. Nobody is told how to climb: the
+  search finds the ladders and the ropes. A guard picks up gold it walks
+  on and puts it down later (`le.c` is the time left), or at once when
+  it falls in a hole. The guards start 100 steps after the level.
+- Digging (`z` or `q` left, `x` or `e` right): the brick under the
+  neighbor cell goes, the runner is busy for 12 steps, the hole lasts
+  300 steps and its bricks blink for the last 40. A guard that falls in
+  is stuck 140 steps (75 points), then climbs out and steps aside toward
+  the runner; if the hole closes first, it is crushed and comes back at
+  the top. The runner in a hole when it closes dies. A thin floor (one
+  brick with air under it) lets everybody fall through, so a hole traps
+  only where the floor is two bricks thick or lies on the bottom row.
+- Score: 250 a gold, 75 a trapped guard, 1500 a level. Five lives;
+  touching a free guard costs one (`k` gives one up when stuck). The
+  levels repeat after the fifth.
+- Keys: arrows or wasd, `z` `x` dig, `p` pause, `k` give up a life, Esc
+  quit, `r`, space or enter after the end. Words are prefixed `lr-`.
+- Tests: the "Lode Runner" part of `examples/games/games_tests.fs`: a
+  flood fill with `lr-moves` checks that every level can be finished
+  without digging (all the gold and the way out reachable), walking,
+  walls, gravity, ladders, gold, the hole (dug, refilled), a guard that
+  falls in, is stuck and is crushed, touching a guard, a run of 3000
+  steps that leaves the stack clean. Looked at in a real X window
+  (Xvfb) and in headless Chromium (the web page runs and plays).
 
 ## Forth is Fun (turtle)
 

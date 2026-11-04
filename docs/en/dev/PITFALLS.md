@@ -424,3 +424,11 @@ is added in one of the three `sdl2.fs`.
   `evaluate` each time: the page died after about fifty calls with
   `TypeError: objects[op] is not a function` and the Forth side printed
   nothing. Put `sdl2` at the top of such a library.
+- A `( ... )` comment must end on the line where it starts: in an
+  included file the next line is read as code (`STACK UNDERFLOW` or
+  `NOT FOUND` on a word of the comment). A `)` inside it, even in
+  `(tx,ty)`, ends it too.
+- In interpret mode `s"` uses the space after `here`, so
+  `here r@ cmove ... allot` to store lines of text one after the other
+  leaves holes between them: copy to a buffer with a running pointer
+  (`lr-row` in `gfx_loderunner.fs`).

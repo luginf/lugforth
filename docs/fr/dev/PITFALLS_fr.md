@@ -448,3 +448,11 @@ court est ajouté dans l'un des trois `sdl2.fs`.
   page mourait après une cinquantaine d'appels avec
   `TypeError: objects[op] is not a function` et le Forth n'affichait
   rien. Mettre `sdl2` en tête d'une telle bibliothèque.
+- Un commentaire `( ... )` doit finir sur la ligne où il commence: dans
+  un fichier inclus la ligne suivante est lue comme du code
+  (`STACK UNDERFLOW` ou `NOT FOUND` sur un mot du commentaire). Un `)`
+  à l'intérieur, même dans `(tx,ty)`, le termine aussi.
+- En mode interprétation `s"` utilise l'espace après `here`: ranger des
+  lignes de texte l'une après l'autre avec `here r@ cmove ... allot`
+  laisse des trous entre elles; copier dans un tampon avec un pointeur
+  qui avance (`lr-row` dans `gfx_loderunner.fs`).

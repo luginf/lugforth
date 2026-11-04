@@ -357,9 +357,8 @@ Un jeu façon Digger (le jeu PC de 1983), écrit d'après les règles telles
 qu'elles sont largement décrites; les niveaux sont tirés au hasard et
 les images sont des rectangles. POSIX et web
 (`terminal.html?run=gfx_spr.fs,gfx_digger_sprites.fs,gfx_digger.fs`);
-pas essayé sous DOS (le script de préparation le garderait sous le nom
-`GFX_DIGG.FS`, et le nom du fichier de sprites est trop long pour le
-8.3).
+il tourne aussi sur le port DOS (signalé par le mainteneur, le
+2026-11-04).
 
 - Le terrain fait 15 x 10 cellules de 20 x 18 pixels. La terre est
   gardée en sous-cellules d'une demi-cellule (30 x 20), si bien qu'un
@@ -374,11 +373,10 @@ pas essayé sous DOS (le script de préparation le garderait sous le nom
   au-dessus d'une cellule qui se libère vacille, tombe, se brise en or
   après plus d'une cellule, et peut être poussé le long d'un tunnel (pas
   vers le haut ni le bas). Un digger arrivé juste sous un sac et qui
-  continue de pousser vers le haut le retient : il tremble mais ne
-  tombe pas tant que le digger part ou lâche la touche, puis tremble
-  encore 10 pas (`held?`, `bag-wobble`) pour lui laisser le temps de
-  partir. Tirer en poussant
-  vers le haut contre un sac envoie le tir vers le bas.
+  continue de pousser vers le haut le retient : il tremble mais ne tombe
+  pas tant que le digger part ou lâche la touche, puis tremble encore 10
+  pas (`held?`, `bag-wobble`) pour lui laisser le temps de partir. Tirer
+  en poussant vers le haut contre un sac envoie le tir vers le bas.
 - Les mots sont préfixés `dg-` ou ont des noms peu courants (`bag.st`,
   `mon.t`...): un nom comme celui d'un mot `sdl2` est masqué sur le web
   et sous DOS (voir PITFALLS). `walk-to ( d -- )` et `fire!` portent la
@@ -424,20 +422,25 @@ listés dans `spr-all` / `spr-count`. Testé dans la partie "Digger" de
 de l'éditeur). Souris: le bouton gauche peint, le droit efface, le
 milieu prend la couleur; un clic sur une couleur ou sur un nom la
 choisit. Touches: `s` sauvegarde (les lignes de commentaire du début
-sont gardées), `u` annule (un pas), `c` efface, `h` `v` retournent, `r` `e` tournent d'un quart (dans le sens des
-aiguilles, ou à l'inverse; un sprite qui n'est pas carré tourne au
-milieu de sa propre taille et ce qui dépasse est coupé), les flèches
-décalent (en rebouclant), `y` copie le sprite et `p` le colle sur un
-autre sprite existant choisi ensuite (depuis le coin haut gauche, ce
-qui manque est transparent), `d` duplique le sprite, `n` une
-nouvelle couleur, `1 2` `3 4` `5 6` rouge, vert, bleu en moins et en
-plus, Tab sprite suivant, Échap quitte sans sauvegarder. La fenêtre
-montre le sprite sur la couleur de la terre, à taille réelle et
-agrandi, avec le nombre de boîtes. Essayé dans une vraie fenêtre X
-(Xvfb): les sprites se chargent, un pixel est peint, le fichier est
-écrit et se recharge à l'identique. Pour importer une image, rien
-encore: un PNG pourrait être lu avec `load-image` et un moyen de lire
-les pixels (pas regardé). Pas fait: créer un sprite d'une taille
+sont gardées), `u` annule (un pas), `c` efface, `h` `v` retournent, `r`
+`e` tournent d'un quart (dans le sens des aiguilles, ou à l'inverse; un
+sprite qui n'est pas carré tourne au milieu de sa propre taille et ce
+qui dépasse est coupé), les flèches décalent (en rebouclant), `y` copie
+le sprite et `p` le colle sur un autre sprite existant choisi ensuite
+(depuis le coin haut gauche, ce qui manque est transparent), `d`
+duplique le sprite, `n` une nouvelle couleur, `1 2` `3 4` `5 6` rouge,
+vert, bleu en moins et en plus, Tab sprite suivant, Échap quitte sans
+sauvegarder. `o` (ou le bouton OPEN en haut à droite) ouvre un autre
+fichier: une liste des dossiers et des fichiers qui ne contiennent que
+des sprites (chaque ligne d'un candidat est lue d'abord, car inclure un
+autre fichier l'exécuterait), flèches et Entrée ou un clic, Échap
+annule, `..` remonte; avec des changements non sauvegardés, `o` demande
+deux fois. Si le fichier ne peut pas être chargé, l'ancien revient. La fenêtre montre le sprite sur la couleur de la terre, à
+taille réelle et agrandi, avec le nombre de boîtes. Essayé dans une
+vraie fenêtre X (Xvfb): les sprites se chargent, un pixel est peint, le
+fichier est écrit et se recharge à l'identique. Pour importer une image,
+rien encore: un PNG pourrait être lu avec `load-image` et un moyen de
+lire les pixels (pas regardé). Pas fait: créer un sprite d'une taille
 donnée depuis l'éditeur (dupliquer un sprite, ou commencer le fichier à
 la main), une version web de l'éditeur (il faut écrire des fichiers).
 
@@ -448,8 +451,8 @@ du graphisme de la console, qui font `evaluate` à chaque appel et
 mouraient après une cinquantaine d'appels avec
 `objects[op] is not a function`. Mettre `sdl2` en tête d'une
 bibliothèque. Dans une bibliothèque partagée par des jeux, ne pas
-prendre de noms courts qu'un jeu peut définir (`cell`, `bx`): les
-tests des jeux en chargeaient un qui changeait `cell` au milieu de
+prendre de noms courts qu'un jeu peut définir (`cell`, `bx`): les tests
+des jeux en chargeaient un qui changeait `cell` au milieu de
 `spr-build`.
 
 ## Corridor, un jeu de tir sur rails en fil de fer (examples/games/gfx_corridor.fs) - fait le 2026-11-02
@@ -457,15 +460,16 @@ tests des jeux en chargeaient un qui changeait `cell` au milieu de
 Un jeu de tir dans l'esprit de Star Fox sur un écran vectoriel, d'après
 une maquette de l'utilisateur (lignes cyan, soleil rouge, tours des deux
 côtés, grille au sol, un petit vaisseau blanc). POSIX et web
-(`terminal.html?run=gfx_corridor.fs`); pas essayé sous DOS. Que des
+(`terminal.html?run=gfx_corridor.fs`); il tourne aussi sur le port DOS
+(signalé par le mainteneur, le 2026-11-04). Que des
 lignes, pas d'élimination des parties cachées.
 
 - La 3D tient en une division de perspective: un point (x y z), z étant
   la distance à la caméra, va à la colonne `cx + (x - camx) * f / z` et
   à la ligne `hy - (y - camy) * f / z` (f = 120). `cr-wline` coupe
-  d'abord le segment au plan proche (z = 20, interpolation entière:
-  cela marche avec des cellules de 32 bits), puis le trace avec `line`.
-  La caméra suit les 3/4 du x du vaisseau et la moitié de son y: le
+  d'abord le segment au plan proche (z = 20, interpolation entière: cela
+  marche avec des cellules de 32 bits), puis le trace avec `line`. La
+  caméra suit les 3/4 du x du vaisseau et la moitié de son y: le
   vaisseau reste bas et le monde glisse.
 - Le monde vient vers la caméra: chaque chose a un `z` qui diminue de la
   vitesse à chaque pas (la même boucle à pas fixe de 16 ms que le
@@ -476,8 +480,8 @@ lignes, pas d'élimination des parties cachées.
   ailes), explosions (huit rayons qui grandissent). Les emplacements
   sont des tableaux de drapeaux (`bd.on`, `ob.on`, `en.on`...) et
   `cr-free` en trouve un.
-- Coups: un laser tue un chasseur (100) ou brise un pilier ou une
-  barre (50); toucher un obstacle, un chasseur ou un projectile coûte un
+- Coups: un laser tue un chasseur (100) ou brise un pilier ou une barre
+  (50); toucher un obstacle, un chasseur ou un projectile coûte un
   bouclier sur six et donne 50 pas d'invulnérabilité (le vaisseau
   clignote); plus de bouclier, fin de partie. La vitesse et le rythme
   des choses montent avec le niveau (un niveau tous les 12000 unités de
@@ -495,6 +499,68 @@ lignes, pas d'élimination des parties cachées.
   pilier et barre, invulnérabilité, fin de partie, un vol de 3000 pas
   qui laisse la pile propre, projectiles visés). Regardé dans une vraie
   fenêtre X (Xvfb) avec les touches maintenues.
+
+## Lode Runner (examples/games/gfx_loderunner.fs) - fait le 2026-11-04
+
+Un Lode Runner (le jeu de plateformes de 1983), écrit d'après les règles
+telles qu'on les décrit; les cinq niveaux sont les nôtres, aucun ne
+vient de l'original. POSIX et web
+(`terminal.html?run=gfx_spr.fs,gfx_loderunner_sprites.fs,gfx_loderunner.fs`).
+Les images sont 17 sprites de 10x10 pixels
+(`gfx_loderunner_sprites.fs`, modifiables avec `gfx_sprited.fs`)
+dessinés par `gfx_spr.fs`; la couleur du costume est la lettre de
+palette `B`, que le jeu règle avant chaque corps (coureur blanc, gardes
+rouges).
+
+- Le terrain fait 28x16 cases de 10 pixels sur un écran de 320x200
+  (zoom 3), gardé à raison d'un octet par case dans `lr-map`: espace,
+  `#` brique (peut être creusée), `@` plein, `H` échelle, `-` corde, `$`
+  or, `S` une échelle qui n'apparaît que quand tout l'or est pris, `&` le
+  coureur et `0` un garde (ces deux-là sont retirés de la carte au
+  chargement d'un niveau). La rangée 0 est la sortie: y monter par
+  l'échelle. Un niveau est fait de 16 chaînes de 28 caractères
+  (`lr-row`).
+- Les corps (tableaux `le.*`, 0 est le coureur, 1 à 6 les gardes) ont une
+  position en pixels, pas en cases. Un pas dure 16 ms: le coureur avance
+  d'un pixel, un garde trois pas sur quatre, une chute fait deux pixels.
+  `lr-go` est l'unique règle de déplacement, pour tout le monde: la case
+  sous le centre du corps décide (`lr-support?`: une échelle ou une corde
+  ici, un mur ou une échelle dessous, ou un garde coincé dans un trou
+  dessous); au début d'une montée le corps est d'abord ramené au milieu
+  de la case; les pas de côté n'ont lieu que sur une rangée entière.
+  `lr-moves` donne les mêmes règles sous forme de masque (1 gauche,
+  2 droite, 4 haut, 8 bas) pour une case entière, pour les gardes et les
+  tests.
+- Un garde ne décide que lorsqu'il est exactement sur une case: `lr-bfs`
+  est un parcours en largeur sur `lr-moves` de sa case à celle du
+  coureur et donne le premier pas. On ne lui dit pas comment grimper: la
+  recherche trouve les échelles et les cordes. Un garde ramasse l'or sur
+  lequel il passe et le repose plus tard (`le.c` est le temps restant),
+  ou tout de suite s'il tombe dans un trou. Les gardes partent 100 pas
+  après le début du niveau.
+- Creuser (`z` ou `q` à gauche, `x` ou `e` à droite): la brique sous la
+  case voisine disparaît, le coureur est occupé 12 pas, le trou dure 300
+  pas et ses briques clignotent pendant les 40 derniers. Un garde qui y
+  tombe est coincé 140 pas (75 points), puis il sort et fait un pas de
+  côté vers le coureur; si le trou se referme avant, il est écrasé et
+  revient en haut. Le coureur dans un trou qui se ferme meurt. Un sol
+  mince (une brique avec du vide dessous) laisse tout le monde tomber à
+  travers: un trou ne piège que là où le sol a deux briques d'épaisseur
+  ou repose sur la rangée du bas.
+- Score: 250 par or, 75 par garde piégé, 1500 par niveau. Cinq vies;
+  toucher un garde libre en coûte une (`k` en abandonne une quand on est
+  coincé). Les niveaux recommencent après le cinquième.
+- Touches: flèches ou wasd, `z` `x` creusent, `p` pause, `k` abandonne
+  une vie, Échap quitte, `r`, espace ou entrée après la fin. Les mots
+  sont préfixés `lr-`.
+- Tests: la partie « Lode Runner » de `examples/games/games_tests.fs`:
+  un remplissage avec `lr-moves` vérifie que chaque niveau peut être
+  fini sans creuser (tout l'or et la sortie atteignables), la marche, les
+  murs, la gravité, les échelles, l'or, le trou (creusé, rebouché), un
+  garde qui y tombe, est coincé et écrasé, le contact d'un garde, une
+  partie de 3000 pas qui laisse la pile propre. Regardé dans une vraie
+  fenêtre X (Xvfb) et dans Chromium sans écran (la page web tourne et se
+  joue).
 
 ## Forth is Fun (tortue)
 

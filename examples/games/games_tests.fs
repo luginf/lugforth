@@ -1,4 +1,4 @@
-\ Tests of the logic of gfx_tetris.fs, gfx_snake.fs, gfx_invaders.fs, gfx_minesweeper.fs, gfx_mastermind.fs, gfx_pacman.fs, gfx_digger.fs and gfx_corridor.fs,
+\ Tests of the logic of gfx_tetris.fs, gfx_snake.fs, gfx_invaders.fs, gfx_minesweeper.fs, gfx_mastermind.fs, gfx_pacman.fs, gfx_digger.fs, gfx_corridor.fs and gfx_loderunner.fs,
 \ loaded without their game loop:  lugforth examples/games/games_tests.fs
 \ (the output ends with PASS). Needs libSDL2, but opens no window.
 
@@ -374,6 +374,73 @@ cr-state 0 = cr-state 2 = or -1 t=   cr-score 0> -1 t=
 \ the shots of the fighters aim at the ship
 cr-clean   1 0 en.on !  100 0 en.x !  0 0 en.y !  900 0 en.z !   0 cr-enemy-shoots
 0 bo.on @ 1 t=   0 bo.vx @ 0< -1 t=
+
+( ---- Lode Runner ---- )
+: loderunner-no-run ;
+include gfx_loderunner.fs
+create lr-seen 448 allot   create lr-stk 448 cells allot   0 value lr-sp
+: lr-push ( idx -- )   lr-stk lr-sp cells + !  1 +to lr-sp ;
+: lr-reach ( cx cy -- )   ( flood fill from a cell with the moves of the game: no digging, no guards )
+  lr-seen 448 erase   lr-cols * + lr-push
+  begin lr-sp 0> while
+    -1 +to lr-sp  lr-stk lr-sp cells + @  dup lr-seen + c@ if drop else
+      1 over lr-seen + c!
+      dup lr-cols mod over lr-cols / lr-moves
+      dup 1 and if over 1- lr-push then
+      dup 2 and if over 1+ lr-push then
+      dup 4 and if over lr-cols - lr-push then
+      8 and if dup lr-cols + lr-push then
+      drop
+    then
+  repeat ;
+: lr-unreached ( -- n )   ( gold cells the runner cannot reach, plus 1 if the top row cannot be reached )
+  0
+  lr-cols lr-rows * 0 do  lr-map i + c@ 36 = if lr-seen i + c@ 0= if 1+ then then  loop
+  1  lr-cols 0 do lr-seen i + c@ if drop 0 then loop  + ;
+\ every level: all the gold and the way out, once the hidden ladders are there
+lr-nlev 0 do
+  i lr-load  lr-reveal  0 to lr-wait
+  0 lr-cx 0 lr-cy lr-reach   lr-unreached 0 t=
+loop
+\ a level: the runner and the guards are found, the gold is counted
+0 lr-load   0 le.on @ 1 t=   0 le.x @ 120 t=   0 le.y @ 140 t=   lr-need 10 t=   lr-wait 60 t=   1 le.on @ 1 t=
+\ the map outside the field
+-1 5 lr-t@ 64 t=   5 16 lr-t@ 64 t=   5 -1 lr-t@ 32 t=
+\ walking right, and the wall of the field stops it
+0 lr-load  0 to lr-wait  0 le.x @  10 0 do 0 1 0 lr-go loop  0 le.x @ swap - 10 t=
+0 le.v @ 1 t=   0 lr-cx 13 t=
+0 0 le.x !  10 0 do 0 -1 0 lr-go loop  0 le.x @ 0 t=
+\ the air: it falls, two pixels at a time, and lands on the brick
+0 lr-load  0 to lr-wait  60 0 le.x !  50 0 le.y !
+30 0 do 0 0 0 lr-go loop   0 le.y @ 70 t=   0 le.f @ 0 t=
+\ a ladder up, and no way up where there is none
+0 lr-load  0 to lr-wait  50 0 le.x !  70 0 le.y !
+40 0 do 0 0 -1 lr-go loop   0 le.y @ 30 t=
+0 lr-load  0 to lr-wait  100 0 le.x !  140 0 le.y !
+20 0 do 0 0 -1 lr-go loop   0 le.y @ 140 t=
+\ gold is picked up; the last one shows the ladders
+0 lr-load  0 to lr-wait  80 0 le.x !  140 0 le.y !   0 lr-pickup   lr-score 250 t=   lr-need 9 t=   8 14 lr-t@ 32 t=
+0 lr-load  0 to lr-wait  1 to lr-need  80 0 le.x !  140 0 le.y !  0 lr-pickup   14 0 lr-t@ 72 t=
+\ a hole: the brick is gone, and comes back later
+0 lr-load  0 to lr-wait  70 0 le.x !  70 0 le.y !
+1 lr-dig   8 8 lr-t@ 32 t=   0 le.s @ 3 t=   0 lh.on @ 1 t=
+300 0 do lr-holes-step loop   8 8 lr-t@ 35 t=   0 lh.on @ 0 t=
+\ the solid bricks and the ones with something over them cannot be dug
+0 lr-load  0 to lr-wait  50 0 le.x !  140 0 le.y !   1 lr-dig   6 15 lr-t@ 64 t=   0 le.s @ 0 t=
+\ a guard falls in a hole, is stuck, climbs out, or is crushed when the hole closes
+0 lr-load  0 to lr-wait  70 0 le.x !  70 0 le.y !   1 lr-dig   0 to lr-tick
+80 1 le.x !  70 1 le.y !  0 1 le.s !  1 1 le.d !
+60 0 do 1 lr-guard-step  1 +to lr-tick loop    1 le.s @ 1 t=   1 lr-cx 8 t=   1 lr-cy 8 t=
+299 0 do lr-holes-step loop   1 le.s @ 1 t=   8 8 lr-t@ 32 t=
+lr-holes-step   8 8 lr-t@ 35 t=   1 le.s @ 0 t=   1 le.y @ 0 t=
+\ the runner dies if a free guard touches it, not if the guard is stuck
+0 lr-load  0 to lr-wait  124 1 le.x !  140 1 le.y !  0 0 le.s !   lr-collide   lr-dying 0<> -1 t=
+0 lr-load  0 to lr-wait  124 1 le.x !  140 1 le.y !  1 1 le.s !   0 to lr-dying   lr-collide   lr-dying 0 t=
+\ a long game with a quiet runner: nothing breaks, the stack stays clean
+lr-new-game  0 to lr-wait  depth
+3000 0 do  lr-step  loop
+depth swap - 1 t=
+lr-state 0 = lr-state 2 = or -1 t=
 
 depth 0 t=
 

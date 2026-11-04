@@ -17,6 +17,11 @@ Everything runs in your browser, no install. See also the
 * [Mastermind](demo/terminal.html?run=gfx_mastermind.fs)
 * [Space Invaders](demo/terminal.html?run=gfx_invaders.fs)
 * [Pac-Man](demo/terminal.html?run=gfx_pacman.fs)
+* [Digger](demo/terminal.html?run=gfx_spr.fs,gfx_digger_sprites.fs,gfx_digger.fs)
+* [Corridor](demo/terminal.html?run=gfx_corridor.fs): a wireframe 3D
+  rail shooter
+* [Lode Runner](demo/terminal.html?run=gfx_spr.fs,gfx_loderunner_sprites.fs,gfx_loderunner.fs):
+  gold, ladders, ropes and guards, with holes dug in the bricks
 * [Magnoquill](demo/terminal.html?run=gfx_magnoquill.fs)
 
 ## Graphics

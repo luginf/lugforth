@@ -54,7 +54,7 @@ Lancez `lugforth` (voir [Binaires](#binaires), ou compilez-le avec
 `ninja posix`). Vous obtenez une bannière et l'invite:
 
 ```
-Lugforth v2026.11.3.9
+Lugforth v2026.11.5.1
 :; ===========>/>
 type 'info' for help
  ok
@@ -1059,10 +1059,11 @@ Raspberry Pi, Windows ni l'ESP32.
 | `gfx_pacman.fs` | pac-man : quatre fantômes avec leur propre cible, dispersion et poursuite, super pastilles, tunnel, 3 vies ; flèches ou wasd, `p` pause ; aussi sur le web et sous DOS |
 | `gfx_digger.fs` | digger : creuser la terre pour les émeraudes et l'or, sacs qui tombent, nobbins et hobbins, boule de feu, cerise ; flèches ou wasd, espace ou `f` tire, `p` pause ; aussi sur le web |
 | `gfx_corridor.fs` | jeu de tir sur rails en 3D filaire : un canyon de tours vers un soleil rouge, piliers et barres à éviter, chasseurs à abattre ; flèches ou wasd, espace ou `f` tire, `p` pause ; aussi sur le web |
+| `gfx_loderunner.fs` | un Lode Runner : or, échelles, cordes, gardes qui vous chassent, trous creusés dans les briques (cinq niveaux à nous, sprites dans `gfx_loderunner_sprites.fs`) ; flèches ou wasd, `z`/`x` creusent à gauche/droite, `p` pause, `k` abandonne une vie ; aussi sur le web (`?run=gfx_spr.fs,gfx_loderunner_sprites.fs,gfx_loderunner.fs`) |
 | `gfx_tetris.fs`, `gfx_snake.fs`, `gfx_minesweeper.fs` | réécrits d'après les jeux de r3forth |
 | `gfx_mastermind.fs` | mastermind: quatre couleurs sur six en dix essais, clavier ou souris |
 | `gfx_3d.fs` | fils de fer qui tournent |
-| `gfx_sprited.fs` | éditeur de sprites (avec `gfx_spr.fs`, les mots de sprites; POSIX): dessine les sprites de `gfx_digger_sprites.fs` et les sauvegarde |
+| `gfx_sprited.fs` | éditeur de sprites (avec `gfx_spr.fs`, les mots de sprites; POSIX): dessine les sprites de `gfx_digger_sprites.fs` (ou de tout fichier de sprites, `o` en ouvre un autre) et les sauvegarde |
 | `gfx_2048.fs` | tuiles coulissantes; `--no-anim` coupe l'animation |
 | `2048.fs` | 2048 dans le terminal |
 | `zmachine.fs` | interpréteur de Z-machine en un seul fichier: joue les histoires Infocom et Inform (`.z3 .z4 .z5 .z8`), `zplay story.z5` (essayez `lugforth examples/games/zmachine.fs examples/games/zmachine/cave.z5`, ou `cave_fr.z5` en français); aussi sous gforth (`ports/gforth/zmachine-gforth.fs`) |
