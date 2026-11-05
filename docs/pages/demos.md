@@ -22,6 +22,9 @@ Everything runs in your browser, no install. See also the
   rail shooter
 * [Lode Runner](demo/terminal.html?run=gfx_spr.fs,gfx_loderunner_sprites.fs,gfx_loderunner.fs):
   gold, ladders, ropes and guards, with holes dug in the bricks
+* [Dungeon](demo/terminal.html?run=dungeon_levels.fs,gfx_dungeon.fs): a
+  first-person dungeon crawler in the style of Dungeon Master, square by
+  square, on three levels
 * [Magnoquill](demo/terminal.html?run=gfx_magnoquill.fs)
 
 ## Graphics

@@ -54,7 +54,7 @@ Lancez `lugforth` (voir [Binaires](#binaires), ou compilez-le avec
 `ninja posix`). Vous obtenez une bannière et l'invite:
 
 ```
-Lugforth v2026.11.5.1
+Lugforth v2026.11.5.7
 :; ===========>/>
 type 'info' for help
  ok
@@ -1060,6 +1060,7 @@ Raspberry Pi, Windows ni l'ESP32.
 | `gfx_digger.fs` | digger : creuser la terre pour les émeraudes et l'or, sacs qui tombent, nobbins et hobbins, boule de feu, cerise ; flèches ou wasd, espace ou `f` tire, `p` pause ; aussi sur le web |
 | `gfx_corridor.fs` | jeu de tir sur rails en 3D filaire : un canyon de tours vers un soleil rouge, piliers et barres à éviter, chasseurs à abattre ; flèches ou wasd, espace ou `f` tire, `p` pause ; aussi sur le web |
 | `gfx_loderunner.fs` | un Lode Runner : or, échelles, cordes, gardes qui vous chassent, trous creusés dans les briques (cinq niveaux à nous, sprites dans `gfx_loderunner_sprites.fs`) ; flèches ou wasd, `z`/`x` creusent à gauche/droite, `p` pause, `k` abandonne une vie ; aussi sur le web (`?run=gfx_spr.fs,gfx_loderunner_sprites.fs,gfx_loderunner.fs`) |
+| `gfx_dungeon.fs` | un jeu de donjon en vue subjective (Dungeon Master, Captive, Bard's Tale) : vue en perspective case par case, trois niveaux de 20x20 (données dans `dungeon_levels.fs`, faites par `dungeon_gen.py`), clés et portes, escaliers, des rats aux liches qui vous chassent en temps réel, faim, potions, l'Amulette ; wasd déplacent, qe tournent, espace frappe, `h` potion, `m` carte, `v` passe en vue roguelike de dessus, `k` change les touches (préréglages QWERTY ou AZERTY) ; aussi sur le web (`?run=dungeon_levels.fs,gfx_dungeon.fs`) ; `gfx_dungeon_edit.fs` est son éditeur de niveaux (souris et clavier, vérification, test, sauvegarde ; POSIX seulement) |
 | `gfx_tetris.fs`, `gfx_snake.fs`, `gfx_minesweeper.fs` | réécrits d'après les jeux de r3forth |
 | `gfx_mastermind.fs` | mastermind: quatre couleurs sur six en dix essais, clavier ou souris |
 | `gfx_3d.fs` | fils de fer qui tournent |

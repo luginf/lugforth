@@ -1,4 +1,4 @@
-\ Tests of the logic of gfx_tetris.fs, gfx_snake.fs, gfx_invaders.fs, gfx_minesweeper.fs, gfx_mastermind.fs, gfx_pacman.fs, gfx_digger.fs, gfx_corridor.fs and gfx_loderunner.fs,
+\ Tests of the logic of gfx_tetris.fs, gfx_snake.fs, gfx_invaders.fs, gfx_minesweeper.fs, gfx_mastermind.fs, gfx_pacman.fs, gfx_digger.fs, gfx_corridor.fs, gfx_loderunner.fs and gfx_dungeon.fs,
 \ loaded without their game loop:  lugforth examples/games/games_tests.fs
 \ (the output ends with PASS). Needs libSDL2, but opens no window.
 
@@ -36,6 +36,146 @@ new-game  hard-drop   19 row-count 0 > -1 t=   py 0 t=
 \ no room for a new piece: the game is over
 new-game  0 cols fill-row  1 cols fill-row  spawn  state 2 t=
 level 0 t=   100 to lines  level 10 t=   fall-ms 100 t=
+( ---- Dungeon ---- )
+: dungeon-no-run ;
+include gfx_dungeon.fs
+: dg-count ( c -- n )   ( how many on this level )
+  0 swap  dg-ns 0 do  dg-map i + c@ over = if swap 1+ swap then  loop drop ;
+: dg-clear-map ( -- )   dg-ns 0 do [char] # dg-map i + c! loop ;
+: dg-hrow ( x0 x1 y -- )   -rot 1+ swap ?do [char] . i 2 pick dg-t! loop drop ;
+0 value dgt-x   0 value dgt-y   0 value dgt-c
+: dg-dist? ( x y -- f )   2dup dg-in? if dg-n * + dg-d@ 0< 0= else 2drop 0 then ;
+: dg-reach? ( x y -- f )   ( the square or one next to it can be walked to )
+  to dgt-y to dgt-x
+  dgt-x dgt-y dg-dist?
+  4 0 do  dgt-x i dg-dx@ +  dgt-y i dg-dy@ +  dg-dist? or  loop ;
+: dg-thing? ( c -- f )
+  dup [char] k = over [char] h = or over [char] f = or over [char] w = or over [char] a = or over [char] g = or
+  swap [char] * = or ;
+: dg-bad-reach ( -- n )   ( things and stairs that no walk reaches, doors being open )
+  dg-ns 0 do  dg-map i + c@ dup [char] D = swap [char] L = or if [char] . dg-map i + c! then  loop
+  dg-bfs  0
+  dg-n 0 do dg-n 0 do
+    i j dg-t@ to dgt-c
+    dgt-c dg-thing? dgt-c [char] < = or dgt-c [char] > = or if  i j dg-reach? 0= if 1+ then  then
+  loop loop ;
+: dg-bad-mon ( -- n )
+  0  dg-m0 dg-mm + dg-m0 do  i mo.on @ if i mo.x @ i mo.y @ dg-reach? 0= if 1+ then then  loop ;
+: dg-test-level ( n -- )
+  dup 0= if drop 0 to dg-lvl  dg-startx to dg-px  dg-starty to dg-py  else [char] < dg-arrive then ;
+: dg-scene ( -- )   ( a corridor along row 5, from x 2 to 11, you at 3 looking east )
+  dg-new-game  1 rand-seed !  0 to dg-lvl  dg-clear-map
+  dg-cap dg-mm * 0 ?do 0 i mo.on ! loop
+  2 11 5 dg-hrow   3 to dg-px  5 to dg-py  1 to dg-dir  0 to dg-nact ;
+
+: dg-test-levels ( -- )
+  dg-new-game   dg-nlev 3 >= -1 t=   dg-startx 1 t=   dg-starty 1 t=
+  dg-nlev 0 ?do  i to dg-lvl  [char] < dg-count 1 t=  loop
+  dg-nlev 1- 0 ?do  i to dg-lvl  [char] > dg-count 1 t=  loop
+  dg-nlev 1- to dg-lvl   [char] > dg-count 0 t=   [char] * dg-count 1 t=
+  \ keys and doors: at least one key for each locked door, and everything can be reached
+  dg-nlev 0 ?do  i to dg-lvl  [char] k dg-count  [char] L dg-count  >= -1 t=  loop
+  dg-nlev 0 ?do  i dg-test-level  dg-bad-reach 0 t=  dg-bad-mon 0 t=  loop ;
+
+: dg-test-moves ( -- )
+  dg-scene
+  dg-dir dg-move   dg-px 4 t=
+  3 dg-move   dg-px 3 t=
+  0 dg-move   dg-py 5 t=                                       \ a wall
+  [char] k 5 5 dg-t!   1 dg-move 1 dg-move   dg-px 5 t=   dg-keys 1 t=   5 5 dg-t@ [char] . t=
+  [char] h 6 5 dg-t!  [char] f 7 5 dg-t!   1 dg-move 1 dg-move   dg-pots 1 t=   dg-rats 2 t=
+  [char] D 8 5 dg-t!   1 dg-move   dg-px 7 t=   8 5 dg-t@ [char] . t=   1 dg-move   dg-px 8 t=
+  [char] L 9 5 dg-t!   0 to dg-keys   1 dg-move   dg-px 8 t=   9 5 dg-t@ [char] L t=
+  1 to dg-keys   1 dg-move   dg-px 8 t=   9 5 dg-t@ [char] . t=   dg-keys 0 t=   1 dg-move   dg-px 9 t=
+  \ the map remembers what you have seen
+  5 5 dg-seen? -1 t=  ;
+
+: dg-test-stairs ( -- )
+  dg-new-game   dg-lvl 0 t=
+  dg-descend   dg-lvl 1 t=
+  dg-px dg-py dg-t@ dg-solid? 0 t=
+  dg-px dg-dir dg-dx@ -   dg-py dg-dir dg-dy@ -   dg-t@ [char] < t=      \ the stairs are behind you
+  dg-ascend   dg-lvl 0 t=
+  dg-px dg-dir dg-dx@ -   dg-py dg-dir dg-dy@ -   dg-t@ [char] > t=
+  dg-ascend   dg-lvl 0 t=                                                 \ no way out of level 1
+  dg-nlev 1- to dg-lvl   dg-descend   dg-lvl dg-nlev 1- t= ;
+
+: dg-test-fight ( -- )
+  dg-scene   dg-m0 4 5 1 dg-mon-new
+  1 dg-move   dg-px 3 t=                                       \ a monster blocks the way
+  60 0 do  0 to dg-natk  dg-attack  loop
+  dg-m0 mo.on @ 0 t=   dg-xp 6 t=   dg-score 12 t=
+  \ a monster hits you, and you hit nobody in an empty square
+  dg-scene   dg-m0 4 5 2 dg-mon-new   dg-bfs
+  100 0 do  dg-m0 dg-mon-step  loop   dg-hp 40 < -1 t=   dg-m0 mo.on @ 1 t=
+  \ levels, potions, hunger, death, the Amulet
+  dg-scene   25 dg-gain   dg-plv 2 t=   dg-mhp 48 t=   dg-xp 0 t=
+  dg-scene   10 to dg-hp   1 to dg-pots   dg-drink   dg-hp 30 t=   dg-pots 0 t=
+  dg-scene   0 to dg-food   0 to dg-rats   20 0 do dg-life loop   dg-hp 39 t=
+  dg-scene   100 to dg-food   2 to dg-rats   20 0 do dg-life loop   dg-food 599 t=   dg-rats 1 t=
+  dg-scene   1 to dg-hp   5 dg-hurt   dg-state 2 t=
+  dg-scene   [char] * 4 5 dg-t!   dg-dir dg-move   dg-state 3 t=   dg-score 1000 t= ;
+
+: dg-test-run ( -- )
+  dg-new-game   depth >r
+  3000 0 do  dg-step  loop
+  depth r> - 0 t=   dg-state 0 = dg-state 2 = or -1 t=
+  0 16 dg-sx dg-cx t=   -24 16 dg-sx dg-cx 96 - t= ;
+
+: dg-test-views ( -- )
+  dg-scene  dg-seen dg-cap dg-ns * erase  3 to dg-dir  dg-see   9 5 dg-seen? 0 t=
+  dg-toggle-view   dg-rogue? -1 t=   9 5 dg-seen? -1 t=                \ the map from above shows all four ways
+  \ walking into a monster strikes it, and you stay where you are
+  dg-m0 4 5 1 dg-mon-new
+  begin dg-m0 mo.on @ while  0 to dg-natk  1 dg-rmove  repeat   dg-px 3 t=   dg-xp 6 t=
+  3 dg-rmove   dg-px 2 t=   dg-dir 3 t=
+  dg-toggle-view   dg-rogue? 0 t= ;
+: dg-test-keys ( -- )
+  dg-p-azerty dg-preset   0 dg-kb@ 122 t=   2 dg-kb@ 113 t=   4 dg-kb@ 97 t=
+  dg-p-qwerty dg-preset   0 dg-kb@ 119 t=
+  s" 1 2 3 4 5 6 7 8 9 10 11 " dg-parse-keys   10 dg-kb@ 11 t=   0 dg-kb@ 1 t=
+  dg-p-qwerty dg-preset
+  122 dg-keyname nip 1 t=   32 dg-keyname nip 3 t=   210 dg-keyname nip 2 t=
+  9 dg-alt@ 9 t=   9 dg-act-just? 0 t= ;
+
+dg-test-levels   dg-test-moves   dg-test-stairs   dg-test-fight   dg-test-run   dg-test-views   dg-test-keys
+
+depth 0 t=
+
+( ---- Dungeon editor ---- )
+: dungeon-edit-no-run ;
+include gfx_dungeon_edit.fs
+: de-test-levels ( -- )
+  de-load   de-n 3 t=   0 de-goto   de-cur 0 t=
+  \ the three generated levels are fine
+  de-n 0 do  i de-goto  de-check  ck-problems 0 t=  loop
+  0 de-goto
+  \ painting, the unique start, undo
+  de-snap   [char] # 5 5 de-paint   5 5 de-cell c@ [char] # t=   de-dirty -1 t=
+  de-undo-do   5 5 de-cell c@ [char] . = 5 5 de-cell c@ [char] # = or -1 t=
+  [char] @ 7 7 de-paint   [char] @ de-lcount 1 t=   7 7 de-cell c@ [char] @ t=
+  1 de-goto   [char] @ 8 8 de-paint   8 8 de-cell c@ [char] @ <> -1 t=   [char] @ de-lcount 0 t=
+  0 de-goto ;
+: de-test-edit ( -- )
+  \ a new level has a start, no way down and no amulet: the checker says so
+  de-new   de-n 4 t=   de-cur 3 t=   de-check   ck-problems 0> -1 t=
+  \ a key with no locked door is fine, a locked door with no key is not
+  [char] L 5 5 de-paint   de-check   ck-problems 0> -1 t=
+  \ delete asks twice
+  0 to de-del-t   de-delete   de-n 4 t=   de-delete   de-n 3 t=   de-cur 2 t=
+  0 de-goto ;
+: de-test-save ( -- )
+  s" de_test_levels.tmp" dup to de-pn de-path swap cmove   0 to de-bak-done
+  de-build   de-on 0> -1 t=
+  de-out c@ 92 t=
+  de-save   de-dirty 0 t=
+  de-path de-pn r/o open-file 0 t=  to de-fid
+  de-bak 25999 de-fid read-file 0 t=  de-on t=   de-fid close-file drop
+  de-bak de-out de-on 0 do  over i + c@ over i + c@ <> if 1 +to ck-bad then  loop 2drop
+  de-path de-pn delete-file drop ;
+0 to ck-bad
+de-test-levels   de-test-edit   de-test-save   ck-bad 0 t=
+
 depth 0 t=
 
 ( ---- Snake ---- )

@@ -19,7 +19,7 @@ UXNCLI    ?= uxncli
 UXNEMU    ?= uxnemu
 SMOKE_TIMEOUT ?= 5
 
-SDL2_EXAMPLES := graphics/gfx_demo.fs games/gfx_breakout.fs music/gfx_drums.fs music/fm/gfx_fm.fs music/gfx_pianoroll.fs games/gfx_roguelike.fs graphics/gfx_3d.fs games/gfx_2048.fs games/gfx_tetris.fs games/gfx_pacman.fs games/gfx_digger.fs games/gfx_corridor.fs games/gfx_loderunner.fs graphics/gfx_sprited.fs games/gfx_snake.fs games/gfx_invaders.fs games/gfx_minesweeper.fs games/gfx_mastermind.fs graphics/gfx_mouse_test.fs graphics/gfx_magnoquill.fs games/gfx_raycaster.fs graphics/gfx_turtle.fs games/pinball/pinball.fs games/pinball/play_raid.fs games/pinball/play_night.fs system/varvara/varvara.fs system/varvara/launch.fs utils/filer.fs utils/desktop.fs
+SDL2_EXAMPLES := graphics/gfx_demo.fs games/gfx_breakout.fs music/gfx_drums.fs music/fm/gfx_fm.fs music/gfx_pianoroll.fs games/gfx_roguelike.fs graphics/gfx_3d.fs games/gfx_2048.fs games/gfx_tetris.fs games/gfx_pacman.fs games/gfx_digger.fs games/gfx_corridor.fs games/gfx_loderunner.fs games/gfx_dungeon.fs graphics/gfx_sprited.fs games/gfx_snake.fs games/gfx_invaders.fs games/gfx_minesweeper.fs games/gfx_mastermind.fs graphics/gfx_mouse_test.fs graphics/gfx_magnoquill.fs games/gfx_raycaster.fs graphics/gfx_turtle.fs games/pinball/pinball.fs games/pinball/play_raid.fs games/pinball/play_night.fs system/varvara/varvara.fs system/varvara/launch.fs utils/filer.fs utils/desktop.fs
 
 .PHONY: help bench test-ports \
         bench-sieve bench-sieve-c bench-sieve-fs bench-sieve-uxn \

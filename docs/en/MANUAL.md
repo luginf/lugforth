@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.11.5.1
+Lugforth v2026.11.5.7
 :; ===========>/>
 type 'info' for help
  ok
@@ -1015,6 +1015,7 @@ the Raspberry Pi, Windows or the ESP32.
 | `gfx_digger.fs` | digger: tunnel through the earth for emeralds and gold, bags that fall, nobbins and hobbins, fire ball, cherry; arrows or wasd, space or `f` fires, `p` pauses; also on the web |
 | `gfx_corridor.fs` | wireframe rail shooter in 3D: a canyon of towers toward a red sun, pillars and bars to dodge, fighters to shoot; arrows or wasd, space or `f` fires, `p` pauses; also on the web |
 | `gfx_loderunner.fs` | a Lode Runner: gold, ladders, ropes, guards that hunt you, holes dug in the bricks (five levels of our own, sprites in `gfx_loderunner_sprites.fs`); arrows or wasd, `z`/`x` dig left/right, `p` pauses, `k` gives up a life; also on the web (`?run=gfx_spr.fs,gfx_loderunner_sprites.fs,gfx_loderunner.fs`) |
+| `gfx_dungeon.fs` | a first-person dungeon crawler (Dungeon Master, Captive, Bard's Tale): perspective view square by square, three levels of 20x20 (data in `dungeon_levels.fs`, made by `dungeon_gen.py`), keys and doors, stairs, rats to liches hunting you in real time, hunger, potions, the Amulet; wasd move, qe turn, space strikes, `h` potion, `m` map, `v` switches to a roguelike view from above, `k` changes the keys (QWERTY or AZERTY presets); also on the web (`?run=dungeon_levels.fs,gfx_dungeon.fs`); `gfx_dungeon_edit.fs` is its level editor (mouse and keys, check, test, save; POSIX only) |
 | `gfx_tetris.fs`, `gfx_snake.fs`, `gfx_minesweeper.fs` | rewritten after the games of r3forth |
 | `gfx_mastermind.fs` | mastermind: four colors out of six in ten tries, keyboard or mouse |
 | `gfx_3d.fs` | turning wireframes |

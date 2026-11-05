@@ -608,6 +608,111 @@ sets before each body (white runner, red guards).
   steps that leaves the stack clean. Looked at in a real X window
   (Xvfb) and in headless Chromium (the web page runs and plays).
 
+## Dungeon (examples/games/gfx_dungeon.fs) - done 2026-11-05
+
+A first-person dungeon crawler in the style of Dungeon Master, Captive
+and Bard's Tale: you stand on a square of a grid, a step is a whole
+square, a turn a quarter turn, and the view is drawn in perspective
+square by square (the farthest first). POSIX and web
+(`terminal.html?run=dungeon_levels.fs,gfx_dungeon.fs`). Words are
+prefixed `dg-`.
+
+- Levels are data: `dungeon_levels.fs` holds 20 rows of 20 characters
+  per level (`dg-row`), room for 8 levels (`dg-cap`), three to start
+  with (`dg-nlev`). `python3 dungeon_gen.py N > dungeon_levels.fs`
+  makes N levels (a maze plus rooms, a locked door on the way to the
+  stairs with its key on the near side, doors, torches, monsters and
+  things; fixed seeds, a checker refuses a level where something cannot
+  be reached). A level editor (planned, in Lugforth) is meant to write
+  the same file. Legend: `#` wall, `T` wall with a torch, `.` floor,
+  `D` door, `L` locked door, `<` `>` stairs (you walk into them),
+  `@` the start (level 1), `1`-`5` rat, skeleton, orc, troll, lich,
+  and on the floor `k` key, `h` potion, `f` food, `w` weapon, `a` armor,
+  `g` gold, `*` the Amulet (last level: taking it wins).
+- The view (`dg-draw-3d`): 16 units per square, a point at lateral x
+  and distance z is at `cx + 64 x / z`, half the height of a wall is
+  `768 / z` pixels. For each distance from 4 down to 0 (and -1 while the
+  step forward slides), the squares from the outside to the middle:
+  a solid square gives its near face (`dg-face`: bricks, door, stairs,
+  torch) and the side face toward the middle (`dg-side`, column by
+  column: its height is linear in x), an open one its things and monster
+  (`dg-ent`, a sprite scaled by distance). A step forward slides in
+  150 ms (`dg-eo`). The sprites are letters in the source
+  (`dg-srow`, 16x16 monsters, 8x8 things), so there is no file.
+- Real time, 50 ms steps (`dg-step`): the monsters hunt you with a
+  breadth first search from the player (`dg-bfs`, within 9 steps), and
+  only hit from the next square; you have to face them to strike
+  (space). Hunger (food 1000, one rations eaten by itself when low),
+  slow healing, potions (+20), experience levels, weapons (dagger,
+  sword, axe) and armor (four grades). The monsters of a level wait
+  while you are elsewhere.
+- Keys (the defaults, QWERTY): wasd or up/down move, a d step aside,
+  q e or left/right turn, space strikes, `h` drinks, `m` the map, `p`
+  pauses, `v` or Tab switches the view, Esc quits, `r`, space or enter
+  after the end. `k` opens the key screen (`dg-cfg-draw`): 11 actions
+  (`dg-kb`), up/down choose, Enter then a key changes it, `1` QWERTY
+  and `2` AZERTY are presets (`dg-p-qwerty`, `dg-p-azerty`), `k` or Esc
+  saves the 11 codes in `dungeon_keys.txt` where the game was started
+  (read again at the next start; only where `dump-file` exists, so not
+  kept on the web). The arrows always work. `dg-act?` (held) and
+  `dg-act-just?` (pressed now) are the only readers of the keys.
+- Two views of the same game (`dg-toggle-view`, `dg-rogue?`): the first
+  person view above, and a roguelike view (`dg-draw-rogue`: the map from
+  above, 8 pixels a square, the same sprites, monsters shown within 7
+  steps). There the arrows and the move keys go north, east, south and
+  west, and walking into a monster strikes it (`dg-rmove`); the squares
+  seen are those along the four directions (`dg-ray`).
+- Traps: `dg-keys` once named the key handler as well as the number of
+  keys (a colon definition silently replaced the value); a `case`
+  default must leave the selector; `[char]` does not work in the test
+  file outside a definition; a `box` with five arguments instead of
+  four leaked a cell per call and the roguelike view crashed after a few
+  moves: after writing a drawing word, print `depth` after it in a
+  scratch file under a window (the logic tests do not draw).
+- Tests: the "Dungeon" part of `games_tests.fs`: each level has one
+  way up, one down (the last the Amulet), a key for each locked door,
+  everything reachable with the doors open; moves, bumps, doors, keys,
+  things, stairs both ways, fights, hunger, death, the Amulet, a run of
+  3000 steps. Looked at in a real X window (Xvfb) with keys from
+  `xdotool`; not tried on a phone (keys only for now).
+
+### Level editor (examples/games/gfx_dungeon_edit.fs)
+
+`lugforth examples/games/gfx_dungeon_edit.fs`, POSIX only (it reads and
+writes a file; not on the web). It includes the game (with
+`dungeon-no-run`), so the pictures and the rules are the game's own.
+It finds `dungeon_levels.fs` in the current folder, in
+`examples/games` or in `games`, and writes the whole file back (the
+format of `dungeon_gen.py`), with a one-time `.bak` copy of the old
+one. Up to 32 levels (`de-cap`); the file's `dg-cap` becomes
+`max(8, levels)`.
+
+- Screen: the 20x20 grid at 8 pixels a square, the palette of 20 tiles,
+  eight buttons (PREV NEXT NEW DEL UNDO SAVE CHECK TEST), a status
+  line. Mouse: left paints (drag), right picks, click on a tile or a
+  button. Keys: arrows and space, `e` pick, Tab and Backspace the tile,
+  `l` and `b` levels, `n` new, `x` delete (twice within 3 s), `u` undo
+  (one stroke), `c` check, `t` test, `s` save, Esc quits (twice when
+  there are unsaved changes).
+- The `@` start exists on level 1 only (painting it moves it); the
+  other levels start next to their `<` stairs. A new level is a small
+  room with its stairs.
+- Check (`de-check`) reuses the game's own words (`dg-bfs`,
+  `dg-arrive`): the start, every thing, monster and staircase can be
+  reached with the doors open, at least a key per locked door, stairs
+  up and down, the Amulet on the last level.
+- Test (`t`) copies the level into slot 0 of `dg-levels` and plays it
+  with `dg-play` and `dg-embed` set (Esc leaves the loop instead of
+  closing the screen), then the editor comes back.
+- Traps met: `{ }` locals after `color` in a drawing word, two `to`
+  swapped in the palette loop, `dg-text` where `dg-num` was meant (a
+  throw inside the draw word), "armed" times compared with `ticks`
+  when they start at 0.
+- Tests: the "Dungeon editor" part of `games_tests.fs` (check of the
+  three levels, paint, unique start, undo, new, delete, build and
+  save to a temporary file). Looked at under Xvfb (click, keys,
+  check, save, test and back); not tried with a touch screen.
+
 ## Forth is Fun (turtle)
 
 Forth is Fun (https://gitlab.com/garvalf/forth-is-fun, Eric Forgeot,

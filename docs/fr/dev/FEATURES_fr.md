@@ -562,6 +562,119 @@ rouges).
   fenêtre X (Xvfb) et dans Chromium sans écran (la page web tourne et se
   joue).
 
+## Dungeon (examples/games/gfx_dungeon.fs) - fait le 2026-11-05
+
+Un jeu de donjon en vue subjective dans l'esprit de Dungeon Master,
+Captive et Bard's Tale: on est sur une case d'une grille, un pas est
+une case entière, un virage un quart de tour, et la vue est dessinée en
+perspective case par case (les plus lointaines d'abord). POSIX et web
+(`terminal.html?run=dungeon_levels.fs,gfx_dungeon.fs`). Les mots portent
+le préfixe `dg-`.
+
+- Les niveaux sont des données: `dungeon_levels.fs` contient 20 lignes
+  de 20 caractères par niveau (`dg-row`), de la place pour 8 niveaux
+  (`dg-cap`), trois pour commencer (`dg-nlev`). `python3 dungeon_gen.py
+  N > dungeon_levels.fs` en fabrique N (un labyrinthe et des salles, une
+  porte verrouillée sur le chemin des escaliers avec sa clé du bon côté,
+  des portes, des torches, des monstres et des objets; graines fixes, un
+  vérificateur refuse un niveau où quelque chose est inatteignable). Un
+  éditeur de niveaux (prévu, en Lugforth) devra écrire ce même fichier.
+  Légende: `#` mur, `T` mur avec torche, `.` sol, `D` porte, `L` porte
+  verrouillée, `<` `>` escaliers (on marche dedans), `@` le départ
+  (niveau 1), `1`-`5` rat, squelette, orc, troll, liche, et au sol `k`
+  clé, `h` potion, `f` nourriture, `w` arme, `a` armure, `g` or, `*`
+  l'Amulette (dernier niveau: la prendre fait gagner).
+- La vue (`dg-draw-3d`): 16 unités par case, un point à la latérale x et
+  à la distance z est en `cx + 64 x / z`, la demi-hauteur d'un mur est
+  `768 / z` pixels. Pour chaque distance de 4 à 0 (et -1 pendant la
+  glissade d'un pas), les cases de l'extérieur vers le milieu: une case
+  pleine donne sa face avant (`dg-face`: briques, porte, escalier,
+  torche) et sa face latérale vers le milieu (`dg-side`, colonne par
+  colonne: la hauteur est linéaire en x), une case ouverte ses objets et
+  son monstre (`dg-ent`, un sprite mis à l'échelle). Un pas en avant
+  glisse en 150 ms (`dg-eo`). Les sprites sont des lettres dans le
+  source (`dg-srow`, monstres 16x16, objets 8x8): aucun fichier.
+- Temps réel, pas de 50 ms (`dg-step`): les monstres vous chassent par
+  un parcours en largeur depuis le joueur (`dg-bfs`, à moins de 9 pas)
+  et ne frappent que depuis la case voisine; il faut leur faire face
+  pour frapper (espace). Faim (nourriture 1000, une ration mangée seule
+  quand elle baisse), soin lent, potions (+20), niveaux d'expérience,
+  armes (dague, épée, hache) et armures (quatre degrés). Les monstres d'un
+  niveau attendent quand vous êtes ailleurs.
+- Touches (par défaut, QWERTY): wasd ou haut/bas avancent, a d pas de
+  côté, q e ou gauche/droite tournent, espace frappe, `h` boit, `m` la
+  carte, `p` pause, `v` ou Tab change de vue, Échap quitte, `r`, espace
+  ou entrée après la fin. `k` ouvre l'écran des touches
+  (`dg-cfg-draw`): 11 actions (`dg-kb`), haut/bas choisissent, Entrée
+  puis une touche la change, `1` QWERTY et `2` AZERTY sont des
+  préréglages (`dg-p-qwerty`, `dg-p-azerty`), `k` ou Échap enregistre
+  les 11 codes dans `dungeon_keys.txt` là où le jeu a été lancé (relu au
+  démarrage suivant; seulement là où `dump-file` existe, donc pas sur le
+  web). Les flèches marchent toujours. `dg-act?` (maintenue) et
+  `dg-act-just?` (vient d'être pressée) sont les seuls lecteurs des
+  touches.
+- Deux vues de la même partie (`dg-toggle-view`, `dg-rogue?`): la vue
+  subjective ci-dessus, et une vue roguelike (`dg-draw-rogue`: la carte
+  vue de dessus, 8 pixels la case, les mêmes sprites, monstres montrés à
+  moins de 7 pas). Là, les flèches et les touches de déplacement vont
+  au nord, à l'est, au sud et à l'ouest, et marcher sur un monstre le
+  frappe (`dg-rmove`); les cases vues sont celles des quatre
+  directions (`dg-ray`).
+- Pièges: `dg-keys` a nommé à la fois le gestionnaire de touches et le
+  nombre de clés (une définition `:` a remplacé la valeur sans bruit);
+  la valeur par défaut d'un `case` doit laisser le sélecteur; `[char]`
+  ne marche pas dans le fichier de test hors d'une définition; un `box`
+  à cinq arguments au lieu de quatre perdait une cellule par appel et la
+  vue roguelike plantait après quelques pas: après avoir écrit un mot de
+  dessin, afficher `depth` après lui dans un fichier de brouillon avec
+  une fenêtre (les tests de logique ne dessinent pas).
+- Tests: la partie « Dungeon » de `games_tests.fs`: chaque niveau a un
+  escalier montant, un descendant (le dernier l'Amulette), une clé par
+  porte verrouillée, tout est atteignable portes ouvertes; pas, chocs,
+  portes, clés, objets, escaliers dans les deux sens, combats, faim,
+  mort, l'Amulette, une partie de 3000 pas. Regardé dans une vraie
+  fenêtre X (Xvfb) avec des touches de `xdotool`; pas essayé sur un
+  téléphone (clavier seulement pour l'instant).
+
+### Éditeur de niveaux (examples/games/gfx_dungeon_edit.fs)
+
+`lugforth examples/games/gfx_dungeon_edit.fs`, POSIX seulement (il lit
+et écrit un fichier; pas sur le web). Il inclut le jeu (avec
+`dungeon-no-run`): les images et les règles sont celles du jeu. Il
+trouve `dungeon_levels.fs` dans le dossier courant, dans
+`examples/games` ou dans `games`, et réécrit le fichier entier (le
+format de `dungeon_gen.py`), avec une copie `.bak` de l'ancien, une
+seule fois. Jusqu'à 32 niveaux (`de-cap`); le `dg-cap` du fichier
+devient `max(8, niveaux)`.
+
+- Écran: la grille 20x20 à 8 pixels la case, la palette de 20 tuiles,
+  huit boutons (PREV NEXT NEW DEL UNDO SAVE CHECK TEST), une ligne
+  d'état. Souris: gauche peint (glisser), droite prend la tuile, clic
+  sur une tuile ou un bouton. Touches: flèches et espace, `e` prend,
+  Tab et Retour arrière la tuile, `l` et `b` les niveaux, `n` nouveau,
+  `x` efface (deux fois en 3 s), `u` annule (un trait), `c` vérifie,
+  `t` teste, `s` sauve, Échap quitte (deux fois s'il reste des
+  changements non sauvés).
+- Le départ `@` n'existe qu'au niveau 1 (le peindre le déplace); les
+  autres niveaux commencent près de leur escalier `<`. Un nouveau niveau
+  est une petite salle avec son escalier.
+- La vérification (`de-check`) réutilise les mots du jeu (`dg-bfs`,
+  `dg-arrive`): le départ, chaque objet, monstre et escalier est
+  atteignable portes ouvertes, au moins une clé par porte verrouillée,
+  escaliers montant et descendant, l'Amulette au dernier niveau.
+- Test (`t`): copie le niveau dans la case 0 de `dg-levels` et le joue
+  avec `dg-play` et `dg-embed` (Échap sort de la boucle au lieu de
+  fermer l'écran), puis l'éditeur revient.
+- Pièges: des locaux `{ }` après `color` dans un mot de dessin, deux
+  `to` échangés dans la boucle de la palette, `dg-text` à la place de
+  `dg-num` (un throw dans le mot de dessin), des temps « armés »
+  comparés avec `ticks` alors qu'ils valent 0 au départ.
+- Tests: la partie « Dungeon editor » de `games_tests.fs` (vérification
+  des trois niveaux, peinture, départ unique, annulation, nouveau,
+  effacement, construction et sauvegarde dans un fichier temporaire).
+  Regardé sous Xvfb (clic, touches, vérification, sauvegarde, test et
+  retour); pas essayé sur écran tactile.
+
 ## Forth is Fun (tortue)
 
 Forth is Fun (https://gitlab.com/garvalf/forth-is-fun, Eric Forgeot,

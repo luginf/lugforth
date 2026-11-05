@@ -186,7 +186,9 @@ Safari ne sont pas testés.
 de la page (plusieurs fichiers, chargés dans cet ordre:
 `?run=2048.fs,gfx_2048.fs`). Testé avec Chromium sans écran le
 2026-10-30 (l'écran s'ouvre et se dessine): `gfx_2048` (avec `2048.fs`),
-`gfx_snake`, `gfx_digger`, `gfx_corridor`, `gfx_loderunner`, `gfx_tetris`, `gfx_minesweeper`,
+`gfx_snake`, `gfx_digger`, `gfx_corridor`, `gfx_loderunner`,
+`gfx_dungeon` (avec `dungeon_levels.fs`), `gfx_tetris`,
+`gfx_minesweeper`,
 `gfx_mastermind`, `gfx_invaders`, `gfx_magnoquill`, `gfx_demo`, `gfx_3d`
 (avec `3d.fs`), `gfx_turtle` (les commandes se tapent dans une invite
 sous le dessin). `ports/web/BUILD` les copie dans `out/web` et la page
