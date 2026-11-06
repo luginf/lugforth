@@ -2,6 +2,7 @@ out
 build.ninja
 attic/jotblk/env
 __pycache__
+examples/graphics/landscape.png
 examples/music/gfx_pianoroll.sf2
 examples/bench/bench_sieve
 examples/bench/bench_lines
