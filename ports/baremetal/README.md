@@ -6,12 +6,12 @@ build alone: each port includes these files from its own `main.c` and `platform.
 
 | File | Role |
 |---|---|
-| `screen.h` | the framebuffer and the drawing behind the `sdl2` words (written in C) |
+| `screen.h` | the framebuffer and the drawing behind the `gfx` words (written in C) |
 | `console.h` | the text console on the screen (8x8 font, 80x30 cells) |
 | `input.h` | key and mouse state, keys turned into characters (AZERTY too) |
 | `font8x8.h` | the font |
 | `builtins.h` | the screen, input, sound and file opcodes (`BM_VOC` is `rpi` or `pc`) |
-| `sdl2.fs` | the `sdl2` words, so the SDL2 programs of `examples/` run unchanged |
+| `sdl2.fs` | the `gfx` words, so the SDL2 programs of `examples/` run unchanged |
 | `files.fs` | the file words (`ls`, `cat`, `include`) over the port's FAT code |
 | `allocation.fs` | `allocate`, `free`, `resize` |
 | `autoboot.fs` | runs `autoexec.fs` from the disk at boot |

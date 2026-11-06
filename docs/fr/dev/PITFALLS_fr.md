@@ -91,8 +91,8 @@ web ou à une nouvelle plateforme. Fait partie de
   Les résultats `int` demandent `sign-extend`.
 - Les chargeurs paresseux sont `: nom r| ...source... | evaluate ;`,
   donc le source ne doit pas contenir `|`. Ils finissent par
-  `sdl2 definitions` pour que les mots de l'utilisateur atterrissent
-  dans le vocabulaire `sdl2` et ne soient pas masqués par des noms de la
+  `gfx definitions` pour que les mots de l'utilisateur atterrissent
+  dans le vocabulaire `gfx` et ne soient pas masqués par des noms de la
   bibliothèque (`px`...).
 - `do` tourne ~65k fois quand le compte est 0: utilisez `?do`. `roll`,
   `0>`, `2constant`, `within` n'existent pas. Mais `?do` ne saute
@@ -410,8 +410,8 @@ sur la même ligne, ou des lignes `\` juste au-dessus de la définition.
 `_tests.fs`). Les aides qui ont un préfixe commun (`le-`, `pg-`, `hist`,
 `pool`) reçoivent une note par famille (`PREFIX_NOTES` dans
 `words_reference.py`). Les mots de `sdl2` sont écrits à la main dans
-`docs/en/SDL2-words.md` (`docs/en/SDL2.md` est la visite guidée,
-`docs/en/SDL2-web.md` la version web): ajoutez-y une ligne quand un mot
+`docs/en/GFX-words.md` (`docs/en/GFX.md` est la visite guidée,
+`docs/en/GFX-web.md` la version web): ajoutez-y une ligne quand un mot
 court est ajouté dans l'un des trois `sdl2.fs`.
 
 ## Pièges Forth rencontrés encore et encore

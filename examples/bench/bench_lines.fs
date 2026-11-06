@@ -29,7 +29,7 @@
 \   cc -O2 -o bench_lines examples/bench/bench_lines.c $(pkg-config --cflags --libs sdl2)
 \   uxnasm examples/bench/bench_lines.tal bench_lines.rom && uxncli bench_lines.rom
 
-sdl2
+gfx
 also posix   ( ms-ticks )
 
 256 constant width   256 constant height

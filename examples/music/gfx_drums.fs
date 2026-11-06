@@ -31,7 +31,7 @@
 \   esc            quit
 \ Row colors: red kick, orange snare, yellow hat, cyan tom.
 
-sdl2
+gfx
 
 320 constant field-w   124 constant field-h
 20 constant grid-x   40 constant grid-y   18 constant pitch   16 constant cell-size

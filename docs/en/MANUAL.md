@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.11.6.3
+Lugforth v2026.11.6.4
 :; ===========>/>
 type 'info' for help
  ok
@@ -580,8 +580,8 @@ Lugforth Lugforth Lugforth  ok
 ```
 
 **Where next.** Games with graphics and sound use the SDL2 words
-([SDL2.md](SDL2.md) is the tour, [SDL2-words.md](SDL2-words.md) the list
-of every word, [SDL2-web.md](SDL2-web.md) the web build): read
+([GFX.md](GFX.md) is the tour, [GFX-words.md](GFX-words.md) the list
+of every word, [GFX-web.md](GFX-web.md) the web build): read
 `examples/games/gfx_snake.fs`, the shortest, then `gfx_tetris.fs` and
 `gfx_breakout.fs` ([Examples](#examples)). `ed` and `writhdeck` are
 written in Forth too, in `ports/posix/`: reading them shows the same
@@ -638,7 +638,7 @@ Pushing a tag such as `v7.0.8.1` (or running
 | Linux | Tarball and AppImage, built on Debian 10 (glibc 2.27 or newer). The AppImage carries the SDL2 libraries, the examples and a font. From a console it gives the terminal interface; a click on the desktop opens the window of `lugforth --gui` (a terminal if it cannot open). Examples are copied on first run to `~/.local/share/lugforth/examples` (`LUGFORTH_HOME` changes the directory), never overwritten. |
 | Android | `lugforth-VERSION-android.apk` (arm64), built by hand with `ports/android/build_apk.sh` and attached to the release. Signed with a debug key kept in `out/android/debug.keystore`: keep that file to be able to update an installed copy. |
 | Termux (Android) | No binary: `sh ports/termux/install.sh` builds the terminal Lugforth inside Termux from a git clone and puts it in `$PREFIX/bin` (see `ports/termux/README.md`). `restore` refuses an image saved by another run: Android loads the binary at another address each time. |
-| Windows x64 | `lugforth-<version>-windows-x64.zip`: `lugforth.exe`, `SDL2.dll` and `SDL2_ttf.dll` (zlib and FreeType licenses), the Forth bindings in `lib/` and `examples/`. `sdl2` and `sdl2-ttf` load them, and `lugforth.exe --gui`, the `lugforth-gui.bat` of the zip (a double click) or `gui` at the prompt open the same console window as on Linux, with its menu, colors, fonts (Consolas) and the Examples menu; its settings are in `%APPDATA%\lugforth`. Tested in CI with the dummy video driver, not yet by the maintainer on a real screen. Run lugforth from its folder. `ls`, `dir`, `cd`, `pwd`, the line editor and `/` or `\` in paths work. `ed`, `writhdeck` and the sound (`play`) are POSIX only. |
+| Windows x64 | `lugforth-<version>-windows-x64.zip`: `lugforth.exe`, `SDL2.dll` and `SDL2_ttf.dll` (zlib and FreeType licenses), the Forth bindings in `lib/` and `examples/`. `gfx` and `gfx-font` load them, and `lugforth.exe --gui`, the `lugforth-gui.bat` of the zip (a double click) or `gui` at the prompt open the same console window as on Linux, with its menu, colors, fonts (Consolas) and the Examples menu; its settings are in `%APPDATA%\lugforth`. Tested in CI with the dummy video driver, not yet by the maintainer on a real screen. Run lugforth from its folder. `ls`, `dir`, `cd`, `pwd`, the line editor and `/` or `\` in paths work. `ed`, `writhdeck` and the sound (`play`) are POSIX only. |
 | macOS | `lugforth-<version>-macos-universal.zip` (Apple silicon and Intel, macOS 11 or later). Not signed: right click, Open, or `xattr -d com.apple.quarantine lugforth`. Tested in CI on Apple silicon: the prompt, the tests, Tab completion and the SDL2 words (38 tests, headless) after `brew install sdl2 sdl2_ttf` (the libraries are looked up in the system and in `/opt/homebrew/lib`, `/usr/local/lib`); the console window, the editors and sockets have not been tried. |
 
 Static binaries are not possible: Lugforth reaches libc, SDL2 and X11
@@ -680,11 +680,16 @@ Settings are kept in `~/.local/share/lugforth/lugforth.ini`
 
 ## Drawing at the prompt
 
-The words of this section and the sound one below are the SDL2 short
-words, described one by one in [SDL2-words.md](SDL2-words.md) (tour:
-[SDL2.md](SDL2.md), web build: [SDL2-web.md](SDL2-web.md)); other names
+The words of this section and the sound one below are the short words
+of `gfx`, described one by one in [GFX-words.md](GFX-words.md) (tour:
+[GFX.md](GFX.md), web build: [GFX-web.md](GFX-web.md)); other names
 for the same word, such as `plot` for `dot`, are listed under Aliases
-there.
+there. They load with `gfx` (SDL2 on Linux, Windows and macOS, the
+framebuffer on the boards and DOS, the canvas on the web), and the
+extras with `gfx-image`, `gfx-font`, `gfx-sound` and `gfx-abc`. Their
+first names, `sdl2`, `sdl2-image`, `sdl2-ttf`, `sdl2-mixer` and
+`sdl2-abc`, still work; the table "Names" of GFX.md says what each one
+does on each platform.
 
 Type `graphic` once, then draw as in BASIC on an 8 bit micro: the
 drawing shows at once, under the text, with no `screen` and no `flip`.
@@ -702,7 +707,7 @@ The drawing area is 640x480 by default, whatever the console size;
 `1280 960 graphic-size` on a console of 1280x960 gives one drawing pixel
 per screen pixel, and on the desktop `1024 640 graphic-size` fills a
 window of that size); `dot`, `line`, `lineto`, `box`, `frame`, `disc`,
-`circle`, `paint` (and `text` on the boards) are those of the `sdl2`
+`circle`, `paint` (and `text` on the boards) are those of the `gfx`
 words. `ink` takes 0 black, 1 red, 2 green, 3 yellow, 4 blue, 5 magenta,
 6 cyan, 7 white, 8 to 15 gray, orange, pink, brown, purple and light
 colors; `$rrggbb color` and `r g b rgb` give any other. Works in the
@@ -713,7 +718,7 @@ layer. In a terminal there is no window: `graphic` says so.
 ## Sound at the prompt
 
 In the console window (`lugforth --gui`) type `sound` once; elsewhere
-type `sdl2` (nothing to open, no window needed on Linux, the sound comes
+type `gfx` (nothing to open, no window needed on Linux, the sound comes
 out of the speakers):
 
     440 300 beep                          \ a note: frequency in Hz, length in ms
@@ -727,7 +732,7 @@ length after the note (4 quarter, 8 eighth, a dot lengthens by half),
 is the middle C), `l8` the default length, `t120` the tempo, `n49` a
 note by number (n49 is the middle C, n0 a rest), `&` ties two notes of
 the same pitch (`c4&c8`), `v8` the volume (0 to 15), `w1` the wave. The
-full table is in [SDL2.md](SDL2.md).
+full table is in [GFX.md](GFX.md).
 
 **Several voices.** A comma in the string starts another voice, and all
 the voices start together (4 at most, 512 notes each; the sound lasts as
@@ -735,7 +740,7 @@ long as the longest):
 
     s" t120 o4 l8 e d c d e e e4, o3 l4 c g c g c2" play
 
-Examples (each one is a single line to type after `sdl2`):
+Examples (each one is a single line to type after `gfx`):
 
     \ a melody over a bass: the bass has its own octave, wave and volume
     s" t140 o4 l8 w2 v10 c d e f g4 g4, w0 v6 o3 l4 c g c g, w1 v8 o2 l2
@@ -754,8 +759,8 @@ Each voice begins with the octave, length, tempo, wave and volume that
 the `play` started with, so repeat `t` or `w` in the voices that need
 them. After the `play` the settings are those of the last voice. On the
 web, on the Pi and on the PC the notes of all the voices are queued at
-once; with `sdl2-mixer`, `play` is a different word (see
-[SDL2.md](SDL2.md)).
+once; with `gfx-sound`, `play` is a different word (see
+[GFX.md](GFX.md)).
 
 **Envelope.** `adsr ( attack decay sustain release -- )` shapes every
 note of `beep` and `play`: the attack and the decay are in ms, the
@@ -784,7 +789,7 @@ note (the default: a flat note with a very short fade at its end). Hits
 `wave`, `beep-volume` and `pitch-drop` take their value from the stack,
 as `color` does: `1 wave`, `5000 beep-volume` (read them back with
 `wave@`, `beep-volume@`, `pitch-drop@`; `to wave` still works).
-`silence` stops. Tunes in ABC notation: `sdl2-abc`, `abc-play`.
+`silence` stops. Tunes in ABC notation: `gfx-abc`, `abc-play`.
 
 ## Mini build
 
@@ -793,7 +798,7 @@ the editors, SDL2, X11, the console window and the web and telnet
 servers: about 110 KB against 260 KB. `ninja posix` builds both
 (`out/posix/lugforth-mini`); `--gui` says there is no window. A part can
 still be loaded from a source checkout: `needs ports/posix/sdl2.fs`,
-then `sdl2` (SDL2 itself must be installed).
+then `gfx` (SDL2 itself must be installed).
 
 ## Line editing
 
@@ -1085,7 +1090,7 @@ first has a heap of 32 MB, and does not run `autoexec.fs`.
 
 Lugforth runs with no operating system on 64-bit ARM: QEMU `virt` and
 `raspi3b` (which run on a Linux x86_64 PC), a Raspberry Pi 3, and a Pi 4
-(written blind). The console is the serial line. The `sdl2` words are
+(written blind). The console is the serial line. The `gfx` words are
 there: screen, text, images, keyboard and mouse, beeps and ABC tunes.
 Files are on the SD card (FAT12/16/32): `include`, `ls`, and an
 `autoexec.fs` run at boot. `examples/games/gfx_breakout.fs` and
@@ -1106,7 +1111,7 @@ What works where, what is tested, what needs a real board:
 A UEFI application, `EFI/BOOT/BOOTX64.EFI` on a FAT32 USB stick, started
 by the firmware (Secure Boot off, then the one-time boot menu of the
 firmware, F12 on many PCs). It uses the firmware's screen, keyboard and
-files: console on the screen, the `sdl2` words, `include` and the
+files: console on the screen, the `gfx` words, `include` and the
 editors from the stick. Sound through Intel HD Audio (tried under QEMU
 only), no mouse.
 
@@ -1148,7 +1153,7 @@ See [ports/efi/README.md](../../ports/efi/README.md).
 `ports/dos` builds `lugforth.exe` for DOS with the DJGPP cross compiler:
 a 32-bit protected mode program for a 386 or better, with about 5 MB of
 memory and a DPMI host. The prompt in text mode, the files, and the
-`sdl2` words: graphics in a VESA mode, the keyboard and the mouse, the
+`gfx` words: graphics in a VESA mode, the keyboard and the mouse, the
 sound of a Sound Blaster 16, so the games of `examples/games` run.
 
 ```
@@ -1313,7 +1318,7 @@ variable sf
 To play a tune at each boot, write the three lines `esp32-abc`, `4
 buzzer` and `include /spiffs/canon.fs` in `autoexec.fs` and send it.
 `abc-arp` plays the same tune by turns, one note at a time, if the mix
-sounds bad. The same file played on a PC (`sdl2-abc`, `abc-play`) now
+sounds bad. The same file played on a PC (`gfx-abc`, `abc-play`) now
 sounds the voices together too. Details:
 [dev/PORTS.md](dev/PORTS.md) and
 [ports/esp32/README.txt](../../ports/esp32/README.txt).
@@ -1436,7 +1441,7 @@ button), and `296102114 rand-seed ! new-tune type` writes it as ABC
 text, to keep in a file or to play with `abc-play`. Do not set the seed
 and then call `random-music`: it mixes the clock into the seed to give a
 new tune each time. On an ESP32 it is the same with `esp32-abc`, `4
-buzzer` and `5 music-button` (a button on GPIO 5). On a PC (`sdl2-abc`
+buzzer` and `5 music-button` (a button on GPIO 5). On a PC (`gfx-abc`
 first, then `include examples/music/abc_random.fs`) there is no button:
 any key gives another tune and Ctrl-C ends it. The music uses only notes
 of the key, in 4/4 and 3 phrases of 4 bars, the last one ending on V

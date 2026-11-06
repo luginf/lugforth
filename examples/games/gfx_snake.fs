@@ -23,7 +23,7 @@
 \ At the top: the score (white) and the best one (gray), in a tiny 3x5 pixel
 \ font. Red tint: the game is over. The bare-metal boards run it too.
 
-sdl2
+gfx
 
 32 constant cols   22 constant rows   10 constant cell   20 constant top
 cols cell * constant w   rows cell * top + constant h

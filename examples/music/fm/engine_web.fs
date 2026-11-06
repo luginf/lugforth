@@ -28,12 +28,12 @@
 \ JavaScript part.
 
 also internals
-\ sdl2 is looked up when this runs, by evaluate: written directly it would be the
+\ gfx is looked up when this runs, by evaluate: written directly it would be the
 \ loader that existed when this was compiled, which would load everything again.
 : sdl2-fm
-  s" sdl2" evaluate
+  s" gfx" evaluate
   r|
-sdl2 definitions also web
+gfx definitions also web
 
 200 value fm-ratio     ( modulator frequency / carrier frequency, times 100 )
 30 value fm-index      ( modulation index, times 10: 30 is 3.0 radians )
@@ -207,7 +207,7 @@ JSWORD: js-midi-byte { -- n }
 |  evaluate
   fm-midi-parser evaluate
   r|
-sdl2 definitions
+gfx definitions
 : midi-poll ( -- )   ( plays the MIDI messages that arrived; call it once per frame )
   begin js-midi-byte dup 0< 0= while midi-feed repeat drop ;
 previous

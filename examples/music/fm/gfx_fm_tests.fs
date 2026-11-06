@@ -20,8 +20,8 @@
 needs ../../../common/testing.fs
 
 include engine_posix.fs
-sdl2 sdl2-fm
-sdl2 definitions
+gfx sdl2-fm
+gfx definitions
 
 ( ---- The parser: a recorder replaces the synth ---- )
 create log 64 cells allot   0 value logn
@@ -155,6 +155,6 @@ create fake-ev 28 allot
   logn 1 =assert   0 1 log@ 0 =assert   0 2 log@ 64 =assert ;
 
 forth definitions
-sdl2
+gfx
 run-tests
 bye

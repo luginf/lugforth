@@ -18,7 +18,7 @@ vocabulaire `forth` et des autres vocabulaires
 Linux/web, avec effets de pile et descriptions quand ils sont connus
 (`tools/words_reference.py`, relancez-le après avoir ajouté des mots).
 Les mots SDL2 ont leur propre référence,
-[docs/en/SDL2-words.md](../SDL2-words_fr.md).
+[docs/en/GFX-words.md](../GFX-words_fr.md).
 
 ## Système de compilation
 

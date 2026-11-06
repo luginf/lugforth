@@ -28,7 +28,7 @@
 \ Take all the gold, the ladders to the top show, climb out. A hole in the
 \ bricks closes again: a guard in it is stuck for a while, then killed.
 
-sdl2
+gfx
 \ on the web the page has loaded both files first
 [undefined] spr-draw [if] include ../graphics/gfx_spr.fs [then]
 [undefined] lr-brick [if] include gfx_loderunner_sprites.fs [then]

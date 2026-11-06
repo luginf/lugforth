@@ -21,7 +21,7 @@
 \ The score is drawn with a tiny 3x5 pixel font, and the sounds are beeps.
 \ Screen at the end: red tint = game over, green tint = you cleared the wall.
 
-sdl2
+gfx
 
 320 constant field-w   240 constant field-h
 10 constant cols   5 constant rows

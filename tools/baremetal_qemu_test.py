@@ -233,7 +233,7 @@ def test_lines(b):
             (5, 5, 5, 5), (-10, -10, 200, 140), (170, 60, 150, 61),
             # visible at their last point only, from each side
             (100, 200, 90, 119), (300, 50, 159, 60), (-90, 30, 0, 40), (70, -80, 60, 0)]
-  b.run('sdl2 1 to zoom %d %d screen 0 cursor black color cls white color' % (w, h))   # no mouse arrow on the pixels
+  b.run('gfx 1 to zoom %d %d screen 0 cursor black color cls white color' % (w, h))   # no mouse arrow on the pixels
   for i in range(0, len(lines), 5):
     b.run(' '.join('%d %d %d %d line' % l for l in lines[i:i + 5]))
   b.run('flip')
@@ -263,7 +263,7 @@ def test_text(b):
   w, h = 160, 60
   font = font8x8()
   items = [(2, 3, 1, 'Forth 42 !?'), (3, 20, 2, 'Été à'), (150, 50, 1, 'xyz')]
-  b.run('sdl2 1 to zoom %d %d screen 0 cursor black color cls white color' % (w, h))   # no mouse arrow on the pixels
+  b.run('gfx 1 to zoom %d %d screen 0 cursor black color cls white color' % (w, h))   # no mouse arrow on the pixels
   for x, y, scale, t in items:
     r = b.run('s" x" %d load-font font %d %d s" %s" text' % (8 * scale, x, y, t))
     check('text %r' % t, r, 'ERROR' not in r)
@@ -320,7 +320,7 @@ def test_images(b):
   draw(0, 0, iw, ih, -10, 14, 2 * iw, 3 * ih, 0xffffff, 255)   # draw-size, clipped
   draw(16, 0, 8, 8, 100, 40, 24, 24, 0xff8040, 255)          # draw-part, tinted
   draw(8, 0, 8, 8, 10, 40, 16, 16, 0xffffff, 128)            # half transparent
-  b.run('sdl2 1 to zoom %d %d screen 0 cursor $101830 color cls' % (w, h))   # no mouse arrow on the pixels
+  b.run('gfx 1 to zoom %d %d screen 0 cursor $101830 color cls' % (w, h))   # no mouse arrow on the pixels
   r = b.run('s" examples/games/gfx_tiles.png" load-image value img  img image-size . .')
   check('image-size', r, r.split()[:2] == [str(ih), str(iw)])
   b.run('img 2 2 draw  img -10 14 %d %d draw-size' % (2 * iw, 3 * ih))
@@ -352,9 +352,9 @@ def test_console(b):
   check('console: 1280x960', scr[:2], scr[:2] == (1280, 960))
   check('console: banner drawn', lit(scr, 0, 300), lit(scr, 0, 300) > 200)
   b.run(': t40 40 0 do i . loop ; t40')
-  b.run('sdl2 320 240 screen $ff0000 color cls flip')
+  b.run('gfx 320 240 screen $ff0000 color cls flip')
   scr = b.screen()
-  check('console: the sdl2 screen replaces it', pixel(scr, 5, 5), pixel(scr, 5, 5) == 'ff0000')
+  check('console: the gfx screen replaces it', pixel(scr, 5, 5), pixel(scr, 5, 5) == 'ff0000')
   b.run('close-screen')
   scr = b.screen()
   check('console: back after close-screen', scr[:2], scr[:2] == (1280, 960))
@@ -488,7 +488,7 @@ def test_input(b, what):
   """A keyboard and a pointer (virtio on virt, USB on raspi3b), driven by
   QMP: keys held and released, the button, absolute then relative motion;
   then typing at the prompt."""
-  b.run('sdl2 1 to zoom 320 240 screen')
+  b.run('gfx 1 to zoom 320 240 screen')
   b.run(': st [char] a pressed? . key-left pressed? . LEFT-BUTTON pressed? . '
         'mouse-x . mouse-y . last-key . ;')
   b.run(': watch ( ms -- ) ticks + begin events dup ticks - 0< until drop st ;')
@@ -572,7 +572,7 @@ def test_roguelike(b):
 def test_sound_play(b):
   """Beeps, a hit and a tune, recorded by QEMU (-audiodev wav); check_sound
   reads the first four sounds of the file."""
-  b.run('sdl2 440 300 beep 0 200 beep 660 300 beep 1500 ms')
+  b.run('gfx 440 300 beep 0 200 beep 660 300 beep 1500 ms')
   b.run('1 to wave 300 400 drum-hit 700 ms 0 to wave')
   paste(b, b'sdl2-abc\nr~ X:1\nL:1/4\nQ:1/4=120\nK:C\nC E G c\n~ abc-play 2500 ms\n')
   b.run('s" o5 a1, o4 a8 r8" play 2600 ms')                      # two voices: 2 s, not 2.5 s
@@ -894,7 +894,7 @@ def test_board(name, args, has_gpio, tmp):
     else:
       r = b.run('also rpi 21 gpio@ previous')
       check('no gpio on virt', r, 'ERROR' in r)
-      r = b.run('sdl2 320 240 screen')
+      r = b.run('gfx 320 240 screen')
       check('no screen on virt without ramfb', r, 'ERROR' in r)
     if has_gpio:
       test_console(b)

@@ -27,7 +27,7 @@
 \ At the top: the mines left to find, the face (green: won, red: lost) and
 \ the seconds. The bare-metal boards run it too.
 
-sdl2
+gfx
 
 12 constant cell   24 constant top
 368 constant w   220 constant h

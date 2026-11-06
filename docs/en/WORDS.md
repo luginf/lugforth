@@ -28,11 +28,11 @@ exists: **P** Linux (POSIX) build, **W** web build.
   ESP32, so it also covers hardware words that this build does not have.
 * [ANS Forth standard](https://forth-standard.org/standard/words), for the
   standard words.
-* The SDL2 words are in [docs/en/SDL2-words.md](SDL2-words.md).
+* The SDL2 words are in [docs/en/GFX-words.md](GFX-words.md).
 
 ## The `forth` vocabulary
 
-615 words. 62 are described by the reference pages, 165 by the notes, 207 are standard words the project leaves to the standard, 169 have only a stack comment or binding, 12 have no description yet.
+620 words. 62 are described by the reference pages, 170 by the notes, 207 are standard words the project leaves to the standard, 169 have only a stack comment or binding, 12 have no description yet.
 
 
 ### Arguments
@@ -714,6 +714,11 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `frame` | `( x y w h -- )` | Draws the outline of a rectangle. | - W |
 | `ftrunc` | `( r -- r' )` |  | P W |
 | `fvalue` | `( r "name" -- )` |  | P W |
+| `gfx` | `( -- )` | Lazy loaded drawing, keys and sound words for games (SDL2 on Linux, Windows and macOS; the framebuffer on the boards and DOS; the canvas on the web); then the vocabulary they are in. See `docs/en/GFX.md`. | P W |
+| `gfx-abc` | `( -- )` | Lazy loaded reader and player of tunes in ABC notation (the same as `sdl2-abc`). See `docs/en/GFX.md`. | P W |
+| `gfx-font` | `( -- )` | Loads the font words: SDL2_ttf (TrueType) on Linux, Windows and macOS; on the boards and DOS the built-in 8x8 font of `gfx`. Old name `sdl2-ttf`. See `docs/en/GFX.md`. | P - |
+| `gfx-image` | `( -- )` | Loads the image words: SDL2_image (files) on Linux, Windows and macOS; on the boards, DOS and the web those of `gfx`. Old name `sdl2-image`. See `docs/en/GFX.md`. | P - |
+| `gfx-sound` | `( -- )` | Loads the sound and music file words: SDL2_mixer on Linux, Windows and macOS; on the boards, DOS and the web those of `gfx`. Old name `sdl2-mixer`. See `docs/en/GFX.md`. | P - |
 | `graphic` | `( -- )` | Loads `sdl2` and makes the drawing words (`line`, `box`, `color`, `cls`...) work at the prompt: in the console window under the text, on the web page in a drawing area above it. | - W |
 | `gray` | `( -- $rrggbb )` | The color gray, $808080: `gray color`. | - W |
 | `green` | `( -- $rrggbb )` | The color green, $00c000: `green color`. | - W |
@@ -725,7 +730,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `httpd` | `( -- )` | Lazy loaded HTTP server. See `attic/oldsite/posix_common.html`. | P - |
 | `ink` | `( n -- )` | Sets the drawing color by number, 0 to 15 (0 black, 1 red, 2 green, 3 yellow, 4 blue, 5 magenta, 6 cyan, 7 white...). | - W |
 | `line` | `( x1 y1 x2 y2 -- )` | Draws a line in the current color. Typed at the web prompt before `graphic`, it opens the drawing area first. | - W |
-| `lineto` | `( x y -- )` | A line from the end of the last `line`, `lineto` or `plot` to x y (sdl2 short words). See docs/en/SDL2-words.md. | - W |
+| `lineto` | `( x y -- )` | A line from the end of the last `line`, `lineto` or `plot` to x y (gfx short words). See docs/en/GFX-words.md. | - W |
 | `magenta` | `( -- $rrggbb )` | The color magenta, $ff00ff: `magenta color`. | - W |
 | `n>r` | `( i*x n -- )` |  | P W |
 | `name>compile` | `( nt -- x xt )` |  | P W |
@@ -737,10 +742,10 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `orange` | `( -- $rrggbb )` | The color orange, $ff8000: `orange color`. | - W |
 | `pager-off` | `( -- )` | Turns the pager off. | P - |
 | `pager-on` | `( -- )` | Stops the output at each screenful at the prompt (space, Enter or q). | P - |
-| `paint` | `( x y -- )` | Flood fill with the pen: the area of the color found at x y, up to any other color (sdl2 short words, common/flood.fs). See docs/en/SDL2-words.md. | - W |
+| `paint` | `( x y -- )` | Flood fill with the pen: the area of the color found at x y, up to any other color (gfx short words, common/flood.fs). See docs/en/GFX-words.md. | - W |
 | `pink` | `( -- $rrggbb )` | The color pink, $ff80c0: `pink color`. | - W |
 | `place` | `( a n dst -- )` | Copies the string a n to dst as a counted string: the length in the first byte, then the characters. | P W |
-| `plot` | `( x y -- )` | Alias of `dot` (sdl2 short words): draws one pixel, and `lineto` starts there. See docs/en/SDL2-words.md. | - W |
+| `plot` | `( x y -- )` | Alias of `dot` (gfx short words): draws one pixel, and `lineto` starts there. See docs/en/GFX-words.md. | - W |
 | `posix` | `( -- )` | Vocabulary of the system calls and constants of Linux and macOS. | P - |
 | `purple` | `( -- $rrggbb )` | The color purple, $800080: `purple color`. | - W |
 | `rand-seed` |  | The seed of random (a linear congruential generator). Change it to get another sequence: ms-ticks 1 or rand-seed ! | P W |
@@ -749,11 +754,11 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `rgb` | `( r g b -- )` | Sets the drawing color from its three components, 0 to 255. | - W |
 | `rgba` | `( r g b a -- )` | Same as `rgb`, with the alpha (opacity). | - W |
 | `scan` | `( a n ch -- a n )` | Skips characters of the string a n until the first ch. Leaves the rest, starting at that character (n is 0 if ch is not found). | P W |
-| `sdl2` | `( -- )` | Lazy loaded SDL2 short words for games. See `docs/en/SDL2.md`. | P W |
-| `sdl2-abc` | `( -- )` | Lazy loaded reader and player of tunes in ABC notation. See `docs/en/SDL2.md`. | P W |
-| `sdl2-image` | `( -- )` | Lazy loaded SDL2_image sprites. See `docs/en/SDL2.md`. | P W |
-| `sdl2-mixer` | `( -- )` | Lazy loaded SDL2_mixer sound, music and soundfont. See `docs/en/SDL2.md`. | P W |
-| `sdl2-ttf` | `( -- )` | Lazy loaded SDL2_ttf text. See `docs/en/SDL2.md`. | P - |
+| `sdl2` | `( -- )` | The first name of `gfx`: loads the same words, and once they are loaded selects their vocabulary. See `docs/en/GFX.md`. | P W |
+| `sdl2-abc` | `( -- )` | Lazy loaded reader and player of tunes in ABC notation. See `docs/en/GFX.md`. | P W |
+| `sdl2-image` | `( -- )` | Lazy loaded SDL2_image sprites. See `docs/en/GFX.md`. | P W |
+| `sdl2-mixer` | `( -- )` | Lazy loaded SDL2_mixer sound, music and soundfont. See `docs/en/GFX.md`. | P W |
+| `sdl2-ttf` | `( -- )` | Lazy loaded SDL2_ttf text. See `docs/en/GFX.md`. | P - |
 | `skip` | `( a n ch -- a n )` | Skips the leading characters ch of the string a n. Leaves the rest, starting at the first character that is not ch. | P W |
 | `sockets` | `( -- )` | Lazy loaded BSD sockets. | P - |
 | `telnetd` | `( -- )` | Lazy loaded telnet server. | P - |

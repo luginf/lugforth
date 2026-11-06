@@ -26,7 +26,7 @@
 \ level (yellow), with a tiny 3x5 pixel font. Red tint: the game is over.
 \ The bare-metal boards (ports/rpi, ports/efi) run it too.
 
-sdl2
+gfx
 
 10 constant cols   20 constant rows   11 constant cell
 8 constant well-x   10 constant well-y

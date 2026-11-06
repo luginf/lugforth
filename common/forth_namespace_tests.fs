@@ -807,10 +807,15 @@ e: test-posix-forth-namespace
   out: gui-src 
   out: eval-copy 
   out: gui-ttf-src 
+  out: gfx-abc 
   out: sdl2-abc 
+  out: gfx-sound 
   out: sdl2-mixer 
+  out: gfx-font 
   out: sdl2-ttf 
+  out: gfx-image 
   out: sdl2-image 
+  out: gfx 
   out: sdl2 
   out: x11 
   [THEN]

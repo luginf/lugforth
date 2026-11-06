@@ -17,7 +17,7 @@
 \ Shared by the pinball modes: fixed point helpers, a 3x5 font, seven segment digits.
 \ Loaded once by each mode (see the [undefined] test at the top of raid.fs).
 
-sdl2
+gfx
 
 : pb-common ;
 

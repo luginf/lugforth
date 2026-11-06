@@ -29,7 +29,7 @@ needs uxn.fs
 needs file.fs
 needs screen.fs
 needs audio.fs
-sdl2
+gfx
 also uxn definitions
 
 z" SDL_CreateRGBSurfaceWithFormat" 5 sdl SDL_CreateRGBSurfaceWithFormat ( flags w h depth format -- a )

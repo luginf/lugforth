@@ -30,7 +30,7 @@ lettres en contour, du string art
 ([sources](https://github.com/luginf/lugforth/tree/main/examples/web)).
 
 **Mots.** [Tous les mots](https://luginf.github.io/lugforth/words.html),
-les mots ajoutés par Lugforth, [graphismes et son SDL2](SDL2_fr.md).
+les mots ajoutés par Lugforth, [graphismes et son SDL2](GFX_fr.md).
 
 **Plateformes.** Linux, macOS, Windows, web, Android, Raspberry Pi, PC
 (UEFI), ESP32, Raspberry Pi Pico, pico-ice, Game Boy Advance. Voir les

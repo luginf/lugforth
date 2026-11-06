@@ -61,3 +61,4 @@ create isize 2 cells allot
 
 previous
 | evaluate ;
+: gfx-image ( -- ) s" sdl2-image" evaluate ;   \ images from files: load-image, draw; looked up when it runs

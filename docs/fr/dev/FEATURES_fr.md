@@ -11,8 +11,8 @@ vérifié ou non. Fait partie de [README.md](README_fr.md).
 
 Des mots courts orientés jeu au-dessus de libSDL2, pour la version POSIX
 et (même source, mêmes mots) la version web. Docs complètes:
-`docs/en/SDL2.md`, `docs/en/SDL2-words.md` (chaque mot),
-`docs/en/SDL2-web.md`. Exemples: `examples/graphics/gfx_demo.fs`,
+`docs/en/GFX.md`, `docs/en/GFX-words.md` (chaque mot),
+`docs/en/GFX-web.md`. Exemples: `examples/graphics/gfx_demo.fs`,
 `examples/games/gfx_breakout.fs` et `examples/music/gfx_drums.fs` (une
 boîte à rythmes de 16 pas); ces deux derniers tournent aussi sans
 changement dans le navigateur par `ports/web/gfx_breakout.html` et

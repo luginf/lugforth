@@ -6,8 +6,8 @@ not checked. Part of [README.md](../../../README.md).
 ## SDL2 multimedia
 
 Short game-oriented words on top of libSDL2, for the POSIX build and
-(same source, same words) the web build. Full docs: `docs/en/SDL2.md`,
-`docs/en/SDL2-words.md` (every word), `docs/en/SDL2-web.md`. Examples:
+(same source, same words) the web build. Full docs: `docs/en/GFX.md`,
+`docs/en/GFX-words.md` (every word), `docs/en/GFX-web.md`. Examples:
 `examples/graphics/gfx_demo.fs`, `examples/games/gfx_breakout.fs` and
 `examples/music/gfx_drums.fs` (a 16 step drum machine); these two also
 run unchanged in the browser through `ports/web/gfx_breakout.html` and

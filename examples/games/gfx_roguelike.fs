@@ -18,7 +18,7 @@
 \ line of sight, monsters that chase you, potions and stairs down. One turn
 \ per move. The 8x8 tiles come from examples/games/gfx_tiles.png (a row of 8 tiles:
 \ wall, floor, stairs, potion, player, monster, skull, heart), drawn with
-\ sdl2-image; run it from the lugforth directory or from examples/. It also
+\ gfx-image; run it from the lugforth directory or from examples/. It also
 \ runs in the browser (ports/web/gfx_roguelike.html). examples/games/make_gfx_tiles.fs
 \ draws the sheet (make_gfx_tiles.py is the same in Python), edit it to
 \ change the tiles.
@@ -39,10 +39,10 @@
 \ the system. In the browser a simple synthesizer plays them. If nothing can
 \ play them the game stays silent.
 
-sdl2
-sdl2-image
-sdl2-mixer
-sdl2-abc
+gfx
+gfx-image
+gfx-sound
+gfx-abc
 
 40 constant map-w   24 constant map-h   8 constant tile   map-w map-h * constant area
 create map area allot      ( 0 wall, 1 floor, 2 stairs, 3 potion )

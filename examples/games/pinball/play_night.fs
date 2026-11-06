@@ -1,5 +1,5 @@
 \ Starts Night Strike alone, without the menu (the smoke test uses it).
-sdl2
+gfx
 include common.fs
 include night.fs
 night

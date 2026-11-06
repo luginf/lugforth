@@ -41,7 +41,7 @@ NAV = [('index.html', 'Home'), ('demo/terminal.html', 'Try it'),
 PAGES = {
   'index.html': ('Lugforth', ['docs/pages/index.md']),
   'words.html': ('Words', ['docs/en/WORDS.md']),
-  'sdl2.html': ('SDL2 graphics and sound', ['docs/en/SDL2.md', 'docs/en/SDL2-words.md', 'docs/en/SDL2-web.md']),
+  'sdl2.html': ('SDL2 graphics and sound', ['docs/en/GFX.md', 'docs/en/GFX-words.md', 'docs/en/GFX-web.md']),
   'ports.html': ('Ports', ['docs/pages/ports.md', 'ports/android/README.md', 'ports/gba/README.md']),
   'demos.html': ('Try it: more demos', ['docs/pages/demos.md']),
   'examples.html': ('Examples', ['examples/README.md']),
@@ -51,7 +51,7 @@ SITE_PAGES = set(['index.html', 'demos.html', 'words.html', 'new-words.html', 's
                   'examples.html', 'credits.html'])
 # Markdown sources that have a page: links to them stay on the site
 LINKS = {'docs/en/WORDS.md': 'words.html', 'WORDS.md': 'words.html',
-         'docs/en/SDL2-words.md': 'sdl2.html', 'docs/en/SDL2.md': 'sdl2.html', 'docs/en/SDL2-web.md': 'sdl2.html',
+         'docs/en/GFX-words.md': 'sdl2.html', 'docs/en/GFX.md': 'sdl2.html', 'docs/en/GFX-web.md': 'sdl2.html',
          'README.md': 'index.html', 'NOTICE': 'credits.html'}
 
 

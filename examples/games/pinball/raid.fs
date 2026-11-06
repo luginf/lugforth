@@ -34,7 +34,7 @@
 \ small bumper sits between the flippers, and a one-way gate at the top of
 \ the shooter lane keeps a launched ball from coming back to the plunger.
 
-sdl2
+gfx
 [undefined] pb-common [if] include common.fs [then]
 
 \ This file only defines: `raid` plays one session. pinball.fs is the menu.

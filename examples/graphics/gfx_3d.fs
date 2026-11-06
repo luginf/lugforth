@@ -13,7 +13,7 @@
 \ On the web the page loads 3d.fs itself first (terminal.html?run=3d.fs,gfx_3d.fs).
 [undefined] init-sintab [if] include 3d.fs [then]
 
-sdl2
+gfx
 
 640 value w   480 value h
 0 value shape

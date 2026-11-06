@@ -27,7 +27,7 @@
 \ At the top, the hidden row (shown at the end, green won, red lost) and the
 \ games won and played, in a tiny 3x5 pixel font. The bare-metal boards run it too.
 
-sdl2
+gfx
 
 4 constant holes   6 constant ncolors   10 constant tries
 180 constant w   240 constant h

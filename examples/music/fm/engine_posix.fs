@@ -15,7 +15,7 @@
 ( A 2 operator FM synthesizer with MIDI input, for the POSIX build )
 \
 \ Not part of the interpreter: include it (examples/music/fm/gfx_fm.fs does), then type sdl2-fm,
-\ which loads the words like the other sdl2 extensions. Usage:
+\ which loads the words like the other gfx extensions. Usage:
 \   include engine_posix.fs
 \   sdl2-fm
 \   200 to fm-ratio   30 to fm-index        \ modulator:carrier ratio x100, index x10
@@ -32,12 +32,12 @@
 [undefined] fm-midi-parser [if] include midi_parser.fs [then]
 
 also internals
-\ sdl2 is looked up when this runs, by evaluate: written directly it would be the
+\ gfx is looked up when this runs, by evaluate: written directly it would be the
 \ loader that existed when this was compiled, which would load everything again.
 : sdl2-fm
-  s" sdl2" evaluate
+  s" gfx" evaluate
   r|
-sdl2 definitions also posix
+gfx definitions also posix
 
 ( ---- The patch: read when a note starts, except fm-release, read when it ends ---- )
 200 value fm-ratio     ( modulator frequency / carrier frequency, times 100 )

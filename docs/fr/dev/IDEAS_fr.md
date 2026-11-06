@@ -158,8 +158,27 @@ est à corriger). Le vocabulaire `sdl2` et les fichiers de bibliothèque
   2026-10-29, l'idée d'un vocabulaire `snd` est abandonnée).
 - `graphic` (dessin à l'invite) est déjà la moitié de cette couche
   neutre: les réconcilier.
-- Les docs (`SDL2.md`, `SDL2-words.md`, `SDL2-web.md`) deviennent des
+- Les docs (`GFX.md`, `GFX-words.md`, `GFX-web.md`) deviennent des
   docs graphiques avec une section pour les liaisons SDL2.
+
+Fait le 2026-11-06: le vocabulaire est `gfx` (posix, web, les cartes et
+DOS: `vocabulary gfx` dans chaque sdl2.fs). Avant le chargement, `gfx`
+et `sdl2` sont tous deux le chargeur; la source chargée finit par
+`: sdl2 ( -- ) gfx ;`, donc `sdl2`, `sdl2 definitions` et `also sdl2`
+marchent toujours, et `gfx-abc` est `sdl2-abc`. Les exemples, les tests
+qui tapent des commandes (EFI, Pi, DOS) et les docs des utilisateurs
+disent `gfx`; les docs `SDL2*.md` sont maintenant `GFX*.md` (avec
+`_fr`), et disent que l'ancien nom marche toujours. Gardés exprès: les
+noms de fichiers `ports/*/sdl2*.fs` (que les utilisateurs ne voient
+pas), le vocabulaire caché `sdl2` des lecteurs ABC de l'esp32 et du
+pico, et le `also sdl2 definitions` de common/abc.fs (son test simule un
+vocabulaire `sdl2`). Les chargeurs des compléments ont eu aussi des noms
+neutres, puisque sur les cartes et le web ils ne font que choisir `gfx`:
+`gfx-image`, `gfx-font`, `gfx-sound` (anciens noms `sdl2-image`,
+`sdl2-ttf`, `sdl2-mixer` gardés; pas de `gfx-font` sur le web, qui n'a
+pas de mots de texte); le tableau « Noms » de GFX.md dit ce que fait
+chacun et où. Encore ouvert: `graphic` et `gfx` ne font qu'une couche en
+pratique (`graphic` charge `gfx`), la taille de l'écran ci-dessous.
 
 Ouvert, pour plus tard: où se définit la taille de l'écran. Les
 programmes supposent une taille (Space Invaders 224x240, magnoquill

@@ -25,7 +25,7 @@
 \   p                pause             esc          quit
 \   space or enter   after the end: again
 
-sdl2
+gfx
 
 ( ---- The screen and the camera ---- )
 320 constant cr-w   220 constant cr-h

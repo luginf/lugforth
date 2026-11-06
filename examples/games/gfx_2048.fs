@@ -15,7 +15,7 @@
 \ On the web the page loads 2048.fs itself first (terminal.html?run=2048.fs,gfx_2048.fs).
 [undefined] grid-init [if] include 2048.fs [then]
 
-sdl2
+gfx
 
 484 value w   640 value h
 24 value margin   12 value gap   100 value cell     \ the board: 4 cells of 100, 3 gaps, 2 margins

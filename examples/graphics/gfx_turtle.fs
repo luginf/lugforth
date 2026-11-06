@@ -46,7 +46,7 @@
 \ From a program of yours, end the drawing with `watch` (shows it until Esc) or run
 \ `logo` yourself after including this file (`turtle-no-run` defined: nothing starts).
 
-sdl2
+gfx
 
 [undefined] fold-case [if]   ( the web build has no such word )
 : fold-case ( c -- c ) dup 65 >= over 90 <= and if 32 + then ;

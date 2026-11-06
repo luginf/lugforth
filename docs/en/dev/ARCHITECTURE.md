@@ -13,7 +13,7 @@ minimalist C kernel. It targets multiple platforms: POSIX/Linux, ESP32
 `forth` vocabulary and the other Linux/web vocabularies, with stack
 effects and descriptions where known (`tools/words_reference.py`, run it
 again after adding words). SDL2 words have their own reference,
-[docs/en/SDL2-words.md](../SDL2-words.md).
+[docs/en/GFX-words.md](../GFX-words.md).
 
 ## Build System
 

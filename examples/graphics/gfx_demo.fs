@@ -20,7 +20,7 @@
 \   esc     quits (or close the window)
 \ Needs libSDL2 (sudo apt install libsdl2-2.0-0).
 
-sdl2
+gfx
 
 320 value w   240 value h
 w 2 / value px   h 2 / value py       ( the square )

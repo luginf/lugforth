@@ -113,3 +113,4 @@ JSWORD: tune-playing? { -- f }
 previous previous
   | evaluate ;
 previous
+: gfx-abc ( -- ) sdl2-abc ;   \ the same, under the name of gfx

@@ -21,8 +21,8 @@
 \   Esc                 quit
 \ Needs libSDL2 and libSDL2_ttf, and a TrueType font (see font-file below).
 
-sdl2
-sdl2-ttf
+gfx
+gfx-font
 
 vocabulary fm   also fm definitions   ( the words of the file manager and of the desktop, out of the way of the programs they start )
 

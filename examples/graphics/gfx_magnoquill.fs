@@ -1,6 +1,6 @@
 #! /usr/bin/env lugforth
 
-\ Magnoquill Driftflare Quiverbloom, with the sdl2 words of Lugforth.
+\ Magnoquill Driftflare Quiverbloom, with the gfx words of Lugforth.
 \ Ported from the gforth + SDL2 version, itself a port of the TIC-80 cart and of the
 \ shader https://github.com/Rage997/Magnoquill-Driftflare-Quiverbloom
 \ (a point cloud driven by a few sines, in rainbow colors, additive blending).
@@ -18,10 +18,10 @@
 \ Additive blending needs the SDL2 renderer of the POSIX build, the other
 \ boots draw with the normal blending.
 \
-\ Case is ignored: no word here shares its name with a sdl2 word (frame,
+\ Case is ignored: no word here shares its name with a gfx word (frame,
 \ dot...), the names of the shader's variables got an f in front.
 
-sdl2
+gfx
 
 800 constant win-w   800 constant win-h
 variable pct   100 pct !           \ the window is win-w * pct / 100: smaller on a screen under 800 lines
