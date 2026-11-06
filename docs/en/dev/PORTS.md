@@ -538,7 +538,7 @@ and autoexec includes the main file and says bye. The files are found by
 the name `open-file` gets (lower case, `/`, no `./`), the list is
 built by a text scan of the sources, not by running them.
 
-Test: `make -C ports/dos test` (tools/dos_test.py, 45 checks): DOSBox
+Test: `make -C ports/dos test` (tools/dos_test.py, 47 checks): DOSBox
 0.74 without a window, `lugforth < in.txt > out.txt`, then DOSBox in a
 window of Xvfb typed into with xdotool, the screen read back by the word
 `screen-char`, two beeps recorded by DOSBox itself (Ctrl+F6 writes a wav
@@ -561,16 +561,24 @@ no Sound Blaster 16 answers, or after `snd-speaker`; mixer.h got
 pump. DOSBox records the switched-off speaker as a constant level, not
 zero: the test finds the sound where the samples move, and measures the
 middle of each note with 0.1 s of slack (the speaker is timed by the
-emulated CPU, the recording by the mixer). VGA 13h (video.h,
-`vga13_*`): when no VESA mode of 32 or 16 bits holds the screen at zoom
-1, or after `-1 vga13`; a copy in RAM of the program's size, shrunk at
-each flip into 320x200 (nearest pixel, proportions kept), palette 3-3-2
-(dark blues turn black). Next: a bootable image (FreeDOS kernel and
-FreeCOM, GPL, to fetch and credit). Not planned (2026-11-06): `graphic`,
-which would need a graphical console; the prompt stays in text mode.
-The mouse is not tested (DOSBox's moves with the X pointer, not
-tried). Not tried on a real PC, FreeDOS or
-Windows 9x.
+emulated CPU, the recording by the mixer). VGA 13h (video.h, `vga13_*`):
+when no VESA mode of 32 or 16 bits holds the screen at zoom 1, or after
+`-1 vga13`; a copy in RAM of the program's size, shrunk at each flip
+into 320x200 (nearest pixel, proportions kept), palette 3-3-2 (dark
+blues turn black). `make bootimage` (2026-11-06): our MBR code
+(ports/dos/mbr.S, 177 bytes, LBA else CHS), the FreeDOS kernel 2043
+(fetched, SHA-256 checked, not in the repo), its FAT16 boot sector made
+by its SYS in DOSBox-X
+(`sys c:\ d: c:\bs.bin /BOOTONLY /OEM:FD /FORCE:BIOSDRV`: DOSBox 0.74
+refuses, "Sector size is not 512 but 0"; sys.com is packed, its boot
+sectors cannot be read out of it), a CONFIG.SYS with
+`INSTALL=C:\HDPMI32.EXE -r` and `SHELL=C:\LUGFORTH.EXE` (no COMMAND.COM
+needed). Tested in QEMU (SeaBIOS): the prompt shows, autoexec.fs runs.
+Trap met in the test: `>r` typed outside a definition (in autoexec.fs)
+does not keep the value; use a `value`. Not planned (2026-11-06):
+`graphic`, which would need a graphical console; the prompt stays in
+text mode. The mouse is not tested (DOSBox's moves with the X pointer,
+not tried). Not tried on a real PC, FreeDOS or Windows 9x.
 
 ## The bare-metal disk and the USB stick
 

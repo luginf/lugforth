@@ -592,7 +592,7 @@ principal puis dit bye. Les fichiers sont trouvés par le nom que reçoit
 `open-file` (minuscules, `/`, sans `./`) ; la liste vient d'un balayage
 du texte des sources, pas de leur exécution.
 
-Test: `make -C ports/dos test` (tools/dos_test.py, 45 vérifications):
+Test: `make -C ports/dos test` (tools/dos_test.py, 47 vérifications):
 DOSBox 0.74 sans fenêtre, `lugforth < in.txt > out.txt`, puis DOSBox
 dans une fenêtre de Xvfb où xdotool tape, l'écran relu par le mot
 `screen-char`, deux bips enregistrés par DOSBox lui-même (Ctrl+F6 écrit
@@ -609,24 +609,33 @@ Fait le 2026-11-06: `make image` (tools/dos_image.py: MBR + une
 partition FAT16 de 32 Mo faite avec mtools, `mformat -i img@@offset`;
 DOSBox 0.74 demande `imgmount -size 512,63,16,65`, DOSBox-X lit le MBR;
 le test y lance Lugforth). Le haut-parleur du PC (sb16.h, `spk_*`):
-utilisé quand aucune Sound Blaster 16 ne répond, ou après
-`snd-speaker`; mixer.h a gagné `snd_skip` (le mélangeur avancé de n
-trames sans calculer ses échantillons) et `snd_tone` (le son unique à
-jouer); le son ne change qu'à chaque `snd_pump`, et un son lancé après
-un silence compte depuis le premier pompage. DOSBox enregistre le
-haut-parleur éteint comme un niveau constant, pas zéro: le test cherche
-le son là où les échantillons bougent, et mesure le milieu de chaque
-note avec 0,1 s de marge (le haut-parleur suit le temps du processeur
-émulé, l'enregistrement celui du mélangeur). VGA 13h (video.h,
-`vga13_*`): quand aucun mode VESA de 32 ou 16 bits ne contient l'écran
-au zoom 1, ou après `-1 vga13`; une copie en RAM à la taille du
-programme, réduite à chaque flip dans le 320x200 (pixel le plus proche,
-proportions gardées), palette 3-3-2 (les bleus foncés deviennent noirs).
-Suite: une image qui démarre (noyau FreeDOS et FreeCOM, GPL, à
-télécharger et à créditer). Pas prévu (2026-11-06): `graphic`, qui
-demanderait une console graphique; l'invite reste en mode texte. La
-souris n'est pas testée (celle de DOSBox suit le pointeur X, pas
-essayé). Pas essayé sur un vrai PC, FreeDOS ni Windows 9x.
+utilisé quand aucune Sound Blaster 16 ne répond, ou après `snd-speaker`;
+mixer.h a gagné `snd_skip` (le mélangeur avancé de n trames sans
+calculer ses échantillons) et `snd_tone` (le son unique à jouer); le son
+ne change qu'à chaque `snd_pump`, et un son lancé après un silence
+compte depuis le premier pompage. DOSBox enregistre le haut-parleur
+éteint comme un niveau constant, pas zéro: le test cherche le son là où
+les échantillons bougent, et mesure le milieu de chaque note avec 0,1 s
+de marge (le haut-parleur suit le temps du processeur émulé,
+l'enregistrement celui du mélangeur). VGA 13h (video.h, `vga13_*`):
+quand aucun mode VESA de 32 ou 16 bits ne contient l'écran au zoom 1, ou
+après `-1 vga13`; une copie en RAM à la taille du programme, réduite à
+chaque flip dans le 320x200 (pixel le plus proche, proportions gardées),
+palette 3-3-2 (les bleus foncés deviennent noirs). `make bootimage`
+(2026-11-06): notre code de MBR (ports/dos/mbr.S, 177 octets, LBA sinon
+CHS), le noyau FreeDOS 2043 (téléchargé, SHA-256 vérifié, pas dans le
+dépôt), son secteur de démarrage FAT16 fait par son SYS dans DOSBox-X
+(`sys c:\ d: c:\bs.bin /BOOTONLY /OEM:FD /FORCE:BIOSDRV`: DOSBox 0.74
+refuse, « Sector size is not 512 but 0 »; sys.com est compressé, ses
+secteurs de démarrage ne s'en extraient pas), un CONFIG.SYS avec
+`INSTALL=C:\HDPMI32.EXE -r` et `SHELL=C:\LUGFORTH.EXE` (pas besoin de
+COMMAND.COM). Testé dans QEMU (SeaBIOS): l'invite s'affiche, autoexec.fs
+s'exécute. Piège rencontré dans le test: `>r` tapé hors d'une définition
+(dans autoexec.fs) ne garde pas la valeur; prendre une `value`. Pas
+prévu (2026-11-06): `graphic`, qui demanderait une console graphique;
+l'invite reste en mode texte. La souris n'est pas testée (celle de
+DOSBox suit le pointeur X, pas essayé). Pas essayé sur un vrai PC,
+FreeDOS ni Windows 9x.
 
 ## Le disque en matériel nu et la clé USB
 

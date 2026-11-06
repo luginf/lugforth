@@ -26,7 +26,8 @@ make -C ports/dos hdpmi              # out/dos/HDPMI32.EXE, the DPMI host (see b
 make -C ports/dos stage              # out/dos/disk: what to copy on a DOS disk
 make -C ports/dos run                # DOSBox on out/dos/disk, in a window
 make -C ports/dos image              # out/dos/lugforth.img: the same on a hard disk image (below)
-make -C ports/dos test               # 45 checks in DOSBox (tools/dos_test.py)
+make -C ports/dos bootimage          # out/dos/lugforth-boot.img: the same, starting by itself (FreeDOS)
+make -C ports/dos test               # 47 checks in DOSBox and QEMU (tools/dos_test.py)
 DOSBOX=dosbox-x python3 tools/dos_test.py out/dos             # the same in DOSBox-X
 DOSBOX=dosbox-x DOS_LFN=1 python3 tools/dos_test.py out/dos   # DOS 7.1 with long names
 ```
@@ -42,7 +43,8 @@ nothing: then `files.h` tries a path that does not exist again cut to
 8.3, so the same folder works, and real long names work too.
 
 `make test` needs `dosbox` (apt). Three checks mount the disk image of
-`make image` (mtools needed, else skipped). Its last thirteen checks
+`make image` (mtools needed, else skipped), two start the image of
+`make bootimage` in QEMU (skipped without it). Its last thirteen checks
 drive DOSBox in a window of a virtual display with `xdotool` (`Xvfb`,
 `xdotool` and ImageMagick installed; without them they are skipped): the
 text screen read back by the word `screen-char`, `ed` and `writhdeck`,
@@ -67,6 +69,28 @@ QEMU:      qemu-system-i386 -hda freedos.img -hdb out/dos/lugforth.img
 On a real PC, copy it with `dd` to a CompactFlash or SD card in an IDE
 adapter. The test (`make test`) mounts it in DOSBox and runs Lugforth
 from it.
+
+`make -C ports/dos bootimage` makes `out/dos/lugforth-boot.img`, which
+starts by itself, straight on the Lugforth prompt:
+
+- the MBR holds a small boot code of ours (`ports/dos/mbr.S`, its bytes
+  in `tools/dos_image.py`) that loads the active partition;
+- the partition holds the FreeDOS kernel (KERNEL.SYS, GPL 2,
+  <https://github.com/FDOS/kernel>, fetched from its release 2043 by
+  `make freedos` and checked against its SHA-256, not kept in the
+  repository) and its boot sector, made by FreeDOS's own SYS run in
+  DOSBox-X on the image (so `dosbox-x` is needed);
+- `CONFIG.SYS` loads HDPMI32 (`INSTALL=`) and takes LUGFORTH.EXE as the
+  shell (`SHELL=`): there is no COMMAND.COM, and `bye` starts Lugforth
+  again.
+
+```
+qemu-system-i386 -m 64 -drive file=out/dos/lugforth-boot.img,format=raw
+```
+
+The test starts it in QEMU (when `make freedos` was run, and with
+`qemu-system-i386` and `dosbox-x`) and checks that Lugforth ran its
+`autoexec.fs`. Not tried on a real PC.
 
 ## Run
 
@@ -164,6 +188,5 @@ bundled files are read-only; the sources are recompiled at each start.
 
 ## Not yet
 
-- A bootable image (with FreeDOS): `make image` holds no DOS.
 - Tried in DOSBox 0.74 and DOSBox-X 2024.03 (with and without long
   names); not on a real PC, FreeDOS or Windows 9x.
