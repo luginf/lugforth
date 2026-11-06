@@ -366,7 +366,8 @@ JSWORD: dot { x y }
   var S = context.sdl;
   if (S.need()) { S.ctx.fillRect(x, y, 1, 1); }
 ~
-: plot ( x y -- ) dot ;   \ alias of dot, the usual Forth name
+0 value line-x   0 value line-y   ( where lineto starts: the end of the last line or plot )
+: plot ( x y -- ) 2dup to line-y to line-x dot ;   \ dot, and lineto starts there
 JSWORD: line { x1 y1 x2 y2 }
   var S = context.sdl;
   if (!S.need()) { return; }
@@ -381,6 +382,9 @@ JSWORD: line { x1 y1 x2 y2 }
     if (e2 <= dx) { err += dx; y1 += sy; }
   }
 ~
+: line ( x1 y1 x2 y2 -- ) 2dup to line-y to line-x line ;
+: lineto ( x y -- )   ( a line from the end of the last line, or the last plot )
+  line-x line-y 2swap line ;
 JSWORD: box { x y w h }
   var S = context.sdl;
   if (S.need()) { S.ctx.fillRect(x, y, w, h); }
@@ -431,6 +435,37 @@ JSWORD: pixel@ { x y -- rgb }
   if (!S.open) { return 0; }
   var d = S.ctx.getImageData(x, y, 1, 1).data;
   return (d[0] << 16) + (d[1] << 8) + d[2];
+~
+( paint: the canvas read once, then filled by runs with the pen, as common/flood.fs )
+JSWORD: paint { x y }
+  var S = context.sdl;
+  if (!S.need()) { return; }
+  var w = S.w, h = S.h;
+  if (x < 0) { return; }   // no bar character in this file: it sits in a string that one ends
+  if (y < 0) { return; }
+  if (x >= w) { return; }
+  if (y >= h) { return; }
+  var d = S.ctx.getImageData(0, 0, w, h).data;
+  var at = function (i) { return (d[i * 4] << 16) + (d[i * 4 + 1] << 8) + d[i * 4 + 2]; };
+  var t = at(y * w + x), seen = new Uint8Array(w * h), st = [x, y];
+  var ok = function (px, py) { var i = py * w + px; return !seen[i] && at(i) === t; };
+  while (st.length) {
+    var py = st.pop(), px = st.pop();
+    if (!ok(px, py)) { continue; }
+    var l = px, r = px;
+    while (l > 0 && ok(l - 1, py)) { l--; }
+    while (r < w - 1 && ok(r + 1, py)) { r++; }
+    for (var k = l; k <= r; k++) { seen[py * w + k] = 1; }
+    S.ctx.fillRect(l, py, r - l + 1, 1);
+    for (var dy = -1; dy <= 1; dy += 2) {
+      var ny = py + dy, inrun = false;
+      if (ny < 0) { continue; }
+      if (ny >= h) { continue; }
+      for (var k2 = l; k2 <= r; k2++) {
+        if (ok(k2, ny)) { if (!inrun) { st.push(k2, ny); inrun = true; } } else { inrun = false; }
+      }
+    }
+  }
 ~
 
 ( ---- Timing: flip waits for the next animation frame ---- )
@@ -793,6 +828,8 @@ sdl2 definitions
 : box graphic s" box" evaluate ;
 : dot graphic s" dot" evaluate ;
 : plot graphic s" plot" evaluate ;
+: lineto graphic s" lineto" evaluate ;
+: paint graphic s" paint" evaluate ;
 : hline graphic s" hline" evaluate ;
 : frame graphic s" frame" evaluate ;
 : disc graphic s" disc" evaluate ;

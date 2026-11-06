@@ -732,7 +732,26 @@ ran as code: STACK UNDERFLOW at load); two `{ }` in one definition
 break; the web build has no `fold-case`. Still to borrow: bresenham, the
 CYOA (choose your own adventure, also in French), glitch patterns. Trap
 met: `fdup f>s s>f f< if` left a wrong value here; round with
-`fdup f0< if 0.5e f- else 0.5e f+ then f>s`.
+`fdup f0< if 0.5e f- else 0.5e f+ then f>s`. Added 2026-11-06, after
+DurexForth: `back`, `moveto ( x y deg -- )`, `turtle@` / `turtle!`
+(the three float cells copied as they are, so a branch comes back
+exactly) and the drawing `tree`. Trap met in `tree`: after `turtle@`
+the three cells are on top, so a `dup` of the length takes the heading
+instead: keep the length in a local.
+
+`paint` and `lineto` (2026-11-06): `lineto ( x y -- )` draws from
+`line-x line-y`, set by `line`, `lineto` and `plot`, in each sdl2.fs
+(posix, web, baremetal). `paint ( x y -- )` is common/flood.fs (loaded
+by phase_desktop.fs and the efi, rpi and dos boots): the scanline
+algorithm, a bitmap of the filled pixels (so filling with the color
+already there ends), a stack of 16384 runs allocated for the call
+(past it, a part is left unfilled), the picture read through the
+deferred `flood-get` and filled through `flood-span`. POSIX reads the
+screen once with `SDL_RenderReadPixels`, the boards read `fb-pixel`,
+the web does it all in JavaScript (one `getImageData`). Tested:
+`ports/posix/sdl2_tests.fs` (test-paint, test-lineto), the EFI QEMU test
+(3 checks), the web console in headless Chromium by hand. Trap met while
+testing: `hex` before the coordinates read them in hexadecimal.
 
 ## Drawing at the prompt (`graphic`) - done 2026-10-20
 

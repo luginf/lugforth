@@ -202,9 +202,13 @@ create ink-table
 
 : cls ( -- ) renderer SDL_RenderClear drop ;
 : dot ( x y -- ) renderer -rot SDL_RenderDrawPoint drop ;
-: plot ( x y -- ) dot ;   \ alias of dot, the usual Forth name
+0 value line-x   0 value line-y   ( where lineto starts: the end of the last line or plot )
+: plot ( x y -- ) 2dup to line-y to line-x dot ;   \ dot, and lineto starts there
 : line ( x1 y1 x2 y2 -- )
   { x1 y1 x2 y2 } renderer x1 y1 x2 y2 SDL_RenderDrawLine drop ;
+: line ( x1 y1 x2 y2 -- ) 2dup to line-y to line-x line ;
+: lineto ( x y -- )   ( a line from the end of the last line, or the last plot )
+  line-x line-y 2swap line ;
 
 create rect 4 cells allot   ( SDL_Rect: int x, y, w, h )
 : rect-at! ( x y w h a -- ) { a } a 12 + l!  a 8 + l!  a 4 + l!  a l! ;
@@ -246,6 +250,18 @@ create px 4 allot
 : pixel@ ( x y -- $rrggbb ) ( read back one pixel of the screen )
   1 1 rect!  renderer rect SDL_PIXELFORMAT_ARGB8888 px 4 SDL_RenderReadPixels ?sdl
   px ul@ $ffffff and ;
+\ paint reads the screen once (as pixel@: one pixel of the window for one of
+\ the screen, so not under zoom or in a window resized), then fills it by runs.
+0 value paint-buf
+: paint-get ( x y -- $rrggbb ) width * + 4 * paint-buf + ul@ $ffffff and ;
+also internals
+: paint ( x y -- )   ( fills with the pen the area of the color found at x y )
+  width height * 4 * allocate throw to paint-buf
+  0 0 width height rect!
+  renderer rect SDL_PIXELFORMAT_ARGB8888 paint-buf width 4 * SDL_RenderReadPixels ?sdl
+  ['] paint-get is flood-get  ['] hline is flood-span
+  width height ['] flood-fill catch  paint-buf free drop  throw ;
+previous
 
 ( ---- Files: a name is also looked for beside the program ---- )
 : base-name ( a n -- a' n' )   ( a file name without its directories )

@@ -54,7 +54,7 @@ Lancez `lugforth` (voir [Binaires](#binaires), ou compilez-le avec
 `ninja posix`). Vous obtenez une bannière et l'invite:
 
 ```
-Lugforth v2026.11.5.7
+Lugforth v2026.11.6.2
 :; ===========>/>
 type 'info' for help
  ok
@@ -729,20 +729,22 @@ bits: le dessin apparaît aussitôt, sous le texte, sans `screen` ni
     red color 200 100 50 30 box
     5 ink 320 240 60 circle \ une couleur par son numéro
     cls \ efface le dessin, `page` efface le texte
+    10 10 plot 100 10 lineto 100 80 lineto \ lineto repart du dernier point
+    white color 300 300 80 60 frame  green color 320 320 paint \ remplit
 
 La zone de dessin fait 640x480 par défaut, quelle que soit la taille de
 la console; `w h graphic-size` la change (plus elle est grande, plus
 c'est fin: `1280 960 graphic-size` sur une console de 1280x960 donne un
 pixel de dessin par pixel d'écran, et sur le bureau
 `1024 640 graphic-size` remplit une fenêtre de cette taille); `dot`,
-`line`, `box`, `frame`, `disc`, `circle` (et `text` sur les cartes) sont
-ceux des mots `sdl2`. `ink` prend 0 noir, 1 rouge, 2 vert, 3 jaune, 4
-bleu, 5 magenta, 6 cyan, 7 blanc, 8 à 15 gris, orange, rose, marron,
-violet et couleurs claires; `$rrggbb color` et `r g b rgb` donnent
-n'importe quelle autre. Fonctionne dans la fenêtre console
-(`lugforth --gui`, et l'application Android) et sur les écrans du Pi et
-du PC. Un programme qui ouvre son propre `screen` remplace la couche.
-Dans un terminal il n'y a pas de fenêtre: `graphic` le dit.
+`line`, `lineto`, `box`, `frame`, `disc`, `circle`, `paint` (et `text`
+sur les cartes) sont ceux des mots `sdl2`. `ink` prend 0 noir, 1 rouge,
+2 vert, 3 jaune, 4 bleu, 5 magenta, 6 cyan, 7 blanc, 8 à 15 gris,
+orange, rose, marron, violet et couleurs claires; `$rrggbb color` et
+`r g b rgb` donnent n'importe quelle autre. Fonctionne dans la fenêtre
+console (`lugforth --gui`, et l'application Android) et sur les écrans
+du Pi et du PC. Un programme qui ouvre son propre `screen` remplace la
+couche. Dans un terminal il n'y a pas de fenêtre: `graphic` le dit.
 
 ## Le son à l'invite
 
@@ -842,6 +844,9 @@ de l'application Android et sur le Pi et le PC en matériel nu
   `included`, `s"`, `z"`, `r|` et `r~` il complète plutôt les noms de
   fichiers (pas sur le web).
 * L'entrée redirigée et les autres ports utilisent le simple `accept`.
+  Sous POSIX, la fin d'une entrée redirigée (ou d'un fichier donné avec
+  `<`) termine la session comme `bye`, après la dernière ligne, même
+  sans retour à la ligne.
 
 ## Pagineur
 

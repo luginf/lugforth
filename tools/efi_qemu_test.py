@@ -423,6 +423,15 @@ def games(b):
   b.run('cls')
   scr = shot()
   check('graphic: cls clears the drawing', pixel(scr, 150, 350), pixel(scr, 150, 350) == '000000')
+  b.run('white color 300 300 100 80 frame  red color 350 340 paint')
+  b.run('white color 450 320 plot 550 320 lineto 550 380 lineto')
+  scr = shot()
+  check('graphic: paint fills inside the frame', pixel(scr, 350, 340), pixel(scr, 350, 340) == 'ff0000')
+  check('graphic: paint stops at the frame', (pixel(scr, 300, 340), pixel(scr, 250, 340)),
+        pixel(scr, 300, 340) == 'ffffff' and pixel(scr, 250, 340) == '000000')
+  check('graphic: lineto goes on from the last point', (pixel(scr, 500, 320), pixel(scr, 550, 350)),
+        pixel(scr, 500, 320) == 'ffffff' and pixel(scr, 550, 350) == 'ffffff')
+  b.run('cls')
   b.run('2 console-zoom')
   b.region = (1280, 960)
   b.run('white color 10 10 20 20 box')

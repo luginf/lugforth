@@ -134,7 +134,12 @@ $800 $4 os constant O_NONBLOCK
 
 ( Hookup I/O )
 : stdout-write ( a n -- ) stdout -rot write drop ;
-: stdin-key ( -- n ) 0 >r stdin rp@ 1 read 0= if rdrop -1 exit then r> ;
+( The end of an input that is not a terminal, a pipe or a file given with <, is
+  the end of the session, as bye: else accept waits for its newline forever.
+  A newline first, so that a last line without one is still read. )
+variable stdin-ended
+: stdin-end ( -- n ) stdin-ended @ if bye then  -1 stdin-ended !  10 ;
+: stdin-key ( -- n ) 0 >r stdin rp@ 1 read 0= if rdrop stdin isatty 0= if stdin-end exit then -1 exit then r> ;
 
 also forth definitions
 : default-type stdout-write ;

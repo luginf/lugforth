@@ -67,8 +67,9 @@ Word lists: [alphabetical index](#alphabetical-index).
 | Word | Stack | What it does |
 |------|-------|--------------|
 | `cls` | `( -- )` | Fill the whole screen with the current color. |
-| `dot` | `( x y -- )` | Draw one pixel. Also named `plot` (see [Aliases](#aliases)). |
+| `dot` | `( x y -- )` | Draw one pixel. `plot` does the same and is where the next `lineto` starts. |
 | `line` | `( x1 y1 x2 y2 -- )` | Draw a line, both ends included. |
+| `lineto` | `( x y -- )` | A line from the end of the last `line`, `lineto` or `plot` to x y: `10 10 plot 50 10 lineto 50 50 lineto`. The point is in `line-x` and `line-y`. |
 | `box` | `( x y w h -- )` | Filled rectangle. |
 | `frame` | `( x y w h -- )` | Rectangle outline. |
 | `hline` | `( x y w -- )` | Horizontal line of width w starting at x y. |
@@ -76,6 +77,7 @@ Word lists: [alphabetical index](#alphabetical-index).
 | `circle` | `( cx cy r -- )` | Circle outline of radius r. |
 | `flip` | `( -- )` | Show what was drawn since the last `flip`. Waits for vsync when available, and updates `dt`. Also tops up the sound of `drum-hit`. |
 | `pixel@` | `( x y -- $rrggbb )` | Read back one pixel of the screen. Useful for color based collisions. |
+| `paint` | `( x y -- )` | Flood fill: the area of the color found at x y, up to any other color, takes the pen color (`common/flood.fs`; on the web in JavaScript). Under SDL2 it reads the screen as `pixel@` does, so not under `zoom` or in a resized window. |
 
 ### Timing
 
@@ -521,7 +523,7 @@ other words is `docs/en/WORDS.md` (see `docs/en/dev/PITFALLS.md`,
 
 | Alias | Same as | Why |
 |-------|---------|-----|
-| `plot` | `dot` `( x y -- )` | Forth and BASIC programs say `plot` for one pixel. |
+| `plot` | `dot` `( x y -- )` | Forth and BASIC programs say `plot` for one pixel; it also sets where `lineto` starts. |
 
 ## Alphabetical index
 
@@ -536,13 +538,13 @@ other words is `docs/en/WORDS.md` (see `docs/en/dev/PITFALLS.md`,
 `IMG_LoadTexture` `ink` `key-backspace` `key-down` `key-enter` `key-esc`
 `key-hit` `key-hold` `key-left` `key-right` `key-space` `key-tab`
 `key-times` `key-up` `key-within` `last-key` `latency` `LEFT-BUTTON`
-`line` `load-font` `load-image` `load-music` `load-sound` `magenta`
+`line` `line-x` `line-y` `lineto` `load-font` `load-image` `load-music` `load-sound` `magenta`
 `MIDDLE-BUTTON` `Mix_CloseAudio` `Mix_FreeChunk` `Mix_FreeMusic`
 `Mix_HaltChannel` `Mix_HaltMusic` `Mix_LoadMUS` `Mix_LoadWAV_RW`
 `Mix_OpenAudio` `Mix_PlayChannelTimed` `Mix_Playing` `Mix_PlayingMusic`
 `Mix_PlayMusic` `Mix_SetSoundFonts` `Mix_Volume` `Mix_VolumeMusic`
 `mouse-x` `mouse-y` `music` `music-once` `music-volume` `music?` `noise`
-`one-key` `orange` `pen` `pen-a` `pen-b` `pen-g` `pen-r` `pink`
+`one-key` `orange` `paint` `pen` `pen-a` `pen-b` `pen-g` `pen-r` `pink`
 `pitch-drop` `pixel@` `play` `plot` `pressed?` `purple` `quit!` `quit?`
 `red` `render-hook` `renderer` `rgb` `rgba` `RIGHT-BUTTON` `sample-rate`
 `saw` `scan?` `screen` `screen-open?` `sdl` `sdl-error` `sdl-shutdown`

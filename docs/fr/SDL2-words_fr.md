@@ -72,8 +72,9 @@ Listes de mots: [index alphabétique](#index-alphabétique).
 | Mot | Pile | Ce qu'il fait |
 |------|-------|--------------|
 | `cls` | `( -- )` | Remplit tout l'écran avec la couleur courante. |
-| `dot` | `( x y -- )` | Dessine un pixel. S'appelle aussi `plot` (voir [Alias](#alias)). |
+| `dot` | `( x y -- )` | Dessine un pixel. `plot` fait de même, et c'est de là que part le `lineto` suivant. |
 | `line` | `( x1 y1 x2 y2 -- )` | Dessine une ligne, les deux extrémités comprises. |
+| `lineto` | `( x y -- )` | Une ligne depuis la fin du dernier `line`, `lineto` ou `plot` jusqu'à x y : `10 10 plot 50 10 lineto 50 50 lineto`. Le point est dans `line-x` et `line-y`. |
 | `box` | `( x y w h -- )` | Rectangle plein. |
 | `frame` | `( x y w h -- )` | Contour de rectangle. |
 | `hline` | `( x y w -- )` | Ligne horizontale de largeur w à partir de x y. |
@@ -81,6 +82,7 @@ Listes de mots: [index alphabétique](#index-alphabétique).
 | `circle` | `( cx cy r -- )` | Contour de cercle de rayon r. |
 | `flip` | `( -- )` | Montre ce qui a été dessiné depuis le dernier `flip`. Attend la synchro verticale quand elle existe, et met à jour `dt`. Complète aussi le son de `drum-hit`. |
 | `pixel@` | `( x y -- $rrggbb )` | Relit un pixel de l'écran. Utile pour les collisions par la couleur. |
+| `paint` | `( x y -- )` | Remplissage : la zone de la couleur trouvée en x y, jusqu'à toute autre couleur, prend la couleur du crayon (`common/flood.fs` ; sur le web en JavaScript). Sous SDL2 il relit l'écran comme `pixel@`, donc pas sous `zoom` ni dans une fenêtre redimensionnée. |
 
 ### Temps
 
@@ -530,7 +532,7 @@ Adding words »).
 
 | Alias | Pareil que | Pourquoi |
 |-------|---------|-----|
-| `plot` | `dot` `( x y -- )` | Les programmes Forth et BASIC disent `plot` pour un pixel. |
+| `plot` | `dot` `( x y -- )` | Les programmes Forth et BASIC disent `plot` pour un pixel ; il fixe aussi le départ de `lineto`. |
 
 ## Index alphabétique
 
@@ -545,13 +547,13 @@ Adding words »).
 `IMG_LoadTexture` `ink` `key-backspace` `key-down` `key-enter` `key-esc`
 `key-hit` `key-hold` `key-left` `key-right` `key-space` `key-tab`
 `key-times` `key-up` `key-within` `last-key` `latency` `LEFT-BUTTON`
-`line` `load-font` `load-image` `load-music` `load-sound` `magenta`
+`line` `line-x` `line-y` `lineto` `load-font` `load-image` `load-music` `load-sound` `magenta`
 `MIDDLE-BUTTON` `Mix_CloseAudio` `Mix_FreeChunk` `Mix_FreeMusic`
 `Mix_HaltChannel` `Mix_HaltMusic` `Mix_LoadMUS` `Mix_LoadWAV_RW`
 `Mix_OpenAudio` `Mix_PlayChannelTimed` `Mix_Playing` `Mix_PlayingMusic`
 `Mix_PlayMusic` `Mix_SetSoundFonts` `Mix_Volume` `Mix_VolumeMusic`
 `mouse-x` `mouse-y` `music` `music-once` `music-volume` `music?` `noise`
-`one-key` `orange` `pen` `pen-a` `pen-b` `pen-g` `pen-r` `pink`
+`one-key` `orange` `paint` `pen` `pen-a` `pen-b` `pen-g` `pen-r` `pink`
 `pitch-drop` `pixel@` `play` `plot` `pressed?` `purple` `quit!` `quit?`
 `red` `render-hook` `renderer` `rgb` `rgba` `RIGHT-BUTTON` `sample-rate`
 `saw` `scan?` `screen` `screen-open?` `sdl` `sdl-error` `sdl-shutdown`

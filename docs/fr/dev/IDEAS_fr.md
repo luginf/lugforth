@@ -37,11 +37,13 @@ DurexForth (https://github.com/jkotlinski/durexforth, C64; manuel
 https://jkotlinski.github.io/durexforth/, lu le 2026-10-20, licence non
 vérifiée avant d'emprunter du code: écrire le nôtre) suggère, pour
 `graphic` et `play`:
-- dessin: `paint ( x y -- )` remplissage, `plot`, `peek`, `pen` en mode
-  inverse (XOR), `line` depuis le dernier point;
-- tortue (examples/graphics/gfx_turtle.fs): `back`, `turtle@` /
-  `turtle!` (sauvegarde et restauration de l'état, pour les fractales
-  récursives), `moveto ( x y deg -- )`;
+- dessin: `pen` en mode inverse (XOR). Fait le 2026-11-06: `paint
+  ( x y -- )` remplissage (common/flood.fs, le web en JavaScript),
+  `lineto ( x y -- )` la ligne depuis le dernier point; `plot` était
+  déjà un alias de `dot`, et `peek` est notre `pixel@`;
+- tortue: fait le 2026-11-06 dans examples/graphics/gfx_turtle.fs,
+  `back`, `turtle@` / `turtle!` (l'état sauvé et rendu exactement,
+  `tree` s'en sert), `moveto ( x y deg -- )`;
 - son: `voice! note! cutoff! filter!` à la SID (l'enveloppe ADSR,
   `adsr`, et les voix de `play`, séparées par des virgules, sont faites
   depuis 7.0.11.11);

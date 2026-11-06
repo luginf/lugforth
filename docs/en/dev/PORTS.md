@@ -98,7 +98,7 @@ platform.fs (azerty, console-zoom, keys).
 
 `make -C ports/efi test` builds out/efi/BOOTX64.EFI (gcc + gnu-efi) and
 boots it under QEMU q35 + OVMF from a USB stick image (MBR + FAT32,
-tools/baremetal_mkdisk.py), 129 checks (tools/efi_qemu_test.py, which
+tools/baremetal_mkdisk.py), 132 checks (tools/efi_qemu_test.py, which
 reuses baremetal_qemu_test.py). Needs
 `gnu-efi ovmf qemu-system-x86 dosfstools mtools`. Stays in boot
 services: GOP screen, ConIn keyboard (no releases: a key is held 120 ms
@@ -538,7 +538,7 @@ and autoexec includes the main file and says bye. The files are found by
 the name `open-file` gets (lower case, `/`, no `./`), the list is
 built by a text scan of the sources, not by running them.
 
-Test: `make -C ports/dos test` (tools/dos_test.py, 40 checks): DOSBox
+Test: `make -C ports/dos test` (tools/dos_test.py, 45 checks): DOSBox
 0.74 without a window, `lugforth < in.txt > out.txt`, then DOSBox in a
 window of Xvfb typed into with xdotool, the screen read back by the word
 `screen-char`, two beeps recorded by DOSBox itself (Ctrl+F6 writes a wav
@@ -550,9 +550,26 @@ stops without a sound device. DOSBox has no DPMI host: `make hdpmi` downloads HD
 home of CWSDPMI, is not reachable from the cloud sessions). The files
 DOSBox creates have capital names on the Linux side.
 
-Next: a disk or floppy image of out/dos/disk; VGA 13h and the PC
-speaker for older machines; `graphic`. The mouse is not tested (DOSBox's moves
-with the X pointer, not tried). Not tried on a real PC, FreeDOS or
+Done 2026-11-06: `make image` (tools/dos_image.py: MBR + one FAT16
+partition of 32 MB made with mtools, `mformat -i img@@offset`; DOSBox
+0.74 needs `imgmount -size 512,63,16,65`, DOSBox-X reads the MBR; the
+test runs Lugforth from it). The PC speaker (sb16.h, `spk_*`): used when
+no Sound Blaster 16 answers, or after `snd-speaker`; mixer.h got
+`snd_skip` (the mixer moved on by n frames without its samples) and
+`snd_tone` (the one tone to play); the tone changes only at each
+`snd_pump`, and a sound started after a silence counts from the first
+pump. DOSBox records the switched-off speaker as a constant level, not
+zero: the test finds the sound where the samples move, and measures the
+middle of each note with 0.1 s of slack (the speaker is timed by the
+emulated CPU, the recording by the mixer). VGA 13h (video.h,
+`vga13_*`): when no VESA mode of 32 or 16 bits holds the screen at zoom
+1, or after `-1 vga13`; a copy in RAM of the program's size, shrunk at
+each flip into 320x200 (nearest pixel, proportions kept), palette 3-3-2
+(dark blues turn black). Next: a bootable image (FreeDOS kernel and
+FreeCOM, GPL, to fetch and credit). Not planned (2026-11-06): `graphic`,
+which would need a graphical console; the prompt stays in text mode.
+The mouse is not tested (DOSBox's moves with the X pointer, not
+tried). Not tried on a real PC, FreeDOS or
 Windows 9x.
 
 ## The bare-metal disk and the USB stick

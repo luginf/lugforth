@@ -111,7 +111,7 @@ create crlf 13 c, 10 c,
 """
 
 
-def wav_check(path):
+def wav_check(path, what='the Sound Blaster'):
   """The two beeps recorded by DOSBox (Ctrl+F6): 440 Hz for 300 ms, then 660 Hz."""
   import wave
   import struct
@@ -125,15 +125,61 @@ def wav_check(path):
   rate, ch = w.getframerate(), w.getnchannels()
   d = w.readframes(w.getnframes())
   x = struct.unpack('<%dh' % (len(d) // 2), d)[::ch]
-  segs = [(a, b) for a, b in bt.wav_segments(x, rate) if b - a > rate * 0.05]
+  # the speaker switched off stays at a level (DOSBox records it so): the sound is where it moves
+  moving = [0] + [b - a for a, b in zip(x, x[1:])]
+  segs = [(a, b) for a, b in bt.wav_segments(moving, rate) if b - a > rate * 0.05]
   if not segs:
-    check('sound: the Sound Blaster plays', 'silence', False)
+    check('sound: %s plays' % what, 'silence', False)
     return
   a, b = segs[0]
-  m = a + int(rate * 0.3)
-  f1, f2 = bt.wav_freq(x, a + 500, m - 500, rate), bt.wav_freq(x, m + 500, b - 500, rate)
-  check('sound: beep 440 Hz then 660 Hz on the Sound Blaster (%.0f, %.0f Hz, %.2f s)' % (f1, f2, (b - a) / rate),
-        segs, abs(f1 - 440) < 5 and abs(f2 - 660) < 5 and abs((b - a) / rate - 0.6) < 0.02)
+  if what == 'the PC speaker':
+    # the speaker changes its note at each snd_pump, and DOSBox times it apart
+    # from the recording: the middle of each half, a looser length
+    q = (b - a) // 10
+    f1, f2 = bt.wav_freq(x, a + q, a + 4 * q, rate), bt.wav_freq(x, a + 6 * q, a + 9 * q, rate)
+    slack = 0.1
+  else:
+    m = a + int(rate * 0.3)
+    f1, f2 = bt.wav_freq(x, a + 500, m - 500, rate), bt.wav_freq(x, m + 500, b - 500, rate)
+    slack = 0.02
+  check('sound: beep 440 Hz then 660 Hz on %s (%.0f, %.0f Hz, %.2f s)' % (what, f1, f2, (b - a) / rate),
+        segs, abs(f1 - 440) < 5 and abs(f2 - 660) < 5 and abs((b - a) / rate - 0.6) < slack)
+
+
+def image(disk):
+  """The hard disk image of make image (tools/dos_image.py), mounted as D: and run from it."""
+  if not shutil.which('mformat') or not shutil.which('mcopy'):
+    print('  (no mtools: the disk image is not checked)')
+    return
+  d = tempfile.mkdtemp(prefix='lugimg')
+  try:
+    img = os.path.join(d, 'lugforth.img')
+    r = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dos_image.py'),
+                        disk, img], capture_output=True, text=True)
+    m = re.search(r'size (512,\d+,\d+,\d+)', r.stdout)
+    check('make image: the disk image is made', r.stdout + r.stderr, r.returncode == 0 and m)
+    if not m:
+      return
+    host_dir = os.path.join(d, 'host')
+    os.mkdir(host_dir)
+    with open(os.path.join(host_dir, 'IN.TXT'), 'w') as f:
+      f.write('6 7 * .\r\ns" lib/editor.fs" r/o open-file nip .\r\nbye\r\n')
+    conf = os.path.join(d, 'dosbox.conf')
+    with open(conf, 'w') as f:
+      f.write('[cpu]\ncycles=max\n' + LFN)
+    mount = 'imgmount d "%s" -size %s' % (img, m.group(1))
+    if 'dosbox-x' in DOSBOX:
+      mount = 'imgmount d "%s"' % img   # DOSBox-X reads the MBR
+    env = dict(os.environ, SDL_VIDEODRIVER='dummy', SDL_AUDIODRIVER='dummy')
+    subprocess.run([DOSBOX, '-conf', conf, '-c', 'mount c "%s"' % host_dir, '-c', mount, '-c', 'd:',
+                    '-c', 'hdpmi32 -r > nul', '-c', 'lugforth < c:\\in.txt > c:\\out.txt', '-c', 'exit'],
+                   env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
+    o = host(host_dir, 'OUT.TXT')
+    out = open(o, encoding='latin-1').read().replace('\r', '') if o else ''
+    check('the disk image: lugforth runs from it', out, '\n42 ' in out or out.startswith('42 ') or '> 6 7 * .\n42' in out)
+    check('the disk image: the editors are on it (lib/editor.fs)', out, 'open-file nip .\n0 ' in out)
+  finally:
+    shutil.rmtree(d, ignore_errors=True)
 
 
 def interactive(disk):
@@ -218,6 +264,10 @@ def interactive(disk):
     key('ctrl+F6')                                           # DOSBox records its sound
     typ('sdl2 440 300 beep 660 300 beep 700 ms previous'); key('Return'); time.sleep(1.5)
     key('ctrl+F6')
+    time.sleep(1)
+    key('ctrl+F6')                                           # the same on the PC speaker
+    typ('also dos snd-speaker previous sdl2 440 300 beep 660 300 beep 700 ms previous'); key('Return'); time.sleep(1.5)
+    key('ctrl+F6')
     typ('include games/gfx_2048.fs'); key('Return'); time.sleep(4)   # 484x640: 1024x768, 16 bits in DOSBox
     tiles = shot()
     hold('Escape'); time.sleep(2)
@@ -227,6 +277,10 @@ def interactive(disk):
     moving1 = shot(); time.sleep(0.3)
     moving2 = shot()
     hold('Escape'); time.sleep(2)
+    typ('also dos -1 vga13 previous include games/gfx_breakout.fs'); key('Return'); time.sleep(4)   # 13h, 320x200
+    game13 = shot()
+    hold('Escape'); time.sleep(2)
+    typ('also dos 0 vga13 previous'); key('Return')
     typ('2 3 * .'); key('Return')
     typ('s" s2.txt" dump-screen bye'); key('Return')
     for _ in range(20):
@@ -240,11 +294,12 @@ def interactive(disk):
     b = host(d, 'e.fb')
     blk = open(b, 'rb').read()[1024:1024 + 20] if b else b''
     check('blocks-editor: the block on the disk', blk, blk == b': cube dup dup * * ;')
-    wavs = [os.path.join(cap, f) for f in os.listdir(cap) if f.lower().endswith('.wav')]
+    wavs = sorted(os.path.join(cap, f) for f in os.listdir(cap) if f.lower().endswith('.wav'))
     if 'dosbox-x' in DOSBOX:   # its shortcuts differ (F12 + ...): no recording here
       print('  skip  the beeps recorded and measured (DOSBox only)')
     else:
       wav_check(wavs[0] if wavs else os.path.join(cap, 'none.wav'))
+      wav_check(wavs[1] if len(wavs) > 1 else os.path.join(cap, 'none.wav'), 'the PC speaker')
     got = {c: count(tiles, c) for c in ('faf8ef', 'bbada0', 'edc22e')}
     check('2048 in a 16-bit VESA mode: background, board, title %r' % got, got,
           got['faf8ef'] > 3000 and got['bbada0'] > 3000 and got['edc22e'] > 300)
@@ -252,6 +307,9 @@ def interactive(disk):
     check('breakout in VESA: background, red and cyan bricks, paddle %r' % got, got,
           got['101830'] > 5000 and got['ff0000'] > 300 and got['00ffff'] > 300 and got['ffffff'] > 20)
     check('breakout: the space held launches the ball (the picture moves)', '', moving1 != moving2 and moving1 != game)
+    got = {c: count(game13, c) for c in ('ff0000', '00ffff', '000000')}   # 3-3-2: the blue background is black
+    check('breakout in VGA mode 13h (vga13): red and cyan bricks %r' % got, got,
+          got['ff0000'] > 100 and got['00ffff'] > 100 and got['000000'] > 5000)
     f = host(d, 'hello.fs')
     check('ed: a file written', f, f is not None and open(f).read().strip() == ': hi 42 . ;')
     f = host(d, 'notes.txt')
@@ -355,6 +413,7 @@ def main():
       print(out)
   finally:
     shutil.rmtree(d, ignore_errors=True)
+  image(disk)
   interactive(disk)
   print('dos: %s' % ('ALL OK' if failures == 0 else '%d FAILED' % failures))
   sys.exit(1 if failures else 0)

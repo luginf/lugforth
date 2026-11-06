@@ -19,7 +19,8 @@
 // (auto-init). As ports/efi/hda.h, no interrupt: snd_pump, called at each
 // pause and while waiting for a key, reads where the DMA is and fills the
 // ring behind it. Started at the first sound word. Without a Sound Blaster 16
-// (BLASTER missing, an older card), the sound words do nothing.
+// (BLASTER missing, an older card), or after SND-SPEAKER, the PC speaker plays
+// instead: one square tone at a time, from snd_tone() of the mixer.
 
 #include "ports/baremetal/mixer.h"
 
@@ -102,9 +103,40 @@ static void sb_init(void) {
   snd_ready = 1;
 }
 
+// The PC speaker: the PIT's channel 2 makes the square wave (1193182 Hz divided),
+// bits 0 and 1 of port 61h let it reach the speaker. snd_pump moves the mixer on
+// by the time passed (snd_skip) and plays the tone it has now; a sound started
+// after a silence counts from that moment.
+static int spk_on, spk_idle = 1;
+static uint32_t spk_freq;
+static uint64_t spk_clock;
+
+static void spk_set(uint32_t f) {
+  if (f == spk_freq) return;
+  spk_freq = f;
+  if (f < 20 || f > 20000) { outportb(0x61, inportb(0x61) & ~3); return; }
+  unsigned div = 1193182 / f;
+  outportb(0x43, 0xB6);                                     // channel 2, both bytes, square wave
+  outportb(0x42, div & 0xFF); outportb(0x42, (div >> 8) & 0xFF);
+  outportb(0x61, inportb(0x61) | 3);
+}
+
+static void spk_start(void) { spk_on = 1; spk_idle = 1; spk_freq = 0; snd_ready = 1; }
+
+static void spk_pump(void) {
+  uint64_t now = us_ticks();
+  if (spk_idle) spk_clock = now;
+  uint64_t n = (now - spk_clock) * SND_RATE / 1000000;
+  spk_clock += n * 1000000 / SND_RATE;
+  if (n) snd_skip((uint32_t) n);
+  spk_set(snd_tone());
+  spk_idle = !snd_busy() && !snd_tune_playing();
+}
+
 // As hda.h: frames counted without end, written (sb_wr) and played (sb_played).
 static void snd_pump(void) {
   if (!snd_ready) return;
+  if (spk_on) { spk_pump(); return; }
   inportb(sb_base + 0xF);                                   // acknowledge the block's interrupt (16-bit)
   unsigned pos = sb_dma_pos();
   uint64_t now = us_ticks();
@@ -128,11 +160,18 @@ static void snd_wake(void) {
   if (sb_tried || sb_off) return;
   sb_tried = 1;
   sb_init();
+  if (!snd_ready) spk_start();
+}
+
+static void sb_stop(void);
+static void snd_speaker(void) {   // SND-SPEAKER: the speaker, even with a Sound Blaster
+  sb_stop(); sb_tried = 1; sb_off = 0; spk_start();
 }
 
 static cell_t snd_ok(void) { snd_wake(); return snd_ready ? -1 : 0; }
 
 static void sb_stop(void) {                                 // at the end of the program
+  if (spk_on) { spk_set(0); spk_on = 0; snd_ready = 0; return; }
   if (!snd_ready) return;
   sb_dsp_write(0xD9);                                       // end the auto-init transfer
   outportb(0xD4, 4 | (sb_dma16 & 3));

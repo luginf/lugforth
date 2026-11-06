@@ -33,11 +33,13 @@ DurexForth (https://github.com/jkotlinski/durexforth, C64; manual
 https://jkotlinski.github.io/durexforth/, read 2026-10-20, license not
 checked before borrowing code: write our own) suggests, for `graphic`
 and `play`:
-- drawing: `paint ( x y -- )` flood fill, `plot`, `peek`, `pen` in
-  inverse (XOR) mode, `line` from the last point;
-- turtle (examples/graphics/gfx_turtle.fs): `back`, `turtle@` /
-  `turtle!` (save and restore the state, for recursive fractals),
-  `moveto ( x y deg -- )`;
+- drawing: `pen` in inverse (XOR) mode. Done 2026-11-06: `paint
+  ( x y -- )` flood fill (common/flood.fs, the web in JavaScript),
+  `lineto ( x y -- )` the line from the last point; `plot` was already
+  an alias of `dot`, and `peek` is our `pixel@`;
+- turtle: done 2026-11-06 in examples/graphics/gfx_turtle.fs, `back`,
+  `turtle@` / `turtle!` (the state saved and restored exactly, `tree`
+  uses them), `moveto ( x y deg -- )`;
 - sound: SID-like `voice! note! cutoff! filter!` (the ADSR envelope,
   `adsr`, and the voices of `play`, separated by commas, are done since
   7.0.11.11);
