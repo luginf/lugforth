@@ -153,8 +153,25 @@ names. Decided:
   2026-10-29, the `snd` vocabulary idea is dropped).
 - `graphic` (drawing at the prompt) is already half of this neutral
   layer; reconcile them.
-- The docs (`SDL2.md`, `SDL2-words.md`, `SDL2-web.md`) become graphics
+- The docs (`GFX.md`, `GFX-words.md`, `GFX-web.md`) become graphics
   docs with a section for the SDL2 bindings.
+
+Done on 2026-11-06: the vocabulary is `gfx` (posix, web, the boards and
+DOS: `vocabulary gfx` in each sdl2.fs). Before loading, `gfx` and `sdl2`
+are both the loader; the loaded source ends with `: sdl2 ( -- ) gfx ;`
+so `sdl2`, `sdl2 definitions` and `also sdl2` keep working, and
+`gfx-abc` is `sdl2-abc`. The examples, the tests that type commands
+(EFI, Pi, DOS) and the user docs say `gfx`; the docs `SDL2*.md` are now
+`GFX*.md` (with `_fr`), and say the old name still works. Kept on
+purpose: the file names `ports/*/sdl2*.fs` (not seen by users), the
+hidden vocabulary `sdl2` of the esp32 and pico ABC players, and the
+`also sdl2 definitions` of common/abc.fs (its test mocks a vocabulary
+`sdl2`). The loaders of the extras got neutral names too, as on the
+boards and the web they only select `gfx`: `gfx-image`, `gfx-font`,
+`gfx-sound` (old names `sdl2-image`, `sdl2-ttf`, `sdl2-mixer` kept; no
+`gfx-font` on the web, which has no text words); the table "Names" of
+GFX.md says what each does where. Still open: `graphic` and `gfx` are
+one layer in practice (`graphic` loads `gfx`), the screen size below.
 
 Open, for later: where the screen size is defined. Programs assume a
 size (Space Invaders 224x240, magnoquill 800x800), but the GBA is

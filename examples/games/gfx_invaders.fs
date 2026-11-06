@@ -24,7 +24,7 @@
 \ At the top: the score (white), the wave (gray) and the best score (gray), in a
 \ tiny 3x5 pixel font. Spare cannons at the bottom. Red tint: the game is over.
 
-sdl2
+gfx
 
 224 constant w   240 constant h
 11 constant cols   5 constant rows   cols rows * constant nal

@@ -39,7 +39,7 @@
 \ start of level 1, 1-5 a monster (rat, skeleton, orc, troll, lich), and on the
 \ floor k key, h potion, f food, w weapon, a armor, g gold, * the Amulet.
 
-sdl2
+gfx
 \ on the web the page has loaded the levels first
 [undefined] dg-levels [if] include dungeon_levels.fs [then]
 

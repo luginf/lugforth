@@ -55,7 +55,9 @@ create lazy-buf 320 allot
 : writhdeck ( "file" -- ) bl parse 255 min s" lib/writhdeck.fs" s" writhdeck" lazy-run ;
 
 : sdl2 ( -- ) s" lib/sdl2.fs" included s" sdl2" evaluate ;
+: gfx ( -- ) sdl2 ;   \ the same: gfx is the name of the drawing words, sdl2 their first one
 : sdl2-ttf ( -- ) s" lib/sdl2_ttf.fs" included s" sdl2-ttf" evaluate ;
+: gfx-font ( -- ) sdl2-ttf ;   \ the same, under the name of gfx
 : gui-tty? ( -- f ) 0 ;
 \ lugforth --gui, or gui at the prompt: the console window (lib/sdl2_console.fs)
 : gui-load ( -- )

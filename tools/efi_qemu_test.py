@@ -121,7 +121,7 @@ def hotplug(b, img3):
 
 def console(b):
   """The console on the GOP screen, 1280x960 centered: the banner lit, the
-  sdl2 screen over it, back after close-screen."""
+  gfx screen over it, back after close-screen."""
   def lit(scr, y0, y1):
     return sum(1 for y in range(y0, y1) for x in range(0, scr[0], 4) if pixel(scr, x, y) != '000000')
   r = b.run('pc screen-size . . forth')
@@ -129,10 +129,10 @@ def console(b):
   b.region = (1280, 960)
   scr = b.screen()
   check('console: banner drawn', lit(scr, 0, 32), lit(scr, 0, 32) > 200)
-  b.run('sdl2 320 240 screen $ff0000 color cls flip')
+  b.run('gfx 320 240 screen $ff0000 color cls flip')
   b.region = (320, 240)
   scr = b.screen()
-  check('console: the sdl2 screen replaces it', pixel(scr, 5, 5), pixel(scr, 5, 5) == 'ff0000')
+  check('console: the gfx screen replaces it', pixel(scr, 5, 5), pixel(scr, 5, 5) == 'ff0000')
   b.run('close-screen previous')
   b.region = (1280, 960)
   scr = b.screen()
@@ -158,7 +158,7 @@ def keyboard(b):
   r = b.out[b.pos:i].replace('\r', '')
   b.pos = end
   check('keyboard: typing at the prompt', r, '2 3 * .' in r and '6' in r.split())
-  b.run('sdl2 0 value held 0 value frames')
+  b.run('gfx 0 value held 0 value frames')
   b.run(': watch ( ms -- ) ticks + begin events 1 +to frames key-left pressed? if 1 +to held then '
         '10 ms dup ticks - 0< until drop ;')
   b.send(b'0 to held 0 to frames 2500 watch held . frames .\r')
@@ -397,7 +397,7 @@ def games(b):
     r = b.run('2 3 + .')
     check('%s: the prompt after Esc' % name, r, r.split()[0] == '5')
 
-  r = b.run('sdl2 s" t140 o4 l8 c d e c  e4 g4 r4 >c2" play  sine wave@ . square wave@ . depth .')
+  r = b.run('gfx s" t140 o4 l8 c d e c  e4 g4 r4 >c2" play  sine wave@ . square wave@ . depth .')
   check('play and the waves by name', r, r.split()[:3] == ['4', '0', '0'])
   r = b.run('3 wave wave@ . 2 to wave wave@ . 0 wave 4000 beep-volume beep-volume@ . 3000 beep-volume s" c4&c8 n49 p v8 o3 g" play depth .')
   check('wave and beep-volume are settings, play understands MML', r, r.split()[:4] == ['3', '2', '4000', '0'])

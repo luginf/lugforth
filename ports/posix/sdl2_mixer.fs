@@ -109,3 +109,4 @@ create path-buf 512 allot
 
 previous
 | evaluate ;
+: gfx-sound ( -- ) s" sdl2-mixer" evaluate ;   \ sounds and music from files: load-sound, load-music; looked up when it runs

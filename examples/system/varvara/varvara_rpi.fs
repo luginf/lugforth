@@ -35,7 +35,7 @@ needs uxn.fs
 needs screen.fs
 needs audio.fs
 needs file.fs
-sdl2 also rpi also uxn definitions
+gfx also rpi also uxn definitions
 
 2 value varvara-zoom
 512 value init-w   ( screen size at the start of a ROM )

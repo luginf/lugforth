@@ -50,7 +50,7 @@
 \ Only libSDL2 is needed. Same fixed point physics as raid.fs: 4096 units to
 \ a pixel, 6 steps a frame, walls are segments, the ball a circle.
 
-sdl2
+gfx
 [undefined] pb-common [if] include common.fs [then]
 
 320 constant nm-w   240 constant nm-h

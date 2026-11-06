@@ -19,7 +19,7 @@
 \ text (a built-in 8x8 font), images (built into the kernel), timing, keys
 \ and mouse, beeps and ABC tunes. See ports/rpi/README.md.
 
-vocabulary sdl2   also rpi also sdl2 definitions
+vocabulary gfx   also rpi also gfx definitions
 
 ( ---- Screen ---- )
 1 value zoom   0 value width   0 value height   0 value screen-open?
@@ -328,13 +328,17 @@ create p-cnt p-voices cells allot                  ( notes of each voice )
 : tune-playing? ( -- f ) snd-tune-playing ;
 
 previous previous forth definitions
-: sdl2 ( -- )   \ once: the search order is short, and every example says sdl2 sdl2-ttf...
-  context @ [ ' sdl2 >body ] literal = if exit then   also sdl2 ;
+: gfx ( -- )   \ once: the search order is short, and every example says gfx sdl2-ttf...
+  context @ [ ' gfx >body ] literal = if exit then   also gfx ;
+: sdl2 ( -- ) gfx ;   \ the first name of gfx
 : graphic ( -- )   \ the drawing words at the prompt: 0 0 100 100 line
   sdl2  s" gfx-on" evaluate ;
 : sdl2-ttf ( -- ) sdl2 ;   ( the text words are part of sdl2 here )
 : sdl2-image ( -- ) sdl2 ;   ( the image words too )
 : sdl2-mixer ( -- ) sdl2 ;   ( music volume and soundfont words: no files here )
+: gfx-font ( -- ) gfx ;   ( the same, under the names of gfx )
+: gfx-image ( -- ) gfx ;
+: gfx-sound ( -- ) gfx ;
 
 \ sdl2-abc: tunes in ABC notation (common/abc.fs reads them), played by the
 \ mixer's oscillators as on the web: the triangle wave, or the one in wave.
@@ -359,3 +363,4 @@ previous previous
 ~ evaluate
   previous current ! ;
 previous
+: gfx-abc ( -- ) sdl2-abc ;   \ the same, under the name of gfx

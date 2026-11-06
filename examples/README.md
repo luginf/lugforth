@@ -1,6 +1,6 @@
 # Examples
 
-The examples are in folders by kind (SDL2 words, see `docs/en/SDL2.md`):
+The examples are in folders by kind (SDL2 words, see `docs/en/GFX.md`):
 
 | folder | what |
 |---|---|
@@ -21,7 +21,7 @@ and the website (`ports/web/BUILD`) copies the files that run in the browser by 
 
 Several examples also run in the browser, from the [website](https://luginf.github.io/lugforth/), with the very same files:
 
-* [Terminal](https://luginf.github.io/lugforth/demo/terminal.html): the Forth prompt, also on a phone. Type `sdl2`, then
+* [Terminal](https://luginf.github.io/lugforth/demo/terminal.html): the Forth prompt, also on a phone. Type `gfx`, then
   `10 10 150 140 line`, `red color 200 20 100 60 box`, `s" t200 o4 c d e f g" play`.
   `terminal.html?run=gfx_roguelike.fs` runs a game file of the demo before the prompt.
 * Games: [Breakout](https://luginf.github.io/lugforth/demo/gfx_breakout.html),

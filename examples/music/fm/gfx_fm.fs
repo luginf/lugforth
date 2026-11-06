@@ -40,7 +40,7 @@
 \ On Linux the synthesizer is included here; the web page has already loaded it.
 [undefined] sdl2-fm [if] include engine_posix.fs [then]
 
-sdl2
+gfx
 sdl2-fm
 
 320 constant field-w   212 constant field-h

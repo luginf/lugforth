@@ -34,7 +34,7 @@
 \ All the positions are in pixels of the field, 2 pixels a step, a step every
 \ 16 ms whatever the speed of the screen.
 
-sdl2
+gfx
 \ on the web the page has loaded both files first (?run=gfx_spr.fs,gfx_digger_sprites.fs,gfx_digger.fs)
 [undefined] spr-draw [if] include ../graphics/gfx_spr.fs [then]
 [undefined] emerald [if] include gfx_digger_sprites.fs [then]

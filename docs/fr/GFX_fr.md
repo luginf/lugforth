@@ -1,6 +1,6 @@
-# SDL2 pour la version POSIX
+# gfx : graphisme, touches et son (SDL2 sous POSIX)
 
-*Traduction française de [docs/en/SDL2.md](../en/SDL2.md) (la version
+*Traduction française de [docs/en/GFX.md](../en/GFX.md) (la version
 anglaise fait foi).*
 
 Fenêtres, dessin, clavier, souris, images, texte et son pour les jeux,
@@ -9,7 +9,7 @@ grâce aux bibliothèques partagées de SDL2. Rien n'est lié dans
 première fois qu'on s'en sert.
 
 ```forth
-sdl2                          \ charge, sdl2 devient votre vocabulaire
+gfx                          \ charge, gfx devient votre vocabulaire
 3 to zoom  320 240 screen     \ 320x240 pixels logiques, montrés 3 fois plus gros
 : frame  events  black color cls  red color 10 10 50 50 box  flip ;
 : run  begin frame quit? until close-screen ;
@@ -29,25 +29,47 @@ coupe; chiffres dessinés à partir d'un bitmap 3x5), `pinball/pinball.fs`
 Le casse-briques, les percussions, le synthétiseur FM et le roguelike
 tournent aussi dans le navigateur.
 
-Tous les mots: [SDL2-words.md](SDL2-words_fr.md). Les mots courts
-existent aussi dans la version web, voir [SDL2-web.md](SDL2-web_fr.md).
+`gfx` s'appelait d'abord `sdl2`; les anciens noms marchent toujours
+(voir [Noms](#noms)). Les mêmes mots courts tournent sans SDL sur les
+cartes, sous DOS et sur le web.
+
+Tous les mots: [GFX-words.md](GFX-words_fr.md). Les mots courts
+existent aussi dans la version web, voir [GFX-web.md](GFX-web_fr.md).
+
+## Noms
+
+Les chargeurs ont des noms neutres, car les mots tournent avec ou sans
+SDL. Chaque ancien nom marche toujours et fait la même chose:
+
+| Chargeur | Ancien nom | POSIX, Windows, macOS | Cartes (Pi, PC) et DOS | Web |
+|---|---|---|---|---|
+| `gfx` | `sdl2` | charge SDL2: fenêtre, dessin, touches, souris, bips | le framebuffer, les mêmes mots | le canvas, les mêmes mots |
+| `gfx-image` | `sdl2-image` | charge SDL2_image: images depuis des fichiers | `gfx`: les images sont intégrées au noyau | `gfx`: images par URL |
+| `gfx-font` | `sdl2-ttf` | charge SDL2_ttf: polices TrueType | `gfx`: `load-font` agrandit la police 8x8 intégrée | absent (pas de mots de texte) |
+| `gfx-sound` | `sdl2-mixer` | charge SDL2_mixer: fichiers son, musique, soundfont | `gfx`: pas de fichiers, le synthétiseur seul | `gfx`: pas de MIDI ni de soundfont |
+| `gfx-abc` | `sdl2-abc` | airs en notation ABC, par le mixeur | pareil, par le synthétiseur | pareil, par WebAudio |
+
+Un programme qui dit `gfx gfx-font` tourne donc aussi bien sous Linux
+que sur un Pi. Les noms bruts des bibliothèques C (`SDL_Init`,
+`TTF_OpenFont`, `Mix_PlayMusic`...) gardent leurs noms SDL, sous POSIX
+seulement.
 
 ## Paquets
 
 | Chargeur      | Bibliothèque nécessaire | Paquet Debian/Ubuntu   | Ajoute                      |
 |---------------|----------------------|------------------------|-----------------------------|
-| `sdl2`        | libSDL2-2.0.so.0     | `libsdl2-2.0-0`        | fenêtre, dessin, entrées, bips |
-| `sdl2-image`  | libSDL2_image-2.0.so.0 | `libsdl2-image-2.0-0` | sprites (PNG, JPG, BMP...)  |
-| `sdl2-ttf`    | libSDL2_ttf-2.0.so.0 | `libsdl2-ttf-2.0-0`    | texte avec polices TrueType |
-| `sdl2-mixer`  | libSDL2_mixer-2.0.so.0 | `libsdl2-mixer-2.0-0` | fichiers son, musique, mixage, soundfont |
-| `sdl2-abc`    | (`sdl2-mixer`, et une soundfont pour le MIDI) | `fluid-soundfont-gm` ou votre propre `.sf2` | airs en notation ABC |
+| `gfx`        | libSDL2-2.0.so.0     | `libsdl2-2.0-0`        | fenêtre, dessin, entrées, bips |
+| `gfx-image`  | libSDL2_image-2.0.so.0 | `libsdl2-image-2.0-0` | sprites (PNG, JPG, BMP...)  |
+| `gfx-font`    | libSDL2_ttf-2.0.so.0 | `libsdl2-ttf-2.0-0`    | texte avec polices TrueType |
+| `gfx-sound`  | libSDL2_mixer-2.0.so.0 | `libsdl2-mixer-2.0-0` | fichiers son, musique, mixage, soundfont |
+| `gfx-abc`    | (`gfx-sound`, et une soundfont pour le MIDI) | `fluid-soundfont-gm` ou votre propre `.sf2` | airs en notation ABC |
 
-Retaper un chargeur remet `sdl2` au sommet. Tous les mots ci-dessous
-vivent dans le vocabulaire `sdl2`, avec les noms C bruts (`SDL_Init`,
-...) pour tout ce qui n'a pas de mot court. `sdl2` est aussi l'endroit
+Retaper un chargeur remet `gfx` au sommet. Tous les mots ci-dessous
+vivent dans le vocabulaire `gfx`, avec les noms C bruts (`SDL_Init`,
+...) pour tout ce qui n'a pas de mot court. `gfx` est aussi l'endroit
 où vont vos définitions.
 
-## Mots courts (`sdl2`)
+## Mots courts (`gfx`)
 
 Écran: `screen ( w h -- )`, `close-screen`, `zoom` (valeur, à fixer
 avant `screen`), `title ( a n -- )`, `fullscreen ( f -- )`,
@@ -118,7 +140,7 @@ Différences avec les dialectes: la numérotation des octaves est celle du
 MSX (`o4 c` est le do du milieu; vérifiez un air écrit pour un autre
 dialecte, ils diffèrent); pas d'accords, pas de modes `m` (legato,
 staccato) et pas de `x` (jouer une variable chaîne). Cela marche à
-l'invite après `sdl2` (la fenêtre console, les cartes, la page web).
+l'invite après `gfx` (la fenêtre console, les cartes, la page web).
 
 Plusieurs voix: une virgule dans la chaîne commence une autre voix, et
 les voix démarrent ensemble (`s" o4 e d c d e e e2, o3 c1 g1" play`). 4
@@ -141,7 +163,7 @@ fait tomber la hauteur, assez pour une grosse caisse. Appelez `flip` ou
 `delay` régulièrement, comme le fait une boucle de jeu. Utilisez `beep`
 ou `drum-hit` dans un programme, pas les deux.
 
-## Images (`sdl2-image`)
+## Images (`gfx-image`)
 
 `load-image ( a n -- img )`, `free-image`, `image-size ( img -- w h )`,
 `draw ( img x y -- )`, `draw-size ( img x y w h -- )`,
@@ -150,13 +172,13 @@ ou `drum-hit` dans un programme, pas les deux.
 avec des dossiers qui n'est pas trouvé est réessayé sans eux, donc
 `s" examples/tiles.png" load-image` marche aussi depuis `examples/`.
 
-## Texte (`sdl2-ttf`)
+## Texte (`gfx-font`)
 
 `load-font ( a n pt -- font )`, `font ( font -- )`, `free-font`,
 `text ( x y a n -- )` dans la couleur courante,
 `text-size ( a n -- w h )`.
 
-## Son (`sdl2-mixer`)
+## Son (`gfx-sound`)
 
 `load-sound ( a n -- snd )`, `play ( snd -- )`, `free-sound`,
 `sound-volume`, `stop-sounds`, `sounds-playing`,
@@ -172,11 +194,11 @@ tel quel, puis dans le dossier courant, puis dans le dossier du script,
 donc `s" mygame.sf2" soundfont` trouve un fichier à côté du programme.
 Sans soundfont, FluidSynth utilise celle du système s'il y en a une.
 
-## Airs (`sdl2-abc`)
+## Airs (`gfx-abc`)
 
 Les airs écrits en [notation ABC](https://abcnotation.com/), un format
 texte pour les mélodies, peuvent être joués avec la soundfont. Tapez
-`sdl2-abc` une fois (il charge `sdl2-mixer` si besoin). Comme l'ABC
+`gfx-abc` une fois (il charge `gfx-sound` si besoin). Comme l'ABC
 emploie la barre verticale, écrivez l'air avec `r~ ... ~`, une chaîne
 multiligne qui se termine à un tilde:
 

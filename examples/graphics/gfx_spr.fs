@@ -16,10 +16,10 @@
 \   ;sprite
 \   coin 10 20 spr-draw                 \ at x y
 \
-\ It loads sdl2 (POSIX and web) and uses `color` and `box`. In a game, put
+\ It loads gfx (POSIX and web) and uses `color` and `box`. In a game, put
 \ `include ../graphics/gfx_spr.fs` first (the web build finds it too).
 
-sdl2   \ so that color and box are the real ones (on the web, before this the same names are the console graphics)
+gfx   \ so that color and box are the real ones (on the web, before this the same names are the console graphics)
 
 128 cells constant spr-pal-size
 create spr-pt spr-pal-size allot   spr-pt spr-pal-size erase

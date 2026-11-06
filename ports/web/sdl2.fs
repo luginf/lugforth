@@ -17,7 +17,7 @@
 \ Same words and stack effects as ports/posix/sdl2.fs, so a game written with
 \ the short words (see examples/games/gfx_breakout.fs) runs unchanged in both.
 \ Only the short words exist here, not the raw SDL_ names nor sdl2-image,
-\ sdl2-ttf and sdl2-mixer. See docs/en/SDL2-web.md.
+\ sdl2-ttf and sdl2-mixer. See docs/en/GFX-web.md.
 \ NOTE: the block below is a string, so it must not contain a vertical bar,
 \ in Forth or in the JavaScript (write a ternary instead of a logical or).
 \ A tilde ends each JavaScript part.
@@ -25,7 +25,7 @@
 : sdl2 r|
 
 forth also web also internals
-vocabulary sdl2   also sdl2 definitions
+vocabulary gfx   also gfx definitions
 
 ( ---- State shared by the words, and the event handlers ---- )
 r~
@@ -818,8 +818,11 @@ JSWORD: image-tint { img c }
 ~
 
 previous previous previous
-sdl2 definitions
+forth definitions
+: sdl2 ( -- ) gfx ;   \ the first name of gfx: sdl2 definitions, also sdl2 still work
+gfx definitions
 | evaluate ;
+: gfx ( -- ) sdl2 ;   \ loads the drawing, keys and sound words (the vocabulary gfx)
 : graphic ( -- )   ( the drawing words at the prompt: 10 10 150 140 line )
   sdl2  s" graphic-on" evaluate ;
 ( Typed at the prompt before graphic, a drawing word opens the drawing area first: 10 10 150 140 line )
@@ -855,3 +858,5 @@ sdl2 definitions
 : gray graphic s" gray" evaluate ;
 : sdl2-image ( -- ) sdl2 ;   ( the image words are part of sdl2 here )
 : sdl2-mixer ( -- ) sdl2 ;   ( music and soundfont words, see sdl2-abc for tunes )
+: gfx-image ( -- ) sdl2 ;   ( the same, under the names of gfx; no gfx-font: no text words here )
+: gfx-sound ( -- ) sdl2 ;

@@ -15,8 +15,9 @@
 ( Lazy load bindings for SDL2: window, drawing, input, timing, beeps )
 \
 \ Usage:
-\   sdl2                     \ load; sdl2 becomes the vocabulary on top and the
-\                            \ one your own words are defined in
+\   gfx                      \ load; gfx becomes the vocabulary on top and the
+\                            \ one your own words are defined in (sdl2 is
+\                            \ the same word, its first name)
 \   320 240 screen           \ open a window
 \   red color  10 10 50 50 box  flip
 \
@@ -28,7 +29,7 @@
 : sdl2 r|
 
 forth also posix also structures
-vocabulary sdl2   also sdl2 definitions
+vocabulary gfx   also gfx definitions
 
 sdl2-lib shared-library sdl
 
@@ -648,5 +649,8 @@ create mixed 4096 2* allot
 ;
 
 previous previous
-sdl2 definitions
+forth definitions
+: sdl2 ( -- ) gfx ;   \ the first name of gfx: sdl2 definitions, also sdl2 still work
+gfx definitions
 | evaluate ;
+: gfx ( -- ) sdl2 ;   \ loads the drawing, keys and sound words (the vocabulary gfx)

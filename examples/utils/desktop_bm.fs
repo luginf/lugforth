@@ -15,7 +15,7 @@
 \ limitations under the License.
 
 \ A small desktop for the bare-metal boots (the PC booted from UEFI, the Raspberry Pi): icons and a file manager,
-\ drawn with the short sdl2 words (examples/utils/desktop.fs is the one for a window of a desktop, it needs the
+\ drawn with the short gfx words (examples/utils/desktop.fs is the one for a window of a desktop, it needs the
 \ real libSDL2). Type  include /utils/desktop_bm.fs  then  desk   (a mouse is needed, the keyboard works too).
 \   icons          double click (or Enter on the selected one, arrows): the file manager, a game folder, the
 \                  editors writhdeck and ed (they take the screen, then the desktop comes back), a program,
@@ -30,7 +30,7 @@
 \ The icons are the table in dk-defaults: kind 0 file manager (starting folder), 1 command run with the text screen
 \ (no pause), 4 the same with a "press a key" after it, 2 the Forth prompt, 5 the settings window.
 
-sdl2 sdl2-ttf
+gfx gfx-font
 also rpi          \ chdir and getcwd (the pc vocabulary is an alias of rpi)
 
 640 constant dk-w   480 constant dk-h

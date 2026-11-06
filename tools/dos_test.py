@@ -302,11 +302,11 @@ def interactive(disk):
     # 80 characters on the last row: the screen must not scroll (a terminal's pending wrap)
     typ('page also ansi 0 24 at-xy 80 0 do 35 emit loop s" s3.txt" dump-screen previous'); key('Return')
     key('ctrl+F6')                                           # DOSBox records its sound
-    typ('sdl2 440 300 beep 660 300 beep 700 ms previous'); key('Return'); time.sleep(1.5)
+    typ('gfx 440 300 beep 660 300 beep 700 ms previous'); key('Return'); time.sleep(1.5)
     key('ctrl+F6')
     time.sleep(1)
     key('ctrl+F6')                                           # the same on the PC speaker
-    typ('also dos snd-speaker previous sdl2 440 300 beep 660 300 beep 700 ms previous'); key('Return'); time.sleep(1.5)
+    typ('also dos snd-speaker previous gfx 440 300 beep 660 300 beep 700 ms previous'); key('Return'); time.sleep(1.5)
     key('ctrl+F6')
     typ('include games/gfx_2048.fs'); key('Return'); time.sleep(4)   # 484x640: 1024x768, 16 bits in DOSBox
     tiles = shot()

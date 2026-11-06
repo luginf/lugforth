@@ -54,7 +54,7 @@ Lancez `lugforth` (voir [Binaires](#binaires), ou compilez-le avec
 `ninja posix`). Vous obtenez une bannière et l'invite:
 
 ```
-Lugforth v2026.11.6.3
+Lugforth v2026.11.6.4
 :; ===========>/>
 type 'info' for help
  ok
@@ -610,9 +610,9 @@ Lugforth Lugforth Lugforth  ok
 ```
 
 **La suite.** Les jeux avec graphismes et sons utilisent les mots SDL2
-([SDL2.md](SDL2_fr.md) est la visite guidée,
-[SDL2-words.md](SDL2-words_fr.md) la liste de tous les mots,
-[SDL2-web.md](SDL2-web_fr.md) la version web): lisez
+([GFX.md](GFX_fr.md) est la visite guidée,
+[GFX-words.md](GFX-words_fr.md) la liste de tous les mots,
+[GFX-web.md](GFX-web_fr.md) la version web): lisez
 `examples/games/gfx_snake.fs`, le plus court, puis `gfx_tetris.fs` et
 `gfx_breakout.fs` ([Exemples](#exemples)). `ed` et `writhdeck` sont
 aussi écrits en Forth, dans `ports/posix/`: les lire montre les mêmes
@@ -669,7 +669,7 @@ Pousser une étiquette comme `v7.0.8.1` (ou lancer
 | Linux | Archive tar et AppImage, compilés sur Debian 10 (glibc 2.27 ou plus récente). L'AppImage contient les bibliothèques SDL2, les exemples et une police. Depuis une console elle donne l'interface terminal; un clic sur le bureau ouvre la fenêtre de `lugforth --gui` (un terminal si elle ne peut pas s'ouvrir). Les exemples sont copiés au premier lancement dans `~/.local/share/lugforth/examples` (`LUGFORTH_HOME` change le dossier), jamais écrasés. |
 | Android | `lugforth-VERSION-android.apk` (arm64), compilé à la main avec `ports/android/build_apk.sh` et joint à la publication. Signé avec une clé de débogage gardée dans `out/android/debug.keystore`: conservez ce fichier pour pouvoir mettre à jour une copie installée. |
 | Termux (Android) | Pas de binaire: `sh ports/termux/install.sh` compile le Lugforth du terminal dans Termux depuis un clone git et le met dans `$PREFIX/bin` (voir `ports/termux/README.md`). `restore` refuse une image sauvée par une autre exécution: Android charge le binaire à une autre adresse chaque fois. |
-| Windows x64 | `lugforth-<version>-windows-x64.zip`: `lugforth.exe`, `SDL2.dll` et `SDL2_ttf.dll` (licences zlib et FreeType), les liaisons Forth dans `lib/` et `examples/`. `sdl2` et `sdl2-ttf` les chargent, et `lugforth.exe --gui`, le `lugforth-gui.bat` du zip (un double clic) ou `gui` à l'invite ouvrent la même fenêtre console que sous Linux, avec son menu, ses couleurs, ses polices (Consolas) et le menu Examples; ses réglages sont dans `%APPDATA%\lugforth`. Testé en CI avec le pilote vidéo factice, pas encore par le mainteneur sur un vrai écran. Lancez lugforth depuis son dossier. `ls`, `dir`, `cd`, `pwd`, l'éditeur de ligne et `/` ou `\` dans les chemins fonctionnent. `ed`, `writhdeck` et le son (`play`) ne sont que sous POSIX. |
+| Windows x64 | `lugforth-<version>-windows-x64.zip`: `lugforth.exe`, `SDL2.dll` et `SDL2_ttf.dll` (licences zlib et FreeType), les liaisons Forth dans `lib/` et `examples/`. `gfx` et `gfx-font` les chargent, et `lugforth.exe --gui`, le `lugforth-gui.bat` du zip (un double clic) ou `gui` à l'invite ouvrent la même fenêtre console que sous Linux, avec son menu, ses couleurs, ses polices (Consolas) et le menu Examples; ses réglages sont dans `%APPDATA%\lugforth`. Testé en CI avec le pilote vidéo factice, pas encore par le mainteneur sur un vrai écran. Lancez lugforth depuis son dossier. `ls`, `dir`, `cd`, `pwd`, l'éditeur de ligne et `/` ou `\` dans les chemins fonctionnent. `ed`, `writhdeck` et le son (`play`) ne sont que sous POSIX. |
 | macOS | `lugforth-<version>-macos-universal.zip` (Apple silicon et Intel, macOS 11 ou plus récent). Non signé: clic droit, Ouvrir, ou `xattr -d com.apple.quarantine lugforth`. Testé en CI sur Apple silicon: l'invite, les tests, la complétion par Tab et les mots SDL2 (38 tests, sans écran) après `brew install sdl2 sdl2_ttf` (les bibliothèques sont cherchées dans le système et dans `/opt/homebrew/lib`, `/usr/local/lib`); la fenêtre console, les éditeurs et les sockets n'ont pas été essayés. |
 
 Les binaires statiques ne sont pas possibles: Lugforth atteint libc,
@@ -715,10 +715,16 @@ Les réglages sont gardés dans `~/.local/share/lugforth/lugforth.ini`
 ## Dessiner à l'invite
 
 Les mots de cette section et ceux du son plus bas sont les mots courts
-SDL2, décrits un par un dans [SDL2-words.md](SDL2-words_fr.md) (visite
-guidée: [SDL2.md](SDL2_fr.md), version web:
-[SDL2-web.md](SDL2-web_fr.md)); les autres noms d'un même mot, comme
-`plot` pour `dot`, y sont listés sous « Aliases ».
+de `gfx`, décrits un par un dans [GFX-words.md](GFX-words_fr.md)
+(visite guidée: [GFX.md](GFX_fr.md), version web:
+[GFX-web.md](GFX-web_fr.md)); les autres noms d'un même mot, comme
+`plot` pour `dot`, y sont listés sous « Aliases ». Ils se chargent avec
+`gfx` (SDL2 sous Linux, Windows et macOS, le framebuffer sur les cartes
+et sous DOS, le canvas sur le web), et les compléments avec
+`gfx-image`, `gfx-font`, `gfx-sound` et `gfx-abc`. Leurs premiers noms,
+`sdl2`, `sdl2-image`, `sdl2-ttf`, `sdl2-mixer` et `sdl2-abc`, marchent
+toujours; le tableau « Noms » de GFX.md dit ce que fait chacun sur
+chaque plateforme.
 
 Tapez `graphic` une fois, puis dessinez comme en BASIC sur un micro 8
 bits: le dessin apparaît aussitôt, sous le texte, sans `screen` ni
@@ -738,7 +744,7 @@ c'est fin: `1280 960 graphic-size` sur une console de 1280x960 donne un
 pixel de dessin par pixel d'écran, et sur le bureau
 `1024 640 graphic-size` remplit une fenêtre de cette taille); `dot`,
 `line`, `lineto`, `box`, `frame`, `disc`, `circle`, `paint` (et `text`
-sur les cartes) sont ceux des mots `sdl2`. `ink` prend 0 noir, 1 rouge,
+sur les cartes) sont ceux des mots `gfx`. `ink` prend 0 noir, 1 rouge,
 2 vert, 3 jaune, 4 bleu, 5 magenta, 6 cyan, 7 blanc, 8 à 15 gris,
 orange, rose, marron, violet et couleurs claires; `$rrggbb color` et
 `r g b rgb` donnent n'importe quelle autre. Fonctionne dans la fenêtre
@@ -749,7 +755,7 @@ couche. Dans un terminal il n'y a pas de fenêtre: `graphic` le dit.
 ## Le son à l'invite
 
 Dans la fenêtre console (`lugforth --gui`) tapez `sound` une fois;
-ailleurs tapez `sdl2` (rien à ouvrir, pas besoin de fenêtre sous Linux,
+ailleurs tapez `gfx` (rien à ouvrir, pas besoin de fenêtre sous Linux,
 le son sort par les haut-parleurs):
 
     440 300 beep                          \ une note: fréquence en Hz, durée en ms
@@ -763,7 +769,7 @@ moitié), `r` ou `p` un silence, `o4` l'octave (`<` et `>` descendent et
 montent; `o4 c` est le do du milieu), `l8` la durée par défaut, `t120`
 le tempo, `n49` une note par son numéro (n49 est le do du milieu, n0 un
 silence), `&` lie deux notes de même hauteur (`c4&c8`), `v8` le volume
-(0 à 15), `w1` l'onde. La table complète est dans [SDL2.md](SDL2_fr.md).
+(0 à 15), `w1` l'onde. La table complète est dans [GFX.md](GFX_fr.md).
 
 **Plusieurs voix.** Une virgule dans la chaîne commence une autre voix,
 et toutes les voix démarrent ensemble (4 au plus, 512 notes chacune; le
@@ -771,7 +777,7 @@ son dure autant que la plus longue):
 
     s" t120 o4 l8 e d c d e e e4, o3 l4 c g c g c2" play
 
-Exemples (chacun tient sur une seule ligne à taper après `sdl2`):
+Exemples (chacun tient sur une seule ligne à taper après `gfx`):
 
     \ une mélodie sur une basse: la basse a son octave, son onde et son volume
     s" t140 o4 l8 w2 v10 c d e f g4 g4, w0 v6 o3 l4 c g c g, w1 v8 o2 l2
@@ -790,8 +796,8 @@ Chaque voix commence avec l'octave, la durée, le tempo, l'onde et le
 volume avec lesquels `play` a démarré; répétez donc `t` ou `w` dans les
 voix qui en ont besoin. Après le `play`, les réglages sont ceux de la
 dernière voix. Sur le web, sur le Pi et sur le PC, les notes de toutes
-les voix sont mises en file d'un coup; avec `sdl2-mixer`, `play` est un
-autre mot (voir [SDL2.md](SDL2_fr.md)).
+les voix sont mises en file d'un coup; avec `gfx-sound`, `play` est un
+autre mot (voir [GFX.md](GFX_fr.md)).
 
 **Enveloppe.** `adsr ( attack decay sustain release -- )` façonne chaque
 note de `beep` et `play`: l'attaque et la décroissance sont en ms, le
@@ -820,7 +826,7 @@ coups (`drum-hit`) et les airs ABC ne sont pas touchés.
 `wave`, `beep-volume` et `pitch-drop` prennent leur valeur sur la pile,
 comme `color`: `1 wave`, `5000 beep-volume` (relisez-les avec `wave@`,
 `beep-volume@`, `pitch-drop@`; `to wave` marche toujours). `silence`
-arrête. Airs en notation ABC: `sdl2-abc`, `abc-play`.
+arrête. Airs en notation ABC: `gfx-abc`, `abc-play`.
 
 ## Version mini
 
@@ -829,7 +835,7 @@ sans les éditeurs, SDL2, X11, la fenêtre console et les serveurs web et
 telnet: environ 110 Ko contre 260 Ko. `ninja posix` compile les deux
 (`out/posix/lugforth-mini`); `--gui` dit qu'il n'y a pas de fenêtre. Une
 partie peut encore être chargée depuis une copie des sources:
-`needs ports/posix/sdl2.fs`, puis `sdl2` (SDL2 lui-même doit être
+`needs ports/posix/sdl2.fs`, puis `gfx` (SDL2 lui-même doit être
 installé).
 
 ## Édition de ligne
@@ -1134,7 +1140,7 @@ n'exécute pas `autoexec.fs`.
 Lugforth tourne sans système d'exploitation sur ARM 64 bits: QEMU `virt`
 et `raspi3b` (qui tournent sur un PC Linux x86_64), un Raspberry Pi 3,
 et un Pi 4 (écrit à l'aveugle). La console est la ligne série. Les mots
-`sdl2` sont là: écran, texte, images, clavier et souris, bips et airs
+`gfx` sont là: écran, texte, images, clavier et souris, bips et airs
 ABC. Les fichiers sont sur la carte SD (FAT12/16/32): `include`, `ls`,
 et un `autoexec.fs` exécuté au démarrage.
 `examples/games/gfx_breakout.fs` et `gfx_roguelike.fs` tournent sans
@@ -1156,7 +1162,7 @@ Une application UEFI, `EFI/BOOT/BOOTX64.EFI` sur une clé USB FAT32,
 lancée par le micrologiciel (Secure Boot désactivé, puis le menu de
 démarrage ponctuel du micrologiciel, F12 sur beaucoup de PC). Elle
 utilise l'écran, le clavier et les fichiers du micrologiciel: console à
-l'écran, mots `sdl2`, `include` et éditeurs depuis la clé. Son par Intel
+l'écran, mots `gfx`, `include` et éditeurs depuis la clé. Son par Intel
 HD Audio (essayé seulement sous QEMU), pas de souris.
 
 ```
@@ -1199,7 +1205,7 @@ Voir [ports/efi/README.md](../../ports/efi/README.md).
 `ports/dos` construit `lugforth.exe` pour DOS avec le compilateur croisé
 DJGPP: un programme en mode protégé 32 bits pour un 386 ou mieux, avec
 environ 5 Mo de mémoire et un hôte DPMI. L'invite en mode texte, les
-fichiers, et les mots `sdl2`: le graphisme dans un mode VESA, le clavier
+fichiers, et les mots `gfx`: le graphisme dans un mode VESA, le clavier
 et la souris, le son d'une Sound Blaster 16; les jeux de
 `examples/games` tournent donc.
 
@@ -1368,7 +1374,7 @@ Pour jouer un morceau à chaque démarrage, écrivez les trois lignes
 `esp32-abc`, `4 buzzer` et `include /spiffs/canon.fs` dans
 `autoexec.fs` et envoyez-le. `abc-arp` joue le même morceau à tour de
 rôle, une note à la fois, si le mélange sonne mal. Le même fichier joué
-sur un PC (`sdl2-abc`, `abc-play`) fait maintenant aussi sonner les
+sur un PC (`gfx-abc`, `abc-play`) fait maintenant aussi sonner les
 voix ensemble. Détails :
 [dev/PORTS_fr.md](dev/PORTS_fr.md) et
 [ports/esp32/README.txt](../../ports/esp32/README.txt).
@@ -1500,7 +1506,7 @@ bouton), et `296102114 rand-seed ! new-tune type` l'écrit en texte ABC,
 graine puis appeler `random-music` : il mélange l'horloge à la graine
 pour donner un nouveau morceau à chaque fois. Sur un ESP32 c'est pareil
 avec `esp32-abc`, `4 buzzer` et `5 music-button` (un bouton sur le GPIO
-5). Sur un PC (`sdl2-abc` d'abord, puis `include
+5). Sur un PC (`gfx-abc` d'abord, puis `include
 examples/music/abc_random.fs`) il n'y a pas de bouton : une touche
 quelconque donne un autre morceau et Ctrl-C termine. La musique
 n'utilise que des notes de la tonalité, en 4/4 et 3 phrases de 4

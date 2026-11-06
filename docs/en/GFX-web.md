@@ -1,7 +1,7 @@
-# sdl2 short words for the Web
+# gfx short words for the Web
 
-The web build has the same `sdl2` short words as the Linux build
-([SDL2.md](SDL2.md)), drawn on an HTML canvas. A game written with them
+The web build has the same `gfx` short words as the Linux build
+([GFX.md](GFX.md)), drawn on an HTML canvas. A game written with them
 runs unchanged in both: `examples/games/gfx_breakout.fs` is loaded as is
 by `ports/web/gfx_breakout.html`, `examples/music/gfx_drums.fs` by
 `ports/web/gfx_drums.html`, `examples/music/fm/gfx_fm.fs` (an FM
@@ -19,12 +19,12 @@ At the prompt of `terminal.html`, as in the console window on Linux,
 the height of the page at most; `w h graphic-size` for another size) and
 the drawing words work from the prompt, the terminal staying usable,
 also on a phone: `graphic`, then `10 10 150 140 line`,
-`red color 200 20 100 60 box`, `cls`. `sdl2` alone also gives the sound
+`red color 200 20 100 60 box`, `cls`. `gfx` alone also gives the sound
 words at the prompt (`s" t200 o4 c d e" play`, `440 300 beep`): the
 first key press or tap lets the page play sounds.
 
 ```forth
-sdl2                          \ loads on first use, like on Linux
+gfx                          \ loads on first use, like on Linux
 3 to zoom  320 240 screen     \ opens a canvas over the page
 : frame  events  black color cls  red color 10 10 50 50 box  flip ;
 : run  begin frame quit? until close-screen ;
@@ -70,7 +70,7 @@ cannot do.
 ## What exists
 
 These words have the same names and stack effects as on Linux, see
-[SDL2-words.md](SDL2-words.md) for what each one does:
+[GFX-words.md](GFX-words.md) for what each one does:
 
 * Screen:
   `screen close-screen screen-open? zoom width height title fullscreen cursor`
@@ -83,15 +83,15 @@ These words have the same names and stack effects as on Linux, see
   the `key-` constants
   (`key-left key-right key-up key-down key-space key-enter key-esc key-tab key-backspace`)
   and `LEFT-BUTTON MIDDLE-BUTTON RIGHT-BUTTON`
-* Images (the words of `sdl2-image`, which is a no-op here):
+* Images (the words of `gfx-image`, which is a no-op here):
   `load-image free-image image-size draw draw-size draw-part image-alpha image-tint`
 * Beeps and hits:
   `beep drum-hit pitch-drop silence beeping? wave beep-volume audio-open audio-open? latency`
 
 ## What is different
 
-* **Not available:** the raw `SDL_` words, `sdl2-ttf`, the sound and
-  music files of `sdl2-mixer` (`load-sound`, `play`, `load-music`,
+* **Not available:** the raw `SDL_` words, `gfx-font`, the sound and
+  music files of `gfx-sound` (`load-sound`, `play`, `load-music`,
   `music`...), and a few helpers:
   `wait sdl-error window-handle renderer pen pen-r pen-g pen-b pen-a sample-rate`.
 * **`screen`** puts a black layer with its own canvas over the whole
@@ -123,15 +123,15 @@ These words have the same names and stack effects as on Linux, see
   refuse to play sound before. Beeps before that are dropped, and a
   queue more than two seconds long is not extended. A `drum-hit` plays
   at once over the other sounds, with at most 24 sounds alive.
-* **Tunes** (`sdl2-abc`, the reader of ABC notation, see
-  [SDL2.md](SDL2.md)) have the same words as on Linux:
+* **Tunes** (`gfx-abc`, the reader of ABC notation, see
+  [GFX.md](GFX.md)) have the same words as on Linux:
   `abc abc-play abc-loop tune-play tune-loop tune-stop tune-playing? tune-bpm tune-program tune-ms tune-notes`,
   but there is no MIDI synthesizer or soundfont in a browser. Each note
   is played by an oscillator (the triangle wave, or the one chosen with
   `wave`), so the instrument of `%%MIDI program` is ignored, and
   `tune-midi` and `tune-save` do not exist. `soundfont?` always answers
   false and `soundfont` does nothing, so a program that names a
-  soundfont runs unchanged; `sdl2-mixer` only exists to be typed and
+  soundfont runs unchanged; `gfx-sound` only exists to be typed and
   gives `music-volume`. A looping tune waits for the sound to be allowed
   and starts at its next repeat if it was not yet. Loudness is
   `music-volume` (0 to 128, as on Linux).
@@ -176,11 +176,11 @@ drawn): `gfx_2048` (with `2048.fs`), `gfx_snake`, `gfx_pacman`,
 `gfx_invaders`, `gfx_magnoquill`, `gfx_demo`, `gfx_3d` (with `3d.fs`),
 `gfx_turtle` (commands typed in a prompt under the drawing). They are
 copied to `out/web` by `ports/web/BUILD` and linked from the home page.
-Do not run on the web: `gfx_mouse_test` (needs `sdl2-ttf`),
+Do not run on the web: `gfx_mouse_test` (needs `gfx-font`),
 `gfx_pianoroll` (a soundfont; not tried). A file that does `include`
 needs the guard `[undefined] word [if] include file.fs [then]` and its
 included file listed first in `run=`: `gfx_digger` needs
 `?run=gfx_spr.fs,gfx_digger_sprites.fs,gfx_digger.fs`, `gfx_loderunner`
 `?run=gfx_spr.fs,gfx_loderunner_sprites.fs,gfx_loderunner.fs`. A library loaded
-that way must begin with `sdl2`, or its `color` and `box` are the console
+that way must begin with `gfx`, or its `color` and `box` are the console
 graphics ones.

@@ -68,3 +68,4 @@ create tsize 2 cells allot
 
 previous
 | evaluate ;
+: gfx-font ( -- ) s" sdl2-ttf" evaluate ;   \ TrueType fonts: load-font, font, text; looked up when it runs

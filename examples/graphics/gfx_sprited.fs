@@ -25,7 +25,7 @@
 \ when included), arrows and Enter or the mouse, Esc cancels,
 \ Esc quit (without saving).
 
-sdl2
+gfx
 include gfx_spr.fs
 
 480 constant sed-w   300 constant sed-h

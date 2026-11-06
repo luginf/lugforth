@@ -23,7 +23,7 @@
 \ stacks pitches into a chord. Separate clicks stay separate notes and
 \ retrigger. Playing renders the whole song as a standard MIDI file and plays
 \ it through SDL2_mixer and FluidSynth, so it needs a soundfont (see
-\ sdl2_mixer.fs / SDL2.md). Clicking a note gives an instant preview, through
+\ sdl2_mixer.fs / GFX.md). Clicking a note gives an instant preview, through
 \ a small persistent FluidSynth of its own so it uses the same instrument
 \ sound, falling back to the plain SDL2 beeper if no soundfont can be found.
 \ "SAV" exports the song as both a .mid and a .abc file.
@@ -47,8 +47,8 @@
 \ the song is only rendered to sound when play starts: press play again to
 \ hear the change. A darker line marks every 4th step, one beat in 4/4.
 
-sdl2
-sdl2-mixer
+gfx
+gfx-sound
 s" gfx_pianoroll.sf2" soundfont? drop   \ optional, a soundfont beside this file
 
 ( ---- sizes and the pattern bank ---- )

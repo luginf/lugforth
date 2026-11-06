@@ -129,3 +129,4 @@ create tmpl 64 allot
 previous previous
   | evaluate ;
 previous
+: gfx-abc ( -- ) sdl2-abc ;   \ the same, under the name of gfx

@@ -1,10 +1,10 @@
-# Mots courts sdl2 pour le web
+# Mots courts gfx pour le web
 
-*Traduction française de [docs/en/SDL2-web.md](../en/SDL2-web.md) (la
+*Traduction française de [docs/en/GFX-web.md](../en/GFX-web.md) (la
 version anglaise fait foi).*
 
-La version web a les mêmes mots courts `sdl2` que la version Linux
-([SDL2.md](SDL2_fr.md)), dessinés sur un canevas HTML. Un jeu écrit avec
+La version web a les mêmes mots courts `gfx` que la version Linux
+([GFX.md](GFX_fr.md)), dessinés sur un canevas HTML. Un jeu écrit avec
 eux tourne sans changement dans les deux:
 `examples/games/gfx_breakout.fs` est chargé tel quel par
 `ports/web/gfx_breakout.html`, `examples/music/gfx_drums.fs` par
@@ -23,13 +23,13 @@ virgule fixe 16.16 doit multiplier par `*/` (voir le raycaster).
 à la moitié de la hauteur de la page au plus; `w h graphic-size` pour
 une autre taille) et les mots de dessin marchent depuis l'invite, le
 terminal restant utilisable, aussi sur un téléphone: `graphic`, puis
-`10 10 150 140 line`, `red color 200 20 100 60 box`, `cls`. `sdl2` seul
+`10 10 150 140 line`, `red color 200 20 100 60 box`, `cls`. `gfx` seul
 donne aussi les mots de son à l'invite (`s" t200 o4 c d e" play`,
 `440 300 beep`): la première touche pressée ou le premier toucher permet
 à la page de jouer des sons.
 
 ```forth
-sdl2                          \ se charge au premier usage, comme sous Linux
+gfx                          \ se charge au premier usage, comme sous Linux
 3 to zoom  320 240 screen     \ ouvre un canevas sur la page
 : frame  events  black color cls  red color 10 10 50 50 box  flip ;
 : run  begin frame quit? until close-screen ;
@@ -78,7 +78,7 @@ unique du canevas ne peut pas faire.
 ## Ce qui existe
 
 Ces mots ont les mêmes noms et les mêmes effets de pile que sous Linux,
-voir [SDL2-words.md](SDL2-words_fr.md) pour ce que fait chacun:
+voir [GFX-words.md](GFX-words_fr.md) pour ce que fait chacun:
 
 * Écran:
   `screen close-screen screen-open? zoom width height title fullscreen cursor`
@@ -91,15 +91,15 @@ voir [SDL2-words.md](SDL2-words_fr.md) pour ce que fait chacun:
   les constantes `key-`
   (`key-left key-right key-up key-down key-space key-enter key-esc key-tab key-backspace`)
   et `LEFT-BUTTON MIDDLE-BUTTON RIGHT-BUTTON`
-* Images (les mots de `sdl2-image`, qui ne fait rien ici):
+* Images (les mots de `gfx-image`, qui ne fait rien ici):
   `load-image free-image image-size draw draw-size draw-part image-alpha image-tint`
 * Bips et coups:
   `beep drum-hit pitch-drop silence beeping? wave beep-volume audio-open audio-open? latency`
 
 ## Ce qui est différent
 
-* **Non disponibles:** les mots bruts `SDL_`, `sdl2-ttf`, les fichiers
-  de sons et de musique de `sdl2-mixer` (`load-sound`, `play`,
+* **Non disponibles:** les mots bruts `SDL_`, `gfx-font`, les fichiers
+  de sons et de musique de `gfx-sound` (`load-sound`, `play`,
   `load-music`, `music`...), et quelques aides:
   `wait sdl-error window-handle renderer pen pen-r pen-g pen-b pen-a sample-rate`.
 * **`screen`** met une couche noire avec son propre canevas sur toute la
@@ -134,15 +134,15 @@ voir [SDL2-words.md](SDL2-words_fr.md) pour ce que fait chacun:
   bips d'avant sont perdus, et une file de plus de deux secondes n'est
   pas allongée. Un `drum-hit` joue aussitôt par-dessus les autres sons,
   avec 24 sons vivants au plus.
-* **Les airs** (`sdl2-abc`, le lecteur de notation ABC, voir
-  [SDL2.md](SDL2_fr.md)) ont les mêmes mots que sous Linux:
+* **Les airs** (`gfx-abc`, le lecteur de notation ABC, voir
+  [GFX.md](GFX_fr.md)) ont les mêmes mots que sous Linux:
   `abc abc-play abc-loop tune-play tune-loop tune-stop tune-playing? tune-bpm tune-program tune-ms tune-notes`,
   mais il n'y a ni synthétiseur MIDI ni soundfont dans un navigateur.
   Chaque note est jouée par un oscillateur (l'onde triangle, ou celle
   choisie avec `wave`), donc l'instrument de `%%MIDI program` est
   ignoré, et `tune-midi` et `tune-save` n'existent pas. `soundfont?`
   répond toujours faux et `soundfont` ne fait rien, donc un programme
-  qui nomme une soundfont tourne sans changement; `sdl2-mixer` n'existe
+  qui nomme une soundfont tourne sans changement; `gfx-sound` n'existe
   que pour être tapé et donne `music-volume`. Un air en boucle attend
   que le son soit permis et démarre à sa répétition suivante s'il ne
   l'était pas encore. Le volume est `music-volume` (0 à 128, comme sous
@@ -193,11 +193,11 @@ de la page (plusieurs fichiers, chargés dans cet ordre:
 (avec `3d.fs`), `gfx_turtle` (les commandes se tapent dans une invite
 sous le dessin). `ports/web/BUILD` les copie dans `out/web` et la page
 d'accueil les relie. Ne tournent pas sur le web: `gfx_mouse_test`
-(demande `sdl2-ttf`), `gfx_pianoroll` (une soundfont; pas essayé). Un
+(demande `gfx-font`), `gfx_pianoroll` (une soundfont; pas essayé). Un
 fichier qui fait `include` demande la garde
 `[undefined] mot [if] include fichier.fs [then]` et son fichier inclus
 placé en premier dans `run=`: `gfx_digger` demande
 `?run=gfx_spr.fs,gfx_digger_sprites.fs,gfx_digger.fs`, `gfx_loderunner`
 `?run=gfx_spr.fs,gfx_loderunner_sprites.fs,gfx_loderunner.fs`. Une bibliothèque
-chargée ainsi doit commencer par `sdl2`, sinon son `color` et son `box`
+chargée ainsi doit commencer par `gfx`, sinon son `color` et son `box`
 sont ceux du graphisme de la console.

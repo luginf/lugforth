@@ -34,7 +34,7 @@
 
 : filer-no-run ;
 include filer.fs
-also sdl2 also fm definitions
+also gfx also fm definitions
 
 : ui-font-file ( -- a n ) s" /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf" ;
 : term-font-file ( -- a n ) s" /usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf" ;

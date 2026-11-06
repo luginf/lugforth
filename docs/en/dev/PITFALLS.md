@@ -79,8 +79,8 @@ platform. Part of [README.md](../../../README.md).
 - Every C call pushes a result, even `void` ones: `drop` it. `int`
   results need `sign-extend`.
 - Lazy loaders are `: name r| ...source... | evaluate ;`, so the source
-  must not contain `|`. They end with `sdl2 definitions` so user words
-  land in vocabulary `sdl2` and are not shadowed by library names
+  must not contain `|`. They end with `gfx definitions` so user words
+  land in vocabulary `gfx` and are not shadowed by library names
   (`px`...).
 - `do` runs ~65k times when the count is 0: use `?do`. `roll`, `0>`,
   `2constant`, `within` do not exist. But `?do` only skips cleanly when
@@ -391,8 +391,8 @@ above the definition. `words_reference.py` takes them (not from `*sdl2*`
 files nor `_tests.fs`). Helpers with a common prefix (`le-`, `pg-`,
 `hist`, `pool`) get a note per family (`PREFIX_NOTES` in
 `words_reference.py`). The words of `sdl2` are written by hand in
-`docs/en/SDL2-words.md` (`docs/en/SDL2.md` is the tour,
-`docs/en/SDL2-web.md` the web build): add a row there when a short word
+`docs/en/GFX-words.md` (`docs/en/GFX.md` is the tour,
+`docs/en/GFX-web.md` the web build): add a row there when a short word
 is added in one of the three `sdl2.fs`.
 
 ## Forth pitfalls hit again and again

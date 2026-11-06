@@ -21,7 +21,7 @@
 \ On the web the page loads the three files itself, so each include is only
 \ done when the words are missing.
 
-sdl2
+gfx
 [undefined] pb-common [if] include common.fs [then]
 [undefined] raid [if] include raid.fs [then]
 [undefined] night [if] include night.fs [then]

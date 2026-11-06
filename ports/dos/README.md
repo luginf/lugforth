@@ -3,7 +3,7 @@
 A 32-bit protected mode DOS program, built with the DJGPP cross compiler:
 the same C kernel and Forth boot as the other ports, cells of 32 bits. Needs
 a 386 or better, about 5 MB of memory and a DPMI host. The prompt in text
-mode, the files, and the `sdl2` words of the boards: graphics in a VESA
+mode, the files, and the `gfx` words of the boards: graphics in a VESA
 mode, the keyboard and the mouse, the sound of a Sound Blaster 16.
 
 ## Build
@@ -144,7 +144,7 @@ bundled files are read-only; the sources are recompiled at each start.
 - Floats (x87, or the emulator of DJGPP without one), faults (`-8 @`) caught.
 - Redirected: `lugforth < in.txt > out.txt` reads the lines of the file
   and ends at its end; the output is written as it is (CR LF).
-- The `sdl2` words (`ports/baremetal/sdl2.fs`, `screen.h`, `input.h`,
+- The `gfx` words (`ports/baremetal/sdl2.fs`, `screen.h`, `input.h`,
   `mixer.h`, shared with the Pi and the UEFI PC; `video.h`, `sb16.h`):
   - `screen` sets the smallest VESA mode of 32 bits per pixel with a
     linear framebuffer that holds the screen times its zoom (lowered if

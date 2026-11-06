@@ -25,7 +25,7 @@
 \   m   mouse on/off      esc   quit
 \ Top left: the map, the red dot is you. Only libSDL2 is needed.
 
-sdl2
+gfx
 
 320 constant sw   200 constant sh
 65536 constant one

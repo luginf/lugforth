@@ -23,7 +23,7 @@
 \ A speed figure (pixels per second) shows whether the pointer is too fast:
 \ cross the screen at an even pace, it should take about a second.
 
-sdl2 sdl2-ttf
+gfx gfx-font
 
 320 constant w   240 constant h
 3 to zoom

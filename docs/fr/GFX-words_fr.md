@@ -1,23 +1,27 @@
-# Référence des mots SDL2
+# Référence des mots gfx
 
-*Traduction française de [docs/en/SDL2-words.md](../en/SDL2-words.md)
+*Traduction française de [docs/en/GFX-words.md](../en/GFX-words.md)
 (la version anglaise fait foi). Les noms de mots et les colonnes « Pile
 » sont ceux de Forth et restent tels quels.*
 
-Chaque mot du vocabulaire `sdl2`, pour la version POSIX
+Chaque mot du vocabulaire `gfx`, pour la version POSIX
 (`out/posix/lugforth`). Pour une visite guidée avec des exemples, lisez
-d'abord [SDL2.md](SDL2_fr.md). Cette page est la liste complète.
+d'abord [GFX.md](GFX_fr.md). Cette page est la liste complète. `gfx`
+s'appelait d'abord `sdl2`, et chaque chargeur a un ancien nom qui marche
+toujours (`sdl2`, `sdl2-image`, `sdl2-ttf`, `sdl2-mixer`, `sdl2-abc`;
+`sdl2 definitions` et `also sdl2` aussi): voir [Noms](GFX_fr.md#noms)
+pour ce que fait chacun sur chaque plateforme.
 
 Les mots viennent de cinq chargeurs, chacun chargeant sa source la
-première fois qu'on le tape. Tous ajoutent au même vocabulaire `sdl2`:
+première fois qu'on le tape. Tous ajoutent au même vocabulaire `gfx`:
 
 | Chargeur | Bibliothèque | Section |
 |--------|---------|---------|
-| `sdl2` | `libSDL2-2.0.so.0` | [Noyau](#noyau-sdl2) |
-| `sdl2-image` | `libSDL2_image-2.0.so.0` | [Images](#images-sdl2-image) |
-| `sdl2-ttf` | `libSDL2_ttf-2.0.so.0` | [Texte](#texte-sdl2-ttf) |
-| `sdl2-mixer` | `libSDL2_mixer-2.0.so.0` | [Son](#son-sdl2-mixer) |
-| `sdl2-abc` | (charge `sdl2-mixer`) | [Airs](#airs-sdl2-abc) |
+| `gfx` | `libSDL2-2.0.so.0` | [Noyau](#noyau-gfx) |
+| `gfx-image` | `libSDL2_image-2.0.so.0` | [Images](#images-gfx-image) |
+| `gfx-font` | `libSDL2_ttf-2.0.so.0` | [Texte](#texte-gfx-font) |
+| `gfx-sound` | `libSDL2_mixer-2.0.so.0` | [Son](#son-gfx-sound) |
+| `gfx-abc` | (charge `gfx-sound`) | [Airs](#airs-gfx-abc) |
 
 Notation de pile: `x y` sont des coordonnées en pixels, `w h` des
 tailles, `a n` une chaîne Forth (adresse, longueur), `z` une chaîne C
@@ -34,7 +38,7 @@ pour une erreur) doivent passer par `sign-extend` du vocabulaire
 
 Listes de mots: [index alphabétique](#index-alphabétique).
 
-## Noyau (sdl2)
+## Noyau (gfx)
 
 
 ### Écran
@@ -125,7 +129,7 @@ Listes de mots: [index alphabétique](#index-alphabétique).
 | `wave` | `( n -- )` | Réglage. Forme des prochains bips: 0 carré, 1 triangle, 2 dent de scie, 3 bruit, 4 sinus (`wave@` le lit; `to wave` marche aussi). |
 | `beep-volume` | `( n -- )` | Réglage (`beep-volume@` le lit), 3000 par défaut. Amplitude des bips, 0 à 32767. |
 | `square` `triangle` `saw` `noise` `sine` | `( -- )` | Choisissent l'onde des prochains bips par leur nom: `0 wave`, `1 wave`, `2 wave`, `3 wave`, `4 wave`. |
-| `play` | `( a n -- )` | Joue une mélodie écrite en texte (MML, comme sur le MSX), mise en file comme `beep`: `s" t140 o4 l8 c d e c  e4 g4 r4 >c2" play`. Notes `c d e f g a b`, `#` ou `+` dièse, `-` bémol, puis une durée (4 noire, 8 croche, un point rallonge de moitié); `r` ou `p` un silence; `o4` octave, `<` une octave plus bas, `>` une plus haut; `l8` durée par défaut; `t120` tempo en noires par minute; `w1` l'onde; `v8` le volume 0 à 15; `n49` une note par son numéro (`n0` un silence, 49 est le do du milieu); `c4&c8` lie deux notes de même hauteur. Les espaces sont libres; les réglages restent d'un `play` au suivant. Une virgule commence une autre voix, jouée avec les autres (4 voix, 512 notes chacune, chacune commence avec l'octave, la durée, le tempo, l'onde et le volume avec lesquels le `play` a démarré). Seulement dans les mots courts (`sdl2`), pas dans le mixer: avec `sdl2-mixer`, `play` est le mot qui joue un son. |
+| `play` | `( a n -- )` | Joue une mélodie écrite en texte (MML, comme sur le MSX), mise en file comme `beep`: `s" t140 o4 l8 c d e c  e4 g4 r4 >c2" play`. Notes `c d e f g a b`, `#` ou `+` dièse, `-` bémol, puis une durée (4 noire, 8 croche, un point rallonge de moitié); `r` ou `p` un silence; `o4` octave, `<` une octave plus bas, `>` une plus haut; `l8` durée par défaut; `t120` tempo en noires par minute; `w1` l'onde; `v8` le volume 0 à 15; `n49` une note par son numéro (`n0` un silence, 49 est le do du milieu); `c4&c8` lie deux notes de même hauteur. Les espaces sont libres; les réglages restent d'un `play` au suivant. Une virgule commence une autre voix, jouée avec les autres (4 voix, 512 notes chacune, chacune commence avec l'octave, la durée, le tempo, l'onde et le volume avec lesquels le `play` a démarré). Seulement dans les mots courts (`gfx`), pas dans le mixer: avec `gfx-sound`, `play` est le mot qui joue un son. |
 | `adsr` | `( a d s r -- )` | Enveloppe des bips et de `play`: attaque et décroissance en ms, maintien en pourcentage du pic, relâchement en ms (la fin de la note, il ne s'y ajoute pas). Les coups et les airs ABC ne sont pas touchés. Désactivée par défaut. |
 | `adsr@` | `( -- a d s r )` | Les quatre valeurs de `adsr`. |
 | `adsr-off` | `( -- )` | Retour à la note simple, sans enveloppe. |
@@ -272,9 +276,9 @@ vocabulaire et peuvent cacher vos propres noms ou être cachés par eux.
 | `render` | `( n buf -- )` | Mélange les voix dans n échantillons de 16 bits de buf, écrêtés. |
 | `pump` | `( -- )` | Complète la file audio jusqu'à `latency` échantillons avec le mélange des voix, sauf si aucune ne joue. |
 
-## Images (sdl2-image)
+## Images (gfx-image)
 
-Tapez `sdl2-image` une fois, puis chargez les images après `screen`.
+Tapez `gfx-image` une fois, puis chargez les images après `screen`.
 
 | Mot | Pile | Ce qu'il fait |
 |------|-------|--------------|
@@ -302,9 +306,9 @@ Tapez `sdl2-image` une fois, puis chargez les images après `screen`.
 | `srect` | `( -- a )` | Tampon `SDL_Rect` source utilisé par `draw-part`. |
 | `isize` | `( -- a )` | Tampon de 8 octets utilisé par `image-size`. |
 
-## Texte (sdl2-ttf)
+## Texte (gfx-font)
 
-Tapez `sdl2-ttf` une fois. Le texte est dessiné dans la couleur
+Tapez `gfx-font` une fois. Le texte est dessiné dans la couleur
 courante.
 
 | Mot | Pile | Ce qu'il fait |
@@ -337,9 +341,9 @@ comme `pen`.
 | `current-font` | `( -- font )` | Valeur. Police choisie par `font`. |
 | `tsize` | `( -- a )` | Tampon de 8 octets utilisé pour les tailles. |
 
-## Son (sdl2-mixer)
+## Son (gfx-sound)
 
-Tapez `sdl2-mixer` une fois. À ne pas confondre avec `beep`, qui est
+Tapez `gfx-sound` une fois. À ne pas confondre avec `beep`, qui est
 dans le noyau.
 
 | Mot | Pile | Ce qu'il fait |
@@ -400,9 +404,9 @@ dans le noyau.
 | `mixer-open` | `( -- n )` | Valeur. Indicateur d'ouverture du mixer. |
 | `mixer-close` | `( -- )` | Ferme le mixer. Installé dans `close-hook`. |
 
-## Airs (sdl2-abc)
+## Airs (gfx-abc)
 
-Tapez `sdl2-abc` une fois (il charge `sdl2-mixer` si besoin). Un air
+Tapez `gfx-abc` une fois (il charge `gfx-sound` si besoin). Un air
 écrit en notation ABC (voir abcnotation.com) est lu, transformé en
 fichier MIDI dans un fichier temporaire (supprimé une fois chargé) et
 joué par SDL2_mixer via FluidSynth, avec la soundfont donnée par
@@ -464,7 +468,7 @@ ces versions; ils sont listés ici avec les autres.
 
 | Mot | Pile | Ce qu'il fait |
 |------|-------|--------------|
-| `graphic` | `( -- )` | Met `sdl2` dans l'ordre de recherche et ouvre la zone de dessin (`gfx-on`), 640 par 480 pixels logiques. |
+| `graphic` | `( -- )` | Met `gfx` dans l'ordre de recherche et ouvre la zone de dessin (`gfx-on`), 640 par 480 pixels logiques. |
 | `gfx-on` | `( -- )` | Ouvre la zone de dessin sous le texte de la console (matériel nu) et fixe `width`, `height` et `gfx-mode`. |
 | `graphic-size` | `( w h -- )` | Ouvre la zone de dessin avec une autre taille, jusqu'à 1920 par 1440. L'écran de la console lui-même fait 640 par 480 fois `console-zoom`. Web: `graphic-on` fait la même chose avec 640 par 480. |
 | `gfx-mode` | `( -- f )` | Valeur. Vrai (-1) tant que les mots de dessin marchent sous la console. |
@@ -504,7 +508,7 @@ millisecondes après son dernier appui.
 
 Autres noms d'un même mot, comme les appellent d'autres Forth et BASIC.
 Un alias est une simple définition en deux-points qui appelle le mot,
-donc il marche partout où `sdl2` marche (Linux, web, rpi, efi).
+donc il marche partout où `gfx` marche (Linux, web, rpi, efi).
 Ajoutez-en ici.
 
 Où les changer: un alias tient en une ligne, `: plot ( x y -- ) dot ;`,
@@ -533,6 +537,11 @@ Adding words »).
 | Alias | Pareil que | Pourquoi |
 |-------|---------|-----|
 | `plot` | `dot` `( x y -- )` | Les programmes Forth et BASIC disent `plot` pour un pixel ; il fixe aussi le départ de `lineto`. |
+| `sdl2` | `gfx` | Le premier nom du vocabulaire, quand les mots venaient de SDL2 seul. |
+| `sdl2-image` | `gfx-image` | Premier nom du chargeur d'images. |
+| `sdl2-ttf` | `gfx-font` | Premier nom du chargeur de polices. |
+| `sdl2-mixer` | `gfx-sound` | Premier nom du chargeur de sons. |
+| `sdl2-abc` | `gfx-abc` | Premier nom du chargeur d'airs. |
 
 ## Index alphabétique
 
@@ -541,42 +550,45 @@ Adding words »).
 `brown` `c-close` `c-mkstemps` `circle` `close-screen` `cls` `color`
 `cursor` `cyan` `delay` `disc` `dot` `draw` `draw-part` `draw-size`
 `drum-hit` `dt` `escape` `events` `flip` `font` `forget-keys` `frame`
-`free-font` `free-image` `free-music` `free-sound` `fullscreen`
-`gfx-cls` `gfx-mode` `gfx-on` `graphic` `graphic-on` `graphic-size`
-`gray` `green` `height` `hline` `image-alpha` `image-size` `image-tint`
+`free-font` `free-image` `free-music` `free-sound` `fullscreen` `gfx`
+`gfx-abc` `gfx-cls` `gfx-font` `gfx-image` `gfx-mode` `gfx-on`
+`gfx-sound` `graphic` `graphic-on` `graphic-size` `gray` `green`
+`height` `hline` `image-alpha` `image-size` `image-tint`
 `IMG_LoadTexture` `ink` `key-backspace` `key-down` `key-enter` `key-esc`
 `key-hit` `key-hold` `key-left` `key-right` `key-space` `key-tab`
 `key-times` `key-up` `key-within` `last-key` `latency` `LEFT-BUTTON`
-`line` `line-x` `line-y` `lineto` `load-font` `load-image` `load-music` `load-sound` `magenta`
-`MIDDLE-BUTTON` `Mix_CloseAudio` `Mix_FreeChunk` `Mix_FreeMusic`
-`Mix_HaltChannel` `Mix_HaltMusic` `Mix_LoadMUS` `Mix_LoadWAV_RW`
-`Mix_OpenAudio` `Mix_PlayChannelTimed` `Mix_Playing` `Mix_PlayingMusic`
-`Mix_PlayMusic` `Mix_SetSoundFonts` `Mix_Volume` `Mix_VolumeMusic`
-`mouse-x` `mouse-y` `music` `music-once` `music-volume` `music?` `noise`
-`one-key` `orange` `paint` `pen` `pen-a` `pen-b` `pen-g` `pen-r` `pink`
-`pitch-drop` `pixel@` `play` `plot` `pressed?` `purple` `quit!` `quit?`
-`red` `render-hook` `renderer` `rgb` `rgba` `RIGHT-BUTTON` `sample-rate`
-`saw` `scan?` `screen` `screen-open?` `sdl` `sdl-error` `sdl-shutdown`
-`SDL_ClearQueuedAudio` `SDL_CloseAudioDevice` `SDL_CreateRenderer`
-`SDL_CreateTexture` `SDL_CreateTextureFromSurface` `SDL_CreateWindow`
-`SDL_Delay` `SDL_DestroyRenderer` `SDL_DestroyTexture`
-`SDL_DestroyWindow` `SDL_FreeSurface` `SDL_GetError`
-`SDL_GetKeyboardState` `SDL_GetMouseState` `SDL_GetQueuedAudioSize`
-`SDL_GetTicks` `SDL_Init` `SDL_InitSubSystem` `SDL_OpenAudioDevice`
-`SDL_PauseAudioDevice` `SDL_PollEvent` `SDL_PushEvent`
-`SDL_QueryTexture` `SDL_QueueAudio` `SDL_RenderClear` `SDL_RenderCopy`
-`SDL_RenderDrawLine` `SDL_RenderDrawPoint` `SDL_RenderDrawRect`
-`SDL_RenderFillRect` `SDL_RenderPresent` `SDL_RenderReadPixels`
-`SDL_RenderSetLogicalSize` `SDL_RWFromFile` `SDL_SetHint`
-`SDL_SetRenderDrawBlendMode` `SDL_SetRenderDrawColor`
-`SDL_SetTextureAlphaMod` `SDL_SetTextureBlendMode`
-`SDL_SetTextureColorMod` `SDL_SetWindowFullscreen` `SDL_SetWindowTitle`
-`SDL_ShowCursor` `SDL_UpdateTexture` `SDL_WaitEvent` `sdlimg` `sdlmix`
-`sdlttf` `setting` `silence` `sine` `snd-ok` `sound` `sound-off`
-`sound-on` `sound-volume` `soundfont` `soundfont?` `sounds-playing`
-`square` `stop-music` `stop-sounds` `text` `text-size` `ticks`
-`ticks>ms` `title` `triangle` `TTF_CloseFont` `TTF_Init` `TTF_OpenFont`
-`TTF_Quit` `TTF_RenderUTF8_Blended` `TTF_SizeUTF8` `tune-bpm`
-`tune-level` `tune-loop` `tune-midi` `tune-ms` `tune-notes` `tune-play`
+`line` `line-x` `line-y` `lineto` `load-font` `load-image` `load-music`
+`load-sound` `magenta` `MIDDLE-BUTTON` `Mix_CloseAudio` `Mix_FreeChunk`
+`Mix_FreeMusic` `Mix_HaltChannel` `Mix_HaltMusic` `Mix_LoadMUS`
+`Mix_LoadWAV_RW` `Mix_OpenAudio` `Mix_PlayChannelTimed` `Mix_Playing`
+`Mix_PlayingMusic` `Mix_PlayMusic` `Mix_SetSoundFonts` `Mix_Volume`
+`Mix_VolumeMusic` `mouse-x` `mouse-y` `music` `music-once`
+`music-volume` `music?` `noise` `one-key` `orange` `paint` `pen` `pen-a`
+`pen-b` `pen-g` `pen-r` `pink` `pitch-drop` `pixel@` `play` `plot`
+`pressed?` `purple` `quit!` `quit?` `red` `render-hook` `renderer` `rgb`
+`rgba` `RIGHT-BUTTON` `sample-rate` `saw` `scan?` `screen`
+`screen-open?` `sdl` `sdl-error` `sdl-shutdown` `SDL_ClearQueuedAudio`
+`SDL_CloseAudioDevice` `SDL_CreateRenderer` `SDL_CreateTexture`
+`SDL_CreateTextureFromSurface` `SDL_CreateWindow` `SDL_Delay`
+`SDL_DestroyRenderer` `SDL_DestroyTexture` `SDL_DestroyWindow`
+`SDL_FreeSurface` `SDL_GetError` `SDL_GetKeyboardState`
+`SDL_GetMouseState` `SDL_GetQueuedAudioSize` `SDL_GetTicks` `SDL_Init`
+`SDL_InitSubSystem` `SDL_OpenAudioDevice` `SDL_PauseAudioDevice`
+`SDL_PollEvent` `SDL_PushEvent` `SDL_QueryTexture` `SDL_QueueAudio`
+`SDL_RenderClear` `SDL_RenderCopy` `SDL_RenderDrawLine`
+`SDL_RenderDrawPoint` `SDL_RenderDrawRect` `SDL_RenderFillRect`
+`SDL_RenderPresent` `SDL_RenderReadPixels` `SDL_RenderSetLogicalSize`
+`SDL_RWFromFile` `SDL_SetHint` `SDL_SetRenderDrawBlendMode`
+`SDL_SetRenderDrawColor` `SDL_SetTextureAlphaMod`
+`SDL_SetTextureBlendMode` `SDL_SetTextureColorMod`
+`SDL_SetWindowFullscreen` `SDL_SetWindowTitle` `SDL_ShowCursor`
+`SDL_UpdateTexture` `SDL_WaitEvent` `sdlimg` `sdlmix` `sdlttf` `setting`
+`silence` `sine` `snd-ok` `sound` `sound-off` `sound-on` `sound-volume`
+`soundfont` `soundfont?` `sounds-playing` `square` `stop-music`
+`stop-sounds` `text` `text-size` `ticks` `ticks>ms` `title` `triangle`
+`TTF_CloseFont` `TTF_Init` `TTF_OpenFont` `TTF_Quit`
+`TTF_RenderUTF8_Blended` `TTF_SizeUTF8` `tune-bpm` `tune-level`
+`tune-loop` `tune-midi` `tune-ms` `tune-notes` `tune-play`
 `tune-playing?` `tune-program` `tune-save` `tune-send` `tune-stop`
-`typed` `unpress` `wait` `wave` `wheel` `white` `width` `window-handle` `yellow` `zoom`
+`typed` `unpress` `wait` `wave` `wheel` `white` `width` `window-handle`
+`yellow` `zoom`

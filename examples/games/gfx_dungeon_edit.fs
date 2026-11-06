@@ -33,7 +33,7 @@
 \ The @ (where you start) is only for level 1; the other levels start next to
 \ their < stairs. Letters of the tiles: see the top of gfx_dungeon.fs.
 
-sdl2
+gfx
 : dungeon-no-run ;
 include gfx_dungeon.fs
 

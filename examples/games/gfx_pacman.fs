@@ -31,7 +31,7 @@
 \ 16 ms whatever the speed of the screen, and decides where to go in the middle
 \ of a tile.
 
-sdl2
+gfx
 
 ( ---- The maze: a template of tiles, and the working copy ---- )
 19 constant pm-cols   21 constant pm-rows   10 constant pm-t   20 constant pm-top

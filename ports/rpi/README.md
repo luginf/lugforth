@@ -104,7 +104,7 @@ layout is the board's: AltGr (right Alt) gives `~ # { [ | ` \\ ^ @ ] }`, and
 boot. It changes the characters typed at the prompt, not the key codes of
 `pressed?` (positions, as WASD needs).
 
-The sdl2 word `screen` takes the framebuffer over, and `close-screen` gives
+The gfx word `screen` takes the framebuffer over, and `close-screen` gives
 the console back (cleared). Fault messages still go to the UART only.
 
 `graphic` (then `0 0 100 100 line`, `red color 10 10 50 30 box`, `5 ink ...`) draws under the console
@@ -135,10 +135,10 @@ and `SND-QUEUED` (a queue of stereo frames played with the mixer's sound), `UNIX
 (the clock), and the keys Ctrl, Shift, Alt, Home, F1 to F4 and F12, which `input-down?` sees as the codes
 224 to 232.
 
-## Graphics: the sdl2 words
+## Graphics: the gfx words
 
-The vocabulary `sdl2` has the same short words as Linux
-(`docs/en/SDL2-words.md`) and the web (`docs/en/SDL2-web.md`). So
+The vocabulary `gfx` has the same short words as Linux
+(`docs/en/GFX-words.md`) and the web (`docs/en/GFX-web.md`). So
 `examples/games/gfx_breakout.fs` runs unchanged, sent over the serial line:
 
 ```sh
@@ -153,7 +153,7 @@ prompt back (`run`) starts the game. From then on, the terminal is the
 keyboard: arrows, space, Esc. Ctrl-] quits.
 
 ```forth
-sdl2  2 to zoom  160 120 screen
+gfx  2 to zoom  160 120 screen
 $101830 color cls  red color 10 10 50 30 box  white color 120 20 15 circle  flip
 ```
 
@@ -164,13 +164,13 @@ The words that exist:
 * Colors: `color rgb rgba alpha pen pen-r pen-g pen-b pen-a` and the named
   colors.
 * Drawing: `cls box frame dot hline line disc circle pixel@ flip`.
-* Text: `load-font font free-font text text-size` (and `sdl2-ttf`, which
+* Text: `load-font font free-font text text-size` (and `gfx-font`, which
   does nothing). There is no TrueType: one built-in 8x8 font (font8x8,
   public domain), scaled. `s" any.ttf" 16 load-font font` gives scale 2. The
   text is UTF-8, with the Latin-1 accents (é à ç ö...); other characters are
   drawn as `?`.
 * Images: `load-image free-image image-size draw draw-size draw-part
-  image-alpha image-tint` (and `sdl2-image`, which does nothing). There is
+  image-alpha image-tint` (and `gfx-image`, which does nothing). There is
   no PNG decoder on the board, so the images are built into the kernel: the PNG files of
   `ASSETS` in the Makefile (`examples/games/gfx_tiles.png`,
   `examples/games/gfx_tiles_alt.png`) are turned into pixels by
@@ -183,7 +183,7 @@ The words that exist:
   `key-` and `-BUTTON` constants. `scan?` is always false.
 * Sound: `beep drum-hit pitch-drop silence beeping? wave beep-volume
   audio-open audio-open? latency sample-rate`, as on Linux.
-* Tunes: `sdl2-abc`, then `abc-play abc-loop tune-play tune-loop tune-stop
+* Tunes: `gfx-abc`, then `abc-play abc-loop tune-play tune-loop tune-stop
   tune-playing? music-volume`. The ABC reader is the shared `common/abc.fs`,
   and the notes are played by oscillators, as on the web. `soundfont` does
   nothing, and there is no `load-sound` or `load-music` (no files).

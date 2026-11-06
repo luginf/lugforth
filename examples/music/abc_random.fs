@@ -39,7 +39,7 @@
 \ new-tune ( -- a n ) is the ABC text of a tune; its title T: shows the seed.
 
 \ On a PC or in the browser the player is loaded when there is none yet
-defined? sdl2-abc defined? abc-play 0= and [if] sdl2-abc [then]
+defined? gfx-abc defined? abc-play 0= and [if] gfx-abc [then]
 
 \ ---- The text goes in two buffers, one by voice ----
 create rt-v1 1600 allot   0 value rt-n1
