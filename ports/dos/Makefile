@@ -26,6 +26,9 @@
 #                     has none; on a real DOS, CWSDPMI.EXE or HDPMI32 works
 #   make stage        out/dos/disk: the program, the examples, ed, writhdeck, the
 #                     manual, every name cut to 8.3 (tools/dos_stage.py)
+#   make image        out/dos/lugforth.img: that folder on a hard disk image
+#   make bootimage    out/dos/lugforth-boot.img: the same, starting by itself with
+#                     the FreeDOS kernel on the Lugforth prompt (needs dosbox-x)
 #   make run          DOSBox on out/dos/disk (a window)
 #   make test         runs it in DOSBox without a window and checks the answers
 
@@ -83,6 +86,20 @@ stage: $(OUT)/lugforth.exe $(OUT)/HDPMI32.EXE
 image: stage
 	python3 $(ROOT)/tools/dos_image.py $(OUT)/disk $(OUT)/lugforth.img
 
+# The FreeDOS kernel (GPL 2, https://github.com/FDOS/kernel): KERNEL.SYS and
+# SYS.COM, fetched from its release, not kept in the repository.
+FREEDOS_ZIP := https://github.com/FDOS/kernel/releases/download/ke2043/ke2043_86f16.zip
+FREEDOS_SHA256 := 5af57a43337a2576e9395714af9692f547ea6ed7fd1c6cb71f4e61d7afad9b4b
+freedos: $(OUT)/freedos/KERNEL.SYS
+$(OUT)/freedos/KERNEL.SYS:
+	mkdir -p $(OUT)/freedos
+	curl -sSL -o $(OUT)/freedos/kernel.zip $(FREEDOS_ZIP)
+	echo "$(FREEDOS_SHA256)  $(OUT)/freedos/kernel.zip" | sha256sum -c --quiet -
+	cd $(OUT)/freedos && unzip -o -q -j kernel.zip bin/KERNEL.SYS bin/sys.com docs/readme.txt
+
+bootimage: stage freedos
+	python3 $(ROOT)/tools/dos_image.py $(OUT)/disk $(OUT)/lugforth-boot.img --boot $(OUT)/freedos
+
 run: stage
 	$(DOSBOX) -c "mount c $(abspath $(OUT))/disk" -c "c:" -c "hdpmi32 -r" -c "lugforth"
 
@@ -90,4 +107,4 @@ test: stage
 	python3 $(ROOT)/tools/dos_test.py $(OUT)
 
 FORCE:
-.PHONY: all djgpp hdpmi stage image run test FORCE
+.PHONY: all djgpp hdpmi stage image freedos bootimage run test FORCE

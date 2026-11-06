@@ -182,6 +182,46 @@ def image(disk):
     shutil.rmtree(d, ignore_errors=True)
 
 
+def bootimage(out_dir, disk):
+  """The image of make bootimage started in QEMU: the MBR, FreeDOS, HDPMI32, then Lugforth as the shell."""
+  kdir = os.path.join(out_dir, 'freedos')
+  if not os.path.exists(os.path.join(kdir, 'KERNEL.SYS')) or not shutil.which('qemu-system-i386') \
+     or not shutil.which('dosbox-x') or not shutil.which('mcopy'):
+    print('  (no make freedos, qemu-system-i386 or dosbox-x: the bootable image is not checked)')
+    return
+  d = tempfile.mkdtemp(prefix='lugboot')
+  try:
+    img = os.path.join(d, 'boot.img')
+    r = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dos_image.py'),
+                        disk, img, '--boot', kdir], capture_output=True, text=True)
+    check('make bootimage: the image is made', r.stdout + r.stderr, r.returncode == 0)
+    if r.returncode:
+      return
+    part = img + '@@%d' % (63 * 512)
+    env = dict(os.environ, MTOOLS_SKIP_CHECK='1')
+    auto = os.path.join(d, 'AUTOEXEC.FS')
+    with open(auto, 'w') as f:   # at start: an answer in a file, then stay at the prompt
+      f.write('s" booted.txt" w/o create-file throw value bfh  6 7 * s>d <# #s #> bfh write-file throw  bfh close-file throw\r\n')
+    subprocess.run(['mcopy', '-Q', '-i', part, auto, '::AUTOEXEC.FS'], env=env, check=True)
+    q = subprocess.Popen(['qemu-system-i386', '-m', '64', '-drive', 'file=%s,format=raw' % img,
+                          '-display', 'none', '-serial', 'none', '-monitor', 'none', '-no-reboot'],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    got = ''
+    try:
+      for _ in range(60):
+        time.sleep(2)
+        r = subprocess.run(['mtype', '-i', part, '::BOOTED.TXT'], env=env, capture_output=True, text=True)
+        if r.returncode == 0 and r.stdout.strip():
+          got = r.stdout.strip()
+          break
+    finally:
+      q.terminate()
+      q.wait()
+    check('the bootable image: QEMU starts FreeDOS, then Lugforth runs its autoexec.fs', got, got == '42')
+  finally:
+    shutil.rmtree(d, ignore_errors=True)
+
+
 def interactive(disk):
   if not shutil.which('Xvfb') or not shutil.which('xdotool') or not shutil.which('import'):
     print('  skip  the text screen, the keyboard, graphics and sound (Xvfb, xdotool, ImageMagick needed)')
@@ -414,6 +454,7 @@ def main():
   finally:
     shutil.rmtree(d, ignore_errors=True)
   image(disk)
+  bootimage(out_dir, disk)
   interactive(disk)
   print('dos: %s' % ('ALL OK' if failures == 0 else '%d FAILED' % failures))
   sys.exit(1 if failures else 0)
