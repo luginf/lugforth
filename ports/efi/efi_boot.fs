@@ -22,6 +22,7 @@ needs platform.fs
 needs ../../common/lineedit.fs
 needs ../../common/pager.fs
 needs ../../common/abc.fs
+needs ../../common/flood.fs
 needs ../baremetal/sdl2.fs
 needs ../baremetal/terms.fs
 needs ../baremetal/autoboot.fs

@@ -46,7 +46,7 @@ Start `lugforth` (see [Binaries](#binaries) or build it with
 `ninja posix`). You get a banner and the prompt:
 
 ```
-Lugforth v2026.11.5.7
+Lugforth v2026.11.6.2
 :; ===========>/>
 type 'info' for help
  ok
@@ -694,19 +694,21 @@ drawing shows at once, under the text, with no `screen` and no `flip`.
     red color 200 100 50 30 box
     5 ink 320 240 60 circle \ a color by number
     cls \ clears the drawing, `page` clears the text
+    10 10 plot 100 10 lineto 100 80 lineto \ lineto goes on from the last point
+    white color 300 300 80 60 frame  green color 320 320 paint \ fills inside
 
 The drawing area is 640x480 by default, whatever the console size;
 `w h graphic-size` changes it (the bigger, the finer:
 `1280 960 graphic-size` on a console of 1280x960 gives one drawing pixel
 per screen pixel, and on the desktop `1024 640 graphic-size` fills a
-window of that size); `dot`, `line`, `box`, `frame`, `disc`, `circle`
-(and `text` on the boards) are those of the `sdl2` words. `ink` takes 0
-black, 1 red, 2 green, 3 yellow, 4 blue, 5 magenta, 6 cyan, 7 white, 8
-to 15 gray, orange, pink, brown, purple and light colors;
-`$rrggbb color` and `r g b rgb` give any other. Works in the console
-window (`lugforth --gui`, and the Android app) and on the Pi and the PC
-screens. A program that opens its own `screen` replaces the layer. In a
-terminal there is no window: `graphic` says so.
+window of that size); `dot`, `line`, `lineto`, `box`, `frame`, `disc`,
+`circle`, `paint` (and `text` on the boards) are those of the `sdl2`
+words. `ink` takes 0 black, 1 red, 2 green, 3 yellow, 4 blue, 5 magenta,
+6 cyan, 7 white, 8 to 15 gray, orange, pink, brown, purple and light
+colors; `$rrggbb color` and `r g b rgb` give any other. Works in the
+console window (`lugforth --gui`, and the Android app) and on the Pi and
+the PC screens. A program that opens its own `screen` replaces the
+layer. In a terminal there is no window: `graphic` says so.
 
 ## Sound at the prompt
 
@@ -803,7 +805,9 @@ Android app and on the bare-metal Pi and PC (`common/lineedit.fs`).
 * Tab completes words. After `include`, `needs`, `required`, `included`,
   `s"`, `z"`, `r|` and `r~` it completes file names instead (not on the
   web).
-* Piped input and the other ports use the plain `accept`.
+* Piped input and the other ports use the plain `accept`. On POSIX the
+  end of piped input (or of a file given with `<`) ends the session as
+  `bye` does, after the last line, even one without a newline.
 
 ## Pager
 

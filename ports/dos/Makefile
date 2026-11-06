@@ -80,6 +80,9 @@ $(OUT)/HDPMI32.EXE:
 stage: $(OUT)/lugforth.exe $(OUT)/HDPMI32.EXE
 	python3 $(ROOT)/tools/dos_stage.py $(OUT)
 
+image: stage
+	python3 $(ROOT)/tools/dos_image.py $(OUT)/disk $(OUT)/lugforth.img
+
 run: stage
 	$(DOSBOX) -c "mount c $(abspath $(OUT))/disk" -c "c:" -c "hdpmi32 -r" -c "lugforth"
 
@@ -87,4 +90,4 @@ test: stage
 	python3 $(ROOT)/tools/dos_test.py $(OUT)
 
 FORCE:
-.PHONY: all djgpp hdpmi stage run test FORCE
+.PHONY: all djgpp hdpmi stage image run test FORCE

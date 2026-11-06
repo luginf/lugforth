@@ -21,7 +21,10 @@
 // 1, chained to the handler that was there, so DOS and DJGPP still see the
 // keys and Ctrl+Break) for the keys' downs and ups, which input.h turns into
 // the state of pressed? and into characters; the mouse through the INT 33h
-// driver. close-screen gives the text mode back.
+// driver. close-screen gives the text mode back. A card with no VESA 2.0 mode
+// for the screen (an older VGA), or `-1 vga13`: the VGA mode 13h, 320x200 in
+// 256 colors (3 bits red, 3 green, 2 blue); screen.h draws in a copy in RAM
+// and each flip shrinks it into the 320x200, keeping its proportions.
 
 #define FB_HW_EXTERNAL
 #include "ports/baremetal/term.h"
@@ -41,6 +44,9 @@ static uint8_t *vid_out;                 // 16 bits: the program's screen in the
 static uint32_t vid_pitch16, vid_pw, vid_ph;
 static int vid_all;                      // 16 bits: the next flip writes every pixel
 static int vid_allow16;                  // dos_fb_open: no 32-bit mode holds the screen, even at zoom 1
+static int vid_allow13, vid_force13;     // dos_fb_open: no VESA mode at all for it (or VGA13 asked); its size
+static uint32_t vid_w13, vid_h13;
+static uint32_t vid_ow, vid_oh;          // 13h: the size of the picture in the 320x200, centered
 static unsigned long vid_phys, vid_lin;  // the framebuffer mapped: its physical address, linear address
 
 struct __attribute__((packed)) vbe_info {
@@ -105,10 +111,50 @@ static void kbd_on(void);
 static void kbd_off(void);
 static void mouse_on(int w, int h);
 
+// The VGA mode 13h: the copy in RAM, the palette 3-3-2, the picture's size in
+// the 320x200 (the screen itself when it fits, else shrunk to the largest that
+// keeps its proportions). Only at zoom 1: the zoom would be shrunk away.
+static int vga13_open(uint32_t pw, uint32_t ph) {
+  if (pw != vid_w13 || ph != vid_h13) return -1;
+  uint32_t *shadow = calloc((size_t) pw * ph, 4);
+  if (!shadow) return -1;
+  if (!__djgpp_nearptr_enable()) { free(shadow); return -1; }
+  __dpmi_regs r;
+  memset(&r, 0, sizeof r);
+  r.x.ax = 0x0013;
+  __dpmi_int(0x10, &r);
+  outportb(0x3C8, 0);
+  for (int i = 0; i < 256; i++) {
+    outportb(0x3C9, (uint8_t) ((i >> 5) * 63 / 7));
+    outportb(0x3C9, (uint8_t) (((i >> 2) & 7) * 63 / 7));
+    outportb(0x3C9, (uint8_t) ((i & 3) * 63 / 3));
+  }
+  if (pw <= 320 && ph <= 200) { vid_ow = pw; vid_oh = ph; }
+  else if ((uint64_t) pw * 200 > (uint64_t) ph * 320) { vid_ow = 320; vid_oh = ph * 320 / pw; }
+  else { vid_oh = 200; vid_ow = pw * 200 / ph; }
+  if (!vid_ow) vid_ow = 1;
+  if (!vid_oh) vid_oh = 1;
+  uint8_t *vga = (uint8_t *) (0xA0000 + __djgpp_conventional_base);
+  memset(vga, 0, 320 * 200);
+  free(vid_shadow); free(vid_prev);
+  vid_shadow = shadow; vid_prev = 0; vid_bpp = 8;
+  vid_out = vga + (size_t) ((200 - vid_oh) / 2) * 320 + (320 - vid_ow) / 2;
+  vid_pw = pw; vid_ph = ph;
+  fb_pitch = pw * 4;
+  fb_mem = (volatile uint32_t *) shadow;
+  fb_rgb = 0;
+  vid_graphics = 1;
+  kbd_on();
+  mouse_on((int) pw, (int) ph);
+  return 0;
+}
+
 static int fb_hw_open(uint32_t pw, uint32_t ph) {
   struct vbe_mode mi;
+  if (vid_force13) return vga13_open(pw, ph);
   int bpp = 32, mode = vbe_find(pw, ph, 32, &mi);
   if (mode < 0 && vid_allow16) { bpp = 16; mode = vbe_find(pw, ph, 16, &mi); }
+  if (mode < 0 && vid_allow13) return vga13_open(pw, ph);
   if (mode < 0) return -1;
   uint32_t *shadow = 0;
   uint32_t *prev = 0;
@@ -276,8 +322,20 @@ static void input_flush(void) {
 
 // FB-FLIP: as on the boards, then in a 16-bit mode the rows of the copy that
 // changed since the last flip go to the video memory, 5-6-5.
+static void vga13_flip(void) {
+  for (uint32_t y = 0; y < vid_oh; y++) {
+    const uint32_t *src = vid_shadow + (size_t) (y * vid_ph / vid_oh) * vid_pw;
+    uint8_t *dst = vid_out + (size_t) y * 320;
+    for (uint32_t x = 0; x < vid_ow; x++) {
+      uint32_t c = src[x * vid_pw / vid_ow];
+      dst[x] = (uint8_t) (((c >> 16) & 0xE0) | ((c >> 11) & 0x1C) | ((c >> 6) & 0x03));
+    }
+  }
+}
+
 static void dos_fb_flip(void) {
   fb_flip();
+  if (vid_bpp == 8 && vid_shadow && vid_graphics) { vga13_flip(); return; }
   if (vid_bpp != 16 || !vid_shadow || !vid_graphics) return;
   for (uint32_t y = 0; y < vid_ph; y++) {
     const uint32_t *src = vid_shadow + (size_t) y * vid_pw;
@@ -301,6 +359,8 @@ static void dos_fb_flip(void) {
 static cell_t dos_fb_open(cell_t w, cell_t h, cell_t zoom) {
   struct vbe_mode mi;
   vid_allow16 = w > 0 && h > 0 && vbe_find((uint32_t) w, (uint32_t) h, 32, &mi) < 0;
+  vid_allow13 = vid_allow16 && vbe_find((uint32_t) w, (uint32_t) h, 16, &mi) < 0;
+  vid_w13 = (uint32_t) w; vid_h13 = (uint32_t) h;
   return fb_open(w, h, zoom);
 }
 #define fb_open dos_fb_open

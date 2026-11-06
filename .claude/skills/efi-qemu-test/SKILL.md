@@ -5,7 +5,7 @@ description: Boot the bare-metal EFI image (ports/efi) under QEMU + OVMF and che
 
 Facts and limits: section "UEFI PC" of `docs/en/dev/PORTS.md`. The procedure:
 
-- Full test: `make -C ports/efi test` (129 checks, `tools/efi_qemu_test.py`). Needs `gnu-efi ovmf qemu-system-x86
+- Full test: `make -C ports/efi test` (132 checks, `tools/efi_qemu_test.py`). Needs `gnu-efi ovmf qemu-system-x86
   dosfstools mtools`; without root, unpack them from `apt download` and pass
   `EFIINC= EFILIB= OVMF=` (see PORTS.md). All pass (2026-10-31); the dead key test was once
   flaky: compare with a baseline run (`git stash`) before blaming a change. The answers are read up to

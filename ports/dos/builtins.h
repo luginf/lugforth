@@ -54,7 +54,9 @@
   XV(dos, "INPUT-WHEEL", INPUT_WHEEL, PUSH in_wheel) \
   XV(dos, "KEYBOARD!", KEYBOARD_SET, in_azerty = n0 != 0; DROP) \
   XV(dos, "UART-KEY", UART_KEY, PUSH uart_getc_nowait()) \
-  XV(dos, "SND-ENABLE", SND_ENABLE, sb_off = !n0; if (!n0) sb_stop(); DROP)
+  XV(dos, "SND-ENABLE", SND_ENABLE, sb_off = !n0; if (!n0) sb_stop(); DROP) \
+  XV(dos, "SND-SPEAKER", SND_SPEAKER, snd_speaker()) \
+  XV(dos, "VGA13", VGA13, vid_force13 = n0 != 0; DROP)
 
 #define PLATFORM_OPCODE_LIST \
   REQUIRED_MEMORY_SUPPORT \

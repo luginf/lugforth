@@ -239,6 +239,71 @@ static void snd_pcm_put(const int16_t *lr, cell_t frames) {
   }
 }
 
+// For an output that plays one square tone at a time (the PC speaker of
+// ports/dos/sb16.h): snd_skip moves the mixer on by n frames without making
+// its samples, snd_tone says the frequency to play now (0: silence). A hit
+// (drum-hit) goes before the beeps, the beeps before a tune; of a tune, its
+// highest note. The queue of frames (snd_pcm_put) is dropped.
+__attribute__((unused)) static void snd_skip(uint32_t n) {
+  for (int c = 0; c < SND_CH; c++) {
+    uint32_t k = n;
+    while (k && snd_beep_head[c] != snd_beep_tail[c]) {
+      unsigned i = snd_beep_tail[c] % SND_BEEPS;
+      uint32_t t = snd_beeps[c][i].left < k ? snd_beeps[c][i].left : k;
+      snd_beeps[c][i].left -= t; k -= t;
+      if (!snd_beeps[c][i].left) snd_beep_tail[c]++;
+    }
+  }
+  for (int i = 0; i < SND_HITS; i++) snd_hits[i].left = snd_hits[i].left > n ? snd_hits[i].left - n : 0;
+  uint32_t k = n;
+  while (k && snd_tune_on) {                     // the tune: the notes that start meanwhile take a voice
+    if (!snd_tune_total) { snd_tune_on = 0; break; }
+    uint32_t step = snd_tune_total - snd_tune_pos;
+    if (snd_tune_next < snd_tune_n) {
+      uint32_t st = snd_tune[snd_tune_next].start;
+      uint32_t to = st > snd_tune_pos ? st - snd_tune_pos : 0;
+      if (to < step) step = to;
+    }
+    if (step > k) step = k;
+    for (int v = 0; v < SND_TUNE_VOICES; v++)
+      snd_voices[v].left = snd_voices[v].left > step ? snd_voices[v].left - step : 0;
+    snd_tune_pos += step; k -= step;
+    while (snd_tune_next < snd_tune_n && snd_tune[snd_tune_next].start <= snd_tune_pos) {
+      for (int v = 0; v < SND_TUNE_VOICES; v++) {
+        if (snd_voices[v].left) continue;
+        snd_voices[v].freq = snd_tune[snd_tune_next].freq;
+        snd_voices[v].left = snd_voices[v].total = snd_tune[snd_tune_next].len;
+        break;
+      }
+      snd_tune_next++;
+    }
+    if (snd_tune_pos >= snd_tune_total) {
+      snd_tune_pos = 0; snd_tune_next = 0;
+      if (!snd_tune_loop) snd_tune_on = 0;
+    }
+  }
+  for (int v = 0; v < SND_TUNE_VOICES; v++)      // the notes still sounding after the tune ended
+    snd_voices[v].left = snd_voices[v].left > k ? snd_voices[v].left - k : 0;
+  snd_pcm_tail = snd_pcm_head;
+}
+
+__attribute__((unused)) static uint32_t snd_tone(void) {
+  for (int i = 0; i < SND_HITS; i++)
+    if (snd_hits[i].left && snd_hits[i].freq) {   // its pitch falls as it fades
+      uint32_t total = snd_hits[i].total, left = snd_hits[i].left;
+      return (uint32_t) (snd_hits[i].freq * (uint64_t) (100 * total - snd_hits[i].drop * (total - left)) / (100 * total));
+    }
+  for (int c = 0; c < SND_CH; c++) {
+    if (snd_beep_head[c] == snd_beep_tail[c]) continue;
+    unsigned i = snd_beep_tail[c] % SND_BEEPS;
+    if (snd_beeps[c][i].left && snd_beeps[c][i].freq && snd_beeps[c][i].vol) return snd_beeps[c][i].freq;
+  }
+  uint32_t f = 0;
+  for (int v = 0; v < SND_TUNE_VOICES; v++)
+    if (snd_voices[v].left && snd_voices[v].freq > f) f = snd_voices[v].freq;
+  return f;
+}
+
 static void snd_clamp_add(int16_t *dst, int32_t v) {
   v += *dst;
   *dst = (int16_t) (v > 32767 ? 32767 : v < -32768 ? -32768 : v);

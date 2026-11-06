@@ -29,6 +29,13 @@ clearscreen $ff0000 setpencolor 3 setpensize hideturtle 60 forward render
 320 210 pixel@ $ff0000 t=   319 210 pixel@ $ff0000 t=   330 210 pixel@ $101828 t=
 \ rounding
 3.7e fround 4 t=   -3.7e fround -4 t=   0.2e fround 0 t=   -0.2e fround 0 t=
+\ back, moveto, turtle@ / turtle!
+clearscreen 40 back  where 280 t=  320 t=
+clearscreen -50 30 90 moveto  nseg 0 t=  where 270 t=  270 t=   10 forward  where 270 t=  280 t=
+clearscreen 33 forward 37 right  turtle@  80 forward 120 left 15 forward  turtle!
+where 207 t=  320 t=   theading sf@ fround 37 t=   nseg 3 t=
+\ tree: every branch comes back to the top of the trunk
+clearscreen 0 setheading 60 tree  where 180 t=  320 t=  nseg 255 t=  depth 0 t=
 \ French names
 clearscreen 20 avance 90 droite 20 avance  nseg 2 t=
 

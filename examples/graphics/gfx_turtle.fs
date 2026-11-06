@@ -23,6 +23,9 @@
 \
 \   forward backward left right        n          move or turn (degrees, clockwise)
 \   penup pendown                                 move without or with drawing
+\   turtle@ ( -- s1 s2 s3 )  turtle! ( s1 s2 s3 -- )  save and restore the place and
+\                                                 heading, exactly (for recursive drawings)
+\   moveto ( x y deg -- )                         go there and face deg, without drawing
 \   setxy ( x y -- )  setheading ( deg -- )  home clearscreen
 \   setpencolor ( $rrggbb -- )  setpensize ( n -- )  setscreencolor ( $rrggbb -- )
 \   hideturtle showturtle   slow ( ms -- ) 0 = at once   watch  ( shows, Esc quits )
@@ -301,6 +304,12 @@ create pbuf 160 allot   variable shown
   x s>f tx sf!  y s>f ty sf!
   pen-down? if from-x @ from-y @ tpos record then ;
 : penup ( -- ) 0 to pen-down? ;
+: turtle@ ( -- s1 s2 s3 )   ( the place and the heading, three cells to give back to turtle! )
+  tx @  ty @  theading @ ;
+: turtle! ( s1 s2 s3 -- )   ( back where turtle@ was, without drawing )
+  theading !  ty !  tx ! ;
+: moveto ( x y deg -- )   ( there, facing deg, without drawing )
+  setheading  s>f ty sf!  s>f tx sf! ;
 : pendown ( -- ) 1 to pen-down? ;
 : hideturtle ( -- ) 0 to turtle-shown? ;
 : showturtle ( -- ) 1 to turtle-shown? ;
@@ -309,7 +318,7 @@ create pbuf 160 allot   variable shown
 : setscreencolor ( $rrggbb -- ) to screen-rgb ;
 : slow ( ms -- ) to slow-ms ;
 
-: fw forward ;   : bk backward ;   : lt left ;   : rt right ;
+: back backward ;   : fw forward ;   : bk backward ;   : lt left ;   : rt right ;
 : heading setheading ;   : color! setpencolor ;
 : hidepen hideturtle ;   : showpen showturtle ;
 
@@ -333,6 +342,13 @@ create pbuf 160 allot   variable shown
 
 : spiral ( -- )
   200 0 do i 3 * 20 + 2 / forward 91 right loop ;
+
+: tree ( len -- )   ( a binary tree: turtle@ and turtle! bring each branch back )
+  { len }
+  len 6 < if exit then
+  len forward
+  turtle@  25 left  len 3 4 */ recurse  turtle!
+  turtle@  25 right len 3 4 */ recurse  turtle! ;
 
 : flower ( -- )
   36 0 do

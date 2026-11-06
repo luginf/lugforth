@@ -696,7 +696,28 @@ chargement); deux `{ }` dans une définition cassent; le web n'a pas
 `fold-case`. Reste à emprunter: bresenham, le CYOA (livre dont vous êtes
 le héros, aussi en français), les motifs glitch. Piège rencontré:
 `fdup f>s s>f f< if` laissait une mauvaise valeur ici; arrondissez avec
-`fdup f0< if 0.5e f- else 0.5e f+ then f>s`.
+`fdup f0< if 0.5e f- else 0.5e f+ then f>s`. Ajouté le 2026-11-06,
+d'après DurexForth: `back`, `moveto ( x y deg -- )`, `turtle@` /
+`turtle!` (les trois cellules flottantes copiées telles quelles, donc
+une branche revient exactement) et le dessin `tree`. Piège rencontré
+dans `tree`: après `turtle@` les trois cellules sont au sommet, donc un
+`dup` de la longueur prend le cap à la place: gardez la longueur dans
+une variable locale.
+
+`paint` et `lineto` (2026-11-06): `lineto ( x y -- )` trace depuis
+`line-x line-y`, mis par `line`, `lineto` et `plot`, dans chaque sdl2.fs
+(posix, web, baremetal). `paint ( x y -- )` est common/flood.fs (chargé
+par phase_desktop.fs et les démarrages efi, rpi et dos): l'algorithme
+par lignes, un bitmap des pixels remplis (donc remplir avec la couleur
+déjà là se termine), une pile de 16384 segments allouée pour l'appel
+(au-delà, une partie reste vide), l'image lue par le mot différé
+`flood-get` et remplie par `flood-span`. POSIX lit l'écran une fois avec
+`SDL_RenderReadPixels`, les cartes lisent `fb-pixel`, le web fait tout
+en JavaScript (un seul `getImageData`). Testé:
+`ports/posix/sdl2_tests.fs` (test-paint, test-lineto), le test EFI sous
+QEMU (3 vérifications), la console web dans Chromium headless à la main.
+Piège rencontré en testant: `hex` avant les coordonnées les lisait en
+hexadécimal.
 
 ## Dessiner à l'invite (`graphic`) - fait le 2026-10-20
 

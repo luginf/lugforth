@@ -67,9 +67,13 @@ $808080 constant gray
   gfx-mode if gfx-cls exit then
   pen-a >r 255 alpha  0 0 width height fb-box  r> alpha ;
 : dot ( x y -- ) 1 1 fb-box ;
-: plot ( x y -- ) dot ;   \ alias of dot, the usual Forth name
+0 value line-x   0 value line-y   ( where lineto starts: the end of the last line or plot )
+: plot ( x y -- ) 2dup to line-y to line-x dot ;   \ dot, and lineto starts there
 : hline ( x y w -- ) 1 fb-box ;
 : line ( x1 y1 x2 y2 -- ) fb-line ;
+: line ( x1 y1 x2 y2 -- ) 2dup to line-y to line-x line ;
+: lineto ( x y -- )   ( a line from the end of the last line, or the last plot )
+  line-x line-y 2swap line ;
 : frame ( x y w h -- )
   { x y w h }
   w 0> h 0> and if
@@ -91,6 +95,10 @@ $808080 constant gray
     cx i + cy x + dot  cx i - cy x + dot  cx i + cy x - dot  cx i - cy x - dot
   loop ;
 : pixel@ ( x y -- $rrggbb ) fb-pixel ;
+also internals
+: paint ( x y -- )   ( fills with the pen the area of the color found at x y )
+  ['] fb-pixel is flood-get  ['] hline is flood-span  width height flood-fill ;
+previous
 
 ( ---- Colors by number: the sixteen of an 8 bit micro ---- )
 create ink-table

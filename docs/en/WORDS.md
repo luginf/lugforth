@@ -32,7 +32,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 
 ## The `forth` vocabulary
 
-613 words. 62 are described by the reference pages, 163 by the notes, 207 are standard words the project leaves to the standard, 169 have only a stack comment or binding, 12 have no description yet.
+615 words. 62 are described by the reference pages, 165 by the notes, 207 are standard words the project leaves to the standard, 169 have only a stack comment or binding, 12 have no description yet.
 
 
 ### Arguments
@@ -725,6 +725,7 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `httpd` | `( -- )` | Lazy loaded HTTP server. See `attic/oldsite/posix_common.html`. | P - |
 | `ink` | `( n -- )` | Sets the drawing color by number, 0 to 15 (0 black, 1 red, 2 green, 3 yellow, 4 blue, 5 magenta, 6 cyan, 7 white...). | - W |
 | `line` | `( x1 y1 x2 y2 -- )` | Draws a line in the current color. Typed at the web prompt before `graphic`, it opens the drawing area first. | - W |
+| `lineto` | `( x y -- )` | A line from the end of the last `line`, `lineto` or `plot` to x y (sdl2 short words). See docs/en/SDL2-words.md. | - W |
 | `magenta` | `( -- $rrggbb )` | The color magenta, $ff00ff: `magenta color`. | - W |
 | `n>r` | `( i*x n -- )` |  | P W |
 | `name>compile` | `( nt -- x xt )` |  | P W |
@@ -736,9 +737,10 @@ exists: **P** Linux (POSIX) build, **W** web build.
 | `orange` | `( -- $rrggbb )` | The color orange, $ff8000: `orange color`. | - W |
 | `pager-off` | `( -- )` | Turns the pager off. | P - |
 | `pager-on` | `( -- )` | Stops the output at each screenful at the prompt (space, Enter or q). | P - |
+| `paint` | `( x y -- )` | Flood fill with the pen: the area of the color found at x y, up to any other color (sdl2 short words, common/flood.fs). See docs/en/SDL2-words.md. | - W |
 | `pink` | `( -- $rrggbb )` | The color pink, $ff80c0: `pink color`. | - W |
 | `place` | `( a n dst -- )` | Copies the string a n to dst as a counted string: the length in the first byte, then the characters. | P W |
-| `plot` | `( x y -- )` | Alias of `dot` (sdl2 short words): draws one pixel. See docs/en/SDL2-words.md. | - W |
+| `plot` | `( x y -- )` | Alias of `dot` (sdl2 short words): draws one pixel, and `lineto` starts there. See docs/en/SDL2-words.md. | - W |
 | `posix` | `( -- )` | Vocabulary of the system calls and constants of Linux and macOS. | P - |
 | `purple` | `( -- $rrggbb )` | The color purple, $800080: `purple color`. | - W |
 | `rand-seed` |  | The seed of random (a linear congruential generator). Change it to get another sequence: ms-ticks 1 or rand-seed ! | P W |
@@ -952,6 +954,27 @@ Words of the inner workings: the interpreter loop, the dictionary, system variab
 | `fexp10` | `( r -- r' n )` |  | P |
 | `fill32` | `( a n v )` | Primitive defined in C. | P |
 | `fl` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
+| `fl-bit` | `( x y -- a mask )` |  | P |
+| `fl-fill` | `( lx rx y -- )` | a run of row y, then the rows above and below | P |
+| `fl-h` |  |  | P |
+| `fl-left` | `( x y -- lx )` |  | P |
+| `fl-mark` | `( x y -- )` |  | P |
+| `fl-max` |  | Constant, 16384. | P |
+| `fl-ok?` | `( x y -- f )` | not filled yet, and of the color found at the start | P |
+| `fl-pop` | `( -- x y )` |  | P |
+| `fl-push` | `( x y -- )` |  | P |
+| `fl-right` | `( x y -- rx )` |  | P |
+| `fl-row` | `( lx rx y -- )` | the start of each run to fill on row y, between lx and rx | P |
+| `fl-run` | `( x y -- )` | the whole run around x on row y | P |
+| `fl-seen` |  |  | P |
+| `fl-sp` |  |  | P |
+| `fl-stack` |  |  | P |
+| `fl-step` | `( x y -- )` |  | P |
+| `fl-target` |  |  | P |
+| `fl-w` |  |  | P |
+| `flood-fill` | `( x y w h -- )` | the area of the color at x y, inside w h, through flood-get and flood-span | P |
+| `flood-get` | `( x y -- $rrggbb )` | Deferred: how `flood-fill` reads a pixel (each sdl2.fs points it at its own reading before `paint`). | P |
+| `flood-span` | `( x y w -- )` | Deferred: how `flood-fill` fills a run of w pixels (`hline` in each sdl2.fs). | P |
 | `fmode` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `fname` |  | Internal helper of the line editor (common/lineedit.fs): history, cursor moves and Tab completion of the line typed at the prompt. Not meant to be called. | P |
 | `free.` | `( nf nu -- )` |  | P |
@@ -1326,6 +1349,8 @@ System calls and constants of Linux and macOS, reached with `sysfunc`. `also pos
 | `sofunc` | `( z n a "name" -- )` |  | P |
 | `stderr` |  | Constant, 2. | P |
 | `stdin` |  | Constant, 0. | P |
+| `stdin-end` | `( -- n )` | The end of an input that is not a terminal: a newline the first time, then `bye`. | P |
+| `stdin-ended` | `( -- a )` | Variable: the end of the input that is not a terminal was met once (see `stdin-end`). | P |
 | `stdin-key` | `( -- n )` |  | P |
 | `stdout` |  | Constant, 1. | P |
 | `stdout-write` | `( a n -- )` |  | P |
@@ -1772,7 +1797,6 @@ System calls and constants of Linux and macOS, reached with `sysfunc`. `also pos
 | `JSWORD:` | `( "args.." )` |  | W |
 | `keyCount` | `( session -- n )` | JavaScript function of the web page. | W |
 | `keys-height` | `( -- n )` | JavaScript function of the web page. | W |
-| `lineTo` | `( x y )` | JavaScript function of the web page. | W |
 | `lineWidth` | `( w -- )` | JavaScript function of the web page. | W |
 | `log` | `( a n -- )` | JavaScript function of the web page. | W |
 | `ls` | `( "path" -- )` | List files or directories in "path". | W |

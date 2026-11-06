@@ -89,6 +89,30 @@ create pushed 64 allot
   close-screen
 ;
 
+: test-lineto
+  64 48 screen
+  black color cls
+  white color  5 5 plot  25 5 lineto  25 20 lineto
+  15 5 pixel@ $ffffff =assert   25 12 pixel@ $ffffff =assert   15 12 pixel@ 0 =assert
+  line-x 25 =assert  line-y 20 =assert
+  0 30 10 30 line  20 40 lineto  15 35 pixel@ $ffffff =assert
+  close-screen
+;
+
+: test-paint
+  64 48 screen
+  black color cls
+  white color  10 10 20 20 frame  45 24 10 circle
+  red color 15 15 paint
+  15 15 pixel@ $ff0000 =assert   28 28 pixel@ $ff0000 =assert   10 10 pixel@ $ffffff =assert
+  5 5 pixel@ 0 =assert   45 24 pixel@ 0 =assert
+  blue color 0 0 paint   5 5 pixel@ $0000ff =assert   63 47 pixel@ $0000ff =assert
+  45 24 pixel@ 0 =assert   15 15 pixel@ $ff0000 =assert
+  blue color 0 0 paint   5 5 pixel@ $0000ff =assert   ( the same color: it ends )
+  -1 -1 paint  64 0 paint   ( outside: nothing )
+  close-screen
+;
+
 : test-frame
   64 48 screen
   black color cls
